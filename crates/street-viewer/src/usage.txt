@@ -1,0 +1,28 @@
+usage: street-viewer [--iso <path>] [--court <ID>] [--list]
+                     [--view <yaw>,<pitch>,<distance>] [--focus <x>,<y>,<z>]
+                     [--screenshot <out.png>] [--hide <model>,...]
+                     [--player <n>] [--home] [--body <model>] [--head <model>]
+                     [--anim <name>] [--hires <dir>]
+
+  --iso         the original game (USA) disc image. Default: $STREET_ISO, or
+                "the original game (USA).iso" in this folder or a parent.
+  --court       court archive ID, e.g. RUCKER, PHILLY, NYCAGE (see --list). Default RUCKER.
+  --list        print the court IDs on the disc and exit.
+  --view        starting camera: yaw and pitch in degrees, distance in game units.
+  --focus       point the camera orbits, x,y,z in game units. Default 0,0,0.
+  --screenshot  save one frame to this PNG and exit.
+  --hide        leave out these models, e.g. ruckerb,ruckerd (names as printed at startup).
+  --player      stand database player n at centre court, in the rest pose:
+                0-144 league players, 145-157 streetballers, 158-183 legends,
+                184-233 generic ballers (list them with the db_report example).
+  --home        dress the player in the team's white home uniform.
+  --body        a create-a-player kit body instead, e.g. body0_outfit6, dressed
+                in the --player's textures.
+  --head        a create-a-player kit head. Default malehair02_head00_body0.
+  --anim        loop this animation on the player, e.g. standrest or createplayer_stand
+                (list them with: cargo run -p street-assets --example anim_report -- <iso> <filter>).
+  --hires       a Dolphin texture pack for the GameCube Vol. 2 (a Textures/GNZE69 folder,
+                e.g. the Legendary Edition's): its HD faces, jerseys, shoes and logos
+                stand in for the disc's images.
+
+mouse: drag to orbit, wheel to zoom.  keys: WASD/arrows move, Q/E down/up, Esc quits.

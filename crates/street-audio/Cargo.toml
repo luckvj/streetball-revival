@@ -1,0 +1,9 @@
+[package]
+name = "street-audio"
+description = "Readers and decoders for the disc's audio: SCHl streams, BNKl/ABK banks, XA and PS-ADPCM"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+street-assets = { path = "../street-assets" }

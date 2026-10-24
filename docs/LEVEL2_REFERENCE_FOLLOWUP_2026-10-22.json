@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "date": "2026-10-22",
+  "production_commit": "4abf198e699e4969436b16fea69c52590d46b6da",
+  "component": "production_staged_reference_placement",
+  "baseline_summary_sha256": "04ee1f5043062f57a0d36e96652f3fabaf75e4a7da8e7f59764fd42fd1a83d4a",
+  "new_plan": "GamDN3b",
+  "script": 5,
+  "new_observations": 8,
+  "maximum_component_error": 0,
+  "combined_observations": 258,
+  "combined_observed_plans": {
+    "GamLR1": 31,
+    "GamLR2": 9,
+    "GamLR3": 6,
+    "GamLR4": 9,
+    "GamSR1": 16,
+    "GamSR2": 23,
+    "GamSR4": 11,
+    "GamDN1a": 35,
+    "GamDN3a": 15,
+    "GamSR3": 9,
+    "GamDN2a": 37,
+    "GamDN2b": 17,
+    "GamDN4b": 17,
+    "GamDN4a": 3,
+    "GamDN1b": 12,
+    "GamDN3b": 8
+  },
+  "capture_sha256": "e9cd24015b7cc946781eef0fad207d119d8508249cbecd07ef0cc9034f56f0a9",
+  "report_sha256": "ac08efe979ddc2621208757de3c14a343d655430ae0e42061088098d92fa47d5",
+  "production_source_sha256": {
+    "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+    "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+    "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+    "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+    "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+  },
+  "producer_sha256": {
+    "pine_probe.py": "123a1607c7cc87b01a1d8481a6d931960323140aa22dc288f5acfe24c2ee7a9b",
+    "fast_staged_capture.py": "a87c7f45fc37f87352427e8dfe1aaee43969a6df6048bee38b8c289f60417101"
+  },
+  "admitted": [
+    {
+      "sample": 26,
+      "actor_id": 0,
+      "slot": 5,
+      "frame": 64,
+      "script": 5,
+      "team": 1
+    },
+    {
+      "sample": 26,
+      "actor_id": 1,
+      "slot": 3,
+      "frame": 64,
+      "script": 5,
+      "team": 1
+    },
+    {
+      "sample": 26,
+      "actor_id": 2,
+      "slot": 4,
+      "frame": 64,
+      "script": 5,
+      "team": 1
+    },
+    {
+      "sample": 26,
+      "actor_id": 3,
+      "slot": 0,
+      "frame": 64,
+      "script": 5,
+      "team": 1
+    },
+    {
+      "sample": 28,
+      "actor_id": 0,
+      "slot": 5,
+      "frame": 68,
+      "script": 5,
+      "team": 1
+    },
+    {
+      "sample": 28,
+      "actor_id": 1,
+      "slot": 3,
+      "frame": 68,
+      "script": 5,
+      "team": 1
+    },
+    {
+      "sample": 28,
+      "actor_id": 2,
+      "slot": 4,
+      "frame": 68,
+      "script": 5,
+      "team": 1
+    },
+    {
+      "sample": 28,
+      "actor_id": 3,
+      "slot": 0,
+      "frame": 68,
+      "script": 5,
+      "team": 1
+    }
+  ],
+  "exclusions": 424,
+  "exclusion_counts": {
+    "unstable_or_nonmatching_manager_guard": 420,
+    "native_reference_and_physical_height_do_not_correspond": 2,
+    "vm_pc_outside_matching_staged_body": 2
+  },
+  "capture_coverage": {
+    "samples": 72,
+    "inactive_polls": 1005,
+    "errors": [],
+    "staged_clock_packets": 72,
+    "staged_active_packets": 72,
+    "staged_actor_packets": 432,
+    "staged_manager_guarded_packets": 2
+  },
+  "scope": "Eight sampled reference placements on the original missing plan; combined archived checkpoints cover all16 plan names, not full sequence equivalence.",
+  "limitations": [
+    "Unpaused bookends do not prove atomicity or absence of interior ABA changes.",
+    "Only sampled primary staged VM reference placements in the declared shooting-team scenario are compared.",
+    "Native physical actor x/z includes animation root displacement and is not this reference transform.",
+    "Native actor launches and frames whose physical/reference heights differ are excluded by original fields, not model residuals.",
+    "Source role binding is supplied by the native proxy, so this does not test the rewrite role picker.",
+    "Ball paths, hands, complete poses, freeze/replay timing and unobserved ticks are not covered.",
+    "The faster producer records native roots, FPS and actor/channel identities around the unchanged repository staged_clock_packet; it omits the full camera/gait/rig snapshot.",
+    "State3 sampling was declared before comparisons. No residual filtering or tolerance change was used.",
+    "A second attempted launch failed and its empty played/reference captures are retained, not counted as a comparison.",
+    "Earlier767 clock/scale and250 reference observations remain evidence of1351b19; they are not silently re-labelled as a fresh run."
+  ]
+}

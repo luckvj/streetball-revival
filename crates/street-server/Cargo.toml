@@ -1,0 +1,11 @@
+[package]
+name = "street-server"
+description = "Headless, self-hostable match server for Streetball Revival online play"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+street-assets = { path = "../street-assets" }
+street-net = { path = "../street-net" }
+street-sim = { path = "../street-sim" }

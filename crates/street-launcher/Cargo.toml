@@ -1,0 +1,17 @@
+[package]
+name = "street-launcher"
+description = "Streetball Revival's launcher: find your disc, then play"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "StreetballRevival"
+path = "src/main.rs"
+
+[dependencies]
+street-assets = { path = "../street-assets" }
+eframe = "0.31.1"
+rfd = "0.15.3"
+serde_json = "1"
+image = { version = "0.25.10", default-features = false, features = ["png"] }

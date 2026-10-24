@@ -1,0 +1,981 @@
+{
+  "area": "Modes, progression and saves",
+  "cases": [
+    {
+      "id": "modes.event_gate_table",
+      "scenario": "Read the Be A Legend event court, tier, visibility/open gates and progress targets.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Mode tables (traced 2026-10-10)",
+          "note": "Original event table at 0x460790 and getters FUN_001eaaf8..0x1eaf90 establish the 17 rows and bit15 prerequisite encoding.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "EVENTS / Gate::word / Story::visible / Story::open",
+          "note": "Production event rows and gate encoding.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "$STREET_ISO",
+          "locator": "SLUS_206.51: 0x460790 + row*0x1c, offsets4/8/12/16/20",
+          "note": "Fresh raw original-ELF read on 2026-10-13 compared all 17 rows' court, tier, visibility, open, target words to production EVENTS:17/17 matched exactly. Used Executable.word from tools/verify_speech_lookup.py; normalized signed targets to u32 for comparison.",
+          "sha256": "114c070c8a07b8a6c7a64ba69c88452140b7214da0b54365ea459a14515b434d"
+        },
+        {
+          "path": "$EVIDENCE/street-parity-mode-event-table.json",
+          "locator": "comparisons / matched / total",
+          "note": "Fresh original executable versus production comparison:17/17 rows,85/85 words matched. Report retains actual values and input executable/source digests.",
+          "sha256": "8050337686e0556ce932b00739e3f5a8850f030b0a8871d8e22b0a1934f6bb17"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "event_rows_are_the_0x460790_words",
+          "note": "Rust disc test re-reads all 17 rows (court, tier, visible, open, target) from the executable and compares production EVENTS; passed 2026-10-15.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Static table and gate parity; does not prove original map rendering or global story-state transitions. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Capture native visible/open flags at every point threshold and cleared-event boundary.",
+      "match_type": "exact"
+    },
+    {
+      "id": "modes.story_development_charts",
+      "scenario": "Award the recovered five development-point breakdown lines in Be A Legend.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "Re-read raw 2026-10-15: the trick chart 0x460a88 (first row reached), the gamebreaker charts 0x460af8/0x460b10 walked a step a basket to the cap (0x1ea30c..0x1ea334), the court line 100 (0x1ea104/0x1ea1a4/0x1ea264), the win line 100/150/200 (FUN_001ea900, 0x3ec4a0 always set at 0x1daf34), the total added unscaled (the loss's 0.5 at +0xcf0 is never applied), inputs the side's stats 0xb/0xc/0xd.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "Story::chart_lines / gamebreaker_dp / Story::play",
+          "note": "Production charts and court line.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "development_charts_follow_fun_001e9b90",
+          "note": "Every table and immediate read from the executable; Story::play compared with the raw walk for three difficulties, wins and losses, chart edges and caps, and the credited total.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        },
+        {
+          "path": "crates/street-game/src/game.rs",
+          "locator": "results: MatchOutcome",
+          "note": "The charts now take the side's stats 11/12/13 from the sim (the Level 2 count used to be gamebreakers started, not scored).",
+          "sha256": "d7079f3df63829b27a221643d93cd771ea33193e8b6c0cf4cc312e00432d651b"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Static. The charts' inputs are the sim's stats (street_sim::stats), whose own unported listeners (assists, passout specials, picks) and the rewrite's trick-point awards bound them; no original runtime capture. 2026-10-20 (the load back): the results' end goes through the load back to the front end (presentation.ui_return_loading). 2026-10-20 (the card's messages): a won tournament's results return to its bracket, whose Cross opens Update Team (presentation.ui_card_save_points). 2026-10-20 (the idle demo's pass): the idle demo's game counts for nothing: results leaves before the outcome (presentation.ui_idle_attract). Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Capture the career block's +0xce4 lines and +0x30 after story games with known stats.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.non_story_win_loss_grant",
+      "scenario": "Keep development-point W/L bonus exclusive to mode 5; Pick Up/League Challenge award RP on wins.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "FUN_001e9b90 is called only at 0x1deec0 and 0x1df85c, both behind FUN_001ded40's mode-5 test (0x1dee40, 0x1df7ec); Pick Up (2, 3) and league (4) pay RP on a human side's win.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "Story::win_pickup / Story::play_league / Story::play",
+          "note": "RP only outside the story; DP charts only in Story::play.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "development_points_come_only_from_the_story; league_regions_and_reward_points_are_the_executable_values",
+          "note": "Scans the whole program for jal FUN_001e9b90 and reads the mode test; production Pick Up and league games leave the DP at 0, a story game pays.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Static dispatch evidence for the USA PS2 program; no runtime balance capture. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Capture final RP/DP balances after wins/losses in native modes 2/3/4/5.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.pickup_threshold_cards",
+      "scenario": "Grant eligible threshold cards after winning-side human Pick Up wins without spending RP.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "0x1df6b0..0x1df780 re-read raw: modes 2..3, counter once, field 5 a positive threshold reached, not owned (price below 1 owned), category 0 through notice 10 (one a game; handler 0x1de7d4 grants it), others granted by FUN_001e0420, 0x71 rows.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-game/src/rewards.rs",
+          "locator": "pickup_rewards; pickup_walk_is_the_executables; every_disc_pickup_threshold_grants_its_card",
+          "note": "Every immediate read from the executable; two Street Legends at one threshold grant one a game; every disc threshold card granted at its own win.",
+          "sha256": "8345b83ae1e78675e7013e70747efd16fceb46e0b2232f34d33796c8a8af1602"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Static. FUN_001e0420's court-10 side effect is not modelled (no threshold card is a court on the disc); the notice art is a separate case. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare counter, ownership bits, RP and queued notices at every threshold.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.shop_row_availability",
+      "scenario": "Include category rows lacking pictures and treat zero-price cards as owned.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/MODE_RECOVERY.md",
+          "locator": "Shop category availability",
+          "note": "FUN_001d2b38/FUN_002c2a90 include every category row; purchase getter does not require a picture; FUN_001d26e8 treats zero-price cards as owned.",
+          "sha256": "4899049b492d2afd13db263bd64cae6e82577792236fb9162e0fa18093737735"
+        },
+        {
+          "path": "crates/street-game/src/rewards.rs",
+          "locator": "in_shop / card_owned",
+          "note": "Production retains rows regardless of picture field and reports free cards as owned. Re-pinned 2026-10-15 after the Choose Court / My Rules pass: `court_unlocked` added for Choose Court; the cited rows and thresholds are unchanged.",
+          "sha256": "8345b83ae1e78675e7013e70747efd16fceb46e0b2232f34d33796c8a8af1602"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Missing-picture visual fallback is still unproven; only availability and ownership predicate are matched. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare native category counts, purchase eligibility and ownership flags for tips/code/free rows.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.reputation",
+      "scenario": "Apply recovered reputation tiers, non-demotion, one-tier win advancement and tier 3 nickname grant.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Mode tables / Reputation",
+          "note": "Original win/loss tables 0x460b28/0x460b70, level size 11 and FUN_001e70e0.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "Story::reputation_level / Story::overall_points / Story::play",
+          "note": "Re-read against FUN_001e70e0 on 2026-10-15: floor at the level base, add when the sum is at most 11, else the next level's first point; level 5 terminal; the nickname when the new level is 3 and none is set.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "reputation_follows_fun_001e70e0_and_its_tables",
+          "note": "Tables, the /0xb divisor (0x1d8410) and 0x460a78 read from the executable; Story::play checked for every tier, win/loss and starting point 0..55 against FUN_001e70e0's three branches.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "No complete original-career replay; the best-skill nickname choice (order {1,5,0,4,3,6,2}, first maximum) is outside this bounded match. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare native reputation and pending bytes for every tier boundary, loss clamp and tier 5 terminal transition.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.league_regions",
+      "scenario": "Use the original League Challenge region team lists, courts and legends rewards.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "League Challenge",
+          "note": "Original region table 0x3ec9e8 and the legends teams 31..35.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "REGION_MATCHES / REGION_REWARDS / Story::play_league",
+          "note": "Production regional lists and reward identities.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "league_regions_and_reward_points_are_the_executable_values",
+          "note": "All five {count, list, team, court} rows and their u8 lists read from the executable and compared.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Catalog and update predicates only; opponent lineup randomness and full native region replay remain unmeasured. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare original/production bitsets and team/court notices through one complete region including a loss.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.league_reward_points",
+      "scenario": "Award native difficulty-scaled league win and terminal completion RP.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Reward Points per game; League Challenge",
+          "note": "FUN_001ded40 pays 100/200/300 (league) and 50/100/150 (Pick Up) by difficulty; FUN_001deac8 pays 1000/1500/2000 on completion (the League Challenge summary corrected 2026-10-15).",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "LEAGUE_RP / PICKUP_RP / LEAGUE_DONE_RP / Story::play_league / Story::win_pickup",
+          "note": "Production difficulty-scaled arrays; duplicate terminal reward suppressed.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "league_regions_and_reward_points_are_the_executable_values",
+          "note": "The nine addiu immediates (0x1df2c4.., 0x1df570.., 0x1deb30..) read from the executable; win_pickup and play_league pay them for each difficulty.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Static reward-value parity; multi-user per-person reward attribution is not covered. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare original/production RP totals on three difficulties and repeat final matches.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.recruit_roster",
+      "scenario": "Offer Update Team after qualifying wins and protect star slot 0 in the five-person roster.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "FUN_0029d5a8 case 5 (a beaten player missing from the team on a won game, story+0xcf4, not a tournament: screen 0x60), FUN_00266e70 (the final's winner team 0x25), FUN_001e7db8 (slots 1..4, 0x1e7e18).",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "Story::offers_update / Story::update_team",
+          "note": "Production offer and roster change.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "update_team_follows_fun_0029d5a8_and_fun_001e7db8",
+          "note": "Screen id, won flag offset and slot bound read from the executable; offers and replacements driven through Story.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Static. The rewrite's team is a list without holes (a slot past its end fills the next one) and does not copy a created player's 0x124-byte block (FUN_001d89d0), which the rewrite keeps with the baller instead. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Replay duplicate/new recruits, full/partial rosters and championship cases.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.original_ps2_save_envelope",
+      "scenario": "Read/write all six original PS2 GAMEDATA length-prefixed sections without losing payload bytes.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "Constructors 0x1dadb4, 0x1d6e94, 0x1d3d0c, 0x1ef02c×0x1ef034, 0x1eb194×0x1eb19c, 0x1edd44×0x1edd4c.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-assets/src/save.rs",
+          "locator": "SECTION_LENGTHS / Ps2Save::parse / Ps2Save::to_bytes",
+          "note": "Production validates the native lengths and keeps every byte.",
+          "sha256": "a1fa9cfcb187aed8138c87eb5a489b1876b7bde94214c27e2981ae6090f20fb0"
+        },
+        {
+          "path": "crates/street-game/src/original_save.rs",
+          "locator": "native_save_layout_is_the_executables",
+          "note": "Lengths read from the executable equal SECTION_LENGTHS and PS2_SAVE_LENGTH; an envelope built from them parses and writes back byte for byte.",
+          "sha256": "13028df612f605a00a3d74cf3b4b78185abf96154a6867ec136e561212e7bc41"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Envelope only (the decoded game file); CRC/LZARI and the memory-card task are covered by the supplied-fixture test, not here. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare a native save before/after one known change.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.equipped_move_save_slots",
+      "scenario": "Preserve native empty/equipped move positions through original-save import and Rust save persistence.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "FUN_001d89d0 stores FUN_001d8778's slots at block +0xe2/+0xf8/+0x10e (0x1d8a70, 0x1d8a74, 0x1d8a64) for 6/11/11 (0x1d87c0, 0x1d87d4, 0x1d87e8); slot 0's block at career +0x6d4 (+0x6ec, 0x1e7e58).",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-game/src/original_save.rs",
+          "locator": "baller_from_original; native_save_layout_is_the_executables",
+          "note": "A career built from the executable's offsets with holes and late slots imports with its holes and reads back through the rewrite's save unchanged.",
+          "sha256": "13028df612f605a00a3d74cf3b4b78185abf96154a6867ec136e561212e7bc41"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "Story::write / Story::read",
+          "note": "Fixed slots persisted.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Old compact Rust saves cannot reconstruct historical positions. An all-empty group is kept as an empty list. 2026-10-19 (third pass): story.rs's Story::write and Story::read gained the career's team (CTEM) after every other section; the sections the case cites are unchanged. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare equipped slot arrays before/after one exact-slot replacement in the original.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.nickname_pending_save",
+      "scenario": "Keep nickname-earned separate from per-career pending and import native raw byte 1 bit 0.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "Career serialized from object +0x18 (0x1e693c, 0x1e6958); the bit is +0x19 bit 0 (set 0x1e7394, cleared 0x1a854c..0x1a8560): save byte 1 bit 0.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-game/src/original_save.rs",
+          "locator": "import; native_save_layout_is_the_executables",
+          "note": "A career with the bit set imports nickname_pending and keeps it through the rewrite's save.",
+          "sha256": "13028df612f605a00a3d74cf3b4b78185abf96154a6867ec136e561212e7bc41"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "Story::write / Story::read",
+          "note": "NKPN persists per career.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Static field and lifecycle; the shared audio queue and score-call gates are separate open gaps. 2026-10-19 (third pass): original_save.rs's import gained the career's team name and logo, story.rs's Story::write and Story::read their CTEM section; the nickname's fields are unchanged. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare raw byte 1 and NKPN across assignment, career switch and consumption.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.bracket_shapes",
+      "scenario": "Use native tournament rows, series length, winner and double-elimination loser destinations.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Brackets",
+          "note": "Original tables 0x460a10/0x460a38/0x460a58 and FUN_001ea528/001e 90a 8 specify five shapes and advancement.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/bracket.rs",
+          "locator": "SHAPES / WINNER / LOSER / Bracket::record; shapes_and_destinations_are_the_executable_tables",
+          "note": "Disc test reads the five shapes (0x460a10 and their round tables), 0x460a38 and 0x460a58 from the executable; Bracket::record re-read against FUN_001ea528 (games/2 + 1 wins, winner and double-elimination loser moves).",
+          "sha256": "7c3ae580cd86b80be77f46778df13b5c309fd22c3672a876ee8ab5e7a3b25332"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Deterministic bracket structure only; native RNG draws, crew seed and complete event sequence are not matched here. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Compare every bracket row after a controlled win/loss series for all five native formats.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.bracket_random_sequence",
+      "scenario": "Use original C-library RNG draws for simulated computer bracket games.",
+      "status": "matched",
+      "match_type": "structural",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Brackets",
+          "note": "Native computer matches call C-library LCG rand at 0x3b42a0 when FUN_001ea528 winner is -1.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/bracket.rs",
+          "locator": "Bracket::flip; bracket_computer_match_flip_matches_native_c_library_rand; flip_is_the_executable_lcg_and_winner_bit",
+          "note": "Disc test reads the multiplier, increment and mask of FUN_003b42a0 and FUN_001ea528's xori/andi from the instructions and checks 64 flips.",
+          "sha256": "7c3ae580cd86b80be77f46778df13b5c309fd22c3672a876ee8ab5e7a3b25332"
+        }
+      ],
+      "tolerance": "Exact integer LCG states and inverted bit-0 winner decisions matching FUN_003b42a0 and FUN_001ea528.",
+      "limitations": "Matches native C-library LCG rand and FUN_001ea528 winner selection logic. Full-tournament global initial randseed state sharing with C runtime remains separate. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Capture native whole-tournament computer simulation outcomes with synchronized global C randseed and compare final brackets."
+    },
+    {
+      "id": "modes.school_completion_predicates",
+      "scenario": "Complete all 26 Street School lessons using native event and context detectors.",
+      "status": "matched",
+      "match_type": "structural",
+      "evidence_kind": "runtime",
+      "evidence": [
+        {
+          "path": "docs/SCHOOL_PROFILE_RECOVERY.md",
+          "locator": "Native lesson callback adapter; Against the original running (2026-10-19)",
+          "note": "Decompiled all 26 lesson callbacks and readiness logic from FUN_0018e498, FUN_0018dfe8, FUN_0018e0a8, FUN_0018e0e8, FUN_0018e210, FUN_0018e350, FUN_0018e698, FUN_0018e6f8, FUN_0018e7b0, FUN_0018e858, FUN_0018e918, FUN_0018e990, and FUN_0018eec0. Mapped all 26 lesson completion predicates directly to authoritative simulation event stream.",
+          "sha256": "818aeedd5a83b538bb00741a0e69bf8c158e6d445a9768f9e1387a0c33ce913d"
+        },
+        {
+          "path": "crates/street-game/src/school.rs",
+          "locator": "LessonRun; LessonRun::advance; stage_world",
+          "note": "The game's lesson run is the simulation's (`street_sim::school::Run`) and the lesson's launch `World::launch_lesson` (`FUN_0018ec28`).",
+          "sha256": "a81caceff8e1d8272010a6edd7290846470ed468a676ddca805096c1311a6ee4"
+        },
+        {
+          "path": "crates/street-sim/src/school.rs",
+          "locator": "Run::advance; Active::result; expected_side; delay; each_lessons_listener_slot_decides_as_the_originals; the_inbound_pass_and_results_before_the_start_do_not_count; a_result_commits_after_its_delay_and_a_later_callback_replaces_it",
+          "note": "The listener's slots by lesson (`FUN_0018df00`), the result and its delay (`FUN_0018f6b0`: 54, 90 for Cancel) and the manager's countdown inside the game's update (`FUN_0018eec0`).",
+          "sha256": "c2777e7d0056738177b5aed69eeab50f274d14c9b2cd7cf5da22a94a492f8249"
+        },
+        {
+          "path": "crates/street-sim/src/played_capture/school.rs",
+          "locator": "the_lessons_commit_their_results_after_the_managers_delay; the_lessons_launch_into_their_restart_spots_as_fun_0018ec28",
+          "note": "Against the seven School captures: 44 of 44 commits at the manager's delay with the user's nibble, 45 of 45 launches on the restart spots with the captured holder.",
+          "sha256": "a3920e7db2ace447dc20552b4ad432353f6df6a8d88db2731b71b17f669f890f"
+        },
+        {
+          "path": "$EVIDENCE/street-played-school-index.json",
+          "locator": "captures; lessons",
+          "note": "Seven captures of one School session from a fresh boot (schema 3 of `tools/pine_played_capture.py`): 45 lesson runs by launch, start, results and commit; all 26 lessons, Pick and Advanced Dunks never passed.",
+          "sha256": "52b9c101eca3932691cbe3341120350ad40821d317fbb2a9ff65e07f2cf18ef9"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Practice rule layout and timing delays match recovered native constants; full original runtime differential replay has not been captured. Re-pinned 2026-10-16 after the trick moves pass: school.rs's lesson 20 reads the script from `Event::Trick` (the trick scores at its end); lesson 20's check in `LessonRun::advance` reads the event's script; the rest of the cited region is unchanged. 2026-10-19 (Street School as a capture suite, docs/TRACE.md \"Street School as a capture suite\"): the listener and the manager are the simulation's (`street_sim::school`) and are checked against the original running all 26 lessons (seven captures, 45 runs): 44 of 44 commits at the manager's delay with the user's nibble, 45 of 45 launches on the restart spots; Pick and Advanced Dunks never passed in the original under the driver's presses. The game around the lessons (one game, the in-game menu and tutorial pages, the teams, the court, the person's side) is still the rewrite's. 2026-10-19 (sixth pass): the School is one game (school::prepare: the Nets against the Lakers on court 0, the person on the Lakers, side 1; the School binds its one person on either side); each lesson launches from the in-game lesson menu and its commit brings the menu back, and every lesson done and not yet paid ends the game on the completion (presentation.ui_school_lesson_menu). 2026-10-20 (seventh pass): the lesson prompt's 23 readiness checks (FUN_0018f740) make 16,118 of the seven captures' 16,162 prompt decisions; the pages and the restart (presentation.ui_school_lesson_menu). Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "A run of Pick passing (its pick bit under R3) and an Advanced Dunks toss from 23..32.5 across; the 44 prompt decisions the checks miss."
+    },
+    {
+      "id": "modes.creation_cost_table_split",
+      "scenario": "Apply the correct native cumulative rating-buy, tweak and move-edit cost table in every context.",
+      "status": "matched",
+      "match_type": "structural",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "0x4604c8/0x460518 (create tables 12/13) are the shoe store (field 38), walked and priced by menu row (FUN_001e4ee8, FUN_001e2020, FUN_001e4e30), free when owned (bit row of profile+0x678): shoe 2 is row 10 at 75. Not a rating table.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/cab.rs",
+          "locator": "SHOES; shoe_row; shoe_price; Wardrobe; shoe_cost; outfit_cost; buy_outfit; FREE_OUTFIT_COLOUR",
+          "note": "The shoe rows and the wardrobe's rules (FUN_001e4e30, FUN_001e4580, FUN_001e7680, FUN_001e7758, FUN_001e7820, FUN_001e7940).",
+          "sha256": "c17514fc326e7f21bb76f4820cb7a03859ca579290afb0053957affd7dbd8405"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "shoes_are_priced_by_menu_row_at_0x4604c8",
+          "note": "Rows, pointers and the point-buy ladder read from the executable; an owned row costs nothing.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        },
+        {
+          "path": "crates/street-game/src/ballers.rs",
+          "locator": "price; wardrobe_cost; commit; the_wardrobe_charges_and_keeps_what_is_bought; shoes_walk_and_cost_by_their_menu_row; builds_and_sizes_cost_development_points",
+          "note": "The editor charges the outfit and shoes worn by the wardrobe and then owns them; a new baller in creation's terms, a saved one in the edit screen's.",
+          "sha256": "f0d67366faca69af8463c4f0a344f1eb81e5b579b58c9526042a26499d304b1f"
+        },
+        {
+          "path": "docs/TRACE.md",
+          "locator": "The wardrobe, Edit Baller and the original's own save (2026-10-18)",
+          "note": "The wardrobe's words and rules, the editor's +8 flag, the creation's charges, the Gym's absence.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-game/src/menu.rs",
+          "locator": "open_baller; Page::Story cursor 1",
+          "note": "The map's Edit Baller opens the career star's editor; the Gym page is gone.",
+          "sha256": "0764355f8560180b08e3d8874e1b6a986fab47c0966ba79656dc17486dc099e9"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "CreatedBaller::wardrobe / outfit_row / worn_wardrobe; WARD; the_wardrobe_saves_and_older_saves_own_what_is_worn",
+          "note": "The wardrobe saved last; older saves own what each baller wears.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Ported 2026-10-18 (branch audio-modes): created ballers keep the original's wardrobe (outfit rows, rows by colour and shoe rows, the career's +0x670..+0x678): shoes cost their row until owned and are never refunded; creating, an outfit costs nothing when owned in its colour, 50 for a free row, else its row; editing, the row's difference against the worn one (refunding a cheaper one); the Gym (Story::upgrade, rating_cost) is gone and the map's Edit Baller opens the star's editor as the original's does; older saves' Gym bumps stay applied. No known difference is left (2026-10-24): the original's buy (FUN_001e4af8 for an outfit: the price by FUN_001e4580, refused when the career's points, obj+0x30, fall short, else FUN_001e70a8(career, 3, -price) and the row owned) takes the points at each Yes, the rewrite with the edit at Save Baller; Edit Baller's only way out is its Exit, which saves (FUN_0028c0b8, CabAsk::Exit then ballers::commit), the read-out counts each Yes at once (ballers::points_left) and a buy the points do not cover asks the poor question instead (menu.rs), and Create Baller's Leave drops the new baller, whose points the next wizard sets to 1,500 again (FUN_002740b8), so the two end with the same points and wardrobe. (The build and size were listed here too; 2026-10-24 they were read raw: FUN_001e6080's rows 0 and 1 (FUN_001e2470, FUN_001e28c8) price the build by the gender's table at 0x4602a0 (men 0, 200, 300, 400; women 0, 200) and the size by the current build's table (0, 200, 300, 400 in every build), each the new entry less the current one, so the rewrite's difference against what was paid, which keeps the size's index across a build, charges the same.) Re-pinned 2026-10-18 after the front end pass: menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; street-sim story.rs: overall_total (500); Edit Baller is now the map's Circle (edit_star); the map has no row 1. 2026-10-19 (fifth pass): a new baller spends from 1,500 (ballers::START_POINTS, FUN_002740b8); the editor's buy question (editplyr.txt 3) owns an outfit or shoes on Yes, its price going with the edit's when the baller is saved (ballers::edit_buy); Edit Moves' question (editplyr.txt 4) owns a move on Yes, its points taken when the baller is saved (edit_moves::buy, presentation.ui_edit_moves). 2026-10-23 (the special outfits): the outfit list is FUN_001e4720's: the Street Champ jersey (code 81) first once the baller's career has cleared the Legendary Challenge, the build's nine, each owned jersey card's code (0x460330 by the card's index), then Jordan's (71) while record 167 is unlocked; the specials are free and no row of the wardrobe (FUN_001e43c0, FUN_001e44e0), named by 0x3f94c8; the team uniform (80, a player who joined a league team) is not listed, the model having no team to dress it in. 2026-10-23: a career started from a premade (Choose Baller's YES) holds its 1,500 less the premade's charges (FUN_001e6ac8, FUN_001e6518: build, size, the look's free row, each skill's steps to its bar, its outfit bought in creation's terms; ballers::preset_charges). Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "None open: the rows 0..10 (FUN_001e6080) are read raw, the looks price 0; a played Edit Baller capture would confirm the read-out step by step."
+    },
+    {
+      "id": "modes.story_calendar_counter",
+      "scenario": "Match native games/week progression and per-event game-count increments.",
+      "status": "matched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "FUN_001e70a8 at 0x1ea1b4/0x1ea274 (+2), 0x1e9f8c/0x1ea114 (+6 at a tournament's end), 0x1ea3fc/0x1ea478 (wins/losses +1); Week = games / 6 + 1 (0x2cf984, 0x2cf9b0).",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "Story::play / Story::week",
+          "note": "Production counters.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "calendar_counts_follow_fun_001e9b90",
+          "note": "Immediates read from the executable; a pick-up, a challenge, a tournament won round by round and one lost driven through Story::play.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Static. Brackets follow street_sim::bracket (its own cases). Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Capture story+0x24 at every event transition in a full Be A Legend run.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.results_notice_visuals",
+      "scenario": "Match native result notice identity/order and missing-card artwork presentation.",
+      "status": "mismatched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Modes parity cases re-verified (2026-10-15)",
+          "note": "FUN_002c2a90: field 4 is shown unless the card is one of the two ids at 0x45e1f0 (34, 45; FUN_001d2758) and not owned, then face down by 0x48f678 (3 → 0x66, 4 → 0x65). The old rule (face down for a missing poster) was wrong and is fixed.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-game/src/rewards.rs",
+          "locator": "card_picture; HIDDEN_UNTIL_OWNED; hidden_cards_and_face_down_pictures_are_the_executables",
+          "note": "Table, ids and every disc card's picture owned and not owned checked against the executable's rule.",
+          "sha256": "8345b83ae1e78675e7013e70747efd16fceb46e0b2232f34d33796c8a8af1602"
+        },
+        {
+          "path": "crates/street-game/src/boards.rs",
+          "locator": "LEGEND_KINDS / PICKUP_KINDS / hookups; the_results_pages_read_the_notice_kinds_in_the_executables_order",
+          "note": "The kinds' order read from FUN_00262ba8 and FUN_002c5cf8's raw slot loads (2, 1, 4..6, 3, 7..9, 10; 2, 1, 10, 4..6, 7..9, 0); the first notice of a kind shown.",
+          "sha256": "6dcc5509c0e00a1bb277ae3ec79d69640a8d9601e5dc296fff7e9ac3cf18cfb4"
+        },
+        {
+          "path": "docs/TRACE.md",
+          "locator": "The wardrobe, Edit Baller and the original's own save (2026-10-18)",
+          "note": "FUN_001de528's one id a kind and the two pages' order.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "$EVIDENCE/street-frontend-seventh-orig/top_ballers_pickup.png",
+          "locator": "whole frame",
+          "note": "Top Ballers after a Pick Up game.",
+          "sha256": "08271d7f6a8c0aa518740e9f560b39ca82109d91beaf0249e44db8bf9de6c7e3"
+        },
+        {
+          "path": "$EVIDENCE/street-frontend-seventh-orig/pickup_hookups.png",
+          "locator": "whole frame",
+          "note": "Pick Up's hookups.",
+          "sha256": "f77cd2d6e9aa917d754277e6eb437fe1a7cf4912cd9003192690d85ac448778f"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "Re-verified 2026-10-18: both pages read the kinds in the executable's order, which boards.rs follows, and a game keeps one id a kind (FUN_001de528), as hookups now shows; the picture rule is verified. Known difference: no screenshot of the original's pages has been compared (the jerseys, boss moves, completed game and Street Champ jersey, once missing, are noticed since 2026-10-23, below). 2026-10-19 (sixth pass): the boards dim the scene behind them (BOARD_DIM, FUN_002d8350(screen, 1)), anchored texts measure the text widget's box, the hookups' stars sit by the single amber lines they record, and Continue is the layout's legend (docs/FRONTEND_RECOVERY.md, \"The results pages compared\"; 14.7 to 21.7 against the grabs, the court behind differing). 2026-10-20 (seventh pass): Top Ballers and Pick Up's hookups grabbed: top_ballers_pickup.png 22.8 (its panel 17.7), pickup_hookups.png 19.2 (13.3), the court behind differing. 2026-10-23: an event cleared now grants and shows what FUN_001ded40 queues after its court (0x1deed4..0x1df000): the boss move (kind 7, the row's +0x18 by FUN_001eac00) while its card is not owned, a street challenge's jersey card (kind 4, cards 65 to 70, the row's +0x1a by FUN_001eac88, granted by the handler FUN_001e0420), a tournament's boss card (kind 3: the Street Legends card whose player he is, 0x45e150), which also open the bosses' moves in Edit Moves; the page draws the jersey line (0x5d07, the card's player by 0x45e1b8) and the boss move's (0x5d02, its name); saves from before own the cards their cleared events grant. The completed game (kind 10) now shows for Pick Up's Street Legends cards (0x5b05) and the fourth trophy's card 34 (0x5d08), with the trophy's jersey and boss move 44 (FUN_001ded40 0x1dfd88..0x1dff30). 2026-10-23 (the hookups' slots): both pages draw all three jersey and boss-move slots in one value joined by a comma and a space, then a comma and a new line (0x48fdf8, 0x48fe08), Pick Up's page its own jersey (0x5b03) and boss-move (0x5b04) lines, and a milestone's jersey of record 173, 159 or 175 queues boss move 40, 41 or 47 (FUN_001e0910, 0x1e09c8..0x1e0a94). The Street Champ jersey is not a notice kind but the career block's result slot 4 (+0xcdc, FUN_001e9b90 0x1ea3b4..0x1ea3e8); Be A Legend's page draws its line (0x5d09, boards.rs) from the Rucker Park '78 challenge's clearing until the completing game (corrected 2026-10-24: the sentence that it had none was left from before fd1b288). Every kind 0..10 now has its notice; left is a grabbed results page holding the jersey, boss-move and completion lines to compare. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Grab the original's results pages after a street challenge cleared (a jersey and a boss move), the fourth trophy and Rucker Park '78, and compare them with the rewrite's.",
+      "match_type": "structural"
+    },
+    {
+      "id": "modes.semantic_save_completeness",
+      "scenario": "Restore every original PS2/GameCube semantic option, career, player and progress field into equivalent production behavior.",
+      "status": "mismatched",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Original PS2 saves",
+          "note": "Original envelope is preserved; semantic fields are separately traced and GameCube payload is decoded via big-endian scalar conversion.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-game/src/original_save.rs",
+          "locator": "import / gamecube_scalar_fields",
+          "note": "Production imports traced scalars, unlocks, options, users, careers, and teams for both PS2 and GameCube containers; all 10 careers are restored without truncating at created baller slots.",
+          "sha256": "13028df612f605a00a3d74cf3b4b78185abf96154a6867ec136e561212e7bc41"
+        },
+        {
+          "path": "docs/TRACE.md",
+          "locator": "The wardrobe, Edit Baller and the original's own save (2026-10-18)",
+          "note": "The wardrobe imported from +0x658..+0x660; G01 fixed 2026-10-14; the round trip of the original's own saves.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        }
+      ],
+      "tolerance": "Exact discrete decisions and values; no tolerance.",
+      "limitations": "G01 (overflow careers aliasing six baller records) was fixed on 2026-10-14: ten careers keep ten distinct stars before and after a native save (STAR_SLOTS, all_ten_original_careers_import_and_restore_playable_state). 2026-10-18: a career's wardrobe imports (an_original_careers_wardrobe_imports_from_the_executables_words). Known differences left: the original keeps its player inside each career where the rewrite's careers point at baller slots, so a career's DP lands on its star's balance. Earlier claimed scope: direct byte preservation retains raw untranslated memory-card metadata in original container sidecars. 2026-10-19 (third pass): a career's team name and logo import (name parts 1 and 2, field 10) and stay through the native save (a_careers_team_name_and_logo_survive_the_save). 2026-10-19 (fourth pass): a baller's icon (the record's field 14) saves in its own BICN section past the others and imports from the original's +0x58 (ballers_survive_a_save_and_old_saves_still_load). 2026-10-19 (sixth pass): the High Scores tables keep the legends' wins and losses and the users' win table in two tagged blocks after SCHU (older saves read), and an original card's tables import into them (original_save::import_scores; presentation.ui_high_scores_screen); table 1's rows 5..14 are the users' win table (an earlier line here said they were dropped; corrected 2026-10-23). 2026-10-20 (the transitions' pass): the sixth men (game data +0x3c, FUN_001e0030) import from an original save and keep in the save's SIXM section. 2026-10-23: special clothing codes (0x36 and up) import as they are and the editor lists them (ballers::outfit_list: the Street Champ jersey, the team uniform, the owned jerseys, Jordan's), so the earlier known difference that the editor could not show them is closed. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Import a save holding careers made in the original and compare every career field the game reads.",
+      "match_type": "structural",
+      "gemini_review": {
+        "date": "2026-10-14",
+        "before_review_status": "matched",
+        "findings": [
+          "G01"
+        ],
+        "assessment": "Overflow original careers alias existing six baller records; ten progress entries do not restore ten distinct original characters and their bought/equipped state."
+      }
+    },
+    {
+      "id": "modes.my_baller_deferred",
+      "scenario": "Expand or replace the deferred My Baller presentation/workflow.",
+      "status": "untested",
+      "evidence_kind": "none",
+      "evidence": [],
+      "tolerance": "No active parity tolerance; excluded from baseline.",
+      "limitations": "User-deferred scope per orchestration instruction. Existing original move-slot save semantics are separately scored; this deferred feature contributes no active original-core parity credit.",
+      "next_probe": "Resume only when the user brings My Baller back into scope.",
+      "disposition": "deferred",
+      "match_type": "unknown"
+    },
+    {
+      "id": "modes.native_continue_save_roundtrip",
+      "scenario": "Continue every native profile/career, change progress/options, save/reload and reproduce original playable semantics.",
+      "status": "untested",
+      "match_type": "unknown",
+      "evidence_kind": "none",
+      "evidence": [],
+      "tolerance": "Exact native discrete state, event order and tick boundary; output tolerance must be declared before paired measurement.",
+      "limitations": "New audit coverage gap (F28). No complete paired original/current-production output comparison is asserted. 2026-10-18: the original's own profiles (users, options, unlocks, high scores) round-trip in modes.original_profile_roundtrip; no captured boot holds a career, so continuing one is not exercised.",
+      "next_probe": "Make a Be A Legend career in the original (PCSX2), take a save state, cut its sections with tools/save_state_sections.py and continue it in the rewrite.",
+      "audit_review": {
+        "date": "2026-10-14",
+        "findings": [
+          "F28"
+        ],
+        "assessment": "Added an explicit production runtime obligation missing from the previous inventory."
+      }
+    },
+    {
+      "id": "modes.original_profile_roundtrip",
+      "scenario": "Import the original's own saved profile (its users, options, owned cards and high scores) and keep it through the native save; a fresh original profile equals a fresh rewrite one.",
+      "status": "matched",
+      "evidence_kind": "runtime",
+      "evidence": [
+        {
+          "path": "tools/save_state_sections.py",
+          "locator": "SECTIONS",
+          "note": "The memory card's game data cut out of a save state's RAM (the object at 0x4bbf10, FUN_001dadb0's sections).",
+          "sha256": "8b830a37f824d3fa9796bca0ec7190f4c5a5753ae5b17f32ad5d3714fc10122f"
+        },
+        {
+          "path": "crates/street-game/src/original_save.rs",
+          "locator": "default_scores / default_records / c_qsort; the_originals_own_save_round_trips_through_the_native_one; the_fresh_high_scores_are_the_executables_tables_sorted_as_the_game_sorts; the_c_librarys_qsort_sorts_and_keeps_its_own_tie_order",
+          "note": "Two boots' saves import (User Setup's PLAYER1), match a fresh rewrite profile card for card, table for table and in the reset's options, and read back through the native save.",
+          "sha256": "13028df612f605a00a3d74cf3b4b78185abf96154a6867ec136e561212e7bc41"
+        },
+        {
+          "path": "docs/TRACE.md",
+          "locator": "The wardrobe, Edit Baller and the original's own save (2026-10-18)",
+          "note": "The game data object's sections, the default high scores' qsort, the reset's cards and Trax word.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "$EVIDENCE/street-original-save-1.bin",
+          "locator": "six sections",
+          "note": "Cut from the played boot's first save state (PLAYER1, a fresh profile otherwise).",
+          "sha256": "3de55dab29a4df1d29d089dbf690a8eea746eeffa9a81a7e7078b7d6575203a8"
+        },
+        {
+          "path": "$EVIDENCE/street-original-save-2.bin",
+          "locator": "six sections",
+          "note": "Cut from the played boot's later save state (its games entered the high scores).",
+          "sha256": "84a6b799688c381ee733adeb0801d21107d8c54641fe30b1ccd620f3876b4b27"
+        },
+        {
+          "path": "$EVIDENCE/street-original-save-3.bin",
+          "locator": "six sections",
+          "note": "Cut from the attract boot's save state.",
+          "sha256": "7c04c2f8a0475116b9810de13bf8c3f25887cad3a4368b499f480931d3e36ef2"
+        }
+      ],
+      "tolerance": "Exact bytes for the high scores; exact discrete values for users, options, cards and the round trip.",
+      "limitations": "First round trip 2026-10-18 (branch audio-modes). It found and fixed two differences: a fresh profile's high scores are the original's default tables sorted by its C library's qsort (the rewrite's were empty), and the options' reset leaves the Rucker Classic's song off, not Nelly's. The attract boot's difficulty reads 2 (its attract match's, not traced); no state holds a career, a created player or a bought card; the memory card's own wrapping (CRC, LZARI) is not involved. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Cut a profile with careers, bought cards and records from a longer played boot and run the same round trip.",
+      "match_type": "exact"
+    },
+    {
+      "id": "modes.default_options",
+      "scenario": "A fresh boot's options are the original's reset values: every volume 10, Got Game, Automatic replays, Stereo, Onscreen Help, Autosave and Visual Effects on, Widescreen off, the Street camera, layout A with vibration on each pad, Trax interactive in random order with Track Info on and every song on but the Rucker Classic's.",
+      "status": "matched",
+      "match_type": "exact",
+      "evidence_kind": "runtime",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "The original's default options (traced 2026-10-15)",
+          "note": "FUN_001d6f20's reset read whole, every setter's bit field tabled with its default and reader; the track left off corrected 2026-10-18 (DAT_003e9ca8 is audio_rucker_classic_track, 20).",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/records.rs",
+          "locator": "Settings::default; ORIGINAL_DEFAULT_BLOCK; RUCKER_CLASSIC_SONG_BIT; Picture; records_and_settings_survive_a_save",
+          "note": "The rewrite's defaults, the traced 24-byte block, and the save round trip (older saves decode unchanged; the Wide flag is bit 7 of the flags byte).",
+          "sha256": "20e322093eed1f6583093a84a6715f32a3f5a0b62ca46fb7f9e8fefae2066c22"
+        },
+        {
+          "path": "crates/street-game/src/original_save.rs",
+          "locator": "options_from_original; the_defaults_are_the_originals_reset_words",
+          "note": "The traced block read through the original-save importer equals Settings::default(); passed 2026-10-15.",
+          "sha256": "13028df612f605a00a3d74cf3b4b78185abf96154a6867ec136e561212e7bc41"
+        },
+        {
+          "path": "crates/street-game/src/menu.rs",
+          "locator": "apply_settings",
+          "note": "A fresh save boots with Settings::default() in Options, AudioSettings and PadSettings; main sets the match difficulty from it unless --difficulty is given.",
+          "sha256": "0764355f8560180b08e3d8874e1b6a986fab47c0966ba79656dc17486dc099e9"
+        },
+        {
+          "path": "$STREET_ISO",
+          "locator": "SLUS_206.51: FUN_001d6f20 0x1d6f20..0x1d72ec; setters 0x1d72f8..0x1d7720; FUN_0019f810; FUN_0030f938; DAT_003e9ca8/cc8/ce8",
+          "note": "Read in Ghidra (street2ee) on 2026-10-15: the decompile, the disassembled tail, and the xrefs to the three track globals and to the engine config's +0x1c/+0x2c (every one a read). Corrected 2026-10-18: DAT_003e9ca8 is written by the setting's registration through a register (0x1a2a2c stores 20), which an xref scan misses.",
+          "sha256": "114c070c8a07b8a6c7a64ba69c88452140b7214da0b54365ea459a14515b434d"
+        },
+        {
+          "path": "$EVIDENCE/street-original-save-1.bin",
+          "locator": "Options section",
+          "note": "The played boot's options as the original's RAM holds them (Trax word 0xff7fffff); the_originals_own_save_round_trips_through_the_native_one checks them against Settings::default().",
+          "sha256": "3de55dab29a4df1d29d089dbf690a8eea746eeffa9a81a7e7078b7d6575203a8"
+        }
+      ],
+      "tolerance": "Exact field values: the 24-byte block's words equal the setters' writes, and the importer's reading of it equals Settings::default().",
+      "limitations": "Static: the reset's code and the ELF's zero globals, not a memory read of a booted console. Word 1 bits 0..1 (3) and 16..19 (10) and the per-pad bit 12 flag have no modelled reader. (The song left off is corrected below.) The language field (bits 9..11) is not kept; it is always 0 on this executable. The Adjust Screen offsets map to the rewrite's full-screen toggle. Re-pinned 2026-10-18 after the computer's shooters, drives and trick passes pass: TRACE.md gained the section \"The computer's shooters, drives and trick passes\" at its end; the cited region is unchanged. Corrected 2026-10-18 (branch audio-modes): the one song the reset leaves off is track 20, the Rucker Classic's (in-game song 12), not Nelly's: DAT_003e9ca8 is audio_rucker_classic_track, registered with 20, and every save state's Trax word is 0xff7fffff. The Rucker Classic's switch-on (FUN_001e0420, FUN_002f2d58) is not ported. 2026-10-19 (sixth pass): records.rs's tables place rows as the original's (Records::offer, offer_win, legend) and keep two new tagged blocks after SCHU; the options' defaults are unchanged. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Read config+0x12c..+0x143 from a fresh PCSX2 boot without a memory card and compare the 24 bytes; port the the Rucker Classic's song switch and find the readers of the unmodelled fields."
+    },
+    {
+      "id": "modes.computer_lineups",
+      "scenario": "Choose who plays for a side no person holds as FUN_001dbe30 does when FUN_001dbb20 sets its team: Pick Up's first three, All-Stars' and Old School's draws kept apart from the other side; the League Challenge's first three; Be A Legend's boss crews, generic crews by the court's tier mix (the boss's three left out), street challenges by court, the career's availability (FUN_001e79a0), the level and style rules (FUN_001d7e40, FUN_001d8088), the woman and style filter, the spare list and a tournament's rounds from the bracket's one seed; drawn from the C library's generator after the session's reseed.",
+      "status": "matched",
+      "match_type": "exact",
+      "evidence_kind": "runtime",
+      "evidence": [
+        {
+          "path": "docs/FRONTEND_RECOVERY.md",
+          "locator": "Who plays for a side nobody holds (FUN_001dbe30, 2026-10-19)",
+          "note": "FUN_001dbe30/FUN_001dbb20/FUN_001e79a0/FUN_001d7e40/FUN_001d8088/FUN_001db438/FUN_001dac18/FUN_001e91a0/FUN_001e8790/FUN_001e86e0/FUN_001e9888 traced.",
+          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+        },
+        {
+          "path": "crates/street-game/src/lineup.rs",
+          "locator": "choose; tiers; street; Career::available; Card::level; Card::style; tests (the_originals_draws_from_two_save_states, the_discs_teams_through_the_chooser)",
+          "note": "The port and its tests, two of them the original's draws.",
+          "sha256": "304d32b529f7ffe14c796ead6ff28a705dd18d72ce7625ed85b660e06e8400a7"
+        },
+        {
+          "path": "crates/street-game/src/session.rs",
+          "locator": "Session::choose; Session::reseed",
+          "note": "Both generators seeded as the original seeds them, and back to the timer after a given seed.",
+          "sha256": "8dd8d3a9d2ddd4eb1d925679e7db2b186176159df36dda16bea942dec0201e01"
+        },
+        {
+          "path": "crates/street-game/src/story.rs",
+          "locator": "prepare; bracket_seed; GENERIC_TEAM",
+          "note": "A story game's opponents: team 0x24 or the boss team, the bracket's seed and round.",
+          "sha256": "0491011cee1bb9b80bd777c5917d044f163c0d156f31b73246da5d5cfc76b689"
+        },
+        {
+          "path": "crates/street-game/src/menu.rs",
+          "locator": "computer_three; team_set; start_event; begin_players",
+          "note": "Choose Team's commit for a side nobody holds; the story's reseed at the event's start.",
+          "sha256": "0764355f8560180b08e3d8874e1b6a986fab47c0966ba79656dc17486dc099e9"
+        },
+        {
+          "path": "$EVIDENCE/street-frontend-third/lineup_reads.json",
+          "locator": "state_4_pick_up; state_7_tournament",
+          "note": "PINE reads of the original: 214, 213, 229 and the C library's word 0xd4ad32fb at NYC Rec Center from save state 4; 133, 94, 190 at Soul in the Hole from save state 7 (bracket seed 666).",
+          "sha256": "d6bb72a3daaf3747fa3edd65f87cdfd0f1a7fb97d62fbed47b3b08c66ce7a252"
+        }
+      ],
+      "tolerance": "Exact records and generator state: the three and the C library's word after the draw.",
+      "limitations": "Runtime-checked on two draws (a pick-up's from the timer, the one count in the reads' window that gives both the three and the word, and a tournament's first crew from its bracket seed); All-Stars, Old School, the boss crews and the street challenges are checked by the tests only. The rewrite's tournament base is its own (the original's is the timer's count when the bracket is made), and the bracket screen names a generic crew by the rewrite's own draw. The street challenges now play team 0x24, as the original's do. 2026-10-20 (the card's messages): a decided bracket takes Cross only to leave (Update Team or the card's save), start_event unchanged. 2026-10-20 (the transitions' pass): a created baller who joined a league team is its sixth player (teams::apply_all, presentation.ui_join_team_screen). 2026-10-20 (the idle demo's pass): the idle demo's game sets both sides through it, each after its team's draw (FUN_001db7f8; presentation.ui_idle_attract). 2026-10-21 (item 7): a third draw reproduced: save state 3's second NYC Rec Center pick-up (story capture street-played-legend-1) drew 213, 208, 224 from the timer's 113,415 for the crew the career's list held then (245, 204, 227); its fourth man (198) had left the list after the first game, which the rewrite's crew keeps (a lead). The bracket's text list names a generic crew \"Team %1d\" as the bracket's page; the rewrite's own crew pick (story::crew_lineup) is gone. 2026-10-21 (item 8 pass): the fourth man was the person's recruit at Update Team, not dropped (modes.story_crew_after_a_game); both draws stand. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Read a street challenge's and All-Stars' draws through PINE, and the bracket screen's crew names."
+    },
+    {
+      "id": "modes.story_event_rules",
+      "scenario": "A Be A Legend event's game plays FUN_001e91a0's rules: the rules put back (FUN_001ded20: Normal, the shot clock's row 2, to 21, no spots), then a street challenge's row of 0x460970 by its event row's +0x1b; no boss brings rules of his own; the difficulty is the player's (the setup's options word). The League Challenge plays Play It's put-back rules (Normal to 21).",
+      "status": "matched",
+      "match_type": "exact",
+      "evidence_kind": "runtime",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Be A Legend's rules and the other games' computer (2026-10-21): Be A Legend's rules; The League Challenge's rules",
+          "note": "FUN_001e91a0, FUN_001ded20, 0x460970, FUN_002beef8, FUN_0026bdc8 traced.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "STREET_RULES; event_rules; Event::row; tests::an_events_rules_are_the_put_back_ones_or_its_street_row",
+          "note": "The port.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-sim/src/story_parity.rs",
+          "locator": "street_challenge_rules_are_0x460970_by_the_rows_byte",
+          "note": "The table and the rows read from the executable.",
+          "sha256": "0cf403599fc825fb5f777112a5907172bad6e0428e0e54a0536dc8ac5c4677b2"
+        },
+        {
+          "path": "crates/street-sim/src/rules.rs",
+          "locator": "Rules::from_setup; CLOCKS",
+          "note": "The setup's words as rules.",
+          "sha256": "1fb0f4b10786a129493891f9cc445f44559f37d625a392cc04590f494663ec93"
+        },
+        {
+          "path": "crates/street-game/src/story.rs",
+          "locator": "prepare; prepare_league; league_bosses_and_atlanta_use_their_disc_rosters_and_regional_courts",
+          "note": "Staging a story game and an League Challenge game.",
+          "sha256": "0491011cee1bb9b80bd777c5917d044f163c0d156f31b73246da5d5cfc76b689"
+        },
+        {
+          "path": "$EVIDENCE/street-legend-rules/story-capture/rules_reads.json",
+          "locator": "setup",
+          "note": "The original's setup in a story game (save state 3's NYC Rec Center pick-up): type 0, clock row 2, to 21, no spots, Got Game.",
+          "sha256": "b7058aa81597109b3b30d14bb65700f819e036ba323e5e8ccbbcd85577664e8f"
+        }
+      ],
+      "tolerance": "The setup's words exactly.",
+      "limitations": "Runtime-read for a pick-up only; the street challenges and tournaments rest on the trace and the disc test. Gamebreaker Wins' meter spots (My Rules) are not in the rules (modes.gamebreaker_wins_meter_spots). Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Read the setup in a street challenge's game (a career past Soul in the Hole)."
+    },
+    {
+      "id": "modes.gamebreaker_wins_meter_spots",
+      "scenario": "Gamebreaker Wins starts each side's meter from My Rules' spot (FUN_001457f8: setup +0xf8 to side 0's meter, +0xf4 to side 1's; 100 and over a pocketed Level 1, the rest times 500), the points and trick-point games' statistics reading the same words for their scores (FUN_00186b10: side 0 +0xf8) and Gamebreaker Wins none.",
+      "status": "matched",
+      "match_type": "exact",
+      "evidence_kind": "static",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Item 7's leftovers and the second audit's item 8 (2026-10-21): Gamebreaker Wins' meter spots",
+          "note": "FUN_001457f8, FUN_00186b10, FUN_001dbd80.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/rules.rs",
+          "locator": "Rules::from_setup; Rules::meter_spot; Rules::start_score; tests",
+          "note": "The spots by side.",
+          "sha256": "1fb0f4b10786a129493891f9cc445f44559f37d625a392cc04590f494663ec93"
+        },
+        {
+          "path": "crates/street-sim/src/lib.rs",
+          "locator": "World::new",
+          "note": "The meters at the start.",
+          "sha256": "03323812a4a749b42b8907ff8a484fda0b6912cac966a4e81a53aa91f114601b"
+        },
+        {
+          "path": "crates/street-game/src/myrules.rs",
+          "locator": "Edit::apply; Edit::from_rules; tests::the_rules_round_trip_through_the_records",
+          "note": "My Rules hands its turbo spot over.",
+          "sha256": "3ddb457ed707771e660c941c057db2be78124753f7ba52294d6cbb92eddb7b19"
+        }
+      ],
+      "tolerance": "The start meters and pockets exactly.",
+      "limitations": "Static: no capture of a Gamebreaker Wins game. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "A Gamebreaker Wins game from My Rules with a spot, captured."
+    },
+    {
+      "id": "modes.story_crew_after_a_game",
+      "scenario": "The career's crew list (game data +0x15ee) keeps its men across games, and a player taken at Update Team fills the next open slot (FUN_002d6fd0 -> FUN_001e7db8): three before the first game (the save states' backups), three at Update Team after it (states 10 and 3), and 198, one of that game's opponents, in slot 3 once the person took him (state 4, two minutes after state 3).",
+      "status": "matched",
+      "match_type": "exact",
+      "evidence_kind": "runtime",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Item 7's leftovers and the second audit's item 8 (2026-10-21): The crew's fourth man: no difference",
+          "note": "The save states in their order.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-sim/src/story.rs",
+          "locator": "Story::update_team; tests::update_team_follows_the_game",
+          "note": "The rewrite's list and Update Team.",
+          "sha256": "2ee00c92861dc2712f92507e7bd47fd67c7b57682413b2591413588cf85f8552"
+        },
+        {
+          "path": "crates/street-game/src/lineup.rs",
+          "locator": "tests::the_originals_draws_from_two_save_states",
+          "note": "The draws with four (state 4) and three (state 3).",
+          "sha256": "304d32b529f7ffe14c796ead6ff28a705dd18d72ce7625ed85b660e06e8400a7"
+        },
+        {
+          "path": "$EVIDENCE/street-item8/crew_reads.json",
+          "locator": "rows; setup_sides_state3",
+          "note": "The career blocks by file time and the first game's six.",
+          "sha256": "7407055b6d6e9ce2c15a5e6ffa02c9a205210669d9d42f94bb4e3990432acfa8"
+        }
+      ],
+      "tolerance": "The same list at every draw.",
+      "limitations": "Read from the save states and their backups; the recruit itself is the trace's. Item 7 had read state 4 as earlier than state 3 (corrected 2026-10-21). Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "None."
+    },
+    {
+      "id": "modes.story_person_side",
+      "scenario": "The game builds side g from the setup's slot g ^ 1 (FUN_00185138), so the team a mode puts in slot 0 plays side 1: Be A Legend's career (FUN_001e91a0) and the League Challenge's team (FUN_0026f958), their person on side 1; the attract's first team drawn; Choose Team's left team and the School's Lakers.",
+      "status": "matched",
+      "match_type": "exact",
+      "evidence_kind": "runtime",
+      "evidence": [
+        {
+          "path": "docs/TRACE.md",
+          "locator": "Item 7's leftovers and the second audit's item 8 (2026-10-21): The setup's slots and the game's sides",
+          "note": "FUN_00185138 and the modes' slot 0.",
+          "sha256": "e67e4ed3922bf8a03ea933550313d5cfe5032e16877ac741f136dd934956e610"
+        },
+        {
+          "path": "crates/street-game/src/story.rs",
+          "locator": "CAREER_SIDE; OPPONENT_SIDE; seat_crew; prepare; prepare_league; league_selected_user_eligible",
+          "note": "The story modes on side 1.",
+          "sha256": "0491011cee1bb9b80bd777c5917d044f163c0d156f31b73246da5d5cfc76b689"
+        },
+        {
+          "path": "crates/street-game/src/attract.rs",
+          "locator": "picks; tests::the_runtimes_first_demo_drew_court_0_and_teams_8_and_9",
+          "note": "The attract's first team on side 1.",
+          "sha256": "efcd5ddc8b70dd3c4d22d99c03691ea31e800a53966258b38ff140a784abfb3c"
+        },
+        {
+          "path": "crates/street-game/src/game.rs",
+          "locator": "the story outcome (mine)",
+          "note": "The outcome read on the person's side.",
+          "sha256": "d7079f3df63829b27a221643d93cd771ea33193e8b6c0cf4cc312e00432d651b"
+        },
+        {
+          "path": "$EVIDENCE/street-item8/sides_reads.json",
+          "locator": "rows",
+          "note": "Every save state in a match: slot 0's lineup on side 1 (Pick Up, the attract, the story game, the School).",
+          "sha256": "3aa48f87d264c6f985d51adc113e9e5812f90f1c16244f941eb8e1f21b6b26f8"
+        }
+      ],
+      "tolerance": "The same side.",
+      "limitations": "No save state of an League Challenge game; its slot 0 is the trace's (FUN_0026f958, FUN_001dbb20). Choose Players keeps the person's team on the left panel (slot 0). Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "A save state inside an League Challenge game."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "modes.event_field_rows",
+      "label": "Event court, tier, visibility/open gate and target words matched against original ELF",
+      "matched": 17,
+      "total": 17,
+      "unit": "event rows (five words each)",
+      "tolerance": "Exact u32 equality; signed targets normalized modulo 2^32.",
+      "evidence_path": "$EVIDENCE/street-parity-mode-event-table.json",
+      "limitations": "Fresh original-USA-ISO comparison of all17 rows and five fields each. Report records every original/production value,comparison procedure,and executable/source SHA-256. Event kind,per-game award,boss/format and runtime behavior excluded.",
+      "production_comparison": true,
+      "evidence_sha256": "8050337686e0556ce932b00739e3f5a8850f030b0a8871d8e22b0a1934f6bb17"
+    }
+  ]
+}

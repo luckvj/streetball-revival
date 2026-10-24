@@ -1,0 +1,15 @@
+[package]
+name = "street-export"
+description = "Exports the player's own disc's characters and art to open formats: catalog, glTF characters, animation libraries, front-end art"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+street-assets = { path = "../street-assets" }
+street-sim = { path = "../street-sim" }
+png = "0.18"
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[dev-dependencies]
+gltf = "1.4"

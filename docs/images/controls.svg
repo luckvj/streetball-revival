@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <title>Controls: PlayStation pad, Xbox pad and keyboard</title>
+  <rect width="760" height="330" rx="14" fill="#ffffff"/>
+  <text x="380" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#1b1f24">Controls</text>
+  <g font-size="14" fill="#1b1f24">
+    <text x="40" y="76" font-weight="700">Action</text>
+    <text x="300" y="76" font-weight="700">PlayStation</text>
+    <text x="460" y="76" font-weight="700">Xbox</text>
+    <text x="600" y="76" font-weight="700">Keyboard</text>
+    <line x1="40" y1="86" x2="720" y2="86" stroke="#d0d7de"/>
+
+    <text x="40" y="112">Move</text><text x="300" y="112">Left stick</text><text x="460" y="112">Left stick</text><text x="600" y="112">WASD / arrows</text>
+    <text x="40" y="140">Shoot (near the rim: dunk)</text><text x="300" y="140">Circle</text><text x="460" y="140">B</text><text x="600" y="140">J / Space</text>
+    <text x="40" y="168">Pass (defence: switch)</text><text x="300" y="168">Cross</text><text x="460" y="168">A</text><text x="600" y="168">K</text>
+    <text x="40" y="196">Trick move / steal</text><text x="300" y="196">Square</text><text x="460" y="196">X</text><text x="600" y="196">L</text>
+    <text x="40" y="224">Jump: block, rebound</text><text x="300" y="224">Triangle</text><text x="460" y="224">Y</text><text x="600" y="224">I</text>
+    <text x="40" y="252">Turbo (hold 1 to 4)</text><text x="300" y="252">L1 R1 L2 R2</text><text x="460" y="252">LB RB LT RT</text><text x="600" y="252">Q Shift R E</text>
+    <text x="40" y="280">Pocket / cancel a gamebreaker</text><text x="300" y="280">Select</text><text x="460" y="280">View</text><text x="600" y="280">P</text>
+  </g>
+  <text x="380" y="314" text-anchor="middle" font-size="13" fill="#424a53">More turbo buttons held means a fancier trick. Online: Options, Adjust Screen (PC Settings).</text>
+</svg>
