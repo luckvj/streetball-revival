@@ -2878,7 +2878,7 @@ impl World {
     /// with the toss in the top fifth of its rise his side's timing is
     /// 1..20 by how near the apex ([`toss::TIMING_SHARE`]). Once the toss
     /// comes down (ball+0x44 below 0) the first jumper over it (|x| under
-    /// 5 after rounding) decides the contest: a side without a timing
+    /// 5 after truncating) decides the contest: a side without a timing
     /// takes `r % 20 + 1` with nobody playing it, else 1, and the winner
     /// is the side with the larger `height + Rebounds × timing`, a tie
     /// going to team 0. The original reads both scores from actor 0's
@@ -2917,11 +2917,13 @@ impl World {
             let apex = y + vy * t - g * 0.5 * t * t;
             let low = apex * toss::TIMING_SHARE;
             if low <= y {
-                let k = ((y - low) / (apex - low) * 20.0).round() as i32 + 1;
+                // `cvt.w.s`, which truncates (`0x15ebc4`).
+                let k = ((y - low) / (apex - low) * 20.0) as i32 + 1;
                 self.tip.timing[team] = k.clamp(1, 20);
             }
         }
-        if vy < 0.0 && self.players[i].position[0].round().abs() < 5.0 && !self.tip.jumped[team] {
+        // |`cvt.w.s(x)`| under 5 (`0x15ec68`): the truncation keeps |x| < 5.
+        if vy < 0.0 && (self.players[i].position[0] as i32).abs() < 5 && !self.tip.jumped[team] {
             if self.tip.winner < 0 {
                 let first = (0..self.players.len()).find(|&j| self.players[j].team.min(1) == 0);
                 let (height, rebounds) = first.map_or((0, 0), |j| {

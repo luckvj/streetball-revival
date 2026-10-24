@@ -1267,7 +1267,8 @@ fn run_scripts(
 
 /// Where a sound is, as the game measures it from the camera (`0x19ebe0`):
 /// an angle (0..0xffff, 0 ahead, growing to the left) and a distance
-/// (0..1000).
+/// (0..1000), the degrees and the squared distance each by `cvt.w.s`,
+/// which truncates on the EE.
 pub(crate) fn place(camera: &GlobalTransform, at: Vec3) -> (i32, i32) {
     let local = camera.affine().inverse().transform_point3(at);
     let (x, z) = (local.x, -local.z / 4.0);
@@ -1275,15 +1276,14 @@ pub(crate) fn place(camera: &GlobalTransform, at: Vec3) -> (i32, i32) {
         90f32.copysign(-x)
     } else {
         (-x / z).atan().to_degrees()
-    }
-    .round() as i32;
+    } as i32;
     if z < 0.0 {
         deg += 180;
     } else if x > 0.0 {
         deg += 360;
     }
     let angle = (deg * 0xffff / 360) % 0xffff;
-    let dist = ((x * x + z * z).round() as i32).saturating_mul(4).min(1000);
+    let dist = ((x * x + z * z) as i32).saturating_mul(4).min(1000);
     (angle.max(0), dist.max(0))
 }
 
