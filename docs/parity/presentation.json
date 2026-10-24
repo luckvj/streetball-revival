@@ -516,10 +516,16 @@
           "locator": "build / draw",
           "note": "Frontend and HUD overlays drawn at authentic layout coordinates using disc sprite atlases. Re-pinned 2026-10-15 after the pre-match screens pass: extended (PrematchArt, class 105 binding, the legends arm for screens 11 and 26); the cited functions unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
           "sha256": "d87706da1ca0331d0b1faa4c55d1dd72a83ac42f5da84b81a443c2f06f1934eb"
+        },
+        {
+          "path": "crates/street-render/src/screen_copy.wgsl",
+          "locator": "fragment, DIMX",
+          "note": "The shown buffer as the GS writes it: the copy's blend, the game's dither matrix DIMX 0x2637405137265140 with DTHE and COLCLAMP, the 16-bit store. Read from the GS dumps' state and the copy strips; the grabs carry the matrix's 4-pixel mark (docs/TRACE.md, The shown buffer: 16-bit and dithered).",
+          "sha256": "16f118eeaa265608a8d392187089d8d7e0c3ec3284e346579932e90a20e16724"
         }
       ],
       "tolerance": "Complete structural correspondence across all five presentation stages: court translucent geometry, skinned player meshes, projected shadows, native camera projection, and frontend layout overlays.",
-      "limitations": "Audit 2026-10-14 (F01,F23): No paired complete original/rewrite framebuffer comparison exists. Prior bounded evidence/limitations: Structural parity of all visual pipeline stages; modern floating-point Bevy/WGPU rasterizer replaces PS2 GS 4MB eDRAM fixed-point 12.4 hardware rasterizer. Re-pinned 2026-10-15: look::build now draws the Screen pages' rows on their nodes, kind-34 legends and the kind-5 help line (the front-end merge); no framebuffer comparison was added. Re-pinned 2026-10-18 after the front end pass: look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; look.rs's build draws every title through look::title (the title widget's two outlines, FUN_0020f7d0) and leaves Choose Baller, the intros and the map (Style::Screen 54, 49..51, 56) to draw their own pieces. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Audit 2026-10-14 (F01,F23): No paired complete original/rewrite framebuffer comparison exists. Prior bounded evidence/limitations: Structural parity of all visual pipeline stages; modern floating-point Bevy/WGPU rasterizer replaces PS2 GS 4MB eDRAM fixed-point 12.4 hardware rasterizer. Re-pinned 2026-10-15: look::build now draws the Screen pages' rows on their nodes, kind-34 legends and the kind-5 help line (the front-end merge); no framebuffer comparison was added. Re-pinned 2026-10-18 after the front end pass: look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; look.rs's build draws every title through look::title (the title widget's two outlines, FUN_0020f7d0) and leaves Choose Baller, the intros and the map (Style::Screen 54, 49..51, 56) to draw their own pieces. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line). 2026-10-24: the final 16-bit dithered store into the shown buffer is drawn on every screen; the frame before it is still not compared pixel for pixel.",
       "next_probe": "Resolve F01,F23 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Acquire synchronized original and rewrite frames with identical camera/state/viewport for color/depth comparison.",
       "audit_review": {
         "date": "2026-10-14",
@@ -6908,8 +6914,8 @@
         }
       ],
       "tolerance": "The passes' blends, colours, alphas, fades and orders as the original's GS registers and code give them; frames compared by eye against the original's grabs of the same plan at its School region.",
-      "limitations": "Compared on one plan (GamLR1) frame by frame; the fifteen others carry the same two effect records and run the same code. The display's 16-bit shown buffer and its dither are not drawn, the usual copy (0x7f, 0x7f) is shown as the frame drawn, and online matches don't hold the game for the burst. The Level 1 tint and the basket flash follow the code, not a grab. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "A Level 1 gamebreaker and a game-winning basket grabbed side by side; the shown buffer's 16-bit dither."
+      "limitations": "Compared on one plan (GamLR1) frame by frame; the fifteen others carry the same two effect records and run the same code. The usual copy (0x7f, 0x7f), the 16-bit shown buffer and its dither are drawn since 2026-10-24 (docs/TRACE.md, The shown buffer: 16-bit and dithered). Online matches hold the 31 updates after the press for the burst too (street_net::game::LEVEL2_BURST_HOLD, tested against the banner's own wipe in a_staged_level_2_waits_for_the_bursts_first_wedge_to_go). The Level 1 tint and the basket flash follow the code, not a grab. Last re-pinned 2026-10-24 after the public-beta rename (names moved to LEGAL.md, neutral save tags), no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "A Level 1 gamebreaker and a game-winning basket grabbed side by side."
     }
   ],
   "measurements": [

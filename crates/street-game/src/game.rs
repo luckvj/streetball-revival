@@ -382,10 +382,8 @@ impl Plugin for GamePlugin {
                     .run_if(in_state(Screen::Playing))
                     .run_if(|p: Res<Paused>| !p.on),
             )
-            .add_systems(
-                Update,
-                crate::screen_fx::show.run_if(in_state(Screen::Playing)),
-            )
+            // The copy into the shown buffer on every screen's last camera.
+            .add_systems(Update, crate::screen_fx::show)
             // The crowd runs every tick of a match on screen (its intro and
             // replays too), held only by the pause menu (`FUN_0030c9e0`
             // skips it while `DAT_00405388` is set).

@@ -12879,3 +12879,47 @@ defence's meter stood under 29,000 and 4 in the 18 over it (meters[k]
 .value), which nothing read here explains: the meter's only read in the
 dealing is the full test.
 
+
+### The shown buffer: 16-bit and dithered (2026-10-24)
+
+The display reads a 16-bit buffer. In every GS dump taken (`claude-l2look`'s
+seven, `live.gs`, `slot1.gs`), the privileged registers hold PMODE `0xff21`
+(circuit 1 only), DISPFB1 at block 0 with PSM `0xa` (PSMCT16S), 640 wide,
+and SMODE2 1 (interlaced). The game draws its frame into a 32-bit buffer at
+`0x8c000`. The frame's last draws are forty 32-pixel sprite strips from that
+buffer into the 16-bit one: PRIM `0x15e`, TEX0 `0x2680288c0`, ALPHA
+`0x44` with the vertex alpha, and TEST `0x30002`. Their alpha and colour
+are 0x7f normally, and 0x30 and 0xa0 under the gamebreaker's blur. Every
+strip is written with DTHE 1. The state's DIMX, the field after FOGCOL in
+the dump's GS state (version 9: PRIM, PRMODECONT, TEXCLUT, SCANMSK, TEXA,
+FOGCOL, DIMX, DTHE, COLCLAMP, ...), is `0x2637405137265140`: rows
+y & 3 of (0, -4, 1, -3), (-2, 2, -1, 3), (1, -3, 0, -4) and (-1, 3, -2, 2).
+Sony's library default differs. COLCLAMP is 1. No other draw writes the
+16-bit buffer, so the HUD and the front end go through the copy too.
+
+So each pixel shown is the blend `(Cs - Cd) * As >> 7 + Cd`, plus the
+matrix's step for its x & 3 and y & 3, clamped to 0..255. The store keeps
+each channel's top five bits, and the display reads them back with the
+low three clear (the GS's 16-bit expansion, as PCSX2's software renderer
+does it). The original's PCSX2 grabs carry the matrix's mark: differences
+between pixels 4 and 8 apart dip below those 3 and 5 apart, on every grab
+checked. The rewrite's grabs rose with the distance until now.
+
+Built (`street_render::screen_fx`, `screen_copy.wgsl`). The copy is now the
+original's (0x7f, 0x7f) rather than the frame as drawn. It runs on the
+camera drawn last to the window on every screen, the front end's 2D
+cameras included (`street_game::screen_fx::show`): only one camera, or the
+dither would go over the picture twice. The dither falls on output pixels,
+exact at 640 wide; at larger windows that is PCSX2's default "unscaled"
+dithering. On average the picture is about 4 levels darker, as the
+original's is: the matrix averages -0.5 and the store drops 3.5. The
+original's grabs cannot confirm that by brightness, because the rewrite's
+grabs from 2026-10-19 of the same screens differ by more (8 to 10
+levels). PCSX2 filters its window bilinearly and its grabs scale 448
+lines to 480, which together soften the matrix's mark in them.
+
+**Not settled here:** the display's handling of the interlaced fields
+(the CRTC reads the 448 lines a field at a time), and whether the 5-bit to
+8-bit read-back replicates the top bits instead of clearing them: the
+grabs' share of channels ending in three zero bits (0.32) lies between
+the two models once their scaling is simulated.
