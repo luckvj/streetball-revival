@@ -1,0 +1,147 @@
+usage: street-game [--iso <path>] [--court <ID>] [--teams <home>,<away>] [--seed <n>]
+                   [--demo] [--speed <x>] [--screenshot <out.png> [--at <secs>]]
+                   [--quick] [--keys <secs:key,...>]
+
+  --iso         the original game (USA) disc image. Default: $STREET_ISO, or
+                "the original game (USA).iso" in this folder or a parent.
+  --save        the game data's file on the PC: written where the original
+                saves to its memory card, with "saving to PC" messages.
+                Default Documents\Streetball Revival\street_save.dat
+                (a save beside the disc comes along the first time).
+  --import-save import an original US PS2 .max or extracted game-data
+                file, or an original game GameCube .gci. Use --save to
+                choose a new destination. Existing saves are protected;
+                original bytes are preserved alongside the import.
+  --convert-save write that import and exit without opening the game.
+  --menu        start at the title screen even with match options given.
+  --quick       start a match straight away with the options given (or the
+                defaults) instead of the menus. Any option that picks a
+                match does this too.
+  --no-intro    skip the boot movies (logos, notice, intro) and the matches'
+                staged intros. --intro plays them even in --keys and
+                --screenshot runs, which skip them.
+  --original-load-times  hold the loading screens and the save's waits as
+                long as the original's (13.6 s boot screen, 3.3 s back to
+                the menus, 2 to 4.4 s saves); by default they are quick.
+  --court       court archive ID, e.g. RUCKER, PHILLY, NYCAGE. Default RUCKER.
+  --teams       the home team (yours, in its home uniform) and the visitors, by nickname,
+                city or full name, e.g. Lakers,76ers (the default), Kings,Spurs.
+                The first three on each roster play.
+  --seed        seed for the game's dice (shots, steals, blocks, the catch-up stages):
+                one stream for the whole run from this seed. Without it the dice are
+                seeded from the clock, as the original's are, except in scripted runs
+                (--keys, --screenshot, --events), which use 2002.
+  --mode        a My Rules game mode: normal, trick (Trick Point Challenge),
+                dunks (Dunks Only), no (No Gamebreakers), league (League Scoring),
+                old (Old School Scoring), gamebreaker (Gamebreaker Wins),
+                back (Back To Basics). Default normal.
+  --play-to     points to win (trick points in a Trick Point Challenge, the
+                gamebreaker level in Gamebreaker Wins). Default 21.
+  --shot-clock  off, 12, 24 or 48 seconds. Default 24.
+  --difficulty  easy, medium or hard. Default: the saved option (Got Game,
+                easy, on a fresh save, as the original).
+  --unlimited-turbo  the cheat.
+  --full-meters  the home team starts with a Level 2 gamebreaker ready (for
+                testing the staged gamebreakers).
+  --level2-at   x,z in court units: the School's game (its court, the Nets
+                and the Lakers); the Lakers' meter fills to a Level 2 and
+                their holder fires it from there once he has the ball (the
+                original's School targets, e.g. -18,22, pick its plans).
+  --play-by-play  the rewrite's own line naming the latest play across the
+                top of the match (off: the original has no such line).
+  --demo        the computer plays your team too.
+  --speed       run the game this many times faster (e.g. 8 to watch a demo game).
+  --widescreen  off, on or wide: the picture for this run, over the saved
+                Widescreen option. off is the 4:3 picture in the middle of
+                the window (the default); on is the PS2's anamorphic 16:9,
+                the same width of court with less height; wide keeps the 4:3
+                height and adds the sides. Nothing is saved.
+  --screenshot  save one frame to this PNG and exit.
+  --at          when to take the screenshot, in game seconds. Default 10.
+  --every, --count  a series instead: --count frames --every seconds
+                apart from --at, saved as <name>-000.png, <name>-001.png, ...
+                A --keys run counts its keys and --at on a clock that stops
+                while the front end plays a screen's transition (its movie,
+                and the screens leaving and arriving), so a script reaches
+                the same pages; --at-real takes the screenshot by the real
+                clock instead, to catch a transition (in a match, through
+                its replays, which stop the match's clock); --at-transition N
+                counts --at from the start of the run's Nth transition.
+  --demo-delay  seconds the title and Main stand untouched before the demo
+                (the disc's demo_delay, 120, by default).
+  --events      write the match's events, ball states and action starts to
+                this file as they happen, each with the update it happened
+                in (update / 60 is --at's game time), to time a screenshot.
+  --keys        replay key presses, to walk the menus without a person: a
+                comma-separated list of seconds:key, e.g. 1:enter,1.5:down.
+                Keys: up down left right enter esc space shift, or a letter.
+                seconds:key*hold holds it that many seconds, e.g. 52:k*0.2.
+  --keys-real   the --keys times are real seconds from the start, so a
+                press can land while a transition's movie plays.
+
+player editor (docs/PLAYER_EDITOR.md):
+  --roster-db   a roster mod's tables (xdbplyr.adf, xdbteam.adf) in place of
+                the disc's, e.g. the Legendary Edition's folder (its ISO
+                Files/database is found). Default: $STREET_ROSTER_DB.
+  --roster      the MyBaller builder's roster.json on top: edits, replaced
+                and added players (also on the "Custom Roster" team),
+                models and animation sources. Default: $STREET_ROSTER.
+  --hires       a Dolphin HD texture pack (Textures/GNZE69) for the GameCube Vol. 2.
+  --v3, --v1    Street V3 / the original game GameCube discs (.rvz, .ciso, .iso):
+                roster.json players whose model (or character) is v3gc:<key>
+                or v1gc:<key> are drawn as that character. Default:
+                $STREET_V3_GC, $STREET_V1_GC. Without one they keep a Vol. 2
+                stand-in.
+
+online (Options -> Adjust Screen -> Online does the same):
+  --host        host a match here (UDP port 7375) and play in it; the match
+                is the one --teams, --court and the rest pick.
+  --port        the port to host on.
+  --join        join the match on this server (host[:port]).
+  --create      as --join, creating the match there (from this game's
+                options) if it has none by that name.
+  --match       the match's name on the server. Default street.
+  --name        your name in the lobby.
+  --side        home, away or any (the host defaults to home).
+  --ready       ready as soon as someone is there to play.
+  --bot         the computer plays your seats (for testing).
+  --players     2 (one on one) or 6 (three a side, the default): the people a
+                hosted match seats; the computer plays the empty seats.
+
+Three on three, full court, to 21, win by 2. Inside the arc is 1 point,
+beyond it 2. You attack the basket on the left of the screen.
+
+controls (PS2 / Xbox / keyboard):
+  move          left stick / left stick / WASD or arrows
+  turbos        L1 R1 L2 R2 / LB RB LT RT / Shift Q E R (four separate
+                buttons: moves care how many are held)
+  shoot         Circle / B / J or Space   (with turbo near the basket: dunk)
+  pass          Cross / A / K             (on defence: switch player)
+  steal         Square / X / L without the ball
+  block, rebound Triangle / Y / I
+  trick move    Square / X / L with the ball (more turbos, bigger tricks)
+  gamebreaker   two turbos + shoot with a full meter
+  pocket / cancel  Select / Back / P  (with one turbo: cancel)
+  cheat entry   on Enter Names, hold L1 / LB / Q and press the code's
+                four face buttons (Circle J, Square L, Triangle I, Cross K).
+  strategy (pick or oop)  R3 / right stick click / O, with the ball
+  quit          Esc
+
+up to four people play: Pick Up Game -> Choose Sides, where each controller
+(the keyboard or a pad) moves itself to Away or Home with left and right.
+
+controllers: Xbox and PlayStation pads (and any pad SDL's controller
+database knows) work as soon as they are plugged in, in the menus (stick or
+D-pad) and in a match. Unplug one mid-match and its player waits, paused,
+for it or any other pad. Names are typed on an on-screen keyboard. The
+prompts and the Controls page name the buttons of whatever you touched
+last. Vibration, full screen and the Wide picture are in Options ->
+Adjust Screen (the rewrite's PC Settings).
+
+more moves: tap shoot to pump fake; shoot moving away from the basket to
+fade away; shoot again during a dunk to lay it up; R3 with the ball calls
+a pick near the arc or an alley-oop elsewhere; two turbos + pass
+standing by a defender bounces it off his head, or driving at the glass off
+the backboard; right stick + pass is a give 'n go (pass again to get it
+back); L3 + pass kicks it; two turbos + steal counters a trick; two turbos +
+block is a turbo block; double tap turbo dives for a loose ball.

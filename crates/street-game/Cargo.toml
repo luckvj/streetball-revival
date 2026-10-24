@@ -1,0 +1,22 @@
+[package]
+name = "street-game"
+description = "Streetball Revival's game: the street-sim game rendered with street-render"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+street-assets = { path = "../street-assets" }
+street-audio = { path = "../street-audio" }
+street-render = { path = "../street-render" }
+street-net = { path = "../street-net" }
+street-sim = { path = "../street-sim" }
+street-video = { path = "../street-video" }
+bevy = "0.20.0"
+igd-next = { version = "0.18.0", default-features = false, features = ["io_sync"] }
+
+[dev-dependencies]
+serde_json = "1"
+# Tests that run without a disc play the rules' stand-ins.
+street-net = { path = "../street-net", features = ["stand-ins"] }
+street-sim = { path = "../street-sim", features = ["stand-ins"] }

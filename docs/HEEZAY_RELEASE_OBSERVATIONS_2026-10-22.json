@@ -1,0 +1,158 @@
+{
+  "date": "2026-10-22",
+  "serial": "SLUS-20651",
+  "scope": "Four normal-input Street School lesson18 attempts: head-pass row wait and release observations; two lesson successes and two failures retained.",
+  "producer": "pine_played_capture schema3, task private-desktop driver",
+  "producer_sha256": "e347ed02d262833d572c259f9784acc30f7d0e3be7251681b9bdc03581e8b785",
+  "native_sources": [
+    "0x146ab8..0x146ac4 kind2",
+    "0x160610..0x160680 route distance; minimum25 applies only to abs(kind)==1",
+    "0x174698..0x174b7c callback53",
+    "0x13bf60..0x13bfc8 reads ball+0xf4; no holder when0"
+  ],
+  "cases": [
+    {
+      "capture": "case01.jsonl",
+      "sha256": "af0e32abce4b651bb5d90c2cfc90281f9bc2efdd8c3ccaa388689fb471f47d60",
+      "samples": 477,
+      "torn_samples": 0,
+      "special_samples": 51,
+      "special_unique_frames": 30,
+      "first_observed_special_frame": 28571,
+      "passer_slot": 3,
+      "defender_slot": 0,
+      "native_press_word": 256,
+      "initial_script_pc": 4546154,
+      "first_release_frame": 28591,
+      "observed_delay_updates": 20,
+      "release_flight_updates": 21,
+      "release_timer": 9,
+      "lesson_result": 0
+    },
+    {
+      "capture": "case02.jsonl",
+      "sha256": "9dbf837f2fd44345816f7cb4d1fed61654bd38f5e2bdf380d9479acd8ddb4576",
+      "samples": 474,
+      "torn_samples": 0,
+      "special_samples": 65,
+      "special_unique_frames": 40,
+      "first_observed_special_frame": 28949,
+      "passer_slot": 4,
+      "defender_slot": 1,
+      "native_press_word": 256,
+      "initial_script_pc": 4546154,
+      "first_release_frame": 28969,
+      "observed_delay_updates": 20,
+      "release_flight_updates": 21,
+      "release_timer": 8,
+      "lesson_result": 1
+    },
+    {
+      "capture": "case03.jsonl",
+      "sha256": "ebaa215255ed032e14c9ec71e6f1c2be292106d7c642a3e1c301950e7c264476",
+      "samples": 468,
+      "torn_samples": 0,
+      "special_samples": 45,
+      "special_unique_frames": 29,
+      "first_observed_special_frame": 29350,
+      "passer_slot": 3,
+      "defender_slot": 0,
+      "native_press_word": 256,
+      "initial_script_pc": 4546154,
+      "first_release_frame": 29370,
+      "observed_delay_updates": 20,
+      "release_flight_updates": 21,
+      "release_timer": 8,
+      "lesson_result": 0
+    },
+    {
+      "capture": "case04.jsonl",
+      "sha256": "cc9a401c959cad09a65014746d75f65a8796377e4bdbb8eb23dc909eea354ca1",
+      "samples": 416,
+      "torn_samples": 0,
+      "special_samples": 58,
+      "special_unique_frames": 35,
+      "first_observed_special_frame": 29678,
+      "passer_slot": 4,
+      "defender_slot": 1,
+      "native_press_word": 256,
+      "initial_script_pc": 4546654,
+      "first_release_frame": 29691,
+      "observed_delay_updates": 13,
+      "release_flight_updates": 21,
+      "release_timer": 9,
+      "lesson_result": 1
+    }
+  ],
+  "limitations": [
+    "Live reads have frame bookends but are not paused or atomic; repeated samples and within-frame field changes are retained.",
+    "Observed delays start at the first sampled kind2 state. The close-row attempt shows13 updates; the static release table says14. This one-update discrepancy is not closed.",
+    "The three overshoulder attempts show20 updates from the first observed kind2 state to release.",
+    "The native release field is21 updates, with an8/9-update first-leg timer. The rewrite retains its own head-flight geometry, timers, probability and reaction.",
+    "School disables the defensive AI counter check. These captures do not prove counter decision parity, return-flight holder semantics or complete passout collision parity.",
+    "No original save or game memory was modified. Captures and screenshots are retained outside Git.",
+    "The three retained attract captures hold231 non-torn self-pass windup samples with the passer in ball+0xf4 and929 released samples with0. This corrects the earlier interpretation of the first capture's73 samples: they are windup samples, not released flights. Unpaused bookends do not establish atomic actor-phase alignment."
+  ],
+  "self_pass_holder_domains": [
+    {
+      "capture": "street-native-ai-attract-1.jsonl",
+      "sha256": "0127991115cbb7a9a8b6ea885cfff77a49364560fc16d169ce3eb81a2ecaa967",
+      "counts": {
+        "windup_holder_passer": 73,
+        "released_holder_zero": 227
+      }
+    },
+    {
+      "capture": "street-native-ai-attract-2.jsonl",
+      "sha256": "2c1db32a74ef460e939f362a0e4c8dbedf04bfb02654ea422d4b6a792381748e",
+      "counts": {
+        "windup_holder_passer": 47,
+        "released_holder_zero": 216
+      }
+    },
+    {
+      "capture": "street-native-ai-attract-3.jsonl",
+      "sha256": "1dfa622bb2999eabc4c4cdfa1932fcbbc2c1506aae473a8671b263ac1b031945",
+      "counts": {
+        "windup_holder_passer": 111,
+        "released_holder_zero": 486
+      }
+    }
+  ],
+  "production_checkpoint": "935bd9210462b253f70aad4e4560674aff65cb2c",
+  "production_scope": "Self head passes now select the native passout rows and wait for callback53; head flight remains approximate. Snapshot72/protocol22 carry the defender through the wait.",
+  "counter_followup": {
+    "production_commit": "935bd9210462b253f70aad4e4560674aff65cb2c",
+    "initial_release_only_commit": "df95911",
+    "initial_first_capture_counter_mean": 23.8125,
+    "initial_first_capture_native": 17,
+    "unchanged_first_capture_absolute_bound": 6.5,
+    "final": [
+      {
+        "capture": 1,
+        "mean": 22.6875,
+        "native": 17.0,
+        "sd": 3.5537538838060616,
+        "se": 0.8884384709515154,
+        "seed_bases": 16
+      },
+      {
+        "capture": 2,
+        "mean": 6.3125,
+        "native": 3.0,
+        "sd": 2.651257563245538,
+        "se": 0.6628143908113845,
+        "seed_bases": 16
+      },
+      {
+        "capture": 3,
+        "mean": 15.875,
+        "native": 15.0,
+        "sd": 4.645786621588784,
+        "se": 1.161446655397196,
+        "seed_bases": 16
+      }
+    ],
+    "scope": "All three aggregates pass their existing bounds; excess counter counts and full AI/RNG parity remain unresolved."
+  }
+}

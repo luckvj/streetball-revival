@@ -1,0 +1,25 @@
+[package]
+name = "street-net"
+description = "Online play for Streetball Revival: the wire protocol, rollback sessions, and the match server"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+if-addrs = "0.15.0"
+# The disc digest the machines in a match compare (`disc`).
+sha2 = "0.10"
+# Socket buffers big enough for a match setup's burst of parts.
+socket2 = "0.6"
+street-assets = { path = "../street-assets" }
+street-sim = { path = "../street-sim" }
+
+[features]
+# A machine with no disc that plays the rules' stand-ins (`Disc::stand_ins`),
+# for other crates' tests; never in a real build.
+stand-ins = ["street-sim/stand-ins"]
+
+[dev-dependencies]
+# The integration tests' machines play the rules' stand-ins.
+street-net = { path = ".", features = ["stand-ins"] }
+street-sim = { path = "../street-sim", features = ["stand-ins"] }

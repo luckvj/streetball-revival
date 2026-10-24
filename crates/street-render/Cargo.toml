@@ -1,0 +1,10 @@
+[package]
+name = "street-render"
+description = "Bevy rendering of the courts and players read from the player's disc"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+street-assets = { path = "../street-assets" }
+bevy = "0.20.0"

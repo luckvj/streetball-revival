@@ -1,0 +1,1737 @@
+{
+  "schema": 1,
+  "date": "2026-10-22",
+  "production_commit": "1351b19543b47d1f872b87026fbafdcb18f1189f",
+  "scope": "Sampled original Level2 components, not full sequence equivalence.",
+  "limits": [
+    "All16 plans have source-identified clock and scale observations; motion has9 plans and reference placement15.",
+    "Bookends are unpaused observations, not proof of atomicity or interior ABA absence.",
+    "Stateful phase, configured rate and counters are the passing model; the legacy stateless phase is retained separately.",
+    "Reference placements use native role bindings and shooting side; animated physical roots are another basis.",
+    "Native launches and noncorresponding physical/reference heights remain outside the reference component.",
+    "Ball, hands, full poses, role selection, every tick, freeze/release/score correspondence and played cameras remain unproven.",
+    "Initial reports with three stateful clock mismatches, five producer-input timing mismatches and the physical/reference basis mistake remain retained."
+  ],
+  "components": {
+    "clock": {
+      "admitted": 767,
+      "excluded": 11059,
+      "observed_plans": {
+        "GamLR1": 104,
+        "GamLR2": 44,
+        "GamLR3": 99,
+        "GamLR4": 64,
+        "GamSR1": 14,
+        "GamSR2": 69,
+        "GamSR3": 26,
+        "GamSR4": 23,
+        "GamDN1b": 13,
+        "GamDN2a": 56,
+        "GamDN3b": 63,
+        "GamDN4b": 74,
+        "GamDN1a": 35,
+        "GamDN2b": 52,
+        "GamDN3a": 14,
+        "GamDN4a": 17
+      },
+      "exclusion_counts": {
+        "unstable_or_nonmatching_manager_guard": 2832,
+        "vm_pc_outside_matching_staged_body": 39,
+        "outside_forward_staged_state3": 8076,
+        "unstable_proxy_or_identity_guard": 5,
+        "previous_pose_blend_outside_clock_comparison": 28,
+        "physical_actor_channel_identity_mismatch": 2,
+        "unprocessed_or_nonmatching_proxy_tick": 51,
+        "proxy_record_duration_differs_from_source": 6,
+        "source_proxy_channel_row_mismatch": 20
+      },
+      "statuses": {
+        "compared_exact": 16
+      },
+      "totals": {
+        "observations": 767,
+        "stateful_exact_frames": 767,
+        "stateful_exact_steps": 767,
+        "stateful_exact_counters": 767,
+        "legacy_stateless_exact_frames": 479,
+        "legacy_stateless_exact_steps": 709,
+        "legacy_stateless_max_frame_ulps": 1102315520,
+        "legacy_stateless_max_step_ulps": 36762644
+      }
+    },
+    "height": {
+      "admitted": 767,
+      "excluded": 11059,
+      "observed_plans": {
+        "GamLR1": 104,
+        "GamLR2": 44,
+        "GamLR3": 99,
+        "GamLR4": 64,
+        "GamSR1": 14,
+        "GamSR2": 69,
+        "GamSR3": 26,
+        "GamSR4": 23,
+        "GamDN1b": 13,
+        "GamDN2a": 56,
+        "GamDN3b": 63,
+        "GamDN4b": 74,
+        "GamDN1a": 35,
+        "GamDN2b": 52,
+        "GamDN3a": 14,
+        "GamDN4a": 17
+      },
+      "exclusion_counts": {
+        "unstable_or_nonmatching_manager_guard": 2832,
+        "vm_pc_outside_matching_staged_body": 39,
+        "outside_forward_staged_state3": 8076,
+        "unstable_proxy_or_identity_guard": 5,
+        "previous_pose_blend_outside_clock_comparison": 28,
+        "physical_actor_channel_identity_mismatch": 2,
+        "unprocessed_or_nonmatching_proxy_tick": 51,
+        "proxy_record_duration_differs_from_source": 6,
+        "source_proxy_channel_row_mismatch": 20
+      },
+      "statuses": {
+        "compared_exact": 16
+      },
+      "totals": {
+        "observations": 767,
+        "exact_scales": 767,
+        "nearest_baseline_exact_scales": 0
+      }
+    },
+    "motion": {
+      "admitted": 58,
+      "excluded": 11768,
+      "observed_plans": {
+        "GamLR3": 15,
+        "GamSR2": 8,
+        "GamSR3": 7,
+        "GamDN2a": 2,
+        "GamDN3b": 2,
+        "GamDN4b": 1,
+        "GamDN1a": 9,
+        "GamDN2b": 13,
+        "GamDN4a": 1
+      },
+      "exclusion_counts": {
+        "finite_actor_has_no_loop_motion_writer": 523,
+        "unmatched_row_preserves_prior_rate": 173,
+        "unstable_or_nonmatching_manager_guard": 2832,
+        "vm_pc_outside_matching_staged_body": 39,
+        "outside_forward_staged_state3": 8076,
+        "unstable_proxy_or_identity_guard": 5,
+        "previous_pose_blend_outside_clock_comparison": 28,
+        "manager_height_nonzero_before_actor_clamp": 13,
+        "physical_actor_channel_identity_mismatch": 2,
+        "unprocessed_or_nonmatching_proxy_tick": 51,
+        "proxy_record_duration_differs_from_source": 6,
+        "source_proxy_channel_row_mismatch": 20
+      },
+      "statuses": {
+        "no_admissible_producer_observations": 7,
+        "compared_exact": 9
+      },
+      "totals": {
+        "observations": 58,
+        "exact_steps": 58,
+        "candidate_exact_steps": 58,
+        "manager_blend_blocked": 0
+      }
+    },
+    "paths": {
+      "admitted": 250,
+      "excluded": 13766,
+      "observed_plans": {
+        "GamLR1": 31,
+        "GamLR2": 9,
+        "GamLR3": 6,
+        "GamLR4": 9,
+        "GamSR1": 16,
+        "GamSR2": 23,
+        "GamSR4": 11,
+        "GamDN1a": 35,
+        "GamDN3a": 15,
+        "GamSR3": 9,
+        "GamDN2a": 37,
+        "GamDN2b": 17,
+        "GamDN4b": 17,
+        "GamDN4a": 3,
+        "GamDN1b": 12
+      },
+      "exclusion_counts": {
+        "unstable_or_nonmatching_manager_guard": 4068,
+        "outside_forward_staged_state3": 9558,
+        "native_actor_launch_outside_reference_placement": 5,
+        "previous_pose_blend_outside_clock_comparison": 18,
+        "native_reference_and_physical_height_do_not_correspond": 43,
+        "physical_actor_channel_identity_mismatch": 2,
+        "unprocessed_or_nonmatching_proxy_tick": 40,
+        "proxy_record_duration_differs_from_source": 2,
+        "missing_or_changed_reference_position_bookends": 1,
+        "vm_pc_outside_matching_staged_body": 16,
+        "unstable_proxy_or_identity_guard": 7,
+        "source_proxy_channel_row_mismatch": 6
+      },
+      "statuses": {
+        "compared_within_bound": 19,
+        "no_admissible_original_position_observations": 4
+      },
+      "totals": {
+        "observations": 250
+      },
+      "maximum_component_error": 0.0
+    }
+  },
+  "reports": [
+    {
+      "component": "clock",
+      "label": "level2-batch-case01-family01-rich-clock",
+      "capture_sha256": "305a36a459f1748a885d9f14281b47624f4052e9b1d2ae1ed8b4880b975f2170",
+      "report_sha256": "1315b21ed6d79dbdb2e1baa9b51c9e0ee534308c0c783f6184c32597dda090c1",
+      "status": "compared_exact",
+      "admitted": 104,
+      "excluded": 736,
+      "production": {
+        "observations": 104,
+        "exact_frames": 68,
+        "exact_steps": 104,
+        "stateful_exact_frames": 104,
+        "stateful_exact_steps": 104,
+        "stateful_exact_counters": 104,
+        "max_frame_ulps": 2097152,
+        "max_step_ulps": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case02-family02-rich-clock",
+      "capture_sha256": "5e42200b9804a5329274643fde1baa0b538eef91dd4effc26ea115369452783c",
+      "report_sha256": "6e3e416687ba79d16fb2cfcf43c48b132d1859e63d0cdd95b0014349c0ac8253",
+      "status": "compared_exact",
+      "admitted": 44,
+      "excluded": 664,
+      "production": {
+        "observations": 44,
+        "exact_frames": 16,
+        "exact_steps": 44,
+        "stateful_exact_frames": 44,
+        "stateful_exact_steps": 44,
+        "stateful_exact_counters": 44,
+        "max_frame_ulps": 4194304,
+        "max_step_ulps": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case03-family03-rich-clock",
+      "capture_sha256": "3aa732840ad7df1a882fcb6d06129bc2eb9f60360acf643d7126ac017817fd64",
+      "report_sha256": "6635082b6aeaa83e5ab2f01bad3b02b8b246ab1c24f576d4f1d6e53dc80a3fa1",
+      "status": "compared_exact",
+      "admitted": 99,
+      "excluded": 699,
+      "production": {
+        "observations": 99,
+        "exact_frames": 60,
+        "exact_steps": 84,
+        "stateful_exact_frames": 99,
+        "stateful_exact_steps": 99,
+        "stateful_exact_counters": 99,
+        "max_frame_ulps": 42190500,
+        "max_step_ulps": 11767563
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case04-family04-rich-clock",
+      "capture_sha256": "3e53c9de576f19ae55108c501cc3a09c0ded3d2b592c96b15aada66f6475eebf",
+      "report_sha256": "8afa117e45ef055219d72267ae6e29c15e5e258eab67a5e797852a0216c0ec2f",
+      "status": "compared_exact",
+      "admitted": 64,
+      "excluded": 746,
+      "production": {
+        "observations": 64,
+        "exact_frames": 30,
+        "exact_steps": 64,
+        "stateful_exact_frames": 64,
+        "stateful_exact_steps": 64,
+        "stateful_exact_counters": 64,
+        "max_frame_ulps": 1102315520,
+        "max_step_ulps": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case05-family05-rich-clock",
+      "capture_sha256": "2038860ad8d8b493f0138c8164bf84ff7c994983e945b6f8ab106b7d73215ffd",
+      "report_sha256": "6d4ef0aea7ff9f6c9da9e4386268ff5fd259604842de5009f4e5d87c1d974343",
+      "status": "compared_exact",
+      "admitted": 14,
+      "excluded": 790,
+      "production": {
+        "observations": 14,
+        "exact_frames": 11,
+        "exact_steps": 14,
+        "stateful_exact_frames": 14,
+        "stateful_exact_steps": 14,
+        "stateful_exact_counters": 14,
+        "max_frame_ulps": 524288,
+        "max_step_ulps": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case06-family06-rich-clock",
+      "capture_sha256": "55414a6e6ef78208644a47dbcc36a84a93bf2fb07097bfad90a2c90ee9669736",
+      "report_sha256": "705a81a05b1b4e9e73703ad91d1d2927da2766d6018866dfc631b65e0d606a0f",
+      "status": "compared_exact",
+      "admitted": 69,
+      "excluded": 651,
+      "production": {
+        "observations": 69,
+        "exact_frames": 34,
+        "exact_steps": 61,
+        "stateful_exact_frames": 69,
+        "stateful_exact_steps": 69,
+        "stateful_exact_counters": 69,
+        "max_frame_ulps": 44619911,
+        "max_step_ulps": 7096854
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case07-family07-rich-clock",
+      "capture_sha256": "42cf2436e7e9df935e855762208a69028df54f3c2198e566d79aaacabc750948",
+      "report_sha256": "8f9cbd6105f35dc152db3cb963fe46f57d4d590f3565a1de8bff197e7fd2d8e8",
+      "status": "compared_exact",
+      "admitted": 26,
+      "excluded": 700,
+      "production": {
+        "observations": 26,
+        "exact_frames": 15,
+        "exact_steps": 19,
+        "stateful_exact_frames": 26,
+        "stateful_exact_steps": 26,
+        "stateful_exact_counters": 26,
+        "max_frame_ulps": 14708946,
+        "max_step_ulps": 8859326
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case08-family08-rich-clock",
+      "capture_sha256": "7ae1df34742428225d318c71bb4e63bd7599e85e0d2b813bf6a53e22337f7ecd",
+      "report_sha256": "5c752ef0385511243c21994699dfb157d674479e9fa773802ccb32d6ac26ddf1",
+      "status": "compared_exact",
+      "admitted": 23,
+      "excluded": 643,
+      "production": {
+        "observations": 23,
+        "exact_frames": 23,
+        "exact_steps": 23,
+        "stateful_exact_frames": 23,
+        "stateful_exact_steps": 23,
+        "stateful_exact_counters": 23,
+        "max_frame_ulps": 0,
+        "max_step_ulps": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case09-family09-rich-clock",
+      "capture_sha256": "c05cbc545e05006a29a4211bf3ec861b150623abe2b9010bf5b424f0fdf828e9",
+      "report_sha256": "b609cdb16187f1bb0b6346bff49500eeab3cc90ab037101c943b3de9ae0ed291",
+      "status": "compared_exact",
+      "admitted": 13,
+      "excluded": 719,
+      "production": {
+        "observations": 13,
+        "exact_frames": 11,
+        "exact_steps": 13,
+        "stateful_exact_frames": 13,
+        "stateful_exact_steps": 13,
+        "stateful_exact_counters": 13,
+        "max_frame_ulps": 200704,
+        "max_step_ulps": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case10-family10-rich-clock",
+      "capture_sha256": "0937c3b6f75d4de1a0a684df45f181270bf706f5bf92247e2970de5b1137778a",
+      "report_sha256": "d4102365b66511c8dcc5a0e3cb337dc719b097da931a05c6746edb8d4d482391",
+      "status": "compared_exact",
+      "admitted": 56,
+      "excluded": 790,
+      "production": {
+        "observations": 56,
+        "exact_frames": 33,
+        "exact_steps": 54,
+        "stateful_exact_frames": 56,
+        "stateful_exact_steps": 56,
+        "stateful_exact_counters": 56,
+        "max_frame_ulps": 7457779,
+        "max_step_ulps": 27049765
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case11-family11-rich-clock",
+      "capture_sha256": "510be27fa48914ac08a7e422b4514602efae78f53ceb1fb1ef9a3ce59f94bb8a",
+      "report_sha256": "ff3ae1448df86c0a5188b9f6310c6c483a845e3a79623a7267536685b200e095",
+      "status": "compared_exact",
+      "admitted": 63,
+      "excluded": 723,
+      "production": {
+        "observations": 63,
+        "exact_frames": 51,
+        "exact_steps": 61,
+        "stateful_exact_frames": 63,
+        "stateful_exact_steps": 63,
+        "stateful_exact_counters": 63,
+        "max_frame_ulps": 9533549,
+        "max_step_ulps": 9850978
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case12-family12-rich-clock",
+      "capture_sha256": "139ded656b73b0cbfa2d53aa321512ae9ec7ed32c3960628c4228041583380dd",
+      "report_sha256": "6fae9adcd7cd330f86bc37beb5238a5fc34479ec0d40f07b093b571931514664",
+      "status": "compared_exact",
+      "admitted": 74,
+      "excluded": 688,
+      "production": {
+        "observations": 74,
+        "exact_frames": 63,
+        "exact_steps": 73,
+        "stateful_exact_frames": 74,
+        "stateful_exact_steps": 74,
+        "stateful_exact_counters": 74,
+        "max_frame_ulps": 3896101,
+        "max_step_ulps": 1556480
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case13-family09-rich-clock",
+      "capture_sha256": "e1a83cb3cdd446b4bec33458acbae2925e79ba52e3cfb954e459e3a86d0de662",
+      "report_sha256": "e8324b9d06ce30be529a8af1c861c489960f45f38fe5c2d969c2dcc1be5e9338",
+      "status": "compared_exact",
+      "admitted": 35,
+      "excluded": 751,
+      "production": {
+        "observations": 35,
+        "exact_frames": 16,
+        "exact_steps": 26,
+        "stateful_exact_frames": 35,
+        "stateful_exact_steps": 35,
+        "stateful_exact_counters": 35,
+        "max_frame_ulps": 16058622,
+        "max_step_ulps": 16232357
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case14-family10-rich-clock",
+      "capture_sha256": "b813d62839b5c08936b5d6c908f9f29a0bad0826071f58c6714a5ed9df7b6c2d",
+      "report_sha256": "3181cdf743d34de194ae0f34043d7acf99e4a729be29a8cead625ee8fa0738ff",
+      "status": "compared_exact",
+      "admitted": 52,
+      "excluded": 776,
+      "production": {
+        "observations": 52,
+        "exact_frames": 30,
+        "exact_steps": 39,
+        "stateful_exact_frames": 52,
+        "stateful_exact_steps": 52,
+        "stateful_exact_counters": 52,
+        "max_frame_ulps": 15136647,
+        "max_step_ulps": 36762644
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case15-family11-rich-clock",
+      "capture_sha256": "dc6287069718023547989657a4bd7e399f2085c3a2d4bd8eda9b82ad9bfe7dd2",
+      "report_sha256": "2d25a21cdd1105e133089cbfa98f00fed64a00c06c17a676a727fde9ddc85c08",
+      "status": "compared_exact",
+      "admitted": 14,
+      "excluded": 484,
+      "production": {
+        "observations": 14,
+        "exact_frames": 14,
+        "exact_steps": 14,
+        "stateful_exact_frames": 14,
+        "stateful_exact_steps": 14,
+        "stateful_exact_counters": 14,
+        "max_frame_ulps": 0,
+        "max_step_ulps": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "clock",
+      "label": "level2-batch-case16-family12-rich-clock",
+      "capture_sha256": "d6fd403f092fd4ab046cce8a7c009069c2c2bfcdfd3f98c4f81fa118b3bbe2fb",
+      "report_sha256": "c020e1376d5f1f00b40b28376a16670e9914a284f8eb2f4d78cd17ffd05edbc5",
+      "status": "compared_exact",
+      "admitted": 17,
+      "excluded": 499,
+      "production": {
+        "observations": 17,
+        "exact_frames": 4,
+        "exact_steps": 16,
+        "stateful_exact_frames": 17,
+        "stateful_exact_steps": 17,
+        "stateful_exact_counters": 17,
+        "max_frame_ulps": 8388608,
+        "max_step_ulps": 4148681
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-sim/src/street.rs": "cbdb2a48950be92712ca233335eff31448b157282fc1cf1e29b5f0151c77fcab",
+        "crates/street-sim/src/snapshot.rs": "9aefd610316048c18f023d289717544f3098367432956379fe49dd97417619c8",
+        "crates/street-sim/src/validation.rs": "480aa29c7f34660b2c096d3c8eab12791baca08639b0ed85020ca90d2ff90a58",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case01-family01-rich-height",
+      "capture_sha256": "305a36a459f1748a885d9f14281b47624f4052e9b1d2ae1ed8b4880b975f2170",
+      "report_sha256": "1412f65fc27d84623e3af67bb9847ea4e7b89bf4a71a40f3b7bd506490416d89",
+      "status": "compared_exact",
+      "admitted": 104,
+      "excluded": 736,
+      "production": {
+        "observations": 104,
+        "exact_scales": 104,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case02-family02-rich-height",
+      "capture_sha256": "5e42200b9804a5329274643fde1baa0b538eef91dd4effc26ea115369452783c",
+      "report_sha256": "6c71a6f55bc343488d89daadc6d306f718c1ebba52f9a8998f954af47b2e73b4",
+      "status": "compared_exact",
+      "admitted": 44,
+      "excluded": 664,
+      "production": {
+        "observations": 44,
+        "exact_scales": 44,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case03-family03-rich-height",
+      "capture_sha256": "3aa732840ad7df1a882fcb6d06129bc2eb9f60360acf643d7126ac017817fd64",
+      "report_sha256": "ea7123e1f35a430da39fd67099f0e0e01cdd6c430fd6dbfa4e61ec3ca9f2832f",
+      "status": "compared_exact",
+      "admitted": 99,
+      "excluded": 699,
+      "production": {
+        "observations": 99,
+        "exact_scales": 99,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case04-family04-rich-height",
+      "capture_sha256": "3e53c9de576f19ae55108c501cc3a09c0ded3d2b592c96b15aada66f6475eebf",
+      "report_sha256": "11ea7dd989225ba366cfe9d0338b8ebc9338561d15993088a734d921be83da77",
+      "status": "compared_exact",
+      "admitted": 64,
+      "excluded": 746,
+      "production": {
+        "observations": 64,
+        "exact_scales": 64,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case05-family05-rich-height",
+      "capture_sha256": "2038860ad8d8b493f0138c8164bf84ff7c994983e945b6f8ab106b7d73215ffd",
+      "report_sha256": "1542c7037ece0b492da7229abb755fbf5cabbd68e4aabfda9f0d08ad8226e1ef",
+      "status": "compared_exact",
+      "admitted": 14,
+      "excluded": 790,
+      "production": {
+        "observations": 14,
+        "exact_scales": 14,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case06-family06-rich-height",
+      "capture_sha256": "55414a6e6ef78208644a47dbcc36a84a93bf2fb07097bfad90a2c90ee9669736",
+      "report_sha256": "8b97f80670b33502a9cb860c384f67d3fdb0aa9deca7db63e25e3cec259ed6c0",
+      "status": "compared_exact",
+      "admitted": 69,
+      "excluded": 651,
+      "production": {
+        "observations": 69,
+        "exact_scales": 69,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case07-family07-rich-height",
+      "capture_sha256": "42cf2436e7e9df935e855762208a69028df54f3c2198e566d79aaacabc750948",
+      "report_sha256": "0c344fb75627c86f581b0bd05893d5b623f3773faeeb84bb0026add95e425443",
+      "status": "compared_exact",
+      "admitted": 26,
+      "excluded": 700,
+      "production": {
+        "observations": 26,
+        "exact_scales": 26,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case08-family08-rich-height",
+      "capture_sha256": "7ae1df34742428225d318c71bb4e63bd7599e85e0d2b813bf6a53e22337f7ecd",
+      "report_sha256": "f95cbe319368f4dff8543e96a47893a7600be176863b0ba9fdba1c7646a77799",
+      "status": "compared_exact",
+      "admitted": 23,
+      "excluded": 643,
+      "production": {
+        "observations": 23,
+        "exact_scales": 23,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case09-family09-rich-height",
+      "capture_sha256": "c05cbc545e05006a29a4211bf3ec861b150623abe2b9010bf5b424f0fdf828e9",
+      "report_sha256": "0e0abb19943682de173483f5378fa1625f5a1969ec41a1da47b4e3b884e18862",
+      "status": "compared_exact",
+      "admitted": 13,
+      "excluded": 719,
+      "production": {
+        "observations": 13,
+        "exact_scales": 13,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case10-family10-rich-height",
+      "capture_sha256": "0937c3b6f75d4de1a0a684df45f181270bf706f5bf92247e2970de5b1137778a",
+      "report_sha256": "17f78d222b06bcc866181a85d38f9e4d591d57f29445536c028ce44ca1ce0b40",
+      "status": "compared_exact",
+      "admitted": 56,
+      "excluded": 790,
+      "production": {
+        "observations": 56,
+        "exact_scales": 56,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case11-family11-rich-height",
+      "capture_sha256": "510be27fa48914ac08a7e422b4514602efae78f53ceb1fb1ef9a3ce59f94bb8a",
+      "report_sha256": "53984ee5e6610864d61db2f5d19e7d084229fda9f2bbe4e91360df5e6b29846d",
+      "status": "compared_exact",
+      "admitted": 63,
+      "excluded": 723,
+      "production": {
+        "observations": 63,
+        "exact_scales": 63,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case12-family12-rich-height",
+      "capture_sha256": "139ded656b73b0cbfa2d53aa321512ae9ec7ed32c3960628c4228041583380dd",
+      "report_sha256": "9957e7290b9fa9583e95fdf9bf4dd042d83a54b7824862c0b2bbfcf2c62de4ee",
+      "status": "compared_exact",
+      "admitted": 74,
+      "excluded": 688,
+      "production": {
+        "observations": 74,
+        "exact_scales": 74,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case13-family09-rich-height",
+      "capture_sha256": "e1a83cb3cdd446b4bec33458acbae2925e79ba52e3cfb954e459e3a86d0de662",
+      "report_sha256": "3973600ee602a11bfecd30ec5b012e4208eb4bf0d9f4ddd4a0bf6c5f8ba55888",
+      "status": "compared_exact",
+      "admitted": 35,
+      "excluded": 751,
+      "production": {
+        "observations": 35,
+        "exact_scales": 35,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case14-family10-rich-height",
+      "capture_sha256": "b813d62839b5c08936b5d6c908f9f29a0bad0826071f58c6714a5ed9df7b6c2d",
+      "report_sha256": "5b8d4f8bb6bc9d7c1f0bd33bbc0343a27ee58dccfa84f894182e1f2e829aa360",
+      "status": "compared_exact",
+      "admitted": 52,
+      "excluded": 776,
+      "production": {
+        "observations": 52,
+        "exact_scales": 52,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case15-family11-rich-height",
+      "capture_sha256": "dc6287069718023547989657a4bd7e399f2085c3a2d4bd8eda9b82ad9bfe7dd2",
+      "report_sha256": "0b524dbe0839a78c99ed677e9c7d8477b46af06458c3eea568479fae78ed91c4",
+      "status": "compared_exact",
+      "admitted": 14,
+      "excluded": 484,
+      "production": {
+        "observations": 14,
+        "exact_scales": 14,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "height",
+      "label": "level2-batch-case16-family12-rich-height",
+      "capture_sha256": "d6fd403f092fd4ab046cce8a7c009069c2c2bfcdfd3f98c4f81fa118b3bbe2fb",
+      "report_sha256": "d33f3ba0d0e49389b5110324842ed31d3877d3590e54b0efc8bdb1c1ef667045",
+      "status": "compared_exact",
+      "admitted": 17,
+      "excluded": 499,
+      "production": {
+        "observations": 17,
+        "exact_scales": 17,
+        "nearest_baseline_exact_scales": 0
+      },
+      "source_sha256": {
+        "crates/street-assets/src/db.rs": "9621d09186f4aadd98d1cdea7c664e28c65b3594dfd4f691abfff9694392cb86",
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_height.py": "5729f94905785acd88c49f90c234ae495c33e0ebfbe3763f9c971768305c3cad"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case01-family01-rich-motion",
+      "capture_sha256": "305a36a459f1748a885d9f14281b47624f4052e9b1d2ae1ed8b4880b975f2170",
+      "report_sha256": "6dbe936fa1bccbeb2701ae2e7fe77f1d7c669201f73568ec717320c49f8d3b51",
+      "status": "no_admissible_producer_observations",
+      "admitted": 0,
+      "excluded": 840,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case02-family02-rich-motion",
+      "capture_sha256": "5e42200b9804a5329274643fde1baa0b538eef91dd4effc26ea115369452783c",
+      "report_sha256": "0c1b20c66197848715109783f6024d5e4f3948dbbff5370edf7342c7e1399a09",
+      "status": "no_admissible_producer_observations",
+      "admitted": 0,
+      "excluded": 708,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case03-family03-rich-motion",
+      "capture_sha256": "3aa732840ad7df1a882fcb6d06129bc2eb9f60360acf643d7126ac017817fd64",
+      "report_sha256": "b8e58acd275cc0cec712032f7d048694b245235515ed7b5cebdf26b13c26926f",
+      "status": "compared_exact",
+      "admitted": 15,
+      "excluded": 783,
+      "production": {
+        "observations": 15,
+        "exact_steps": 15,
+        "candidate_exact_steps": 15,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case04-family04-rich-motion",
+      "capture_sha256": "3e53c9de576f19ae55108c501cc3a09c0ded3d2b592c96b15aada66f6475eebf",
+      "report_sha256": "e8dec3bbd308117f4dc1ac63c7dacaa8aebf92fe3e94247f0f1fb8a1d167439a",
+      "status": "no_admissible_producer_observations",
+      "admitted": 0,
+      "excluded": 810,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case05-family05-rich-motion",
+      "capture_sha256": "2038860ad8d8b493f0138c8164bf84ff7c994983e945b6f8ab106b7d73215ffd",
+      "report_sha256": "59ca0ce93ca52f96c82d188ddc26d596af2484e9f1a59f2facd7c12ea55e2c67",
+      "status": "no_admissible_producer_observations",
+      "admitted": 0,
+      "excluded": 804,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case06-family06-rich-motion",
+      "capture_sha256": "55414a6e6ef78208644a47dbcc36a84a93bf2fb07097bfad90a2c90ee9669736",
+      "report_sha256": "5739dfe4723c51a2be5d06e8445f107b4434440679002d0c87fb4c4bf1f92674",
+      "status": "compared_exact",
+      "admitted": 8,
+      "excluded": 712,
+      "production": {
+        "observations": 8,
+        "exact_steps": 8,
+        "candidate_exact_steps": 8,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case07-family07-rich-motion",
+      "capture_sha256": "42cf2436e7e9df935e855762208a69028df54f3c2198e566d79aaacabc750948",
+      "report_sha256": "a911ca5759d6fe8e5c040679a6b6f400a5f92e8079a99a890bbbc4d695096ed4",
+      "status": "compared_exact",
+      "admitted": 7,
+      "excluded": 719,
+      "production": {
+        "observations": 7,
+        "exact_steps": 7,
+        "candidate_exact_steps": 7,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case08-family08-rich-motion",
+      "capture_sha256": "7ae1df34742428225d318c71bb4e63bd7599e85e0d2b813bf6a53e22337f7ecd",
+      "report_sha256": "96a268a6584be1807fb9a068073590a72044ec70eac0bf41fbf9ce915b140f91",
+      "status": "no_admissible_producer_observations",
+      "admitted": 0,
+      "excluded": 666,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case09-family09-rich-motion",
+      "capture_sha256": "c05cbc545e05006a29a4211bf3ec861b150623abe2b9010bf5b424f0fdf828e9",
+      "report_sha256": "540af7ffebdf8c597e908ca08b4d1f3ff8fa74840624ccdc31dc8a8693887ccc",
+      "status": "no_admissible_producer_observations",
+      "admitted": 0,
+      "excluded": 732,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case10-family10-rich-motion",
+      "capture_sha256": "0937c3b6f75d4de1a0a684df45f181270bf706f5bf92247e2970de5b1137778a",
+      "report_sha256": "7e7975206eaefc60b007574b463009ff6a283fb38141bfbb281d163902676502",
+      "status": "compared_exact",
+      "admitted": 2,
+      "excluded": 844,
+      "production": {
+        "observations": 2,
+        "exact_steps": 2,
+        "candidate_exact_steps": 2,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case11-family11-rich-motion",
+      "capture_sha256": "510be27fa48914ac08a7e422b4514602efae78f53ceb1fb1ef9a3ce59f94bb8a",
+      "report_sha256": "394be480b032923a92d539b43ba31a35c8a75a00f582e96b855c91280a4b5898",
+      "status": "compared_exact",
+      "admitted": 2,
+      "excluded": 784,
+      "production": {
+        "observations": 2,
+        "exact_steps": 2,
+        "candidate_exact_steps": 2,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case12-family12-rich-motion",
+      "capture_sha256": "139ded656b73b0cbfa2d53aa321512ae9ec7ed32c3960628c4228041583380dd",
+      "report_sha256": "2f9ffb0722a0161191fd97619a8becb5c22cc8c5e99c98d6c40eb9f63816ee13",
+      "status": "compared_exact",
+      "admitted": 1,
+      "excluded": 761,
+      "production": {
+        "observations": 1,
+        "exact_steps": 1,
+        "candidate_exact_steps": 1,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case13-family09-rich-motion",
+      "capture_sha256": "e1a83cb3cdd446b4bec33458acbae2925e79ba52e3cfb954e459e3a86d0de662",
+      "report_sha256": "118f9f5cc3132b24f4dfa2dfd659745e07c8d5cf60c3219d231c136db4adba10",
+      "status": "compared_exact",
+      "admitted": 9,
+      "excluded": 777,
+      "production": {
+        "observations": 9,
+        "exact_steps": 9,
+        "candidate_exact_steps": 9,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case14-family10-rich-motion",
+      "capture_sha256": "b813d62839b5c08936b5d6c908f9f29a0bad0826071f58c6714a5ed9df7b6c2d",
+      "report_sha256": "00a19831d7b41174b0aefca9ae5ff4b5580714dc7c857510bb626a99116df889",
+      "status": "compared_exact",
+      "admitted": 13,
+      "excluded": 815,
+      "production": {
+        "observations": 13,
+        "exact_steps": 13,
+        "candidate_exact_steps": 13,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case15-family11-rich-motion",
+      "capture_sha256": "dc6287069718023547989657a4bd7e399f2085c3a2d4bd8eda9b82ad9bfe7dd2",
+      "report_sha256": "353681012ef44f642cb8a501afa0e59a23573a2d30812ba7b1cd026e7c646fe9",
+      "status": "no_admissible_producer_observations",
+      "admitted": 0,
+      "excluded": 498,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "motion",
+      "label": "level2-batch-case16-family12-rich-motion",
+      "capture_sha256": "d6fd403f092fd4ab046cce8a7c009069c2c2bfcdfd3f98c4f81fa118b3bbe2fb",
+      "report_sha256": "95545a20434e20b7e29c7c01e260b3d03ca99681223ad86fe51e5abc0eb0b306",
+      "status": "compared_exact",
+      "admitted": 1,
+      "excluded": 515,
+      "production": {
+        "observations": 1,
+        "exact_steps": 1,
+        "candidate_exact_steps": 1,
+        "manager_blend_blocked": 0
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-assets/src/timeline.rs": "d3535d3acaf4cf54eb10b47767b7a3854e943ad1d9c793c7c0ef2cca21af463a",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "tools/compare_staged_motion.py": "f82b09fc3292f5f9da8a88099e49cd8d5ebfe1963c972124d431d9358312872b",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case01-family01-rich-paths",
+      "capture_sha256": "f2c93ae60201ce01da62507b93ce449199a1bc2fd10edf5095724fdb83223685",
+      "report_sha256": "60aee0730c142359aef6c6b8a7e84e4e584813518557c9f1b03de7996c5060a5",
+      "status": "compared_within_bound",
+      "admitted": 31,
+      "excluded": 659,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 31
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case02-family02-rich-paths",
+      "capture_sha256": "6c18352116d53edfdd821042cf075b0828f56d89b1e98a55399a324de8470ad1",
+      "report_sha256": "8a548cd00542aaf6e727984f36e5cb5d2bd08fcf90b3c2310dc2230dd4d377c2",
+      "status": "compared_within_bound",
+      "admitted": 9,
+      "excluded": 597,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 9
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case03-family03-rich-paths",
+      "capture_sha256": "5d4d0736ce3f635af0439dbc49af03877222bf7d74830ec8e3478c5d2ec8ecea",
+      "report_sha256": "5e1971d5f7d7e0ed464f1832a8fdffd4cf7d4eace81c3d9c8b6ffefe91efe6d8",
+      "status": "compared_within_bound",
+      "admitted": 6,
+      "excluded": 642,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 6
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case04-family04-rich-paths",
+      "capture_sha256": "ad330405e76a66525b7921d2d70def5e93b0605b3418d575d89b3a2af553038c",
+      "report_sha256": "8b3a6f6320997912bb96abe28fb15d9d195c65937047b7b1f8c7d4529adce7cd",
+      "status": "compared_within_bound",
+      "admitted": 9,
+      "excluded": 693,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 9
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case05-family05-rich-paths",
+      "capture_sha256": "2f436170b63dc3fadf1a4ac01a1ac82365888ae80bd10ab527fa33436a441c07",
+      "report_sha256": "97216b7db3c5a9b8d7f4e757ff8a523eaddd13a4f64b894b1b8fdeea165e2f57",
+      "status": "compared_within_bound",
+      "admitted": 16,
+      "excluded": 668,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 16
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case06-family06-rich-paths",
+      "capture_sha256": "9779956a72e1f535da190d90f631fca713cf23837b8fb00111c44fce7329e2dd",
+      "report_sha256": "377f173f06eae670b61b9ce230bc56ebb4efa3978ebad50c6713e06b2494f5f5",
+      "status": "compared_within_bound",
+      "admitted": 17,
+      "excluded": 607,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 17
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case07-family07-rich-paths",
+      "capture_sha256": "c2058a966816ea82b92c7291c850ec877f69c27f9d662a7275f1c430816aa64a",
+      "report_sha256": "a74616bc49d65a63b52580e3384b8beabc6e964634e93b7c64d67b1aeb1c6f98",
+      "status": "no_admissible_original_position_observations",
+      "admitted": 0,
+      "excluded": 666,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case08-family08-rich-paths",
+      "capture_sha256": "bf025aaae0c96a59db365a5fa8126b079b9c7d78e5f7697a6f56387ecbadf6b9",
+      "report_sha256": "8e0bd656eb6704aab110485672bebd530074fff37f670170b7c3ecb1805e554a",
+      "status": "compared_within_bound",
+      "admitted": 11,
+      "excluded": 589,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 11
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case09-family09-rich-paths",
+      "capture_sha256": "4ca4a7cb7e39f6f6ad4d900a6eba9392aa949bbbc72187471bd14053768b5c00",
+      "report_sha256": "c21de1a313fd34ecd71cc8760b15622cb9d6d602bdb187a2e426caae855b89d5",
+      "status": "compared_within_bound",
+      "admitted": 11,
+      "excluded": 667,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 11
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case10-family10-rich-paths",
+      "capture_sha256": "ac44fad07e4c3a4ff3acd5e0ab683a6cd6adca55fb5cc023beaa74548c42b38a",
+      "report_sha256": "a3692f78ae8f010782a29c41fafe468aca6926726606795f48d5d83a674c52b7",
+      "status": "compared_within_bound",
+      "admitted": 6,
+      "excluded": 522,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 6
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case11-family11-rich-paths",
+      "capture_sha256": "b60c008658880b4c14790dc3b2e35f698c6a4f7b96d9b227b485c8aa74a68d23",
+      "report_sha256": "5e33ebc5573284327eeabf3cc6d864dd9d47635ac45c3f4a41214af35f93f818",
+      "status": "compared_within_bound",
+      "admitted": 5,
+      "excluded": 379,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 5
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case12-family12-rich-paths",
+      "capture_sha256": "0feb54527cfa25e4aeca09356b286807eb040fbf5b545ec1593218820ac9dfbb",
+      "report_sha256": "d56cc676c1fba2b5dc8d815130d28422c124fc69e8b74779f012a78185cc24a8",
+      "status": "no_admissible_original_position_observations",
+      "admitted": 0,
+      "excluded": 522,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-batch-case13-family09-rich-paths",
+      "capture_sha256": "107e86342f553140f5724b9b663ea594ad44d89b28fa78f144a87f0544945b31",
+      "report_sha256": "e09edfc9044f847e70cfbedaae4f354d04d4cfc39b0c29f972a4f547171134e4",
+      "status": "no_admissible_original_position_observations",
+      "admitted": 0,
+      "excluded": 552,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case01-family07-rich-paths",
+      "capture_sha256": "9d3fdd9dbf4dd7f011b1eb43dc960fe53e1b5a3a08010744094f1dd1e6f5d3e3",
+      "report_sha256": "69b73ac953b2b06ea59c1c1d7c103534e0e2767ae3b9f4fda2f44366495fbe5c",
+      "status": "compared_within_bound",
+      "admitted": 9,
+      "excluded": 609,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 9
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case02-family10-rich-paths",
+      "capture_sha256": "e38988d044097bde31732964c514568cb4ac081e150632504e1c165f047324a9",
+      "report_sha256": "109a47e003f6510a476f963aedc7eacde73f64d94aa624efa7e255f542837b40",
+      "status": "compared_within_bound",
+      "admitted": 17,
+      "excluded": 715,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 17
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case03-family10-rich-paths",
+      "capture_sha256": "ba6cc9f272e9dfca191643c2008af4a60404ff4e11943411f95804d75e7bb0f2",
+      "report_sha256": "318fdd7a3fec72510540d036292275934d55a166fa2e96b6eff2d8a5602b747f",
+      "status": "compared_within_bound",
+      "admitted": 17,
+      "excluded": 709,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 17
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case04-family10-rich-paths",
+      "capture_sha256": "e6509c88f998706b501fae0750065b36b82839ed73d09387bc6918840cae0015",
+      "report_sha256": "7de882bad9e65f2235bd43f84642cfb3a856e54aa872bd6c9806ed948f7e784a",
+      "status": "compared_within_bound",
+      "admitted": 20,
+      "excluded": 712,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 20
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case05-family11-rich-paths",
+      "capture_sha256": "c928c4909130292304b71f6441820b71c64a4b47090b852f12c8af5ef4204325",
+      "report_sha256": "49254f570dbd4dd9457eabaa044e0e5394434f51a55b2063ff84c46148278b93",
+      "status": "compared_within_bound",
+      "admitted": 10,
+      "excluded": 434,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 10
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case06-family11-rich-paths",
+      "capture_sha256": "694c4e342097c3edcc9b0f737d5e1a2d392922e8d7dace55a0f6ee8eede52501",
+      "report_sha256": "3a09075e550cae09612409793cdf6bbf6da9f6a038a5c58961c568fb99654118",
+      "status": "no_admissible_original_position_observations",
+      "admitted": 0,
+      "excluded": 594,
+      "production": {},
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case07-family12-rich-paths",
+      "capture_sha256": "5cd85279c5a7dba37b857a35c4fb0b3b6c1f22d9ee05f729bb8f020e223741c4",
+      "report_sha256": "b7bd5738bbfdfce71cacb261aa8066a3d1f815f8f6f0821407b2cf3a1cad9a7b",
+      "status": "compared_within_bound",
+      "admitted": 17,
+      "excluded": 565,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 17
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case08-family12-rich-paths",
+      "capture_sha256": "e12b7e4d234845958225d9f26e869e41c6037bf5efb51b2b823fe276d482d71d",
+      "report_sha256": "74be74b93787ac6fffe78bab4d3ceed0742bdf1f8bd60e008111366677dfda0b",
+      "status": "compared_within_bound",
+      "admitted": 3,
+      "excluded": 405,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 3
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case09-family09-rich-paths",
+      "capture_sha256": "c5a21832bc58be8d3564b4249cf39706ebf26261553be2aad54b61be715aa932",
+      "report_sha256": "b14d58c46c084ceb725dfd9eb1ff60cd058e07858ad85c1274c615326fcdfced",
+      "status": "compared_within_bound",
+      "admitted": 24,
+      "excluded": 624,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 24
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    },
+    {
+      "component": "paths",
+      "label": "level2-reference-completion-case10-family09-rich-paths",
+      "capture_sha256": "589ee9f920b0ef03be4354f3fc9c52c74465f3a8f10aa48761ee56d183ae4e28",
+      "report_sha256": "f59de11ff526c237b553fbb8e2d1c2bbff867511a338acdc45892737dfba0a77",
+      "status": "compared_within_bound",
+      "admitted": 12,
+      "excluded": 636,
+      "production": {
+        "max_component_error": 0.0,
+        "observations": 12
+      },
+      "source_sha256": {
+        "crates/street-game/src/staged.rs": "321006193ff6253ef880f7d9d937db17b7c7ce7e798a20a0fc8c8f2172fed6d7",
+        "crates/street-sim/src/gamebreaker.rs": "a5e35b9622494da39f63aa32384d18f04e287240627cbfacf0e5613837589c6a",
+        "crates/street-net/src/disc/staged.rs": "50872a5a3b5acd597373e0c49e8bc8326a3b7a8fa6c0e1bbb70ca62203852a20",
+        "tools/compare_staged_clock.py": "1162b53903945124c36c99c6fe2be37b763060c05a141c493b858ebf9a3128e8",
+        "tools/compare_staged_paths.py": "c705d36b1383c459051d9b3dc80290a8a46743d18f37ce7a922d8b168fc21d4a"
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+[package]
+name = "street-viewer"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+street-assets = { path = "../street-assets" }
+street-render = { path = "../street-render" }
+bevy = "0.20.0"

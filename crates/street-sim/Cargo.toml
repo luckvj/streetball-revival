@@ -1,0 +1,22 @@
+[package]
+name = "street-sim"
+description = "Streetball Revival's simulation: fixed-step and independent of rendering"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+libm = "0.2"
+miniz_oxide = "0.8"
+
+[features]
+# The rules' stand-ins for the disc's animations (`pose::Bank::StandIns`),
+# for tests that run without a disc. Only the workspace's dev-dependencies
+# turn it on; in every real build a world without the disc's data refuses
+# to step.
+stand-ins = []
+
+[dev-dependencies]
+blake3 = "1"
+serde_json = "1"
+street-assets = { path = "../street-assets" }

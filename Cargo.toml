@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/street-assets",
+    "crates/street-audio",
+    "crates/street-export",
+    "crates/street-game",
+    "crates/street-launcher",
+    "crates/street-net",
+    "crates/street-render",
+    "crates/street-server",
+    "crates/street-sim",
+    "crates/street-viewer",
+    "crates/street-video",
+]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "MIT"
+
+# Bevy is slow in debug builds; optimise dependencies even in dev.
+[profile.dev.package."*"]
+opt-level = 3
+
+# The movies' decoder too: the boot's league notice (27 KB a frame) fell
+# behind its 29.97 frames a second at the workspace's level 1.
+[profile.dev.package.street-video]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1

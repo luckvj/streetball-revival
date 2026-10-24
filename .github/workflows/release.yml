@@ -1,0 +1,74 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            launcher: StreetballRevival.exe
+            binary: street-game.exe
+            server: street-server.exe
+            export: street-export.exe
+          - os: ubuntu-latest
+            platform: linux
+            launcher: StreetballRevival
+            binary: street-game
+            server: street-server
+            export: street-export
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system libraries
+        if: matrix.os == 'ubuntu-latest'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y
+          libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+          libgtk-3-dev pkg-config
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release -p street-launcher -p street-game -p street-server -p street-export
+      - run: cargo test --workspace
+      - run: python tools/publish_check.py
+      - name: Zip the release
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist
+          Copy-Item -LiteralPath 'target/release/${{ matrix.launcher }}', 'target/release/${{ matrix.binary }}', 'target/release/${{ matrix.server }}', 'target/release/${{ matrix.export }}', 'README.md', 'LEGAL.md', 'LICENSE' -Destination dist
+          Copy-Item -LiteralPath 'docs/PLAYING.md' -Destination 'dist/HOW TO PLAY ONLINE.md'
+          Compress-Archive -Path dist/* -DestinationPath 'streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: streetball-revival-${{ matrix.platform }}
+          path: streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
+          body: |
+            Streetball Revival ${{ github.ref_name }} (public beta)
+
+            1. Unzip everything into one folder.
+            2. Run StreetballRevival (StreetballRevival.exe on Windows).
+            3. Press Browse and pick the .iso disc image of your own copy of
+               the game: the USA PlayStation 2 release, SLUS-20651.
+            4. Press Play.
+
+            The download holds only this project's code; the game is read
+            from your disc at runtime. HOW TO PLAY ONLINE.md in the zip
+            covers hosting and joining. This is a beta: please report bugs as
+            issues, without attaching disc images or game files.
+
+            Unofficial fan project, not affiliated with or endorsed by any
+            rights holder of the original game. See LEGAL.md.

@@ -1,0 +1,463 @@
+// The catch rows' scripts (`0x3d75c8`'s first words) as the channel's clock
+// reads them, generated from SLUS_206.51 the way `trick_tables.rs` is
+// (`tests/trick_disc.rs` reads them again from the disc and compares): each
+// followed along its plain path, the play-outs' updates from their clips'
+// frames. `8d ee F fd` (the clip to frame F over the rest of the pass's
+// flight) is a [`Step::Flight`], its length the pass's updates left when it
+// starts ([`Catching::step`]).
+
+use crate::trick::Step::{self, Bits, Blend, Call, Clear, End, Flight, PlayOut, Stop, Test, Wait};
+
+/// The catch rows' scripts, by row of [`crate::timing::CATCH_ROWS`].
+pub const CATCH_SCRIPTS: [&[Step]; 39] = [
+    // 0: 0x44319a
+    &[
+        Stop,
+        Bits(0x200),
+        Call(5),
+        Blend { n: 6, start: 4, records: [565, 565] },
+        Flight { to: 10 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 16, n: 9 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 1: 0x4431e7
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 4, records: [565, 565] },
+        Flight { to: 10 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 2: 0x443240
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [567, 567] },
+        Flight { to: 11 },
+        Wait { to: 21, n: 15 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 3: 0x443298
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [567, 567] },
+        Flight { to: 11 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 4: 0x44327c
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [566, 566] },
+        Flight { to: 11 },
+        Wait { to: 21, n: 15 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 5: 0x4432f1
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [566, 566] },
+        Flight { to: 11 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 6: 0x44331b
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [569, 569] },
+        Flight { to: 15 },
+        Wait { to: 25, n: 15 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 7: 0x443372
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [569, 569] },
+        Flight { to: 15 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 8: 0x443356
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [568, 568] },
+        Flight { to: 15 },
+        Wait { to: 25, n: 15 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 9: 0x4433cb
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [568, 568] },
+        Flight { to: 15 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 10: 0x4433f5
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [571, 571] },
+        Flight { to: 11 },
+        Wait { to: 21, n: 20 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 11: 0x44344c
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [571, 571] },
+        Flight { to: 11 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 12: 0x443430
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [570, 570] },
+        Flight { to: 11 },
+        Wait { to: 21, n: 20 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 13: 0x4434a5
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [570, 570] },
+        Flight { to: 11 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 14: 0x4434cf
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [572, 572] },
+        Flight { to: 6 },
+        PlayOut { per_frame: f32::from_bits(0x3fa00000), to: 15, n: 12 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 15: 0x44350b
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [573, 573] },
+        Flight { to: 17 },
+        Wait { to: 30, n: 15 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 16: 0x443562
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [573, 573] },
+        Flight { to: 17 },
+        Wait { to: 22, n: 9 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 17: 0x443546
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [574, 574] },
+        Flight { to: 17 },
+        Wait { to: 30, n: 15 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 18: 0x4435bf
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [574, 574] },
+        Flight { to: 17 },
+        Wait { to: 22, n: 9 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 19: 0x4435e9
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [576, 576] },
+        Flight { to: 17 },
+        Wait { to: 25, n: 10 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 20: 0x443640
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [576, 576] },
+        Flight { to: 17 },
+        Wait { to: 25, n: 9 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 21: 0x443624
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [575, 575] },
+        Flight { to: 17 },
+        Wait { to: 25, n: 10 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 22: 0x44369d
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [575, 575] },
+        Flight { to: 17 },
+        Wait { to: 25, n: 9 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 23: 0x4436c7
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [578, 578] },
+        Flight { to: 17 },
+        Wait { to: 25, n: 10 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 24: 0x44371e
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 7, records: [578, 578] },
+        Flight { to: 17 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 25: 0x443702
+    &[
+        Stop,
+        Bits(0x200),
+        Blend { n: 6, start: 0, records: [577, 577] },
+        Flight { to: 17 },
+        Wait { to: 25, n: 10 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 26: 0x443777
+    &[
+        Call(30),
+        Bits(0x200),
+        Blend { n: 6, start: 7, records: [577, 577] },
+        Flight { to: 17 },
+        Clear(0x200),
+        Test(42),
+        Call(30),
+        End,
+    ],
+    // 27: 0x442f92
+    &[
+        Stop,
+        Bits(0xa00),
+        Call(5),
+        Blend { n: 6, start: 0, records: [582, 582] },
+        Flight { to: 7 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 11, n: 6 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 28: 0x442fdf
+    &[
+        Stop,
+        Bits(0xa00),
+        Call(5),
+        Blend { n: 6, start: 5, records: [581, 581] },
+        Flight { to: 11 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 25, n: 21 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 29: 0x44302c
+    &[
+        Stop,
+        Bits(0xa00),
+        Call(5),
+        Blend { n: 6, start: 0, records: [584, 584] },
+        Flight { to: 12 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 20, n: 12 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 30: 0x443079
+    &[
+        Stop,
+        Bits(0xa00),
+        Call(5),
+        Blend { n: 6, start: 0, records: [583, 583] },
+        Flight { to: 12 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 20, n: 12 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 31: 0x4430a6
+    &[
+        Stop,
+        Bits(0xa00),
+        Call(5),
+        Blend { n: 6, start: 0, records: [586, 586] },
+        Flight { to: 7 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 20, n: 20 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 32: 0x4430f3
+    &[
+        Stop,
+        Bits(0xa00),
+        Call(5),
+        Blend { n: 6, start: 0, records: [585, 585] },
+        Flight { to: 7 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 20, n: 20 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 33: 0x443120
+    &[
+        Stop,
+        Bits(0xa00),
+        Call(5),
+        Blend { n: 6, start: 0, records: [580, 580] },
+        Flight { to: 16 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 30, n: 21 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 34: 0x44316d
+    &[
+        Stop,
+        Bits(0xa00),
+        Call(5),
+        Blend { n: 6, start: 0, records: [579, 579] },
+        Flight { to: 16 },
+        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 30, n: 21 },
+        Clear(0x200),
+        Call(1),
+        End,
+    ],
+    // 35: 0x4437f2
+    &[
+        Stop,
+        Bits(0x200),
+        Call(5),
+        Blend { n: 6, start: 0, records: [554, 554] },
+        Flight { to: 5 },
+        Wait { to: 8, n: 6 },
+        Clear(0x200),
+        Bits(0x20),
+        Call(1),
+        End,
+    ],
+    // 36: 0x4437a1
+    &[
+        Stop,
+        Bits(0x200),
+        Call(5),
+        Blend { n: 6, start: 0, records: [553, 553] },
+        Flight { to: 5 },
+        Wait { to: 8, n: 6 },
+        Clear(0x200),
+        Bits(0x20),
+        Call(1),
+        End,
+    ],
+    // 37: 0x443870
+    &[
+        Stop,
+        Bits(0x200),
+        Call(5),
+        Blend { n: 6, start: 0, records: [560, 560] },
+        Flight { to: 7 },
+        Wait { to: 10, n: 6 },
+        Clear(0x200),
+        Bits(0x20),
+        Call(1),
+        End,
+    ],
+    // 38: 0x44381f
+    &[
+        Stop,
+        Bits(0x200),
+        Call(5),
+        Blend { n: 6, start: 0, records: [559, 559] },
+        Flight { to: 7 },
+        Wait { to: 10, n: 6 },
+        Clear(0x200),
+        Bits(0x20),
+        Call(1),
+        End,
+    ],
+];

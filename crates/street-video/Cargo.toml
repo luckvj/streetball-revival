@@ -1,0 +1,9 @@
+[package]
+name = "street-video"
+description = "The disc's movies: the MPCh container and a small MPEG-2 video decoder"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+street-assets = { path = "../street-assets" }

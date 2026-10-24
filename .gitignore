@@ -1,0 +1,16 @@
+target/
+.claude/
+# Never commit game data: disc images, anything extracted or rendered from them.
+*.iso
+*.png
+/extracted/
+# The player's own progression (Be A Legend), written beside the game.
+street_save.dat
+__pycache__/
+*.pyc
+
+# Agents' internal coordination notes stay on the machine.
+docs/COORDINATION.md
+
+# Local experiments
+crates/street-assets/examples/inspect_for_roblox.rs
