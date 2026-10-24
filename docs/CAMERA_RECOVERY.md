@@ -654,3 +654,31 @@ gamebreaker or a celebration camera.
 ## The staged helper's lens, roll and following cameras (2026-10-21)
 
 Measured in the pcsx2-runtime on the Street School's Level 2 rerun (GamLR2; `$EVIDENCE/street-legend-rules/rerun-camera`). The staged helper (manager `+0x24`, vtable `0x498848`) holds ten script camera nodes (`+0x1c0..`, `FUN_003318b0`), one per camera id; the active node's update (`FUN_00331d08`) writes the helper's eye (`+0x84..`), its look (the pose callback `0x3010f8`: yaw and pitch from the eye to the target), its lens `+0x98 = tan(fov / 2)` for a field of 1..180 degrees (1.0 for 0, the last lens otherwise) and its roll `+0x1b0 = (heading - 180)` degrees in radians. The renderer reads the lens through the projection object as for every helper (zoom 1.3: a field of 50 is 63.74 degrees across, 62.4 down) and turns the view by the roll's negative about its axis (`FUN_003046c0`). A record with byte `+0x23` set follows its script actor (`+0x20`, -1 the ball; `+0x25`: bone 0, bone 21 or the floor, at the actor's root x/z): the target's x is then a sideways offset (the yaw less `asin(x / 10)`, the reach `sqrt(h^2 + x^2)`) and its y a height over the point. The rewrite had read the field as a 4:3 horizontal angle (38.5 degrees down for 50), applied no roll and aimed following cameras at the court's origin. `view::staged_pose`, `StagedView`, `ActiveCamera::roll`; tests `the_staged_camera_has_the_originals_lens_roll_and_view` and `a_following_staged_camera_aims_at_its_actor`.
+
+## The framing projection's arithmetic (2026-10-24, not ported)
+
+`FUN_002ffac0` builds its view with three calls of `FUN_002f7700(out,
+axis, angle)`: the roll `-[+0x1b0]` about the axis at `0x4e8c20` (onto the
+matrix copied from `0x4e8ca0`), the pitch `-[+0x90]` about `0x4e8c00`, and
+the yaw `-([+0x94] + [+0x164])` about `0x4e8c10` (the offset only when its
+third argument is set). The axes and the base are runtime globals past
+the file's end. Each product is the VU0 chain `vmulax`, `vmadday`,
+`vmaddaz`, `vmaddw` per column. Then a translation by the negated eye
+`+0x84..+0x8c` (w set to 1.0), and the point's transform. The depth is
+tested against `[FUN_0030fa50() + 8]`, and the divide is `vdiv Q, vf0w,
+vf3x` then `vmulq`. The screen x and y come from `FUN_002ff818(lens)`, 640
+and 480 halved by `-0.5`.
+
+`FUN_002f7700` is an axis-angle (Rodrigues) matrix: `1 - c` times the
+axis products, plus `c` on the diagonal and `±s` times the axis off it.
+Its sine is its own: the quarter turn is `cvt.w.s(x * 2/pi ± 0.5)` with
+no whole-turn step first, then `r = x - q * pi/2`. The odd polynomial is
+`r * (1 + r2 * (-1/6 + r2 * (1/120 + r2 * (-1/5040 + r2 * 2.7557e-6))))`,
+coefficients `0x3638ef1d`, `0xb9500d01`, `0x3c088889`, `0xbe2aaaab`. The
+cosine is `sqrt(1 - s * s)`, swapped and negated by `q & 3`. That differs
+from `FUN_002f8370`'s inline sine (`native_sin`), which has a cosine
+polynomial. The rewrite's `framing_projection` uses the host's `sin_cos`
+and plain float order. Porting it needs PCSX2's VU0 rounding in
+`vmadd*` (two chopped steps or one), which the retained cases can decide:
+`played_match_courtside_follows_the_original` is the check (7,255 of
+7,848 within 1e-6 before).
