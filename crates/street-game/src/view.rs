@@ -1817,32 +1817,122 @@ impl CameraPose {
     }
 }
 
-/// The native camera basis for pitch and yaw (`FUN_002fa558`): forward,
-/// right and up. A retained capture matches it within 1.3e-7.
-fn native_basis(pitch: f32, yaw: f32) -> [Vec3; 3] {
-    let (sp, cp) = pitch.sin_cos();
-    let (sy, cy) = yaw.sin_cos();
+/// VU0's add as PCSX2 runs it: the exact sum chopped (no guard bit).
+fn vu_add(a: f32, b: f32) -> f32 {
+    camera_chop(a as f64 + b as f64)
+}
+
+/// `FUN_002f7700`'s sine and cosine: the nearest quarter turn
+/// (`cvt.w.s(x × 2/π ± 0.5)`, no whole turns off first), the odd
+/// polynomial on the rest, the cosine `sqrt(1 − s²)`, swapped and negated
+/// by the quarter.
+fn rotation_sin_cos(x: f32) -> (f32, f32) {
+    let two_over_pi = f32::from_bits(0x3f22_f983);
+    let k = camera_mul(x, two_over_pi);
+    let k = if x < 0.0 {
+        camera_add(k, -0.5)
+    } else {
+        camera_add(k, 0.5)
+    };
+    let quarter = k as i32;
+    let r = camera_add(x, -camera_mul(quarter as f32, f32::from_bits(0x3fc9_0fdb)));
+    let r2 = camera_mul(r, r);
+    let mut p = camera_mul(r2, f32::from_bits(0x3638_ef1d));
+    for c in [0xb950_0d01, 0x3c08_8889, 0xbe2a_aaab] {
+        p = camera_mul(camera_add(p, f32::from_bits(c)), r2);
+    }
+    let s = camera_mul(camera_add(p, 1.0), r);
+    let c = camera_add(1.0, -camera_mul(s, s)).sqrt();
+    match quarter & 3 {
+        0 => (s, c),
+        1 => (c, -s),
+        2 => (-s, -c),
+        _ => (-c, s),
+    }
+}
+
+/// `FUN_002f7700(out, axis, angle)`: the rotation by `angle` about the
+/// unit `axis` (rows, `w` last), its products in the original's order.
+fn axis_rotation(axis: [f32; 3], angle: f32) -> [[f32; 4]; 4] {
+    let (s, c) = rotation_sin_cos(angle);
+    let [ax, ay, az] = axis;
+    let m = camera_add(1.0, -c);
+    let f2 = camera_mul(m, ax);
+    let f9 = camera_mul(s, ay);
+    let f8 = camera_mul(s, az);
+    let f5 = camera_mul(s, ax);
+    let f3 = camera_mul(m, ay);
+    let f4 = camera_mul(m, az);
     [
-        Vec3::new(sy * cp, -sp, cy * cp),
-        Vec3::new(cy, 0.0, -sy),
-        Vec3::new(sy * sp, cp, cy * sp),
+        [
+            camera_add(camera_mul(f2, ax), c),
+            camera_add(camera_mul(f2, ay), f8),
+            camera_add(camera_mul(f2, az), -f9),
+            0.0,
+        ],
+        [
+            camera_add(camera_mul(f3, ax), -f8),
+            camera_add(camera_mul(f3, ay), c),
+            camera_add(camera_mul(f3, az), f5),
+            0.0,
+        ],
+        [
+            camera_add(camera_mul(f4, ax), f9),
+            camera_add(camera_mul(f4, ay), -f5),
+            camera_add(camera_mul(f4, az), c),
+            0.0,
+        ],
+        [0.0, 0.0, 0.0, 1.0],
     ]
+}
+
+/// The VU0 row transform `vmulax`, `vmadday`, `vmaddaz`, `vmaddw`: `v`'s
+/// components times the rows of `a`, summed in that order.
+fn vu_transform(a: &[[f32; 4]; 4], v: [f32; 4]) -> [f32; 4] {
+    std::array::from_fn(|k| {
+        let mut acc = camera_mul(a[0][k], v[0]);
+        for j in 1..4 {
+            acc = vu_add(acc, camera_mul(a[j][k], v[j]));
+        }
+        acc
+    })
 }
 
 /// `FUN_002ffac0`: a point's 640x480 framing position from the eye, the
 /// two angles and the raw lens `+0x98` (no renderer zoom), or none at or
 /// behind the 0.5 near plane. Screen x grows toward camera right, y down.
-/// Plain float arithmetic; the VU's operation order is not reproduced.
+/// The view is `FUN_002f7700`'s rotations about z (the roll, 0 here), x
+/// (−pitch) and y (−yaw) chained by VU0 onto the identity, its last row
+/// the eye's translation; the point goes through it, `vdiv` and `vmulq`
+/// take it to the screen plane, and the lens (`FUN_002ff818`: × 4/3 across)
+/// to pixels.
 fn framing_projection(eye: Vec3, pitch: f32, yaw: f32, scalar: f32, point: Vec3) -> Option<Vec2> {
-    let [forward, right, up] = native_basis(pitch, yaw);
-    let relative = point - eye;
-    let depth = relative.dot(forward);
-    if depth <= 0.5 {
+    let identity = [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ];
+    let mut view = identity;
+    for (axis, angle) in [
+        ([0.0, 0.0, 1.0], -0.0_f32),
+        ([1.0, 0.0, 0.0], -pitch),
+        ([0.0, 1.0, 0.0], -yaw),
+    ] {
+        let r = axis_rotation(axis, angle);
+        view = std::array::from_fn(|i| vu_transform(&view, r[i]));
+    }
+    view[3] = vu_transform(&view, [-eye.x, -eye.y, -eye.z, 1.0]);
+    let p = vu_transform(&view, [point.x, point.y, point.z, 1.0]);
+    if p[2] <= 0.5 {
         return None;
     }
-    let tan_h = scalar * (4.0 / 3.0);
-    let x = (relative.dot(right) / depth - tan_h) * (640.0 / tan_h) * -0.5;
-    let y = (relative.dot(up) / depth - scalar) * (480.0 / scalar) * -0.5;
+    let q = camera_chop(1.0 / p[2] as f64);
+    let tan_h = camera_mul(scalar, f32::from_bits(0x3faa_aaab));
+    let across = camera_mul(640.0 / tan_h, -0.5);
+    let down = camera_mul(480.0 / scalar, -0.5);
+    let x = camera_mul(vu_add(camera_mul(p[0], q), -tan_h), across);
+    let y = camera_mul(vu_add(camera_mul(p[1], q), -scalar), down);
     Some(Vec2::new(x, y))
 }
 
@@ -2037,10 +2127,11 @@ impl PositionedCameraHelper {
             factor = 0.5;
         }
         if 2.0 < self.distance_scale {
-            factor *= 2.0 / self.distance_scale;
+            factor = camera_mul(factor, 2.0 / self.distance_scale);
         }
         let [side, side_band, top, top_band, bottom, bottom_band] = POSITIONED_WINDOW;
-        let band = |b: i32| (b as f32 * factor).round_ties_even() as i32;
+        // `cvt.w.s`, which truncates on the EE.
+        let band = |b: i32| camera_mul(b as f32, factor) as i32;
         let (sb, tb, bb) = (band(side_band), band(top_band), band(bottom_band));
         let edge = side + (side_band - sb);
         [
@@ -2064,14 +2155,18 @@ impl PositionedCameraHelper {
         let at = |p: Vec3| framing_projection(self.eye, self.pitch, self.yaw, self.scalar, p);
         // Unprojectable points leave no motion (the original reads stale
         // stack values there).
-        let motion = match (at(self.focus), at(self.focus + self.source.motion)) {
-            (Some(a), Some(b)) => b.x - a.x,
+        // `FUN_002fd970`: the focus and the moved focus (VU0's `vadd`)
+        // projected, the motion their x apart.
+        let (f, m) = (self.focus, self.source.motion);
+        let moved = Vec3::new(vu_add(f.x, m.x), vu_add(f.y, m.y), vu_add(f.z, m.z));
+        let motion = match (at(f), at(moved)) {
+            (Some(a), Some(b)) => camera_add(b.x, -a.x),
             _ => 0.0,
         };
         let target = if 2.0 < scale {
-            let mut lead = motion * 15.0;
+            let mut lead = camera_mul(motion, 15.0);
             if scale < 6.0 {
-                lead = lead * (scale - 2.0) * 0.25;
+                lead = camera_mul(lead, camera_mul(camera_add(scale, -2.0), 0.25));
             }
             lead.clamp(-40.0, 40.0)
         } else {
@@ -2081,17 +2176,17 @@ impl PositionedCameraHelper {
             self.lead = target;
             self.lead_rate = 0.0;
         } else {
-            let gap = (target - self.lead) - self.lead_rate;
+            let gap = camera_add(camera_add(target, -self.lead), -self.lead_rate);
             let same = (gap >= 0.0) == (self.lead_rate >= 0.0);
             let rate = if same || self.lead_rate == 0.0 {
                 0.0625
             } else {
                 0.25
             };
-            self.lead_rate += gap * rate;
-            self.lead += self.lead_rate;
+            self.lead_rate = camera_add(self.lead_rate, camera_mul(gap, rate));
+            self.lead = camera_add(self.lead, self.lead_rate);
         }
-        let shift = self.lead.round_ties_even() as i32;
+        let shift = self.lead as i32;
         window[0] -= shift;
         window[2] += shift;
     }
@@ -5844,15 +5939,16 @@ mod camera_pose_tests {
         // Screen x grows toward camera right (-x looking down +z).
         let right = framing_projection(eye, 0.0, 0.0, 0.3, Vec3::new(-1.0, 5.0, 0.0)).unwrap();
         assert!(right.x > 320.0);
-        // The window at scale 6.75 (2 / 6.75 of the bands, rounded).
+        // The window at scale 6.75 (2 / 6.75 of the bands, truncated as
+        // `cvt.w.s` does).
         let mut helper = PositionedCameraHelper {
             distance_scale: 6.75,
             ..Default::default()
         };
-        assert_eq!(helper.window(), [226, 49, 226, 49, 127, 33, 198, 62]);
+        assert_eq!(helper.window(), [227, 48, 227, 48, 128, 32, 198, 62]);
         helper.framing = 2;
         helper.distance_scale = 3.0;
-        assert_eq!(helper.window(), [220, 55, 220, 55, 123, 37, 190, 70]);
+        assert_eq!(helper.window(), [220, 55, 220, 55, 124, 36, 190, 70]);
         let window = [226, 49, 226, 49, 127, 33, 198, 62];
         let zone = |x: f32, y: f32| framing_zones(Some(Vec2::new(x, y)), &window);
         assert_eq!(zone(320.0, 200.0), 1 | 2);
@@ -7065,10 +7161,11 @@ mod camera_pose_tests {
             "played courtside: {cases} updates, {tight} within 1e-6, {close} within 1e-4, +0x134 equal in {framing}, worst {worst:?}"
         );
         assert!(cases > 0);
-        assert!(
-            close * 100 >= cases * 95,
-            "fewer than 95% of courtside updates within 1e-4: {close} of {cases}"
-        );
+        // Since 2026-10-24 (the projection's VU0 chain, the lead's and the
+        // window's arithmetic and `cvt.w.s` truncation): every update.
+        assert_eq!(tight, cases, "courtside updates within 1e-6");
+        assert_eq!(framing, cases, "courtside +0x134");
+        assert!(close >= tight);
     }
 
     /// Opt-in original-runtime check of the row helper in a match a person
