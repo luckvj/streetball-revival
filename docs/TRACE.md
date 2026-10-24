@@ -12923,3 +12923,37 @@ lines to 480, which together soften the matrix's mark in them.
 8-bit read-back replicates the top bits instead of clearing them: the
 grabs' share of channels ending in three zero bits (0.32) lies between
 the two models once their scaling is simulated.
+
+### Tricks let go into a pass: who deals the pass (2026-10-24)
+
+The third capture's eight tricks that end in a pass are not passes out of
+a trick script. In each, a play one or two updates old deals the holder a
+"pass" node (vtable `0x437448`, `FUN_00100a08`) while his trick bit is
+still set. The play was a pick and roll (`0x439dd0`) or pick off the ball
+(`0x439f80`) four times each by `play_head`, the pull up once. The node
+presses on its first update and the trick ends with the release. The
+pattern: the holder's queue empties, the role pick gives him "carrier
+pause", whose first update jukes (`FUN_00101b50`). Carrier pause within 12
+of the rim ends the running play (`FUN_001285d0`). `FUN_001281c8` starts
+the next one, and a pick play's start hands the ball off at once
+(`FUN_0011e900` → `FUN_0011ea68`, `FUN_0011f628` → `FUN_0011f940`).
+Neither start tests the juke.
+
+Every other dealer read here does test it: `FUN_00182c58` (the playbook's
+pass check, `FUN_00128b30`) and the fast break, drive, iso3pt and shoot
+nodes call `FUN_001819f8`, which answers yes on actor+0xa4 bit 10 first.
+The off-ball call (`0x158f50..0x159098`) needs a caller who is not
+controller 4, and every attract actor is. Keep-away needs a full meter
+on the other side. The holder lookup `FUN_0017d550` asks the ball's
+holder (ball+0xf4) for vt+0x44, which returns the actor itself (vtable
+`0x43f568`, `FUN_0017c588`, read from save state 1's RAM).
+
+The rewrite deals the same way: its pick plays' starts hand off without
+a juke test, and in four games on the third capture's rosters each of its
+7 mid-trick pass nodes let the trick go on the next update. It starts
+plays while the holder tricks as often or more (153 of 826 starts, 19%,
+against the original's 22 of 204). But pick plays are 18 of those 153,
+where they are 9 of the original's 22, and penetration takes 88. So the
+let-go gap (2.4 against 8 a match) follows the play mix, the pick and roll
+at half the original's rate ("The computer's offence", attract-measuring),
+not a missing rule.
