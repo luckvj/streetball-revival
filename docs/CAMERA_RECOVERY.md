@@ -655,14 +655,14 @@ gamebreaker or a celebration camera.
 
 Measured in the pcsx2-runtime on the Street School's Level 2 rerun (GamLR2; `$EVIDENCE/street-legend-rules/rerun-camera`). The staged helper (manager `+0x24`, vtable `0x498848`) holds ten script camera nodes (`+0x1c0..`, `FUN_003318b0`), one per camera id; the active node's update (`FUN_00331d08`) writes the helper's eye (`+0x84..`), its look (the pose callback `0x3010f8`: yaw and pitch from the eye to the target), its lens `+0x98 = tan(fov / 2)` for a field of 1..180 degrees (1.0 for 0, the last lens otherwise) and its roll `+0x1b0 = (heading - 180)` degrees in radians. The renderer reads the lens through the projection object as for every helper (zoom 1.3: a field of 50 is 63.74 degrees across, 62.4 down) and turns the view by the roll's negative about its axis (`FUN_003046c0`). A record with byte `+0x23` set follows its script actor (`+0x20`, -1 the ball; `+0x25`: bone 0, bone 21 or the floor, at the actor's root x/z): the target's x is then a sideways offset (the yaw less `asin(x / 10)`, the reach `sqrt(h^2 + x^2)`) and its y a height over the point. The rewrite had read the field as a 4:3 horizontal angle (38.5 degrees down for 50), applied no roll and aimed following cameras at the court's origin. `view::staged_pose`, `StagedView`, `ActiveCamera::roll`; tests `the_staged_camera_has_the_originals_lens_roll_and_view` and `a_following_staged_camera_aims_at_its_actor`.
 
-## The framing projection's arithmetic (2026-10-24, not ported)
+## The framing projection's arithmetic (2026-10-24)
 
 `FUN_002ffac0` builds its view with three calls of `FUN_002f7700(out,
-axis, angle)`: the roll `-[+0x1b0]` about the axis at `0x4e8c20` (onto the
-matrix copied from `0x4e8ca0`), the pitch `-[+0x90]` about `0x4e8c00`, and
-the yaw `-([+0x94] + [+0x164])` about `0x4e8c10` (the offset only when its
+axis, angle)`: the roll `-[+0x1b0]` about the axis at `0x4d8c20` (onto the
+matrix copied from `0x4d8ca0`), the pitch `-[+0x90]` about `0x4d8c00`, and
+the yaw `-([+0x94] + [+0x164])` about `0x4d8c10` (the offset only when its
 third argument is set). The axes and the base are runtime globals past
-the file's end. Each product is the VU0 chain `vmulax`, `vmadday`,
+the file's end: z, x and y and the identity in save states 1 and 5. Each product is the VU0 chain `vmulax`, `vmadday`,
 `vmaddaz`, `vmaddw` per column. Then a translation by the negated eye
 `+0x84..+0x8c` (w set to 1.0), and the point's transform. The depth is
 tested against `[FUN_0030fa50() + 8]`, and the divide is `vdiv Q, vf0w,
@@ -677,8 +677,19 @@ no whole-turn step first, then `r = x - q * pi/2`. The odd polynomial is
 coefficients `0x3638ef1d`, `0xb9500d01`, `0x3c088889`, `0xbe2aaaab`. The
 cosine is `sqrt(1 - s * s)`, swapped and negated by `q & 3`. That differs
 from `FUN_002f8370`'s inline sine (`native_sin`), which has a cosine
-polynomial. The rewrite's `framing_projection` uses the host's `sin_cos`
-and plain float order. Porting it needs PCSX2's VU0 rounding in
-`vmadd*` (two chopped steps or one), which the retained cases can decide:
-`played_match_courtside_follows_the_original` is the check (7,255 of
-7,848 within 1e-6 before).
+polynomial.
+
+Ported (`framing_projection`, `axis_rotation`, `rotation_sin_cos`,
+`vu_transform`). The retained cases chose the rounding: VU0's products and
+sums each chop with no guard bit (`vu_add`), its `vdiv` chops too, and the
+EE's FPU keeps the rewrite's measured policy (`camera_add`, `camera_mul`,
+division and square root to nearest). `FUN_002fd970` adds the focus and
+its motion with `vadd` and projects both with the yaw offset's flag set.
+`FUN_00301e38` scales a small subject as `target * ((scale - 2) * 0.25)`.
+`FUN_00301fa8` scales the bands as `cvt.w.s(band * factor)`, factor
+times `2 / scale`. Both `cvt.w.s` (the bands and the lead's shift of the
+window) truncate on the EE, where the port rounded to even. That was most of the
+yaw's misses: through `+0x134` a one-pixel window moved the framing. With
+all of it `played_match_courtside_follows_the_original` lands every one of
+the 7,848 updates within 1e-6 (worst 2.4e-7) and `+0x134` in all, up from
+7,255 and 7,837, and now asserts both.
