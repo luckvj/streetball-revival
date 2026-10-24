@@ -799,7 +799,8 @@ impl NativeCameraState {
         framing_projection(
             Vec3::from_array(self.eye),
             self.angles[0],
-            self.angles[1] + self.yaw_offset,
+            // `add.s` (`0x2ffc78`).
+            camera_add(self.angles[1], self.yaw_offset),
             self.scalar,
             point,
         )
@@ -812,7 +813,9 @@ impl NativeCameraState {
         let top = if margin == 0.0 {
             at
         } else {
-            self.screen(point + Vec3::Y * margin).or(at)
+            // The raise is an `add.s` (`0x2ff89c`).
+            self.screen(Vec3::new(point.x, camera_add(point.y, margin), point.z))
+                .or(at)
         };
         framing_zones_raised(at, top.map(|t| t.y), window)
     }
