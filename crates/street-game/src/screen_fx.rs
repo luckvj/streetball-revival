@@ -92,8 +92,8 @@ struct Request {
 /// halve the colour. Row 0 for a side with a Level 1 ready, row 1 Level 2.
 pub const TINT_ROWS: [(u8, [i32; 4]); 2] = [(2, [40, 60, 200, 100]), (3, [0, 25, 80, 255])];
 
-/// The display's usual copy (0x7f, 0x7f), shown as drawn.
-const USUAL: ScreenCopy = ScreenCopy::SHOWN;
+/// The display's usual copy (0x7f, 0x7f).
+const USUAL: ScreenCopy = ScreenCopy::USUAL;
 
 /// The blur's copy at 60 updates a second: alpha 2880 / fps, colour 0xa0
 /// (`FUN_0030fce0`).
@@ -375,11 +375,41 @@ pub fn step(
 pub fn show(
     mut commands: Commands,
     fx: Res<ScreenFx>,
-    cameras: Query<(Entity, Option<&ScreenLayers>), With<crate::view::SidelineCamera>>,
+    cameras: Query<(
+        Entity,
+        &Camera,
+        Option<&bevy::camera::RenderTarget>,
+        Option<&ScreenCopy>,
+        Option<&ScreenLayers>,
+        Has<crate::view::SidelineCamera>,
+    )>,
 ) {
-    for (camera, layers) in &cameras {
-        let mut camera = commands.entity(camera);
-        camera.insert(fx.copy());
+    // The shown buffer's copy goes on the camera drawn last to the window
+    // (the cameras under it share its picture): a match's sideline camera
+    // wears this update's copy, any other screen's last camera the usual
+    // one. Only one, or the dither would go over the picture twice.
+    let last = cameras
+        .iter()
+        .filter(|(_, c, target, ..)| {
+            c.is_active && !matches!(target, Some(bevy::camera::RenderTarget::Image(_)))
+        })
+        .max_by_key(|(e, c, ..)| (c.order, *e))
+        .map(|(e, ..)| e);
+    for (entity, _, _, copy, layers, sideline) in &cameras {
+        let mut camera = commands.entity(entity);
+        let want = (Some(entity) == last).then(|| if sideline { fx.copy() } else { USUAL });
+        match want {
+            Some(want) if copy != Some(&want) => {
+                camera.insert(want);
+            }
+            None if copy.is_some() => {
+                camera.remove::<ScreenCopy>();
+            }
+            _ => {}
+        }
+        if !sideline {
+            continue;
+        }
         if fx.layers.any() {
             if layers != Some(&fx.layers) {
                 camera.insert(fx.layers);
@@ -393,6 +423,40 @@ pub fn show(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The shown buffer's copy (and so its dither) goes on one camera: the
+    /// window's last, not one under it nor one drawing into a picture.
+    #[test]
+    fn the_copy_goes_on_the_windows_last_camera_only() {
+        let mut app = App::new();
+        app.init_resource::<ScreenFx>().add_systems(Update, show);
+        let world = app.world_mut();
+        let under = world
+            .spawn(Camera {
+                order: -1,
+                ..default()
+            })
+            .id();
+        let top = world.spawn(Camera::default()).id();
+        let picture = world
+            .spawn((
+                Camera {
+                    order: 5,
+                    ..default()
+                },
+                bevy::camera::RenderTarget::from(Handle::<Image>::default()),
+            ))
+            .id();
+        app.update();
+        let copy = |app: &App, e: Entity| app.world().get::<ScreenCopy>(e).copied();
+        assert_eq!(copy(&app, top), Some(USUAL));
+        assert_eq!(copy(&app, under), None);
+        assert_eq!(copy(&app, picture), None);
+        // With the top one gone the one under it takes the copy.
+        app.world_mut().despawn(top);
+        app.update();
+        assert_eq!(copy(&app, under), Some(USUAL));
+    }
 
     #[test]
     fn a_quad_draws_its_colour_then_steps_and_hides_at_the_end() {

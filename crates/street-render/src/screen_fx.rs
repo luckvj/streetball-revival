@@ -7,9 +7,9 @@
 //! - [`ScreenLayers`]: those quads, as a pass after tonemapping and before
 //!   the UI.
 //! - [`ScreenCopy`]: the copy, as a pass after the UI blending the frame
-//!   over the last one shown (kept per view). At its usual 0x7f, 0x7f the
-//!   rewrite shows the frame as drawn; the 16-bit shown buffer's dither is
-//!   not drawn.
+//!   over the last one shown (kept per view), into a 16-bit shown buffer
+//!   written with the GS's dither (DTHE, the game's DIMX): every screen's
+//!   last camera wears one, so the front end's pictures go through it too.
 
 use std::collections::HashMap;
 
@@ -18,7 +18,7 @@ use bevy::{
     core_pipeline::{
         FullscreenShader,
         fullscreen_material::{FullscreenMaterial, FullscreenMaterialPlugin},
-        schedule::{Core3d, Core3dSystems},
+        schedule::{Core2d, Core3d, Core3dSystems},
         tonemapping::tonemapping,
         upscaling::upscaling,
     },
@@ -82,30 +82,42 @@ impl FullscreenMaterial for ScreenLayers {
 }
 
 /// The copy into the shown buffer: its alpha and colour on the GS's 0..128
-/// (0x80 is one). [`ScreenCopy::SHOWN`] shows the frame as drawn.
+/// (0x80 is one), and whether it is written dithered into the 16-bit buffer
+/// (the original's always is; [`ScreenCopy::SHOWN`] shows the frame exactly
+/// as drawn, for checks).
 #[derive(Component, Clone, Copy, Debug, PartialEq, ShaderType, ExtractComponent)]
 #[extract_app(RenderApp)]
 pub struct ScreenCopy {
     pub alpha: f32,
     pub colour: f32,
-    pub _pad: Vec2,
+    pub dither: f32,
+    pub _pad: f32,
 }
 
 impl ScreenCopy {
-    pub const SHOWN: Self = Self::new(128, 128);
+    /// The display's usual copy (`FUN_00376ac0`: alpha and colour 0x7f).
+    pub const USUAL: Self = Self::new(0x7f, 0x7f);
+    pub const SHOWN: Self = Self {
+        alpha: 128.0,
+        colour: 128.0,
+        dither: 0.0,
+        _pad: 0.0,
+    };
 
+    /// A copy at `alpha` and `colour`, dithered as the original's.
     pub const fn new(alpha: u8, colour: u8) -> Self {
         Self {
             alpha: alpha as f32,
             colour: colour as f32,
-            _pad: Vec2::ZERO,
+            dither: 1.0,
+            _pad: 0.0,
         }
     }
 }
 
 impl Default for ScreenCopy {
     fn default() -> Self {
-        Self::SHOWN
+        Self::USUAL
     }
 }
 
@@ -129,6 +141,12 @@ impl Plugin for ScreenFxPlugin {
             .add_systems(Render, queue_copy_pipelines.in_set(RenderSystems::Prepare))
             .add_systems(
                 Core3d,
+                copy_pass
+                    .after(bevy::ui_render::render_pass::ui_pass)
+                    .before(upscaling),
+            )
+            .add_systems(
+                Core2d,
                 copy_pass
                     .after(bevy::ui_render::render_pass::ui_pass)
                     .before(upscaling),
