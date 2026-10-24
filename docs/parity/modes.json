@@ -872,7 +872,7 @@
           "path": "crates/street-sim/src/lib.rs",
           "locator": "World::new",
           "note": "The meters at the start.",
-          "sha256": "03323812a4a749b42b8907ff8a484fda0b6912cac966a4e81a53aa91f114601b"
+          "sha256": "15ab363d37244ee858288268464f722a96ce470738a524ed9f19a7eba4122c4c"
         },
         {
           "path": "crates/street-game/src/myrules.rs",
@@ -882,7 +882,7 @@
         }
       ],
       "tolerance": "The start meters and pockets exactly.",
-      "limitations": "Static: no capture of a Gamebreaker Wins game. Last re-pinned 2026-10-24 after the trick let-go and rebound branch notes, docs only (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Static: no capture of a Gamebreaker Wins game. Last re-pinned 2026-10-24 after the cvt.w.s truncation sweep (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "A Gamebreaker Wins game from My Rules with a spot, captured."
     },
     {
