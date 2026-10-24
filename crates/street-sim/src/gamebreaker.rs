@@ -1141,12 +1141,10 @@ impl RegionMap {
         // negates x for an actor of team 0 (actor+0x284 == 0, raw
         // FUN_00141298), which attacks +x.
         let x = if team == 0 { -position[0] } else { position[0] };
-        let column = (((-x + 42.0) / 84.0) * 320.0)
-            .round_ties_even()
-            .clamp(0.0, 319.0) as usize;
-        let row = (((-position[1] + 26.5) / 53.0) * 206.0)
-            .round_ties_even()
-            .clamp(0.0, 205.0) as usize;
+        // `cvt.w.s`, which truncates on the EE (`0x141328`), then the
+        // clamps.
+        let column = ((((-x + 42.0) / 84.0) * 320.0) as i32).clamp(0, 319) as usize;
+        let row = ((((-position[1] + 26.5) / 53.0) * 206.0) as i32).clamp(0, 205) as usize;
         let mut start = 0;
         for run in self.rows.get(row)? {
             start += usize::from(run.length);
