@@ -703,8 +703,8 @@ impl NativeCameraState {
     /// zero when it would cross it, the lens offset does not.
     fn street_offsets(&mut self, row: CameraModeRow) {
         let o = &mut self.offsets;
-        let lens = row.row_word7 + o.lens;
-        let height = row.eye_y + o.height;
+        let lens = camera_add(row.row_word7, o.lens);
+        let height = camera_add(row.eye_y, o.height);
         self.scalar = lens;
         self.eye[1] = height;
         let (mut dy, mut dl) = (0.0_f32, 0.0_f32);
@@ -1249,10 +1249,10 @@ impl NativeCameraState {
                 }
             }
         }
-        self.angles[1] += self.velocity[3];
-        self.angles[0] += self.velocity[2];
-        self.eye[0] += self.velocity[0];
-        self.eye[2] += self.velocity[1];
+        self.angles[1] = camera_add(self.angles[1], self.velocity[3]);
+        self.angles[0] = camera_add(self.angles[0], self.velocity[2]);
+        self.eye[0] = camera_add(self.eye[0], self.velocity[0]);
+        self.eye[2] = camera_add(self.eye[2], self.velocity[1]);
         let bound = CAMERA_MODE_ROWS[self.mode].x_bound;
         if self.eye[0] > bound || self.eye[0] < -bound {
             self.eye[0] = self.eye[0].clamp(-bound, bound);
@@ -3499,14 +3499,14 @@ pub fn approach_step(current: f32, target: f32, limit: f32) -> f32 {
 }
 
 pub fn velocity_step(current: f32, command: f32, correction: f32, yaw: bool) -> f32 {
-    if correction == 0.0 || (current - command).abs() < correction.abs() {
-        if command == 0.0 || (yaw && current * command < 0.0) {
+    if correction == 0.0 || camera_add(current, -command).abs() < correction.abs() {
+        if command == 0.0 || (yaw && camera_mul(current, command) < 0.0) {
             0.0
         } else {
             current
         }
     } else {
-        current + correction
+        camera_add(current, correction)
     }
 }
 
@@ -5481,7 +5481,11 @@ mod camera_pose_tests {
         // Velocity step overshooting check
         assert_eq!(velocity_step(1.0, 2.0, 0.5, false), 1.5);
         assert_eq!(velocity_step(1.0, 1.2, 0.5, false), 1.0);
-        assert_eq!(velocity_step(-1.0, 1.0, 0.1, true), -0.9);
+        // The EE's add (its guard bit, then chopped): -0.90000004.
+        assert_eq!(
+            velocity_step(-1.0, 1.0, 0.1, true),
+            f32::from_bits(0xbf66_6667)
+        );
 
         // Native camera state initialization and stepping
         let mut state = NativeCameraState::new(0);
@@ -7185,7 +7189,7 @@ mod camera_pose_tests {
         };
         let text = std::fs::read_to_string(path).expect("read played camera cases");
         let (mut cases, mut settles, mut close, mut exact_depth) = (0, 0, 0, 0);
-        let mut settles_close = 0;
+        let (mut settles_close, mut tight) = (0, 0);
         let mut worst = (0.0_f32, String::new());
         // The free run: the production row carried from update to update
         // on the capture's reads alone, seeded at each break in the chain.
@@ -7251,6 +7255,7 @@ mod camera_pose_tests {
                     state.depth, state.transition, expected[12] as i32
                 );
             }
+            tight += usize::from(error < 1e-6);
             if error < 1e-4 {
                 settles_close += usize::from(kind == "T");
                 close += 1;
@@ -7294,7 +7299,7 @@ mod camera_pose_tests {
             running = (kind == "S").then_some((frame, next));
         }
         eprintln!(
-            "played row: {cases} cases ({settles} settles, {settles_close} of them within 1e-4), {close} within 1e-4, depth and transition exact in {exact_depth}, worst {worst:?}"
+            "played row: {cases} cases ({settles} settles, {settles_close} of them within 1e-4), {tight} within 1e-6, {close} within 1e-4, depth and transition exact in {exact_depth}, worst {worst:?}"
         );
         eprintln!(
             "free run: {chained} carried updates, {chained_close} within 1e-3 of the original's pose, worst {chained_worst}"
