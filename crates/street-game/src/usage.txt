@@ -43,6 +43,7 @@ usage: street-game [--iso <path>] [--court <ID>] [--teams <home>,<away>] [--seed
   --unlimited-turbo  the cheat.
   --full-meters  the home team starts with a Level 2 gamebreaker ready (for
                 testing the staged gamebreakers).
+  --level1      the home team starts with a Level 1 gamebreaker ready.
   --level2-at   x,z in court units: the School's game (its court, the Nets
                 and the Lakers); the Lakers' meter fills to a Level 2 and
                 their holder fires it from there once he has the ball (the

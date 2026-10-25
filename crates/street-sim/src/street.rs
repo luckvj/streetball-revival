@@ -1120,31 +1120,84 @@ impl World {
         };
         let hoop = target_hoop(sequence.team);
         let rim = self.hoops[hoop].rim;
-        // Staged launcher (`FUN_00334330` → `FUN_0014C408`,
-        // `00134380..0013439c`): flight `t = max(cue frames, 15)` with the
-        // same ballistic solve as `launch` — no 14-unit apex rule, no 0.5 s
-        // gameplay minimum. Gameplay shots use `ball::shot_flight_time`.
-        // With the time and both ends fixed the velocity is determined, so
-        // the aim routine's angle (`0x1729F8..0x17356C`: root range,
-        // `t·(π/8)+π/4`, 45°..67.5°) does not shape the staged arc.
-        let duration = cue.duration.max(15) as f32 * crate::TICK_SECONDS;
         let long = config.families[1..=4]
             .iter()
             .flatten()
             .any(|&script| script == Some(sequence.script));
-        self.ball.launch(hand, rim, duration);
-        self.ball.state = BallState::Shot;
-        self.ball.pass = None;
-        self.ball.shot = Some(crate::Shot {
+        let points = if long { 2 } else { 1 };
+        // The actor's own shot (`FUN_00333ef8`, player vt+0x12c): the
+        // launcher `FUN_0014aaf8` as a gameplay shot's release calls it,
+        // made unless the record's word 8, aimed by its word 12 when that
+        // is 5 or less (else straight at the basket), at 67.5° with its
+        // word 16 of 1 and otherwise `π/4 + π/8 × max(0, (20 − d) / 20)` for
+        // his distance `d` from the rim across the floor: a shot's own arc,
+        // its flight from the angle with the launcher's half-second and
+        // 14-unit floors. A shooter whose clip is dunking (state bit 7)
+        // takes the launcher's dunk path at the hand's pace (`0x14ad14`).
+        // The launcher's fourth argument (`FUN_00141038`'s script bands)
+        // only records the basket for the side.
+        let made = cue.word(8) == Some(0);
+        let kind = cue
+            .word(12)
+            .and_then(|k| u8::try_from(k).ok())
+            .filter(|&k| k <= 5)
+            .unwrap_or(0);
+        let pose = config.clip_pose(plan, sequence, role, sequence.frame as f32);
+        let at = pose.map_or(self.players[player].position, |p| {
+            let x = if sequence.mirrored() {
+                -p.position[0]
+            } else {
+                p.position[0]
+            };
+            [x, p.position[2]]
+        });
+        let d = ((at[0] - rim[0]) * (at[0] - rim[0]) + at[1] * at[1]).sqrt();
+        let angle = if cue.word(16) == Some(1) {
+            f32::from_bits(0x3f96_cbe4)
+        } else {
+            ((20.0 - d) / 20.0).max(0.0) * f32::from_bits(0x3ec9_0fda) + f32::from_bits(0x3f49_0fdb)
+        };
+        let dunking = pose.is_some_and(|p| {
+            self.poses
+                .get()
+                .is_some_and(|bank| bank.state(p.animation, p.animation_frame as i32) & 0x80 != 0)
+        });
+        let shot = crate::Shot {
             shooter: player,
             hoop,
-            made: true,
-            points: if long { 2 } else { 1 },
+            made,
+            points,
             gamebreaker: 2,
             layup: false,
             tried: 0,
             slam: None,
-        });
+        };
+        self.ball.position = hand;
+        if dunking {
+            let middle = [rim[0], crate::shooting::NATIVE_AIM_HEIGHT, rim[2]];
+            let from = crate::shooting::dunk_place(hand, middle, self.ball.radius);
+            let pace = crate::shooting::dunk_pace(crate::pose::length(self.ball.moved), false);
+            let call = crate::shooting::ShotCall {
+                percent: 0,
+                made,
+                kind: if made { 0 } else { 3 },
+                angle,
+            };
+            let slam = Some(Basket::Gamebreaker {
+                level: 2,
+                long,
+                dunk: true,
+            });
+            self.launch_shot(hoop, from, call, crate::Shot { slam, ..shot }, Some(pace));
+        } else {
+            let call = crate::shooting::ShotCall {
+                percent: 100,
+                made,
+                kind,
+                angle,
+            };
+            self.launch_shot(hoop, hand, call, shot, None);
+        }
         self.events.push(Event::Shot {
             player,
             hoop,

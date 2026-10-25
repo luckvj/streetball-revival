@@ -144,10 +144,13 @@ impl Disc {
     }
 }
 
-/// `--full-meters`: every match starts with the home team's Level 2
-/// gamebreaker ready (a testing aid).
+/// `--full-meters` / `--level1`: every match starts with the home team's
+/// Level 2 (or Level 1) gamebreaker ready (a testing aid).
 #[derive(Resource)]
-pub struct FullMeters;
+pub struct FullMeters {
+    /// A gamebreaker pocketed under the full meter: Level 2.
+    pub level2: bool,
+}
 
 /// `--level2-at x,z`: in live play the away team's meter fills with one
 /// pocketed (a Level 2, as the School's lesson fills it, the meter's
@@ -709,10 +712,10 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     sim.side_teams = setup
         .teams
         .map(|t| u16::try_from(t).unwrap_or(street_sim::NO_TEAM));
-    if world.contains_resource::<FullMeters>() {
+    if let Some(level2) = world.get_resource::<FullMeters>().map(|f| f.level2) {
         // The match start's fill (`FUN_001457f8`): 100 and over pockets one,
         // and the rest × 500 goes through the meter's set (`FUN_001448e0`).
-        sim.teams[0].pocketed = true;
+        sim.teams[0].pocketed = level2;
         sim.set_meter(0, street_sim::street::METER_FULL as f32);
         // Before the game starts no event reaches the stats (FUN_00186fa8).
         sim.events.clear();

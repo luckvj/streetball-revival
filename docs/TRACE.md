@@ -1519,12 +1519,13 @@ cluster) move trick points in and out of the gamebreaker meter
   `0014aaf8`): angle time `√(2(R·tanθ−dy)/g)`, floored by 0.5 s
   (`DAT_004b849c` = fps×0.5) and, for releases below 14, the
   rise-to-14-and-fall time (`00150750..00150794`); wired into
-  `release_shot` via `ball::shot_flight_time`. Staged Level 2 shots use
-  their own launcher (`FUN_00334330` → `FUN_0014C408`,
-  `t = max(cue frames, 15)`), wired into `staged_shot` — the gameplay
-  minimums do not apply there. Aim (`0x1729F8..0x17356C`, mislabeled
-  `FUN_00333ef8` which is a stub): root-based range, 45°..67.5° by
-  `(20−range)/20`; forced 67.5° when root y < 12 or |dx| > 38.
+  `release_shot` via `ball::shot_flight_time`. (Corrected 2026-10-24,
+  "Level 2 shots: the shooter's own launch" at the end: staged Level 2
+  shots go through this launcher too, from `FUN_00333ef8`, which is no
+  stub; `FUN_00334330` → `FUN_0014C408` with `t = max(cue frames, 15)` is
+  a toss to a floor point.) Aim (`0x1729F8..0x17356C`): root-based range,
+  45°..67.5° by `(20−range)/20`; forced 67.5° when root y < 12 or
+  |dx| > 38.
 
 ### The meter's hold and decay; the match's statistics (traced raw 2026-10-15)
 
@@ -12957,3 +12958,40 @@ where they are 9 of the original's 22, and penetration takes 88. So the
 let-go gap (2.4 against 8 a match) follows the play mix, the pick and roll
 at half the original's rate ("The computer's offence", attract-measuring),
 not a missing rule.
+
+### Level 2 shots: the shooter's own launch (2026-10-24)
+
+Vj: in a Level 2 "the ball goes straight to the basket", and the dunks
+look wrong. The staged ball's shot command (opcode 2) was launched in a
+fixed time, `max(cue frames, 15)`, and every plan's shot cue lasts 1 to
+10 frames, so each staged shot flew a quarter second along a nearly
+straight line. That timing is `FUN_00334330`'s: it reads the record's
+destination words (+0x14, +0x18), and with `t = max(duration, 15)` solves
+the vertical speed to land the ball on the floor (`−(½·g·t² + y)/t`). It
+is a toss to a point, not a shot.
+
+The shot is the player class's vt+0x12c (vtable `0x49cba0`, read from
+save state 1's RAM: +0x12c `0x333ef8`, +0x134 `0x334088` the vertical
+launch, +0x13c `0x334178` the finishing VM). `FUN_00333ef8`, with the
+ball in the actor's hands, bars him (actor+0x1a8 = fps / 3), then calls
+the launcher `FUN_0014aaf8` as a gameplay release does. Its arguments
+come from the record: made unless word 8; the aim kind word 12 when it
+is 5 or less, else 0; the angle 67.5° (`0x3f96cbe4`) with word 16 of 1,
+else `π/4 + π/8 × max(0, (20 − d) / 20)`, with d his distance from the
+rim (`FUN_001404e0`'s x, z 0) across the floor. The fourth argument is
+`FUN_00141038`'s band of the running script (−1 or under 5: 3; 5..12: 2;
+over: 0), which the launcher only stores in the basket's record
+(ball+0x15c by side). Every shipped plan's shot record has words 8, 12
+and 16 at 0, so all sixteen are makes straight at the basket at the
+distance's angle. The launcher then takes its dunk path at the hand's
+pace when the shooter's state has bit 7 (`0x14ad14`), as a gameplay dunk
+does.
+
+Built: `World::staged_shot` launches through `launch_shot`, from the
+staged hand, the angle from the staged pose's place, and the dunk path
+when his staged clip's state word has 0x80 at that frame
+(`gamebreaker::Config::clip_pose`, the pose bank's `state`); a staged dunk
+scores as a Level 2 dunk. The flight now takes the launcher's floors, so
+a low release can outlast its script; the ball then flies on and scores
+as the Level 2's.
+

@@ -1729,13 +1729,15 @@ impl Config {
     /// The actual animation attachment sampled the way FUN_00330f98 does:
     /// truncated native animation frame modulo the clip length, then model
     /// heading and player scale. Timeline reflection applies to local x too.
-    pub fn hand_position(
+    /// Role `role`'s pose at `frame` with the clip and clip frame he shows:
+    /// the plan's, or his native clock's outside a finishing span.
+    pub fn clip_pose(
         &self,
         plan: &SequencePlan,
         sequence: &Sequence,
         role: u8,
         frame: f32,
-    ) -> Option<[f32; 3]> {
+    ) -> Option<ActorPose> {
         let mut pose = plan
             .pose_at(frame)
             .get(usize::from(role))
@@ -1761,6 +1763,17 @@ impl Config {
             pose.animation_frame = f32::from_bits(clock.frame_bits)
                 + f32::from_bits(clock.step_bits) * (frame - clock.last_tick as f32).max(0.0);
         }
+        Some(pose)
+    }
+
+    pub fn hand_position(
+        &self,
+        plan: &SequencePlan,
+        sequence: &Sequence,
+        role: u8,
+        frame: f32,
+    ) -> Option<[f32; 3]> {
+        let pose = self.clip_pose(plan, sequence, role, frame)?;
         let player = sequence.actors.get(usize::from(role)).copied().flatten()?;
         let track = self
             .hands

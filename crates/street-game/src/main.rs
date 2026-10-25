@@ -177,8 +177,9 @@ struct Args {
     widescreen: Option<street_sim::records::Picture>,
     /// `--host` / `--join`: play online.
     online: Option<online::OnlineArgs>,
-    /// `--full-meters`: the home team starts with a Level 2 gamebreaker ready.
-    full_meters: bool,
+    /// `--full-meters` (Level 2) / `--level1`: the home team starts with a
+    /// gamebreaker ready.
+    full_meters: Option<bool>,
     /// `--level2-at x,z`: the away holder fires a Level 2 from there.
     level2_at: Option<[f32; 2]>,
     /// `--demo-delay`: the idle demo's wait, seconds, over the disc's
@@ -221,7 +222,7 @@ fn parse_args() -> Result<Args, String> {
         difficulty_given: false,
         widescreen: None,
         online: None,
-        full_meters: false,
+        full_meters: None,
         level2_at: None,
         demo_delay: None,
         play_by_play: false,
@@ -315,7 +316,8 @@ fn parse_args() -> Result<Args, String> {
                 });
             }
             "--unlimited-turbo" => args.rules.unlimited_turbo = true,
-            "--full-meters" => args.full_meters = true,
+            "--full-meters" => args.full_meters = Some(true),
+            "--level1" => args.full_meters = Some(false),
             "--level2-at" => {
                 let v = value()?;
                 let at = v
@@ -708,8 +710,8 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(o) = online {
         app.insert_resource(o);
     }
-    if full_meters {
-        app.insert_resource(setup::FullMeters);
+    if let Some(level2) = full_meters {
+        app.insert_resource(setup::FullMeters { level2 });
     }
     if let Some(at) = level2_at {
         app.insert_resource(setup::Level2At::new(at));
