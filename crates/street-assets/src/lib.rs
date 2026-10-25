@@ -16,6 +16,7 @@
 //! - [`morph`]: morph targets (players' faces on the shared bodies)
 //! - [`anim`]: EAGL animation banks (`/ANIM/*.BIN`)
 //! - [`clip`]: one decoded animation and its joints, sampled as the renderer and the match's tables sample them
+//! - [`ee`]: the EE's single-precision arithmetic (chopped multiplies and adds)
 //! - [`db`]: the game database (`/DATABASE/*.ADF`): players, teams, courts, and where each player's model is
 //!
 //! The other the original games, for the player editor (read from the user's
@@ -47,6 +48,7 @@ pub mod crowd;
 pub mod db;
 pub mod eagl;
 pub mod eagl_gc;
+pub mod ee;
 mod error;
 pub mod fe;
 pub mod font;

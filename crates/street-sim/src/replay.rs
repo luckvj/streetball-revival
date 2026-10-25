@@ -1040,9 +1040,11 @@ pub struct StagedReplay {
     pub camera: u8,
     /// `+0x64`: the command's speed in percent.
     pub percent: u8,
-    /// The frame the cameras were set to this update (`+0x5c` as
-    /// `FUN_00336868` read it, or the span's first at the command).
-    pub shown: u32,
+    /// The clock the cameras were set at this update (`+0x60` as
+    /// `FUN_00336868` read it, or the span's first frame at the command):
+    /// their records and keys the truncation's, the keys' values at the
+    /// clock itself (`FUN_00336d18`).
+    pub shown: f32,
     /// `+0x5c`, the truncation of `+0x60`, the clock.
     pub frame: u32,
     pub clock: f32,
@@ -1060,7 +1062,7 @@ impl StagedReplay {
             mirrored,
             camera,
             percent,
-            shown: from,
+            shown: from as f32,
             frame: from,
             clock: from as f32,
             ending: false,
@@ -1070,8 +1072,8 @@ impl StagedReplay {
     /// `FUN_00336868`, each update the manager is playing (`+0x28` 2 or
     /// 3): the cameras at `+0x5c`, then the clock on by the percent.
     pub fn step(&mut self) {
-        self.shown = self.frame;
-        self.clock += f32::from(self.percent) / 100.0;
+        self.shown = self.clock;
+        self.clock = crate::math::ee_add(self.clock, f32::from(self.percent) / 100.0);
         // cvt.w.s: toward zero.
         self.frame = self.clock as u32;
     }
@@ -1473,7 +1475,7 @@ impl Replays {
                 w.bool(s.mirrored);
                 w.u8(s.camera);
                 w.u8(s.percent);
-                w.u32(s.shown);
+                w.f(s.shown);
                 w.u32(s.frame);
                 w.f(s.clock);
                 w.bool(s.ending);
@@ -1618,7 +1620,7 @@ impl Replays {
                     mirrored: r.bool()?,
                     camera: r.u8()?,
                     percent: r.u8()?,
-                    shown: r.u32()?,
+                    shown: r.f()?,
                     frame: r.u32()?,
                     clock: r.f()?,
                     ending: r.bool()?,
@@ -1627,6 +1629,7 @@ impl Replays {
                     || s.camera > 9
                     || !(25..=150).contains(&s.percent)
                     || s.clock < 0.0
+                    || !(0.0..=s.clock).contains(&s.shown)
                 {
                     return bad("staged replay");
                 }
@@ -2010,7 +2013,7 @@ mod tests {
                 mirrored: true,
                 camera: 2,
                 percent: 40,
-                shown: 40,
+                shown: 40.0,
                 frame: 40,
                 clock: 40.0,
                 ending: false,
@@ -2024,7 +2027,7 @@ mod tests {
             other_human: false,
         };
         let mut updates = 1;
-        let mut cameras = vec![40];
+        let mut cameras = vec![40.0];
         while !r.manager.ended {
             r.update(&mut w, &mut Vec::new(), false, &[press], 1, false);
             if let Some(s) = r.staged {
@@ -2036,9 +2039,12 @@ mod tests {
         // 376 frames shown (151 at 0.4), an update asking to stop and the
         // end; the cameras from 40 on at 0.4 a frame.
         assert_eq!(updates, 376 + 2);
-        assert_eq!(&cameras[..5], [40, 40, 40, 40, 41]);
-        // The stop's update too: the cameras at 190 as it shows the newest.
-        assert_eq!(*cameras.last().unwrap(), 190);
+        // The clock's add chops (`add.s`).
+        let on = |clock: f32| crate::math::ee_add(clock, 0.4);
+        assert_eq!(cameras[..4], [40.0, 40.0, on(40.0), on(on(40.0))]);
+        // The stop's update too: the cameras in frame 190 as it shows the
+        // newest.
+        assert_eq!(*cameras.last().unwrap() as u32, 190);
         // Mode 7's end hands the script back, whose stop ends it the next
         // update: an update of its own, the gameplay still held, the
         // manager recording again.
