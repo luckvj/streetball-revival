@@ -6817,22 +6817,34 @@
     },
     {
       "id": "presentation.staged_camera_lens_roll_follow",
-      "scenario": "A staged script's camera (plays, freezes, reruns, court intros) is the staged helper's: the node (FUN_00331d08) puts tan(fov / 2) in +0x98, read through the shared projection (zoom 1.3), the roll (heading - 180) at +0x1b0 the renderer turns the view by, and a following record aims at its script actor or the ball.",
+      "scenario": "A staged script's camera (plays, freezes, reruns, court intros) is the staged helper's: the node (FUN_00331d08) puts tan(fov / 2) in +0x98, read through the shared projection (zoom 1.3), the roll (heading - 180) at +0x1b0 the renderer turns the view by, and a following record aims at its script actor or the ball, each on its state's clock: play at the frame before the manager's, the freeze's camera from its own frame, the replay's at the float clock before its step.",
       "status": "matched",
       "match_type": "numerical",
       "evidence_kind": "runtime",
       "evidence": [
         {
           "path": "docs/CAMERA_RECOVERY.md",
-          "locator": "The staged helper's lens, roll and following cameras (2026-10-21)",
-          "note": "The node, the pose callback and the renderer.",
+          "locator": "The staged helper's lens, roll and following cameras (2026-10-21); The staged cameras' clocks (2026-10-24)",
+          "note": "The node, the pose callback, the renderer, and the manager's clocks.",
           "sha256": "e6b4a3d10bc32a6bda435afde02277b2e3f6418fdbb22a0f2401f79754d37c29"
         },
         {
           "path": "crates/street-game/src/view.rs",
-          "locator": "StagedView; staged_pose; step_camera (follow); follow_camera (roll); tests the_staged_camera_has_the_originals_lens_roll_and_view, a_following_staged_camera_aims_at_its_actor",
+          "locator": "StagedView; staged_pose; step_camera (follow); follow_camera (roll); tests the_staged_camera_has_the_originals_lens_roll_and_view, a_following_staged_camera_aims_at_its_actor, staged_level2_cameras_follow_the_original",
           "note": "The port and its checks from the measured run.",
           "sha256": "3b033722be7bf379c0f04613f0f897f4975762e983a9cf714d5c223668cc3b74"
+        },
+        {
+          "path": "crates/street-assets/src/timeline.rs",
+          "locator": "Key::interpolate; Timeline::camera",
+          "note": "The keys at the clock in the EE's arithmetic (FUN_00336d18, FUN_00336f48).",
+          "sha256": "efbe6af10c2534b2b584f18357734e9f015eccfeeae3889121e13c99d8683153"
+        },
+        {
+          "path": "crates/street-sim/src/gamebreaker.rs",
+          "locator": "SequencePlan::camera_at",
+          "note": "Play's frame before, the freeze's count (FUN_00336628, FUN_003367c8).",
+          "sha256": "9e817d2bc681c087a94ac957faee5f2265f9630dae4d6b0e942dfc405fc66c8a"
         },
         {
           "path": "$EVIDENCE/street-legend-rules/rerun-camera/cam-run6.jsonl",
@@ -6845,10 +6857,16 @@
           "locator": "whole frame",
           "note": "The rerun at replay frame 140 (pitch +22): the ball at the top, the players at the bottom.",
           "sha256": "76756855613f4e2cf0fb9ab0a56222d5469f2c080cb35fe997654cf067e520b7"
+        },
+        {
+          "path": "$EVIDENCE/codex-street-recovery-20261022/native-level2-camera-03.jsonl",
+          "locator": "every line: script words 8, 10, 12 and the ten nodes",
+          "note": "GamLR2's play, freeze and replay: 1,017 on-screen samples, 843 exact and 174 torn reads against the rewrite.",
+          "sha256": "2b3eb7912d3b43b26bc8484b80eb851c885feffea6a0f7e0041b2d6720add082"
         }
       ],
-      "tolerance": "Eye and target within 0.1 of the node; the lens 1e-6; the view columns 2e-4.",
-      "limitations": "Measured on one plan (GamLR2) and its freeze; the other fifteen plans rest on the same code. A following camera's point is the drawn player's root and bone. Last re-pinned 2026-10-24 after the row camera's EE adds (re-pins that leave the cited region unchanged replace this line).",
+      "tolerance": "The script cameras' fields bit for bit (a torn read's fields this update's or the next's); eye and target within 0.1 of the node for following cameras; the lens 1e-6; the view columns 2e-4.",
+      "limitations": "Measured on one plan (GamLR2): its play, freeze and replay cameras bit for bit in four probes; the other fifteen plans rest on the same code. A following camera's point is the drawn player's root and bone. Not modelled: the nodes' state between updates (a replay faster than one frame an update could step over a key's frame and hold that key short of its end; every replay on the disc runs at 25 to 50 percent, so none does), and a key whose previous record is a camera that keeps the last position reads the record's position. Last re-pinned 2026-10-24 after the staged cameras' clocks (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "A rerun of a dunk plan (0.4) side by side with the rewrite."
     },
     {

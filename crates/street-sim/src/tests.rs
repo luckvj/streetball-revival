@@ -2682,7 +2682,8 @@ fn a_staged_script_freezes_and_stops_where_its_commands_say() {
         w.step(&none);
         assert!(frames.len() < 100);
     }
-    // Frame 12 holds for six more ticks, on the freeze's camera.
+    // Frame 12 holds for six more ticks, on the freeze's camera from its
+    // own frame; play shows the frame before the manager's.
     let held: Vec<u32> = frames
         .iter()
         .filter(|&&(f, _)| f == 12)
@@ -2690,8 +2691,10 @@ fn a_staged_script_freezes_and_stops_where_its_commands_say() {
         .collect();
     assert_eq!(held, [0, 1, 2, 3, 4, 5, 6]);
     let plan = w.staged.as_ref().unwrap().plan(12).unwrap();
-    assert_eq!(plan.camera_at(12.0, 3.0), (1, 15.0));
-    assert_eq!(plan.camera_at(13.0, 0.0), (0, 13.0));
+    assert_eq!(plan.camera_at(12.0, 1.0, false), (1, 12.0));
+    assert_eq!(plan.camera_at(12.0, 3.0, false), (1, 14.0));
+    assert_eq!(plan.camera_at(12.0, 6.0, true), (0, 11.0));
+    assert_eq!(plan.camera_at(13.0, 0.0, false), (0, 12.0));
     // The script stops at frame 40, short of its 60.
     assert_eq!(frames.last().map(|&(f, _)| f), Some(40));
 }
@@ -5192,4 +5195,121 @@ fn a_holder_driving_into_his_defender_with_turbo_collides() {
     );
     assert!(w.down(0) && w.down(1) && w.backdown_holds(1));
     assert_eq!((w.players[1].position, w.players[0].position), (a0, b0));
+}
+
+/// Opt-in check of the staged Level 2 shots against the original's School
+/// runs (STREET_L2_RICH: the folder of `*-rich.json` captures, a sample
+/// every few updates). Every captured shot is a straight make through the
+/// aim, so its samples fix its arc: fitted against the ball's timer, its
+/// release is one update before the timer's start (`flight_updates`), as a
+/// pass's is. From that release, the actor's own angle (`FUN_00333ef8`,
+/// from the shooter's distance across the floor at his last sample with
+/// the ball) through the launcher's steepening and flight time must give
+/// the original's updates to the aim.
+#[test]
+fn staged_level_two_shots_fly_the_originals_arcs() {
+    let Some(folder) = std::env::var_os("STREET_L2_RICH") else {
+        return;
+    };
+    // Least squares of y against powers of s up to `degree`.
+    fn fit(s: &[f64], y: &[f64], degree: usize) -> Vec<f64> {
+        let n = degree + 1;
+        let mut a = vec![vec![0.0; n + 1]; n];
+        for (&s, &y) in s.iter().zip(y) {
+            for (i, row) in a.iter_mut().enumerate() {
+                for (j, cell) in row.iter_mut().take(n).enumerate() {
+                    *cell += s.powi((i + j) as i32);
+                }
+                row[n] += y * s.powi(i as i32);
+            }
+        }
+        for i in 0..n {
+            let pivot = a[i].clone();
+            for (k, row) in a.iter_mut().enumerate() {
+                if k != i {
+                    let f = row[i] / pivot[i];
+                    for (cell, p) in row.iter_mut().zip(&pivot) {
+                        *cell -= f * p;
+                    }
+                }
+            }
+        }
+        (0..n).map(|i| a[i][n] / a[i][i]).collect()
+    }
+    let mut checked = 0;
+    let mut paths: Vec<_> = std::fs::read_dir(folder)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.to_string_lossy().ends_with("-rich.json"))
+        .collect();
+    paths.sort();
+    for path in paths {
+        let doc: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        let samples: Vec<&serde_json::Value> = doc["samples"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|s| s["staged_clock"]["state"] == 3)
+            .collect();
+        let Some(first) = samples.iter().position(|s| s["ball"]["state"] == 5) else {
+            continue;
+        };
+        let flight: Vec<_> = samples[first..]
+            .iter()
+            .take_while(|s| s["ball"]["state"] == 5)
+            .collect();
+        // A dunk's two updates of flight hold no arc to fit.
+        if flight.len() < 3 {
+            continue;
+        }
+        let f = |v: &serde_json::Value| v.as_f64().unwrap();
+        let s: Vec<f64> = flight.iter().map(|x| -f(&x["ball"]["timer"])).collect();
+        let axis = |k: usize| -> Vec<f64> {
+            flight
+                .iter()
+                .map(|x| f(&x["ball"]["position"][k]))
+                .collect()
+        };
+        let (x, y, z) = (
+            fit(&s, &axis(0), 1),
+            fit(&s, &axis(1), 2),
+            fit(&s, &axis(2), 1),
+        );
+        let side = if axis(0)[0] > 0.0 { 36.75 } else { -36.75 };
+        let release = -(f(&flight[0]["ball"]["flight_updates"]) + 1.0);
+        let at = |c: &[f64], s: f64| c.iter().rev().fold(0.0, |acc, &k| acc * s + k);
+        let from = [at(&x, release), at(&y, release), at(&z, release)].map(|v| v as f32);
+        let original = (side - x[0]) / x[1] - release;
+        // The shooter: the ball's last holder, where that sample has him.
+        let holding = samples[..first]
+            .iter()
+            .rev()
+            .find(|s| s["ball"]["holder"].as_u64() != Some(0))
+            .unwrap();
+        let holder = holding["ball"]["holder"].as_u64().unwrap();
+        let root = holding["actors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|a| {
+                u64::from_str_radix(&a["address"].as_str().unwrap()[2..], 16).unwrap() == holder
+            })
+            .map(|a| [f(&a["position"][0]) as f32, f(&a["position"][2]) as f32])
+            .unwrap();
+        let d = ((root[0] - side as f32).powi(2) + root[1] * root[1]).sqrt();
+        let angle = ((20.0 - d) / 20.0).max(0.0) * f32::from_bits(0x3ec9_0fda)
+            + f32::from_bits(0x3f49_0fdb);
+        let goal = [side as f32, crate::shooting::NATIVE_AIM_HEIGHT, 0.0];
+        let aim = [goal[0] - from[0], goal[1] - from[1], goal[2] - from[2]];
+        let steep = crate::ball::steepen_entry(angle, from, aim, crate::ball::RADIUS, false);
+        let ours = crate::ball::shot_flight_time(from, goal, steep) * TICK_HZ as f32;
+        eprintln!(
+            "{}: {original:.3} updates to the aim, ours {ours:.3} (d {d:.2})",
+            path.file_name().unwrap().to_string_lossy()
+        );
+        assert!((f64::from(ours) - original).abs() < 0.1);
+        checked += 1;
+    }
+    assert!(checked > 0);
 }

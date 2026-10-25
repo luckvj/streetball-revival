@@ -12995,3 +12995,20 @@ scores as a Level 2 dunk. The flight now takes the launcher's floors, so
 a low release can outlast its script; the ball then flies on and scores
 as the Level 2's.
 
+Checked against the School's sixteen Level 2 runs (2026-10-24,
+`codex-street-recovery-20261022/level2-batch/*-rich.json`, a sample
+every few updates). Families 1..8 end in a shot (ball state 5), 9..16 in
+a dunk (the ball held through the finish, then two updates of flight).
+Every captured shot is a make straight through the aim (the rim's x,
+z 0, height 11.956775), so its samples fix the arc. Fitted against the
+ball's timer, its release is one update before the timer's start
+(`flight_updates`), as a pass's is. Two families steepen into the rim's
+entry (`steepen_entry`); the other six fly at the actor's own angle,
+45° for the three at 20 or more from the rim, 47.1° to 48.0° for the
+three nearer.
+From each release the rewrite's angle rule, steepening and flight time
+give the original's updates to the aim within 0.07 (all but one within
+0.01; the one's distance is from a sample a few updates before the
+release). The test is `staged_level_two_shots_fly_the_originals_arcs`
+(`STREET_L2_RICH`).
+

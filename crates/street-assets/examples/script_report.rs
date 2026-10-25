@@ -35,8 +35,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             if let Payload::Camera(c) = &r.payload {
                 println!(
-                    "  f{:4} d{:4} camera id {} flags {:?} fov {:.1}",
-                    r.frame, r.duration, c.flags[2], c.flags, c.fov
+                    "  #{k} f{:4} d{:4} camera id {} flags {:?} fov {:.1} actor {} at {:?} to {:?}",
+                    r.frame,
+                    r.duration,
+                    c.flags[2],
+                    c.flags,
+                    c.fov,
+                    c.target_actor,
+                    c.position,
+                    c.target
                 );
             }
             if let Payload::Effect(e) = &r.payload {

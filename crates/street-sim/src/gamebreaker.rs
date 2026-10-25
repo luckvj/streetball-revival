@@ -752,12 +752,21 @@ impl SequencePlan {
             .map_or(self.frame_count, |s| (s + 1).min(self.frame_count))
     }
 
-    /// The camera on screen at `frame`, `held` frames into the freeze: its
-    /// id and the frame of its track.
-    pub fn camera_at(&self, frame: f32, held: f32) -> (u8, f32) {
+    /// The camera on screen after an update that left the manager at
+    /// `frame`, `held` updates into the freeze (`resuming`: the update that
+    /// ends it): its id and the frame of its keys. The play update sets its
+    /// cameras after the frame's records and before it counts the frame on,
+    /// so play shows the frame before (`FUN_00336628`); the update whose command freezes
+    /// skips them, its command setting the freeze's camera at its own frame
+    /// (`FUN_00336340`), and each update after at one more (`FUN_003367c8`);
+    /// the update that ends the freeze turns camera 0 back on as it was
+    /// (`FUN_00336450`).
+    pub fn camera_at(&self, frame: f32, held: f32, resuming: bool) -> (u8, f32) {
         match self.controls.hold {
-            Some(h) if held > 0.0 && frame as u32 == h.frame => (h.camera, h.frame as f32 + held),
-            _ => (0, frame),
+            Some(h) if held > 0.0 && !resuming && frame as u32 == h.frame => {
+                (h.camera, h.frame as f32 + held - 1.0)
+            }
+            _ => (0, (frame - 1.0).max(0.0)),
         }
     }
 

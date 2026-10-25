@@ -195,39 +195,12 @@ fn mode_camera_pose(focus: Vec3, side: f32, mode: usize) -> (Vec3, Vec3) {
     (Vec3::new(x, row.eye_y, z), focus)
 }
 
+// Normal finite camera arithmetic follows the captured EE execution policy
+// (`street_assets::ee`): ordinary operations chop, while division and square
+// root round to nearest.
+use street_assets::ee::{add as camera_add, chop as camera_chop, mul as camera_mul};
+
 /// Native finite-scalar atan polynomial used by FUN_00300990.
-// Normal finite camera arithmetic follows the captured EE execution policy: ordinary
-// operations chop, while division and square root round to nearest. This is
-// verified against PCSX2 2.8.2 captures, not a complete PS2 float emulator.
-fn camera_chop(value: f64) -> f32 {
-    let rounded = value as f32;
-    if rounded.is_finite() && (rounded.abs() as f64) > value.abs() {
-        f32::from_bits(rounded.to_bits() - 1)
-    } else {
-        rounded
-    }
-}
-
-fn camera_mul(a: f32, b: f32) -> f32 {
-    camera_chop(a as f64 * b as f64)
-}
-
-fn camera_add(mut a: f32, mut b: f32) -> f32 {
-    // PCSX2's EE add/sub path discards alignment bits except one guard bit. Mask the
-    // smaller operand before adding, without changing the process rounding.
-    let difference = ((a.to_bits() >> 23) & 255) as i32 - ((b.to_bits() >> 23) & 255) as i32;
-    if difference >= 25 {
-        b = f32::from_bits(b.to_bits() & 0x8000_0000);
-    } else if difference <= -25 {
-        a = f32::from_bits(a.to_bits() & 0x8000_0000);
-    } else if difference > 0 {
-        b = f32::from_bits(b.to_bits() & (u32::MAX << (difference - 1)));
-    } else if difference < 0 {
-        a = f32::from_bits(a.to_bits() & (u32::MAX << (-difference - 1)));
-    }
-    camera_chop(a as f64 + b as f64)
-}
-
 fn native_camera_atan(x: f32) -> f32 {
     let square = camera_mul(x, x);
     let t = if x.abs() > 1.0 {
@@ -4131,7 +4104,7 @@ pub(crate) fn staging<'a>(
             mirrored: s.mirrored(),
             hoop: street_sim::target_hoop(s.team),
             cast_only: false,
-            camera: plan.camera_at(s.frame as f32, s.held as f32),
+            camera: plan.camera_at(s.frame as f32, s.held as f32, s.resume_pending),
         });
     }
     let intro = intro?;
@@ -4568,7 +4541,7 @@ pub fn step_camera(
         .filter(|t| t.replaying() && t.mode == crate::tape::mode::STAGED)
         .and_then(|t| t.staged);
     let script_camera = match rerun {
-        Some(r) => Some((r.script, r.mirrored, r.camera, r.shown as f32)),
+        Some(r) => Some((r.script, r.mirrored, r.camera, r.shown)),
         None => staging(&sim.world, intro.as_deref())
             .map(|s| (s.script, s.mirrored, s.camera.0, s.camera.1)),
     };
@@ -5058,10 +5031,154 @@ mod staged_display_tests {
 mod camera_pose_tests {
     use super::*;
 
-    /// Opt-in renderer-stage check from the original projection object's
-    /// consumed angle (+0x110). The five float32 hex words are native angle
-    /// degrees, aspect, zoom, m00, m11. This bypasses scalar-to-degree conversion
-    /// and checks Bevy's actual projection matrix, not whole-camera parity.
+    /// Opt-in check of a staged Level 2's script cameras against the
+    /// original's (STREET_L2_CAMPROBE: the driver's `camprobe` lines, the
+    /// script manager's words +0x30.. with its state at word 8, its frame
+    /// at word 10 and its replay clock at word 12, and the ten camera
+    /// nodes' +0x20..: position, target, fov, heading). Each state's camera
+    /// on screen: in play (3) camera 0 at the frame before the manager's;
+    /// in the freeze (7) the freeze's camera, one more frame each update
+    /// from the freeze's own; in the replay (5) the replay's camera at the
+    /// clock before the update's step.
+    #[test]
+    fn staged_level2_cameras_follow_the_original() {
+        use street_assets::timeline::Payload;
+        let (Some(path), Some(iso)) = (
+            std::env::var_os("STREET_L2_CAMPROBE"),
+            std::env::var_os("STREET_ISO"),
+        ) else {
+            return;
+        };
+        let mut iso = street_assets::iso::Iso::open(iso).unwrap();
+        let bank = street_assets::timeline::ScriptBank::read(&mut iso).unwrap();
+        let word = |w: &serde_json::Value| w.as_u64().unwrap() as u32;
+        let text = std::fs::read_to_string(path).unwrap();
+        let lines: Vec<serde_json::Value> = text
+            .lines()
+            .map(|l| serde_json::from_str(l).unwrap())
+            .collect();
+        // The script: the one whose camera 0 record sits where node 0 does
+        // when the first frame is set.
+        let first = lines
+            .iter()
+            .find(|l| word(&l["script"][8]) == 3 && word(&l["script"][10]) == 1)
+            .unwrap();
+        let node0: Vec<f32> = (0..3)
+            .map(|k| f32::from_bits(word(&first["nodes"][0][k])))
+            .collect();
+        let script = (0..bank.scripts.len())
+            .find(|&s| {
+                bank.scripts[s]
+                    .camera(0.0, false, 0)
+                    .is_some_and(|c| c.position == [node0[0], node0[1], node0[2]])
+            })
+            .expect("the probe's script");
+        let timeline = &bank.scripts[script];
+        // The replay command (op 0) and the freeze (op 2): camera at word 2.
+        let command = |op: u16| {
+            timeline.records.iter().find_map(|r| match &r.payload {
+                Payload::Command(c) if c.dispatch == 1 && c.opcode == op => Some((
+                    r.frame,
+                    r.duration,
+                    u32::from_le_bytes(c.bytes[8..12].try_into().unwrap()) as u8,
+                    u32::from_le_bytes(c.bytes[16..20].try_into().unwrap()),
+                )),
+                _ => None,
+            })
+        };
+        let hold = command(2).unwrap();
+        let rerun = command(0).unwrap();
+        let mut replay =
+            street_sim::replay::StagedReplay::new(script, false, rerun.0, rerun.3 as u8, rerun.2);
+        let fields = |c: &street_assets::timeline::Camera| {
+            [
+                c.position[0],
+                c.position[1],
+                c.position[2],
+                c.target[0],
+                c.target[1],
+                c.target[2],
+                c.fov,
+                c.heading,
+            ]
+        };
+        let (mut samples, mut exact, mut torn) = (0, 0, 0);
+        let mut worst = (0.0_f32, String::new());
+        let mut freeze = std::collections::BTreeSet::new();
+        for l in &lines {
+            let (state, frame) = (word(&l["script"][8]), word(&l["script"][10]));
+            let clock = f32::from_bits(word(&l["script"][12]));
+            let (id, time) = match state {
+                3 if frame > 0 => (0, (frame - 1) as f32),
+                7 => (hold.2, f32::NAN),
+                5 => {
+                    while replay.clock < clock {
+                        replay.step();
+                    }
+                    if replay.clock != clock || clock == rerun.0 as f32 {
+                        continue;
+                    }
+                    (rerun.2, replay.shown)
+                }
+                _ => continue,
+            };
+            let node = &l["nodes"][usize::from(id)];
+            let want: Vec<f32> = (0..8).map(|k| f32::from_bits(word(&node[k]))).collect();
+            let time = if time.is_nan() {
+                // The freeze's count isn't in the probe: the frame whose
+                // camera the node holds.
+                let at = |f: u32| fields(&timeline.camera(f as f32, false, id).unwrap());
+                if let Some(f) = (hold.0..hold.0 + hold.1).find(|&f| at(f)[..] == want[..]) {
+                    freeze.insert(f);
+                    f as f32
+                } else if let Some(f) = (hold.0..hold.0 + hold.1)
+                    .find(|&f| (0..8).all(|k| want[k] == at(f)[k] || want[k] == at(f + 1)[k]))
+                {
+                    f as f32
+                } else {
+                    samples += 1;
+                    eprintln!("freeze node matches no frame: {want:?}");
+                    continue;
+                }
+            } else {
+                time
+            };
+            let camera = timeline.camera(time, false, id).unwrap();
+            let got = fields(&camera);
+            let error = got
+                .iter()
+                .zip(&want)
+                .map(|(a, b)| (a - b).abs())
+                .fold(0.0_f32, f32::max);
+            // The probe's reads aren't atomic: a field read after the next
+            // update has that update's value.
+            let after = if state == 5 { replay.clock } else { time + 1.0 };
+            let next = fields(&timeline.camera(after, false, id).unwrap());
+            samples += 1;
+            exact += usize::from(got[..] == want[..]);
+            if (0..8).all(|k| want[k] == got[k] || want[k] == next[k]) {
+                torn += usize::from(got[..] != want[..]);
+            } else if error > worst.0 || worst.1.is_empty() {
+                worst = (
+                    error,
+                    format!(
+                        "state {state} frame {frame} time {time} camera {id}: ours {got:?} original {want:?}"
+                    ),
+                );
+            }
+        }
+        eprintln!(
+            "script {script}: {samples} samples, {exact} exact, {torn} torn reads, worst {worst:?}, freeze frames {}..={}",
+            freeze.first().unwrap_or(&0),
+            freeze.last().unwrap_or(&0)
+        );
+        assert!(samples > 0 && exact > samples * 3 / 4);
+        assert_eq!(exact + torn, samples, "{worst:?}");
+        // The freeze shows its camera from its own frame through its last
+        // update's.
+        assert_eq!(freeze.first(), Some(&hold.0));
+        assert_eq!(freeze.last(), Some(&(hold.0 + hold.1 - 1)));
+    }
     #[test]
     fn original_capture_matches_production_consumed_projection() {
         use bevy::camera::CameraProjection;

@@ -693,3 +693,40 @@ yaw's misses: through `+0x134` a one-pixel window moved the framing. With
 all of it `played_match_courtside_follows_the_original` lands every one of
 the 7,848 updates within 1e-6 (worst 2.4e-7) and `+0x134` in all, up from
 7,255 and 7,837, and now asserts both.
+
+## The staged cameras' clocks (2026-10-24)
+
+The script manager sets its camera nodes at a different frame in each of
+its states. In play (state 3) its update (`FUN_00336628`) runs the frame's
+records first, then the nodes at that frame (`+0x58`), then counts the
+frame on: the camera after an update shows the frame before the manager's.
+A record that changes the state (the freeze's or the replay's command)
+ends the update before the nodes. The freeze (`FUN_00336340`) keeps its
+command's duration at `+0x78` and sets the freeze's camera at the
+command's frame. Each later update (`FUN_003367c8`) counts `+0x78` down
+and sets it at `frame + duration - left`. The update that reaches 0
+(`FUN_00336450`) turns camera 0 back on without setting it. GamLR2's
+freeze shows camera 1 from frame 100 through 159. The replay
+(`FUN_00336868`) sets the replay's camera at the integer frame `+0x5c`,
+then adds `percent / 100` (`div.s`, then a chopped `add.s`) to the clock
+`+0x60` and truncates it into `+0x5c`.
+
+A key (`FUN_00336d18`) runs only while its previous record's frame is
+below the frame and its own frame isn't. A step key sets its value on its
+frame. The others go through `FUN_00336f48` at the float clock `+0x60` in
+the replay, else at the frame. That gives `t = (time - previous) / delta`,
+held at 1 above with no lower clamp, and `FUN_00337088` (linear) or
+`FUN_00337098` (Hermite, tangents times `delta + 1`) in chopped FPU
+arithmetic. A previous record that isn't a key gives the node's current
+field (`vt+0xd0`) and a zero tangent.
+
+Ported (`Timeline::camera` and `Key::interpolate` in street-assets, with
+the EE's arithmetic in `street_assets::ee`; `SequencePlan::camera_at`;
+`StagedReplay::shown`, the clock the cameras saw). The four GamLR2 probes
+(`codex-street-recovery-20261022/native-level2-camera-03.jsonl` and
+`street-legend-rules/rerun-camera/cam-run4..6.jsonl`: each node's fields
+and the manager's words) agree bit for bit. The camera-03 probe has 1,017
+on-screen samples: 843 exact, and the other 174 torn reads, each field
+either this update's value or the next one's. The test is
+`staged_level2_cameras_follow_the_original` (`STREET_L2_CAMPROBE`). The
+other fifteen plans run the same code. Their cameras weren't probed.

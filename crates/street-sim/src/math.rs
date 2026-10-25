@@ -25,3 +25,26 @@ pub fn len(x: f32, z: f32) -> f32 {
 pub fn len3(x: f32, y: f32, z: f32) -> f32 {
     (x * x + y * y + z * z).sqrt()
 }
+
+/// The EE's `add.s` as PCSX2 runs it: the smaller operand keeps one guard
+/// bit past the larger's, and the sum chops (rounds toward zero). The
+/// twin of `street_assets::ee::add` (the simulation reads no disc crate).
+pub fn ee_add(mut a: f32, mut b: f32) -> f32 {
+    let difference = ((a.to_bits() >> 23) & 255) as i32 - ((b.to_bits() >> 23) & 255) as i32;
+    if difference >= 25 {
+        b = f32::from_bits(b.to_bits() & 0x8000_0000);
+    } else if difference <= -25 {
+        a = f32::from_bits(a.to_bits() & 0x8000_0000);
+    } else if difference > 0 {
+        b = f32::from_bits(b.to_bits() & (u32::MAX << (difference - 1)));
+    } else if difference < 0 {
+        a = f32::from_bits(a.to_bits() & (u32::MAX << (-difference - 1)));
+    }
+    let exact = a as f64 + b as f64;
+    let rounded = exact as f32;
+    if rounded.is_finite() && (rounded.abs() as f64) > exact.abs() {
+        f32::from_bits(rounded.to_bits() - 1)
+    } else {
+        rounded
+    }
+}

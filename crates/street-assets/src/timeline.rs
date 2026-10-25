@@ -366,10 +366,13 @@ pub struct ActorCurve {
 }
 
 impl Key {
-    /// Original interpolation (`FUN_00336f48`, `FUN_00337088/98`).
-    /// Cubic slopes scale by the inclusive frame interval (`delta + 1`).
+    /// Original interpolation (`FUN_00336f48`, `FUN_00337088/98`), in the
+    /// EE's arithmetic and order. `t` past 1 is held at 1 (no lower clamp:
+    /// a key runs only after its previous record's frame). Cubic slopes
+    /// scale by the inclusive frame interval (`delta + 1`).
     pub fn interpolate(self, previous: f32, tangent: f32, delta: u32, t: f32) -> f32 {
-        let t = t.clamp(0.0, 1.0);
+        use crate::ee::{add, mul, sub};
+        let t = t.min(1.0);
         match self.interpolation {
             0 => {
                 if t >= 1.0 {
@@ -378,16 +381,15 @@ impl Key {
                     previous
                 }
             }
-            1 => previous + t * (self.value - previous),
+            1 => add(previous, mul(t, sub(self.value, previous))),
             2 => {
-                let a = tangent * (delta as f32 + 1.0);
-                let b = self.tangent * (delta as f32 + 1.0);
-                (((a + b + 2.0 * (previous - self.value)) * t
-                    + (3.0 * (self.value - previous) - b - 2.0 * a))
-                    * t
-                    + a)
-                    * t
-                    + previous
+                let span = (delta + 1) as f32;
+                let a = mul(tangent, span);
+                let b = mul(self.tangent, span);
+                let lean = sub(previous, self.value);
+                let cube = add(add(a, b), add(lean, lean));
+                let square = sub(sub(mul(sub(self.value, previous), 3.0), b), add(a, a));
+                add(mul(add(mul(add(mul(cube, t), square), t), a), t), previous)
             }
             _ => previous,
         }
@@ -538,14 +540,20 @@ impl Timeline {
 
     /// Camera `id` at `frame` (payload byte 36; `FUN_00337718` enables one
     /// id at a time: 0 in play, the freeze's and the replay's own ids when
-    /// they run). Only keys rooted at that camera's records move it.
+    /// they run). Only keys rooted at that camera's records move it. The
+    /// records and the keys that run are the truncated frame's (a key from
+    /// the frame after its previous record's); their values are at `frame`
+    /// itself (`FUN_00336d18`: the replay's float clock `+0x60` in the
+    /// manager's state 5, else the whole frame).
     pub fn camera(&self, frame: f32, mirrored: bool, id: u8) -> Option<Camera> {
-        let frame = frame.max(0.0).min(self.frames.saturating_sub(1) as f32);
+        let time = frame.max(0.0).min(self.frames.saturating_sub(1) as f32);
+        // cvt.w.s: the manager's frame (`+0x5c`, the clock truncated).
+        let frame = time as u32;
         let mut camera: Option<Camera> = None;
-        let mut changed = [f32::NEG_INFINITY; 8];
+        let mut changed = [0u32; 8];
         let ours = |payload: &Payload| matches!(payload, Payload::Camera(c) if c.flags[2] == id);
         for record in &self.records {
-            if record.frame as f32 > frame {
+            if record.frame > frame {
                 continue;
             }
             let Payload::Camera(next) = &record.payload else {
@@ -560,9 +568,9 @@ impl Timeline {
                     next.position = previous.position;
                 }
             } else {
-                changed[..3].fill(record.frame as f32);
+                changed[..3].fill(record.frame);
             }
-            changed[3..].fill(record.frame as f32);
+            changed[3..].fill(record.frame);
             camera = Some(next);
         }
         let camera_ref = camera.as_mut()?;
@@ -573,7 +581,7 @@ impl Timeline {
             let Some(previous) = self.records.get(usize::from(key.previous)) else {
                 continue;
             };
-            if previous.frame as f32 >= frame {
+            if previous.frame >= frame {
                 continue;
             }
             let Some(root) = self.key_root(index) else {
@@ -582,10 +590,10 @@ impl Timeline {
             if !ours(&self.records[root].payload) {
                 continue;
             }
-            let Some(value) = self.key_value(index, frame) else {
+            let Some(value) = self.key_value(index, time) else {
                 continue;
             };
-            let update = frame.min(record.frame as f32);
+            let update = frame.min(record.frame);
             let Some(stamp) = changed.get_mut(usize::from(key.field)) else {
                 continue;
             };
@@ -656,7 +664,7 @@ impl Timeline {
             value,
             tangent,
             delta,
-            (frame - previous.frame as f32) / delta as f32,
+            crate::ee::sub(frame, previous.frame as f32) / delta as f32,
         ))
     }
 
