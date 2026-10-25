@@ -2039,12 +2039,22 @@ const POST_MOVES: [i32; 32] = [
     380, 340, 380, 340, 380, 340, 380, 340, 420, 0, 45, 0, 180,
 ];
 
-/// `FUN_001837d0`: in a dunk (bit 7, `FUN_00181670`) at least 1 up and 5
-/// out, with the nearest opponent within 6, nearer the rim, and reaching
-/// above the ball (his hands, `FUN_00181f50`; the rewrite's reach is his
-/// height plus his standing reach).
+/// `FUN_001837d0` (raw `0x1837d0..0x1838ec`): no gamebreaker task busy
+/// (`FUN_00140ff8`), in a dunk (bit 7, `FUN_00181670`) at least 1 up and 5
+/// out, with the nearest opponent within 6, nearer the rim, and the
+/// highest of his posed hands and head (`FUN_00181f50`, [`World::top_bone`])
+/// above the ball (ball+0x34). Without the disc's animations the rewrite's
+/// standing reach above his feet stands in for the bones; with them that
+/// reach had a standing man's hands near 8.5 up, so most met dunks became
+/// lay-ups in the air.
+///
+/// [`World::top_bone`]: crate::World::top_bone
 fn dunk_blocked(ctx: &Ctx, i: usize) -> bool {
-    if !ctx.dunking(i) || ctx.w.players[i].height < 1.0 || ctx.hoop_dist(i) < 5.0 {
+    if ctx.w.gamebreaker_task.is_some()
+        || !ctx.dunking(i)
+        || ctx.w.players[i].height < 1.0
+        || ctx.hoop_dist(i) < 5.0
+    {
         return false;
     }
     let Some(o) = ctx.nth_opponent(i, 0, false) else {
@@ -2053,7 +2063,10 @@ fn dunk_blocked(ctx: &Ctx, i: usize) -> bool {
     if 6.0 <= ctx.between(i, o) || ctx.hoop_dist(i) <= ctx.hoop_dist(o) {
         return false;
     }
-    let hand = ctx.w.players[o].height + ctx.w.players[o].ratings.reach;
+    let hand = ctx
+        .w
+        .top_bone(o)
+        .unwrap_or(ctx.w.players[o].height + ctx.w.players[o].ratings.reach);
     ctx.w.ball.position[1] < hand
 }
 
@@ -2404,5 +2417,58 @@ mod tests {
                 .collect::<Vec<_>>()
         });
         assert_eq!(presses, [true, false, true, false]);
+    }
+
+    /// `FUN_001837d0` weighs the ball against the highest of the nearer
+    /// defender's posed hands and head (`FUN_00181f50`): a ball over a
+    /// man standing flat-footed in the dunker's way is no block, one under
+    /// his head is.
+    #[test]
+    fn a_dunk_is_met_by_the_defenders_posed_hands_and_head() {
+        let poses = crate::pose::disc_bank();
+        if poses.get().is_none() {
+            return;
+        }
+        let hoop = crate::target_hoop(0);
+        let mut w = World::new(
+            crate::tests::hoops(),
+            vec![
+                Player::new(0, [0.0, 0.0], 0.0),
+                Player::new(1, [0.0, 0.0], 0.0),
+            ],
+            Rules::default(),
+            1,
+        );
+        w.poses = poses;
+        w.gait = crate::ai::capture::disc_gait();
+        let rim = w.rim_spot(hoop);
+        let toward = if rim[0] >= 0.0 { 1.0 } else { -1.0 };
+        w.players[0].position = [rim[0] - toward * 9.0, 0.0];
+        w.players[1].position = [rim[0] - toward * 5.0, 0.0];
+        w.players[0].height = 2.0;
+        w.players[0].action = crate::Action::Dunking {
+            hoop,
+            elapsed: 0.3,
+            from: w.players[0].position,
+            to: rim,
+            style: crate::player::DunkStyle::Normal,
+            layup: false,
+            tick: 18,
+            release: 60,
+            end: 80,
+            row: 0,
+            hang: None,
+        };
+        w.ball.state = BallState::Held(0);
+        let top = w.top_bone(1).expect("posed");
+        assert!((5.0..8.0).contains(&top), "{top}");
+        let blocked = |w: &World| super::super::with_ctx(w, |ctx| dunk_blocked(ctx, 0)).0;
+        w.ball.position = [w.players[0].position[0], top + 0.5, 0.0];
+        assert!(!blocked(&w));
+        w.ball.position[1] = top - 0.5;
+        assert!(blocked(&w));
+        // The rewrite's stand-in reach (his height and standing reach)
+        // stood above the ball here.
+        assert!(top + 0.5 < w.players[1].ratings.reach);
     }
 }

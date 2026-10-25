@@ -13352,3 +13352,24 @@ game (the original's 3), on the third's from 4.5 to 2.8 (2), the balls let
 go mostly going in off the rim. Rebounds stay short (10.2 against 14, 6.5
 against 11): the rewrite misses fewer shots (71% and 74% made against 68%
 and 65%), the shot's odds (`gameplay.core_shot_finish_defense`).
+
+### The dunk a taller man meets reads his posed hands (2026-10-25)
+
+At the release the original's jump shots stand farther out and are more
+often open than the rewrite's (three captures: 72..79% beyond 22 against
+58..60%, open 34% and 29% against 24% and 15%), and its computer all but
+never lays up: one dunk-row lay-up (state 0x2008) in 53 shots against the
+rewrite's 5 a game. Most of the rewrite's were lay-ups in the air
+(`FUN_0016b1e8`): the drive and the post-up, committed to a dunk,
+press shoot every other update once `FUN_001837d0` says a taller man meets
+it, and that press turns the dunk into a lay-up. `FUN_001837d0` (raw
+`0x1837d0..0x1838ec`): no gamebreaker task (`FUN_00140ff8`), in a dunk
+(`FUN_00181670`), at least 1 up (`FUN_0013ab18`'s y) and 5 from the rim
+(`FUN_0017dd10`), the nearest opponent (`FUN_0017f2e0(ai, 0, 0)`) within 6
+(`FUN_0018cde0`) and nearer the rim, and the ball (ball+0x34) under the
+highest of his left hand, right hand and head (`FUN_00181f50`: bones 15,
+19 and 21, the larger y of each pair). The rewrite stood his height plus
+his standing reach in for the bones, about 8.5 for a man flat-footed,
+over almost every dunk's ball. Now `World::top_bone`, as the pass out of a
+shot already read it. On the third capture's rosters the lay-ups in the
+air out of a dunk fall from 5.2 a game to 1.4 (the first's 2.3).
