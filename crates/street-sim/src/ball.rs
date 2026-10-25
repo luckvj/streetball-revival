@@ -31,8 +31,10 @@ pub fn valid_radius(radius: f32) -> bool {
 /// `00150798..001507b4`). This also handles a nearly vertical putback
 /// without inventing a different arc when the angle cannot reach the rim
 /// (`0015071c..00150738` skips the angle time when `R·tanθ−dy ≤ 0`).
-/// Staged Level 2 shots use their own launcher (`FUN_00334330` →
-/// `FUN_0014c408`, `t = max(cue frames, 15)`), so this is gameplay only.
+/// Staged Level 2 shots come here too: their ball command is the
+/// shooter's own shot (`FUN_00333ef8`, `World::staged_shot`), at the
+/// launcher's angle for his distance. (`FUN_00334330`'s
+/// `t = max(cue frames, 15)` is a toss to a floor point, not a shot.)
 /// The original's `tan` is its own polynomial sine over `√(1 − sin²)`
 /// (`0x1505b4..0x150698`), not `libm`'s. It also takes `sqrt.s` of
 /// `climb − rise` with no sign test (`0x15078c..0x150790`), which the EE

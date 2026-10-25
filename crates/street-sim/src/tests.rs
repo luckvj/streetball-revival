@@ -2575,9 +2575,14 @@ fn a_staged_level_two_plays_its_script_and_scores_on_physical_shot_arrival() {
     let back = back.with_tables_of(&w);
     assert_eq!(back, w);
     assert_eq!(back.checksum(), w.checksum());
+    // The shot is the shooter's own (`FUN_00333ef8`): its flight comes
+    // from the launch angle, with the launcher's half-second and 14-unit
+    // floors, so this plan's low release lands after its 60 frames; the
+    // ball flies on and the basket counts as the Level 2's when it drops.
     let mut scored_at = None;
     let mut ticks = 0;
-    while w.sequence.is_some() {
+    while scored_at.is_none() {
+        let frame = w.sequence.map(|s| s.frame);
         w.step(&none);
         ticks += 1;
         if w.events.iter().any(|e| {
@@ -2590,18 +2595,11 @@ fn a_staged_level_two_plays_its_script_and_scores_on_physical_shot_arrival() {
                 }
             )
         }) {
-            let role1 = w
-                .players
-                .iter()
-                .position(|p| p.team == 0 && p.position[0] == 33.0);
-            scored_at = Some((w.sequence.map(|s| s.frame), role1));
+            scored_at = Some(frame);
         }
-        assert!(ticks < 100);
+        assert!(ticks < 200, "the basket counts");
     }
-    // Shot cue duration is not a scoring timer. The physical arc decides
-    // its arrival, later than the former fabricated frame 30 basket.
-    let (frame, _) = scored_at.expect("the basket counts");
-    assert!(frame.unwrap() > 31);
+    assert!(w.sequence.is_none());
     // Inside the arc: two points scored, three taken (the points table's
     // Level 2 row, as the School's staged run scored it: 20 to 22).
     assert_eq!(w.score, [12, 7]);
