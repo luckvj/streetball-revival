@@ -1222,10 +1222,12 @@ impl World {
         }
         // A shot late in its flight (more than 70% flown) is let go
         // `(progress - 0.5) × 200` in 100 (20 less for a person's jumper
-        // on Easy).
+        // on Easy). The progress is the updates flown over the launch's
+        // (ball+0x60 over +0x64, both whole, `0x16de54..0x16de6c`), not
+        // the shot's timer, which runs past the aim.
         let glass = SCRIPTS[usize::from(j.script)].glass;
         let progress = if holder.is_none() && native == game_phase::ball::SHOT && !glass {
-            1.0 - self.ball.flight_left / self.ball.flight_time.max(1e-6)
+            self.ball.flown_ticks() as f32 / self.ball.flight_ticks().max(1) as f32
         } else {
             0.0
         };
@@ -1329,6 +1331,7 @@ impl World {
         self.ball.airborne = true;
         self.ball.flight_left = 0.0;
         self.ball.flight_time = 0.0;
+        self.ball.flight_start = 0.0;
         if blocked {
             let shooter = owner.unwrap_or(i);
             self.credit_block(i, shooter, shooting);

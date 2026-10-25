@@ -823,6 +823,7 @@ impl World {
             pass,
             flight_left,
             flight_time,
+            flight_start,
             spin_axis,
             spin,
             airborne: _,
@@ -849,7 +850,10 @@ impl World {
         require(crate::ball::valid_radius(*radius), "native ball radius")?;
         floats(position, "ball position")?;
         floats(velocity, "ball velocity")?;
-        floats(&[*flight_left, *flight_time], "ball flight time")?;
+        floats(
+            &[*flight_left, *flight_time, *flight_start],
+            "ball flight time",
+        )?;
         floats(spin_axis, "ball spin axis")?;
         floats(&[*spin], "ball spin")?;
         require(*spin >= 0.0, "ball spin range")?;

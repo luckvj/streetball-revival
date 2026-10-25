@@ -99,8 +99,9 @@ use crate::{
 /// posting up (state bit 11) and a script's asked test; 79: the restart's
 /// walk; 80: "iso3pt"'s missed juke; 81: a stand's planted feet; 83:
 /// the rewrite's own pick gone, a reaction's `a6 2` window and the
-/// screen's reactions among the scripts.
-const VERSION: u8 = 83;
+/// screen's reactions among the scripts; 84: the count a shot's timer
+/// started from (the updates it has flown).
+const VERSION: u8 = 84;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -2279,6 +2280,7 @@ fn ball_out(w: &mut Writer, b: &Ball) {
     }
     w.f(b.flight_left);
     w.f(b.flight_time);
+    w.f(b.flight_start);
     w.f3(&b.spin_axis);
     w.f(b.spin);
     w.bool(b.airborne);
@@ -2359,10 +2361,12 @@ fn ball_in(r: &mut Reader) -> Result<Ball, String> {
     };
     let flight_left = r.f()?;
     let flight_time = r.f()?;
+    let flight_start = r.f()?;
     let mut ball = Ball::loose_at(position);
     ball.radius = radius;
     ball.flight_left = flight_left;
     ball.flight_time = flight_time;
+    ball.flight_start = flight_start;
     ball.spin_axis = r.f3()?;
     ball.spin = r.f()?;
     ball.airborne = r.bool()?;

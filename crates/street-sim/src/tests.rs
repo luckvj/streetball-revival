@@ -3438,6 +3438,46 @@ fn a_bank_shot_comes_off_the_glass_into_the_basket() {
 }
 
 #[test]
+fn a_shot_counts_its_flown_updates_against_its_launch_not_its_timer() {
+    // The block test's late-flight let-go reads ball+0x60 over +0x64
+    // (`0x16de54..0x16de6c`): the updates flown since the launch over the
+    // launch's own flight. The shot's timer (ball+0x158) runs past the aim
+    // (`straight_timer`), so a progress read off it came out low, and
+    // negative once a timer longer than the flight was compared with it.
+    let mut w = face_off(1);
+    w.players[0].position = [20.0, 6.0];
+    w.ball.hold(0);
+    let call = shooting::ShotCall {
+        percent: 0,
+        made: false,
+        kind: 0,
+        angle: std::f32::consts::FRAC_PI_4,
+    };
+    let shot = Shot {
+        shooter: 0,
+        hoop: 0,
+        made: false,
+        points: 2,
+        gamebreaker: 0,
+        layup: false,
+        tried: 0,
+        slam: None,
+    };
+    w.launch_shot(0, [20.0, 9.0, 6.0], call, shot, None);
+    let flight = w.ball.flight_ticks();
+    assert!(flight > 10, "{flight}");
+    assert_eq!(w.ball.flown_ticks(), 0);
+    assert!(w.ball.flight_start > w.ball.flight_time);
+    for k in 1..=flight {
+        w.step_ball(None);
+        if w.ball.state != BallState::Shot {
+            break;
+        }
+        assert_eq!(w.ball.flown_ticks(), k);
+    }
+}
+
+#[test]
 fn easy_and_hard_change_the_odds_only_with_a_person_playing() {
     // `configure_meter_fill` records which sides people play; the release
     // callback then applies Easy's +40 for the person and -10 for the

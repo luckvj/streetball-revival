@@ -1379,6 +1379,7 @@ impl World {
         };
         self.ball = ball;
         self.ball.flight_left = (timer as f32 - 0.5) * TICK_SECONDS;
+        self.ball.flight_start = self.ball.flight_left;
         // `0x14bed0..0x14befc`: the shooter's side keeps its shot's kind
         // (a long shot's 3), the other side 2.
         let side = self.players[shot.shooter].team.min(1);

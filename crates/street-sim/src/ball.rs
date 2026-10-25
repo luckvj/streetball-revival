@@ -180,6 +180,10 @@ pub struct Ball {
     /// The whole flight's seconds (`ball+0x64`, against the frames flown
     /// `ball+0x60`), for how far a pass has come.
     pub(crate) flight_time: f32,
+    /// The seconds [`Ball::flight_left`] counted down from: a pass's
+    /// flight, a shot's timer (`ball+0x158`, longer than its flight to the
+    /// aim). The updates flown (`ball+0x60`) are what it has counted.
+    pub(crate) flight_start: f32,
     /// The axis the ball spins about, unit length (`ball+0x70`).
     pub spin_axis: [f32; 3],
     /// How fast it spins about [`Ball::spin_axis`], radians per update
@@ -248,7 +252,7 @@ impl Ball {
 
     /// Updates of the flight flown so far (`ball+0x60`).
     pub fn flown_ticks(&self) -> i32 {
-        ((self.flight_time - self.flight_left) * crate::TICK_HZ as f32).round() as i32
+        ((self.flight_start - self.flight_left) * crate::TICK_HZ as f32).round() as i32
     }
 }
 
@@ -506,6 +510,7 @@ impl Ball {
             pass: None,
             flight_left: 0.0,
             flight_time: 0.0,
+            flight_start: 0.0,
             spin_axis: [1.0, 0.0, 0.0],
             spin: 0.0,
             airborne: false,
@@ -576,6 +581,7 @@ impl Ball {
         self.airborne = true;
         self.flight_left = 0.0;
         self.flight_time = 0.0;
+        self.flight_start = 0.0;
         true
     }
 
@@ -616,6 +622,7 @@ impl Ball {
         ];
         self.flight_left = t;
         self.flight_time = t;
+        self.flight_start = t;
         self.airborne = true;
         self.through = false;
         self.bank = false;
@@ -690,6 +697,7 @@ impl Ball {
         self.velocity = velocity;
         self.flight_left = t;
         self.flight_time = t;
+        self.flight_start = t;
         self.airborne = true;
         self.through = false;
         self.rebound = false;

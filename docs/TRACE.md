@@ -13319,3 +13319,36 @@ passes lost at their timer on the third capture's rosters went from 12 to
 1 over the 16 bases (all such losses 29 to 25). Passes lost at their timer
 a match: first capture 2.31 to 2.44 (its losses are the trick passes off
 the glass), second 0.75 to 0.13, third 1.81 to 1.56.
+
+## Lost passes, lobs to a leaper and the block test's progress (2026-10-25)
+
+**The first capture's passes lost at their timer** (2.4 a game against the
+original's 1, one match): over 16 games 39, of four kinds. Nine are head
+passes (`Via::Head`): the ball meets the point aimed at, but the defender's
+head is 3 to 4.5 away by then, past the passer's `Handles × 4 / 99`; at the
+throw the head bone stands 1.8 in front of him and low (a crouch or a
+step), the rest is his walk. 34 of the 42 head passes connect. Eight are
+lobs to a leaper, six of them the board's (a passout special to him, timed
+by the board route, 34..44 updates, longer than his span). The original
+does the same: of its five passout specials to a leaper in the person's
+captures none reached him (loose, or another's), and about one in five of
+its ordinary lobs is lost. Neither is a defect on this evidence. The rest
+are standing or reacting receivers.
+
+**`FUN_0016d888`'s late-flight let-go reads ball+0x60 over +0x64**
+(`0x16de54..0x16de6c`, `cvt.s.w` of both, then `div.s`): the updates flown
+since the launch over the launch's own flight, with no holder, ball+0x180
+5 and not the glass pair (`FUN_0016ea60`). The rewrite divided its
+`flight_left` by the flight, but for a shot `flight_left` is the timer
+(ball+0x158, `straight_timer`, which runs past the aim): the progress came
+out low and often negative, so the 0.7 test seldom let a ball go and the
+defenders under the rim swatted shots coming down. `Ball::flight_start`
+now keeps the count the timer started from, and `Ball::flown_ticks` counts
+from it (a pass's start is its flight, as before). In the original the
+three captures' 145 shot ends are 75 clean makes, 15 off the rim in, 29 off
+the rim as rebounds, 6 knocked loose near the rim and 2 elsewhere; on the
+first capture's rosters the knocks near the rim fall from 6.1 to 3.3 a
+game (the original's 3), on the third's from 4.5 to 2.8 (2), the balls let
+go mostly going in off the rim. Rebounds stay short (10.2 against 14, 6.5
+against 11): the rewrite misses fewer shots (71% and 74% made against 68%
+and 65%), the shot's odds (`gameplay.core_shot_finish_defense`).
