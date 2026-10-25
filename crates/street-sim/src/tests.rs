@@ -400,6 +400,61 @@ fn a_swipe_strips_the_ball_like_fun_0016cf30() {
     }
 }
 
+/// The strip's knock (`0x16d3e0..0x16d7d4`): the standing holder reels on
+/// `steal_reaction_l_1` ([`trick::STRIPPED`]) and is barred from the ball
+/// `r % 5 + 25` updates, the swiper `fps × 0.84` (50), and the ball spins
+/// about a unit axis at 0.075..0.15.
+#[test]
+fn a_strip_knocked_loose_bars_both_and_reels_the_holder() {
+    let mut knocked = 0;
+    for seed in 0..60 {
+        let seed = (seed as u32).wrapping_mul(0x9e37_79b9);
+        let mut w = World::new(
+            hoops(),
+            vec![
+                Player::new(0, [0.0, 0.0], 0.0),
+                Player::new(1, [0.0, tuning::HAND_REACH + 0.9], std::f32::consts::PI),
+            ],
+            Rules::default(),
+            seed,
+        );
+        w.players[1].ratings.steals = 0.5;
+        w.phase = Phase::Live;
+        w.ball.hold(0);
+        w.step(&[Input::default(), buttons(button::TRICK)]);
+        for _ in 0..TICK_HZ {
+            w.step(&[Input::default(), Input::default()]);
+            if w.ball.state == BallState::Loose {
+                break;
+            }
+        }
+        if w.ball.state != BallState::Loose {
+            continue;
+        }
+        knocked += 1;
+        assert!(
+            (24..=29).contains(&w.players[0].barred),
+            "{}",
+            w.players[0].barred
+        );
+        assert!(
+            (49..=50).contains(&w.players[1].barred),
+            "{}",
+            w.players[1].barred
+        );
+        match w.players[0].action {
+            Action::Stumbling {
+                reaction: Some(r), ..
+            } => assert_eq!(r.script, trick::STRIPPED),
+            ref a => panic!("{a:?}"),
+        }
+        let axis = w.ball.spin_axis;
+        assert!((axis.iter().map(|c| c * c).sum::<f32>() - 1.0).abs() < 1e-4);
+        assert!((0.075..=0.15).contains(&w.ball.spin));
+    }
+    assert!(knocked > 10, "{knocked}");
+}
+
 #[test]
 fn a_jumping_defender_blocks_some_shots() {
     let mut blocks = 0;
@@ -2176,37 +2231,6 @@ fn a_double_tap_of_turbo_dives_for_a_loose_ball() {
     assert!(w.events.contains(&Event::Dive { player: 0 }));
     step_all(&mut w, &[], TICK_HZ);
     assert_eq!(w.handler(), Some(0));
-}
-
-#[test]
-fn a_pick_knocks_the_defender_off_the_play() {
-    let mut w = World::new(
-        hoops(),
-        vec![
-            Player::new(0, [12.0, 0.0], std::f32::consts::FRAC_PI_2),
-            Player::new(0, [14.0, 3.0], 0.0),
-            Player::new(1, [15.0, 0.0], -std::f32::consts::FRAC_PI_2),
-        ],
-        Rules::default(),
-        1,
-    );
-    w.phase = Phase::Live;
-    w.ball.hold(0);
-    // At the arc (24.5 from the rim at +37): R3 calls a pick.
-    step_all(&mut w, &[(0, buttons(button::R3))], 1);
-    let pick = w.pick.expect("a pick is called");
-    assert_eq!((pick.screener, pick.defender), (1, 2));
-    // The screener runs into the defender.
-    let mut landed = false;
-    for _ in 0..TICK_HZ {
-        let to = normalize2(sub(w.players[2].position, w.players[1].position));
-        step_all(&mut w, &[(1, stick(to[0], to[1]))], 1);
-        landed |= w.events.contains(&Event::Pick {
-            screener: 1,
-            defender: 2,
-        });
-    }
-    assert!(landed);
 }
 
 #[test]
@@ -4839,10 +4863,13 @@ fn a_defender_running_into_a_still_screener_is_held_off_like_fun_001343e8() {
     );
     w.phase = Phase::Live;
     w.ball.hold(0);
-    // Held off at two radii (later they slide past each other).
-    for _ in 0..40 {
+    // Held off at two radii (later they slide past each other), before
+    // the pushes make a screen (`SCREEN_CONTACTS`), whose reactions move
+    // both on their clips.
+    for _ in 0..30 {
         w.step(&[Input::default(), stick(-1.0, 0.0), stick(1.0, 0.0)]);
     }
+    assert!(!w.down(1) && !w.down(2));
     // Each rests his own step inside the radii (the distance table's).
     let (a, b) = (w.players[2].position[0], w.players[1].position[0]);
     let steps = (w.players[1].speed + w.players[2].speed) * TICK_SECONDS;
@@ -4949,7 +4976,10 @@ fn a_change_of_gait_row_blends_the_pose_from_the_old_row() {
 /// knocks him off balance on the 31st contact (the count `0x3d0f74` from
 /// 0 reaching 30), with three draws (equal power: the weight is drawn
 /// too), and the count rests at -600. The contact's message
-/// (`0x3c6910`) puts the screener in the defender's AI+0xb0.
+/// (`0x3c6910`) puts the screener in the defender's AI+0xb0. Both play
+/// the original's scripts: the screener a setroughpick
+/// ([`trick::SCREENER`]), the defender, hit from in front, the heavy or
+/// the light list's quarter 2 ([`trick::SCREENED_HEAVY`]).
 #[test]
 fn pushing_into_a_defender_thirty_times_knocks_him_off_balance() {
     for computer in [false, true] {
@@ -4985,6 +5015,19 @@ fn pushing_into_a_defender_thirty_times_knocks_him_off_balance() {
             if matches!(w.players[2].action, Action::Stumbling { .. }) {
                 knocked = Some(t);
                 assert_eq!(w.contacts.count[1], contact::SCREEN_REST);
+                let script = |i: usize| match w.players[i].action {
+                    Action::Stumbling {
+                        reaction: Some(r), ..
+                    } => Some(r.script),
+                    _ => None,
+                };
+                assert!(trick::SCREENER.contains(&script(1).expect("the screener's")));
+                let defender = script(2).expect("the defender's");
+                assert!(
+                    trick::SCREENED_HEAVY[2].contains(&defender)
+                        || trick::SCREENED_LIGHT[2].contains(&defender),
+                    "{defender}"
+                );
                 if !computer {
                     // The contact's three and the knocked defender's
                     // stand draw earlier in the update (`r & 1`).

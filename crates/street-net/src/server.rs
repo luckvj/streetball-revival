@@ -1201,7 +1201,7 @@ fn valid_setup(s: &MatchSetup) -> bool {
 mod validation_tests {
     use super::*;
     use crate::{Conditions, Joiner, MemoryNetwork};
-    use street_sim::{Action, BallState, Pass, Pick, ball::Via};
+    use street_sim::{Action, BallState, Pass, ball::Via};
 
     fn addr(port: u16) -> SocketAddr {
         ([127, 0, 0, 1], port).into()
@@ -1231,7 +1231,7 @@ mod validation_tests {
             ServerConfig::default(),
             stand_ins(),
         );
-        let mutations: [fn(&mut MatchSetup); 11] = [
+        let mutations: [fn(&mut MatchSetup); 10] = [
             |s| s.world.ball.state = BallState::Held(6),
             |s| {
                 s.world.players[0].action = Action::Shooting {
@@ -1251,13 +1251,6 @@ mod validation_tests {
             },
             |s| s.world.ball.velocity[1] = f32::NAN,
             |s| s.world.give_and_go = Some((0, 6)),
-            |s| {
-                s.world.pick = Some(Pick {
-                    screener: 6,
-                    defender: 3,
-                    until: 40,
-                })
-            },
             |s| {
                 s.world.ball.state = BallState::Pass;
                 s.world.ball.pass = Some(Pass {

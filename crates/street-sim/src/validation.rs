@@ -68,7 +68,6 @@ impl World {
             fresh_take: _,
             windup,
             catch,
-            pick,
             turbo_releases,
             rng: _,
             previous_inputs,
@@ -1035,10 +1034,6 @@ impl World {
             )?;
             require(*since <= *tick, "catch start")?;
         }
-        if let Some(p) = pick {
-            player(p.screener)?;
-            player(p.defender)?;
-        }
         if let Some(s) = scorer {
             player(*s)?;
         }
@@ -1177,7 +1172,7 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Hoop, Pass, Pick, Player, Rules, Shot};
+    use crate::{Hoop, Pass, Player, Rules, Shot};
 
     fn world() -> World {
         World::new(
@@ -1232,19 +1227,12 @@ mod tests {
 
     #[test]
     fn nested_references_are_rejected_during_snapshot_decode() {
-        let bad: [fn(&mut World); 19] = [
+        let bad: [fn(&mut World); 18] = [
             |w| w.ball.state = BallState::Held(2),
             |w| w.players[0].team = 2,
             |w| w.possession = 2,
             |w| w.phase = Phase::DeadBall { left: 1.0, team: 2 },
             |w| w.phase = Phase::Over { winner: 2 },
-            |w| {
-                w.pick = Some(Pick {
-                    screener: 0,
-                    defender: 2,
-                    until: 50,
-                })
-            },
             |w| w.give_and_go = Some((0, 2)),
             |w| {
                 w.windup = Some(crate::Windup {

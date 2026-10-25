@@ -31,9 +31,8 @@
 //! (`actor+0x198`, handlers 1..7: post ups, strips, charges; the
 //! clearout's kind 2 is [`World::clearout_contact`]'s, the dunks' and
 //! lay-ups' kind 1 [`World::knock_contacts`]), the other reactions (the strip, the post-up
-//! engagement, the charge), the screen's reaction animations (drawn as
-//! the original draws them; the defender's is the rewrite's stumble,
-//! [`crate::tuning::PICK_STUMBLE`], and the screener's is not played).
+//! engagement, the charge). The screen's reactions are the original's
+//! scripts ([`crate::trick::SCREENED_HEAVY`], [`crate::trick::SCREENER`]).
 //! Each player's weight is the record's (attribute 9,
 //! [`crate::Player::weight`], [`WEIGHT`] until a roster sets it).
 
@@ -643,8 +642,10 @@ impl World {
         if 0xa0 < off || !a_floor || !b_floor {
             return;
         }
-        // `b`'s reaction (`0x3d0fb0`): not played.
-        self.rng.next_u32();
+        // `b`'s reaction (`0x3d0fb0[r % 3]`, `FUN_0019c2f8` running its
+        // first update at once): a setroughpick clip.
+        let r = self.rng.next_u32();
+        self.react(b, crate::trick::SCREENER[(r % 3) as usize]);
         self.contacts.count[b] = SCREEN_REST;
         let power = |i: usize| self.players[i].ratings.native(4);
         let (pa_power, pb_power) = (power(a), power(b));
@@ -656,12 +657,14 @@ impl World {
             false
         };
         // `FUN_0018d9f0(a, b)`: the quarter `b` hit `a` from.
-        let quarter = self.quarter(a, b);
-        let lists: [u32; 4] = if heavy { [5, 3, 4, 3] } else { [1, 2, 1, 2] };
+        let quarter = self.quarter(a, b) as usize;
+        let list = if heavy {
+            crate::trick::SCREENED_HEAVY[quarter]
+        } else {
+            crate::trick::SCREENED_LIGHT[quarter]
+        };
         let r = self.rng.next_u32();
-        let _animation = r % lists[quarter as usize];
-        // The defender's reaction: the rewrite's stumble.
-        self.players[a].stumble(crate::tuning::PICK_STUMBLE);
+        self.react(a, list[(r % list.len() as u32) as usize]);
         // `0x3c6910` (slot 74) with `FUN_001342d0(a)`'s kind: 3, a screen
         // on the holder's own defender by the arc, is a pick's 500
         // ([`World::post_contact`]).

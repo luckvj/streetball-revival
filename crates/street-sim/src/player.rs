@@ -767,7 +767,9 @@ impl Player {
         crate::leap::leaping(&self.action)
     }
 
-    /// Lose balance for `duration` seconds.
+    /// Lose balance for `duration` seconds (the tests' stand-in: every
+    /// knock in play is a reaction script).
+    #[cfg(test)]
     pub(crate) fn stumble(&mut self, duration: f32) {
         self.action = Action::Stumbling {
             elapsed: 0.0,

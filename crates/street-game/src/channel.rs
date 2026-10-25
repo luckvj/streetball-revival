@@ -379,6 +379,34 @@ pub fn block_shown(clips: &GameClips, j: &street_sim::block::Jump) -> Option<Sho
     })
 }
 
+/// A swipe's channel ([`street_sim::swipe`]): its five-update blend from
+/// the clip he pressed in (held) to the swipe's record at frame 0, then
+/// the wait's even steps to the script's frame, as the simulation poses
+/// it.
+pub fn swipe_shown(clips: &GameClips, s: &street_sim::swipe::Swipe) -> Option<Shown> {
+    let clock = ClipClock {
+        clips,
+        flight: None,
+        landing: None,
+        left_hand: false,
+    };
+    let (clip, mirrored) = clock.clip(i32::from(s.record))?;
+    let blend = s.blend().map(|weight| ShownBlend {
+        from: s.from.and_then(|(record, frame)| {
+            let (clip, mirrored) = clock.clip(i32::from(record))?;
+            Some((clip, mirrored, frame))
+        }),
+        weight,
+    });
+    Some(Shown {
+        clip,
+        mirrored,
+        frame: s.frame(),
+        blend,
+        callbacks: Vec::new(),
+    })
+}
+
 /// A trick move's, a defender's reaction's or a scoop's channel
 /// ([`street_sim::trick`], [`street_sim::touch::Scooping`]): the simulation
 /// keeps the script's clock (its record, frame and blend), so the clip is

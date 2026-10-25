@@ -28,9 +28,9 @@
 //! that feed the ring, the meters and the statistics are `crate::scoring`'s.
 
 use crate::{
-    Action, BallState, Event, Phase, Rules, World, distance, gamebreaker,
+    Action, BallState, Event, Phase, Rules, World, gamebreaker,
     player::{Player, TrickIdentity},
-    sub, target_hoop,
+    target_hoop,
 };
 
 /// Trick points per move.
@@ -676,6 +676,7 @@ impl World {
     }
 
     /// The nearest opponent of `i` within `range` and in front of them.
+    #[cfg(test)]
     pub(crate) fn defender_in_front(&self, i: usize, range: f32) -> Option<usize> {
         let p = &self.players[i];
         let f = p.forward();
@@ -684,8 +685,8 @@ impl World {
             .enumerate()
             .filter(|(_, q)| q.team != p.team)
             .filter_map(|(j, q)| {
-                let d = sub(q.position, p.position);
-                let n = distance(q.position, p.position);
+                let d = crate::sub(q.position, p.position);
+                let n = crate::distance(q.position, p.position);
                 let ahead = (d[0] * f[0] + d[1] * f[1]) / n.max(1e-3);
                 (n < range && ahead > 0.0).then_some((j, n))
             })
@@ -815,7 +816,6 @@ impl World {
             player.speed = 0.0;
         }
         self.give_and_go = None;
-        self.pick = None;
         self.sequence = Some(sequence);
         self.step_staged_pose();
     }

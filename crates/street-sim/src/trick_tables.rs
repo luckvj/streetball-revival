@@ -1424,10 +1424,12 @@ pub const SCRIPTS: [Script; 76] = [
 /// `0x44c156`); then the dunk's and lay-up's knocks ([`KNOCK_BEHIND`],
 /// [`KNOCK_FLOOR`]); then the board passout's look ([`BOARD_LOOK`]), the
 /// head passout's hit ([`HEAD_HIT`]) and catch ([`HEAD_CATCH`]); then
-/// the celebrations ([`CELEBRATE_ROWS`]) and the
+/// the screen's: the screened defender's ([`SCREENED_HEAVY`],
+/// [`SCREENED_LIGHT`]) and the screener's ([`SCREENER`]); then the
+/// stripped holder's ([`STRIPPED`]); then the celebrations ([`CELEBRATE_ROWS`]) and the
 /// loser's reactions at the win ([`DEJECT_ROWS`]), each its row on the
 /// shared script.
-pub const REACTIONS: [Reaction; 69] = [
+pub const REACTIONS: [Reaction; 82] = [
     // standdunkfallforward
     Reaction {
         address: 0x44bcb8,
@@ -2126,6 +2128,190 @@ pub const REACTIONS: [Reaction; 69] = [
             End,
         ],
     },
+    // standfallright_r: a heavy screen from his side, quarter 1
+    Reaction {
+        address: 0x44bdf7,
+        root: [f32::from_bits(0x3f8b9b0a), f32::from_bits(0x3e50f2b8)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [597, 597] },
+            Wait { to: 23, n: 26 },
+            PlayOut { per_frame: f32::from_bits(0x40800000), to: 36, n: 52 },
+            Call(1),
+            End,
+        ],
+    },
+    // standfallrightwithball_r
+    Reaction {
+        address: 0x44be4a,
+        root: [f32::from_bits(0x3f129548), f32::from_bits(0x3ee49ee2)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 3, records: [595, 595] },
+            Wait { to: 25, n: 44 },
+            PlayOut { per_frame: f32::from_bits(0x40800000), to: 37, n: 48 },
+            Call(1),
+            End,
+        ],
+    },
+    // react_sidestumble_r
+    Reaction {
+        address: 0x44be9d,
+        root: [f32::from_bits(0x3fccdb29), f32::from_bits(0x3f316253)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [613, 613] },
+            Wait { to: 39, n: 67 },
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+    // standfallright_r mirrored: quarter 3
+    Reaction {
+        address: 0x44be13,
+        root: [f32::from_bits(0xbf8b9b0a), f32::from_bits(0x3e50f2b8)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [598, 598] },
+            Wait { to: 23, n: 26 },
+            PlayOut { per_frame: f32::from_bits(0x40800000), to: 36, n: 52 },
+            Call(1),
+            End,
+        ],
+    },
+    // standfallrightwithball_r mirrored
+    Reaction {
+        address: 0x44be66,
+        root: [f32::from_bits(0xbf129548), f32::from_bits(0x3ee49ee2)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 3, records: [596, 596] },
+            Wait { to: 25, n: 44 },
+            PlayOut { per_frame: f32::from_bits(0x40800000), to: 37, n: 48 },
+            Call(1),
+            End,
+        ],
+    },
+    // react_sidestumble_r mirrored
+    Reaction {
+        address: 0x44beb9,
+        root: [f32::from_bits(0xbfccdb29), f32::from_bits(0x3f316253)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [614, 614] },
+            Wait { to: 39, n: 67 },
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+    // standstumbleforward: a light screen from behind
+    Reaction {
+        address: 0x44befc,
+        root: [f32::from_bits(0x3e665753), f32::from_bits(0xc0f7d643)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [602, 602] },
+            PlayOut { per_frame: f32::from_bits(0x40000000), to: 30, n: 60 },
+            Call(1),
+            End,
+        ],
+    },
+    // standstumbleside_r: a light screen, quarter 1
+    Reaction {
+        address: 0x44c02c,
+        root: [f32::from_bits(0x4095de32), f32::from_bits(0x3c1c4612)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [600, 600] },
+            Wait { to: 23, n: 46 },
+            Call(1),
+            End,
+        ],
+    },
+    // standstumbleside_r mirrored: quarter 3
+    Reaction {
+        address: 0x44c048,
+        root: [f32::from_bits(0xc095de32), f32::from_bits(0x3c1c4612)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [601, 601] },
+            Wait { to: 23, n: 46 },
+            Call(1),
+            End,
+        ],
+    },
+    // setroughpick02_low: the screener
+    Reaction {
+        address: 0x44c211,
+        root: [f32::from_bits(0xbf640744), f32::from_bits(0x3f52949a)],
+        steps: &[
+            Call(16),
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [650, 650] },
+            Shove { row: 1, n: 30 },
+            PlayOut { per_frame: f32::from_bits(0x3fa00000), to: 24, n: 30 },
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+    // setroughpick03_low2
+    Reaction {
+        address: 0x44c26a,
+        root: [f32::from_bits(0x3f88b0a4), f32::from_bits(0x3f36e520)],
+        steps: &[
+            Call(16),
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [651, 651] },
+            Shove { row: 1, n: 30 },
+            PlayOut { per_frame: f32::from_bits(0x3fa00000), to: 24, n: 30 },
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+    // setroughpick01
+    Reaction {
+        address: 0x44c2c3,
+        root: [f32::from_bits(0x3f77de5e), f32::from_bits(0xc01597f8)],
+        steps: &[
+            Call(16),
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [652, 652] },
+            Shove { row: 1, n: 38 },
+            PlayOut { per_frame: f32::from_bits(0x3f800000), to: 30, n: 30 },
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+    // steal_reaction_l_1: the holder a swipe strips on the floor
+    Reaction {
+        address: 0x44ca8b,
+        root: [f32::from_bits(0xbf082a8d), f32::from_bits(0x3f16913e)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [397, 396] },
+            PlayOut { per_frame: f32::from_bits(0x3f800000), to: 35, n: 35 },
+            Call(1),
+            End,
+        ],
+    },
     // celeb01_FINAL
     Reaction {
         address: 0x44cbbf,
@@ -2472,6 +2658,25 @@ pub const BOARD_LOOK: u8 = 44;
 pub const HEAD_HIT: [u8; 2] = [45, 46];
 pub const HEAD_CATCH: u8 = 47;
 
+/// The screen's reactions (`0x135400..0x135640`): the defender a screener
+/// has pushed against plays `r %` the list for the quarter the screener hit
+/// him from (`FUN_0018d9f0`), the heavy one's (`0x3d0f28`: 5/3/4/3) or the
+/// light one's (`0x3d0f38`: 1/2/1/2); 0 behind, 2 in front.
+pub const SCREENED_HEAVY: [&[u8]; 4] = [&[0, 1, 2, 3, 35], &[48, 49, 50], &[28, 29, 30, 31], &[51, 52, 53]];
+pub const SCREENED_LIGHT: [&[u8]; 4] = [&[54], &[55, 9], &[6], &[56, 10]];
+
+/// The screener's own reaction (`0x3d0fb0[r % 3]`, the setroughpick
+/// clips): callback 16 first (his wanted facing toward his nearest
+/// opponent, `FUN_00170dc0`), then the clearout's arms' window (`a6 2`,
+/// row 1) while the clip plays, the facing from the pelvis and the gait
+/// back.
+pub const SCREENER: [u8; 3] = [57, 58, 59];
+
+/// `0x44ca8b`: the holder a swipe strips (`FUN_0016cf30`, `0x16d360` and
+/// `0x16d3f8`), when he stands on the floor (actor+0x34 0), on his
+/// channel by his dribble hand (`steal_reaction_l_1`, record 397 or 396).
+pub const STRIPPED: u8 = 60;
+
 /// The celebrations (`FUN_00170e70`'s `r % 17` of `0x3d9078`, which the
 /// boot's constructor fills at `0x17bcd0..0x17c1a8`): each row and the
 /// updates its clip shows a frame for (fps / 60 times the constant there).
@@ -2496,7 +2701,7 @@ pub const CELEBRATE_ROWS: [(u16, f32); 17] = [
     (945, f32::from_bits(0x4019_999a)),
     (946, f32::from_bits(0x4019_999a)),
 ];
-pub const CELEBRATE_FIRST: u8 = 48;
+pub const CELEBRATE_FIRST: u8 = 61;
 
 /// The loser's reactions at the win (`FUN_00171160`'s `0x3d9138`, filled
 /// at `0x17c3e8..0x17c4a0`): each row, the facings it is barred from (1
@@ -2509,7 +2714,7 @@ pub const DEJECT_ROWS: [(u16, u8, f32); 4] = [
     (960, 2, 2.0),
     (961, 2, f32::from_bits(0x4019_999a)),
 ];
-pub const DEJECT_FIRST: u8 = 65;
+pub const DEJECT_FIRST: u8 = 78;
 
 /// The knock window's body, `0x3d0d90` row 2 (`0x3d0cd0`, the only row the
 /// dunk and lay-up scripts' `a6 1` name): bones `a` to `b` pushed `reach`

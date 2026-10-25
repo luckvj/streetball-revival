@@ -3785,6 +3785,13 @@ pub fn sync_players(
             channel::apply(&mut animator, &shown, heading);
             continue;
         }
+        // A swipe's script on the sim's own clock of it.
+        if let Action::Stealing { swipe: Some(s), .. } = p.action
+            && let Some(shown) = channel::swipe_shown(&clips, &s)
+        {
+            channel::apply(&mut animator, &shown, heading);
+            continue;
+        }
         // A trick's or a reaction's script on the sim's own clock of it.
         if let Some(shown) = channel::script_or_stand_shown(&clips, &p.action, p.stand.as_ref()) {
             channel::apply(&mut animator, &shown, heading);
@@ -3917,8 +3924,9 @@ pub fn sync_players(
                 Some((clip::COUNTER, Some(tuning::STEAL_TIME), 2.5))
             }
             Action::Stealing { swipe: Some(s), .. } => {
-                // The swipe's own clip and side (`street_sim::swipe`), over
-                // its script's swipe.
+                // Shown on its script's clock above ([`channel::swipe_shown`]);
+                // the swipe's own clip and side stand in only without the
+                // disc's clip.
                 let span = f32::from(s.span()) * street_sim::TICK_SECONDS;
                 match clips
                     .timeline

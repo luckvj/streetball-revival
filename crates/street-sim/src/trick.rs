@@ -377,6 +377,9 @@ pub struct Ran {
     pub clear_bits: u32,
     /// Callback 5 (`FUN_00174eb0`): the facing (+0xb0) toward the ball.
     pub toward_ball: bool,
+    /// Callback 16 (`FUN_00175720`): the wanted facing (+0xb0) toward his
+    /// nearest opponent (`FUN_00170dc0`).
+    pub toward_nearest: bool,
     /// Callback 0 (`FUN_001775d8`): the scoop's take.
     pub take: bool,
     /// The jumps' steps this update ran, in order ([`crate::jump`]).
@@ -613,6 +616,10 @@ impl Run {
                 }
                 Step::Call(7) => {
                     ran.face = true;
+                    true
+                }
+                Step::Call(16) => {
+                    ran.toward_nearest = true;
                     true
                 }
                 Step::Call(53) => {
@@ -896,6 +903,9 @@ pub struct Reacting {
     pub drift: [f32; 2],
     pub vy: f32,
     pub up: bool,
+    /// The updates left of an `a6 2` window (the screener's, the
+    /// clearout's arms: [`SCREENER`]).
+    pub window: u8,
 }
 
 impl Reacting {
@@ -1558,6 +1568,20 @@ impl World {
                         self.trick_contact(i, j);
                     }
                 }
+                // The screener's window: the clearout's arms, closed
+                // once they knock a man.
+                if i != j
+                    && let Action::Stumbling {
+                        reaction: Some(r), ..
+                    } = self.players[i].action
+                    && r.window > 0
+                    && self.shove_contact(i, j, &CLEAROUT_ARMS)
+                    && let Action::Stumbling {
+                        reaction: Some(r), ..
+                    } = &mut self.players[i].action
+                {
+                    r.window = 0;
+                }
             }
         }
     }
@@ -1902,9 +1926,15 @@ impl World {
     /// channel's next step (a script his own side's or the game's update
     /// starts).
     pub(crate) fn begin_reaction(&mut self, b: usize, script: u8) {
+        self.begin_reaction_by(b, script, false);
+    }
+
+    /// [`World::begin_reaction`] on the hand side `left` (a script whose
+    /// blend names a record for each hand, [`STRIPPED`]).
+    pub(crate) fn begin_reaction_by(&mut self, b: usize, script: u8, left: bool) {
         let steps = REACTIONS[usize::from(script)].steps;
         let height = self.players[b].height;
-        let length = Run::length(steps, false, 0, height);
+        let length = Run::length(steps, left, 0, height);
         let from = self.poses.get().map(|_| {
             let f = self.gait_frame(b);
             (f.record, f.time)
@@ -1914,11 +1944,12 @@ impl World {
             duration: f32::from(length.max(0) as u16) * crate::TICK_SECONDS,
             reaction: Some(Reacting {
                 script,
-                run: Run::new(false, 0),
+                run: Run::new(left, 0),
                 from,
                 drift: [0.0; 2],
                 vy: 0.0,
                 up: false,
+                window: 0,
             }),
         };
     }
@@ -2059,9 +2090,20 @@ impl World {
             return;
         };
         let steps = r.steps();
+        r.window = r.window.saturating_sub(1);
         let before = r.run.shown();
         let ran = r.run.step(steps, self.players[i].height);
         let after = r.run.shown();
+        if let Some((_, n)) = ran.shove {
+            r.window = n;
+        }
+        if ran.toward_nearest
+            && let Some(o) = self.nearest_opponent(i)
+        {
+            let at = self.players[o].position;
+            let p = &mut self.players[i];
+            p.wanted = crate::restart::heading_radians(crate::guard::toward(p.position, at));
+        }
         let p = &mut self.players[i];
         p.speed = 0.0;
         if ran.stop {
@@ -2096,8 +2138,10 @@ impl World {
             Some(poses) => root_step(poses, before, after),
             None if r.run.done => [0.0; 3],
             None => {
-                let moving = moving_updates(steps, false, 0, 0.0);
-                stand_in_step(REACTIONS[usize::from(r.script)].root, moving, after)
+                let moving = moving_updates(steps, r.run.left, 0, 0.0);
+                let [x, z] = REACTIONS[usize::from(r.script)].root;
+                let root = if r.run.left { [-x, z] } else { [x, z] };
+                stand_in_step(root, moving, after)
             }
         };
         let p = &mut self.players[i];
@@ -2105,10 +2149,10 @@ impl World {
         p.position[0] += m[0];
         p.position[1] += m[1];
         self.players[i].clamp_to_court();
-        // `FUN_00168ea8` on a celebration or the win's reaction: the facing
-        // turns toward the wanted one their start set, at most 46 units an
-        // update.
-        if CELEBRATE_FIRST <= r.script {
+        // `FUN_00168ea8` on a celebration or the win's reaction, and the
+        // screener's: the facing turns toward the wanted one their start
+        // (or callback 16) set, at most 46 units an update.
+        if CELEBRATE_FIRST <= r.script || SCREENER.contains(&r.script) {
             let p = &mut self.players[i];
             let (now, to) = (
                 timing::facing_word(p.heading),
