@@ -132,14 +132,14 @@ pub mod tuning {
     /// reach, 47 behind an end line and 31.5 beyond a sideline, each
     /// pushed out up to a foot more for a tall inbounder (`0x3cea20`,
     /// `FUN_0012b8b8`), so an inbounder can walk to his spot (Rucker
-    /// Park's floor is ±47.9 by ±32.6; its painted court ±42.3 by ±27.4).
+    /// Park's floor is Â±47.9 by Â±32.6; its painted court Â±42.3 by Â±27.4).
     /// The limit itself is the rewrite's: the original's actors are not
     /// held to a box. Streetball has no out of bounds, so players can
     /// chase a loose ball to the fence.
     pub const COURT_HALF_LENGTH: f32 = 48.0;
     pub const COURT_HALF_WIDTH: f32 = 32.5;
     /// Native court boundaries for ball containment from FUN_0014d1f8:
-    /// X clamped at ±42.0, Z clamped at ±26.5 with outward velocity zeroed.
+    /// X clamped at Â±42.0, Z clamped at Â±26.5 with outward velocity zeroed.
     pub const BALL_HALF_LENGTH: f32 = 42.0;
     pub const BALL_HALF_WIDTH: f32 = 26.5;
     /// The long-range arc: this far from the rim's spot on the floor, and
@@ -234,8 +234,8 @@ pub mod tuning {
 
     /// The turbo bar (0 to 1) empties in five seconds of held turbo and
     /// refills in seven and a half. The static initializer at `0x178860`
-    /// stores `1 / (fps × 5.0)` at `0x4b99a0` (`0x178a64..0x178ad0`) and
-    /// `1 / (fps × 7.5)` at `0x4b99a4` (`0x178ad4..0x178aec`); the actor
+    /// stores `1 / (fps Ã— 5.0)` at `0x4b99a0` (`0x178a64..0x178ad0`) and
+    /// `1 / (fps Ã— 7.5)` at `0x4b99a4` (`0x178ad4..0x178aec`); the actor
     /// update spends the first each frame a turbo bit (0x2000) is held in
     /// live play (`FUN_00190c08` at `0x1589a0`) and adds the second
     /// otherwise (`FUN_00190c68` at `0x1589c8`). (`FUN_00147cf8`'s
@@ -280,7 +280,7 @@ pub mod tuning {
 
 /// Native ball gravity: `0014a3a4` uses 0x42009be3 times the default
 /// scalar installed by `00153ddc..00153e24` (minus 0xbfa13ba4).
-/// The original stores acceleration per frame, dividing this by 60².
+/// The original stores acceleration per frame, dividing this by 60Â².
 pub const GRAVITY: f32 = f32::from_bits(0x4200_9be3) * -f32::from_bits(0xbfa1_3ba4);
 
 /// A basket, as the simulation needs it.
@@ -293,7 +293,7 @@ pub struct Hoop {
 
 impl Hoop {
     /// The original's two rims, the one each team attacks: the ring's
-    /// centre at x = side × 36.75 (`FUN_001404e0`; 1.25 ft in from the
+    /// centre at x = side Ã— 36.75 (`FUN_001404e0`; 1.25 ft in from the
     /// board at 38), +36.75 for team 0 and -36.75 for team 1
     /// ([`restart::side`]), on the rim plane 11.91355 (`FUN_001515a8`,
     /// `FUN_001526d0`).
@@ -410,7 +410,7 @@ pub enum Event {
         points: u32,
         multiplier: u32,
         /// What the HUD reads from the ring as it pays (`FUN_002b87c0`): the
-        /// classes of the slots the matched row walked, oldest first, −1 for
+        /// classes of the slots the matched row walked, oldest first, âˆ’1 for
         /// slots the row left out.
         walked: [i8; 6],
         /// The payout (`game+0x150`).
@@ -581,7 +581,7 @@ pub const WHITEWATER: u16 = 0x2c;
 
 #[derive(Clone, Debug, PartialEq)]
 /// The game: the players, the ball, the score and the dice. The same inputs
-/// and seed give the same game (see the module docs) — which is what a
+/// and seed give the same game (see the module docs) â€” which is what a
 /// replay is: restore an older snapshot and re-step it with the recorded
 /// inputs ([`World`] is [`Clone`] exactly for that).
 pub struct World {
@@ -696,8 +696,8 @@ pub struct World {
     /// gamebreaker lessons ([`World::fill_meter`]).
     pub lesson: Option<u8>,
     /// `DAT_003c7af8` clear: a tutorial page was due at the lesson's
-    /// launch (`FUN_0018ec28`), and the inbound waits `fps × 0.5`, not
-    /// `fps × 2` ([`crate::ai`]'s "throw inbound").
+    /// launch (`FUN_0018ec28`), and the inbound waits `fps Ã— 0.5`, not
+    /// `fps Ã— 2` ([`crate::ai`]'s "throw inbound").
     pub lesson_page: bool,
     /// The story modes' outer weight (the game record's mode 4, the league
     /// Challenge, or 5, Be A Legend: `FUN_00140a30` and `FUN_00143458`
@@ -902,7 +902,7 @@ pub mod toss {
     /// The script tick its first blend (`8e 03`) is over.
     pub const BLEND_TICKS: u16 = 3;
     /// The actor's gravity, units per update squared (the jump's
-    /// `32.152233 / fps² × 1.2596`, the ball's too).
+    /// `32.152233 / fpsÂ² Ã— 1.2596`, the ball's too).
     pub const JUMP_GRAVITY: f32 =
         f32::from_bits(0x4200_9be3) / (60.0 * 60.0) * -f32::from_bits(0xbfa1_3ba4);
     /// The tip: the winner holds the ball once either hand bone is within
@@ -914,7 +914,7 @@ pub mod toss {
     pub const TIP_REACH: f32 = 1.25;
     /// The person's timing window: a press of shoot with the toss above
     /// this share of its apex scores 1..20 by how near the apex
-    /// (`FUN_0015eaa0`: `(y - 0.8 apex) / (0.2 apex) × 20`, rounded, plus
+    /// (`FUN_0015eaa0`: `(y - 0.8 apex) / (0.2 apex) Ã— 20`, rounded, plus
     /// one).
     pub const TIMING_SHARE: f32 = 0.8;
 }
@@ -1893,7 +1893,7 @@ impl World {
                 return;
             }
             let swipe = self.start_swipe(i);
-            // The swiper's face (`FUN_00159190(swiper, 2, fps × 2)`,
+            // The swiper's face (`FUN_00159190(swiper, 2, fps Ã— 2)`,
             // `0x15e364..0x15e378`).
             self.face(i, 2 * TICK_HZ as i32);
             // The press faces him at the holder (actor+0xb0 and the stick,
@@ -2211,12 +2211,12 @@ impl World {
     /// reach the ball (the stand-in's [`tuning::HAND_REACH`] and
     /// [`tuning::HAND_RADIUS`]); then [`World::swipe_lands`]: the
     /// defender's Steals give
-    /// `trunc(Steals / 99 · 64) + 20` (30 for a person's defender on Easy;
+    /// `trunc(Steals / 99 Â· 64) + 20` (30 for a person's defender on Easy;
     /// 10 less for the computer's against a person's side on Easy), and it
     /// lands unless the roll is over that. Then `r % 100` at most
-    /// `trunc((Steals − 50) / 50 · 65)` catches the ball outright (a steal);
+    /// `trunc((Steals âˆ’ 50) / 50 Â· 65)` catches the ball outright (a steal);
     /// otherwise it is knocked loose (`0x16d428`): 0.35 an update along the
-    /// defender's facing turned by `r & 0x7f` (moving) or `(r & 0x7f) −
+    /// defender's facing turned by `r & 0x7f` (moving) or `(r & 0x7f) âˆ’
     /// 0x80`, rising 0.125. The holder reels (`FUN_00159190`, reaction 3 or
     /// 4 by `r & 1`, which draws again for its clip), barred from the ball
     /// `r % 5 + 25` updates (the rewrite's stumble); a catch also gives the
@@ -2266,7 +2266,7 @@ impl World {
         }
         let caught =
             (self.rng.next_u32() % 100) as i32 <= ((steals - 50) as f32 / 50.0 * 65.0) as i32;
-        // The holder's face (`FUN_00159190(holder, r & 1 ? 3 : 4, fps ×
+        // The holder's face (`FUN_00159190(holder, r & 1 ? 3 : 4, fps Ã—
         // 2)`, raw `0x16d318..0x16d33c`; not played): the `r & 1`, and the
         // reaction's own draw for its clip (its time is over 0).
         self.rng.next_u32();
@@ -2287,7 +2287,7 @@ impl World {
         // The take of the held ball by the other side is slot 15's steal
         // ([`World::post_steal`]).
         self.take_ball(i);
-        // The swiper's face (`FUN_00159190(swiper, 2, fps × 2)`, raw
+        // The swiper's face (`FUN_00159190(swiper, 2, fps Ã— 2)`, raw
         // `0x16d3c4..0x16d3d0`, after the give; not played): its draw.
         self.face(i, 2 * TICK_HZ as i32);
         self.events.push(Event::Steal {
@@ -2464,7 +2464,7 @@ impl World {
 
     /// The game listener's slot 27 (`0x141c38`, a shot done without a
     /// basket): a face for each of the shooter's side by slot, his own 3
-    /// or 4 by `r & 1` for fps × 2, the others' 4 for fps × 3.
+    /// or 4 by `r & 1` for fps Ã— 2, the others' 4 for fps Ã— 3.
     fn missed_faces(&mut self, shooter: usize) {
         let team = self.players[shooter].team;
         for i in 0..self.players.len() {
@@ -2519,7 +2519,7 @@ impl World {
     /// `0x141968..0x141c08`), after the restart or the win: every actor
     /// barred [`BASKET_BAR`] updates (actor+0x1a8; nobody takes the ball as
     /// it comes down through the net, the restart's inbounder included),
-    /// then a face for each (`FUN_00159190(actor, kind, fps × 3)`, its own
+    /// then a face for each (`FUN_00159190(actor, kind, fps Ã— 3)`, its own
     /// draw for the clip; the faces are not played, their draws kept): the
     /// scorer's side by index first, the scorer's 5 or 2 by `r & 1` after
     /// a dunk or an alley-oop (the ball's kind 3 or 4), else 6, his
@@ -2880,7 +2880,7 @@ impl World {
     /// comes down (ball+0x44 below 0) the first jumper over it (|x| under
     /// 5 after truncating) decides the contest: a side without a timing
     /// takes `r % 20 + 1` with nobody playing it, else 1, and the winner
-    /// is the side with the larger `height + Rebounds × timing`, a tie
+    /// is the side with the larger `height + Rebounds Ã— timing`, a tie
     /// going to team 0. The original reads both scores from actor 0's
     /// record (`0x15ecf0`: its loop index is the best so far, -1 then 0,
     /// and `FUN_001408e0(game, -3)` is actor 0), so only the timings
@@ -2905,7 +2905,9 @@ impl World {
         if squad.first() != Some(&i) {
             return;
         }
-        let g = -GRAVITY * TICK_SECONDS * TICK_SECONDS;
+        // Ball+0x118, the gravity's size an update (positive: the apex
+        // `y + vy t - g t²/2` at `t = vy / g` is above a rising toss).
+        let g = GRAVITY * TICK_SECONDS * TICK_SECONDS;
         let y = self.ball.position[1];
         let vy = self.ball.velocity[1] * TICK_SECONDS;
         if self.tip.winner < 0

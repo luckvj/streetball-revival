@@ -13174,3 +13174,19 @@ six at the same spots.
   more than idle sway until the jumpers' scripts (378 to 380, 376 to 384
   at frame 168). The rewrite freezes during the hold and frees at the
   toss, and its jump falls on update 167.
+
+## The tip-off's timing (2026-10-25)
+
+Vj could not win tip-offs. `FUN_0015eaa0` (`0x15eb5c..0x15ebfc`) takes the
+toss's apex as `y + vy t - g t^2 / 2` at `t = vy / g`, with `g` the ball's
+gravity size per update (ball+0x118, positive). The port used the signed
+acceleration, so the apex fell below a rising toss. A press any earlier
+than the last update or two before the top scored below 1, was clamped to
+1, and locked the side's timing. A person then lost to the computer's
+`r % 20 + 1` every time (a tie goes to team 0). The old test pressed
+within a hair of the apex, where the error vanishes. With the sign right,
+a person on team 0 pressing 20, 15, 10 and 5 updates before the apex
+scores 9, 14, 18 and 20, and wins 16, 28, 36 and 40 of 40 seeded tosses.
+A press below the window (before the toss is in the top fifth of its
+rise) sets nothing, so a later one still counts
+(`a_persons_press_scores_by_how_near_the_apex_it_falls`).
