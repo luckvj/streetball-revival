@@ -1454,7 +1454,8 @@ mod tests {
         // (`FUN_00334178`): its `9e` aim flies him to the rim and he lands
         // on his own. The School's run of script 1 (GamLR2's family 9,
         // `level2-batch/case09`) peaks at 7.86 above the floor at frame 137
-        // and lands at 177.
+        // and lands at 177; script 2 (`case10`) leaves at 4.03, its
+        // staged clip's root lift, and peaks about 9.6 at 129.
         let Ok(path) = std::env::var("STREET_ISO") else {
             return;
         };
@@ -1501,6 +1502,7 @@ mod tests {
             let mut last = world.sequence.unwrap();
             let (mut peak, mut landed, mut scores) = ((0.0f32, 0), None, 0);
             let mut shot = false;
+            let mut takeoff = 0.0f32;
             let mut updates = 0;
             // A shot may outlast its script and score as the Level 2's.
             while let Some(s) = world
@@ -1522,6 +1524,9 @@ mod tests {
                     world.ball.position
                 );
                 let h = world.players[dunker].height;
+                if s.frame == 98 {
+                    takeoff = h;
+                }
                 if world
                     .sequence
                     .is_some_and(|q| q.finishing & (1 << dunker) != 0)
@@ -1552,6 +1557,16 @@ mod tests {
                 "script {script}: the dunker never left the floor"
             );
             assert_eq!(scores, 1, "script {script}");
+            if script == 2 {
+                // The School's run (`case10`): his body starts at 98 with
+                // the staged clip's root lift (4.03) and peaks about 9.6
+                // at 129.
+                assert!((takeoff - 4.03).abs() < 0.05, "{takeoff}");
+                assert!(
+                    (peak.0 - 9.6).abs() < 0.1 && (128..=131).contains(&peak.1),
+                    "{peak:?}"
+                );
+            }
             if script == 1 {
                 assert!(
                     (peak.0 - 7.86).abs() < 0.1 && (136..=138).contains(&peak.1),
