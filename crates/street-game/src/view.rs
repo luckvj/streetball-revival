@@ -2943,6 +2943,12 @@ impl CameraManager {
         // A script ends (slot 0x1f4, FUN_003033a8): the row settles, unless
         // the pregame intro sequence is still running (FUN_0013e358).
         if before.staged && !now.staged && !now.intro {
+            // A gamebreaker's script (the end's word +4 of 1) owes the
+            // celebration two seconds on (`DAT_004d908c` into +0x50, the
+            // School's Level 2 capture: 120 the update the script ends).
+            if self.staged_gamebreaker {
+                self.celebration = CELEBRATION_TICKS[0];
+            }
             self.select_row();
             // A staged gamebreaker's task ends once the script manager is
             // idle again (FUN_00144ef8, state 1 of its staged branch).
@@ -2957,8 +2963,12 @@ impl CameraManager {
                 match *event {
                     // Slot 0x204 (FUN_00159cf0's post): a staged Level 2
                     // gamebreaker is filmed by its script instead.
+                    // The script starts two updates after the press
+                    // (`World::staged_start`); the original's flag +0x40
+                    // stays off throughout (the School's Level 2 capture).
                     street_sim::Event::Gamebreaker { level, .. } => {
-                        if level == 2 && world.sequence.is_some() {
+                        if level == 2 && (world.sequence.is_some() || world.staged_start.is_some())
+                        {
                             self.staged_gamebreaker = true;
                         } else {
                             self.gamebreaker_on(tick);
@@ -5696,6 +5706,59 @@ mod camera_pose_tests {
         w.tick += 1;
         w.events = events;
         mgr.update(&tick(w))
+    }
+
+    #[test]
+    fn a_staged_level_two_keeps_the_row_until_its_script_and_owes_a_celebration() {
+        // The School's Level 2 capture (manager +0x4c 0): +0x40 stays off
+        // from the press through the script, the row stays on screen until
+        // the script's camera takes it two updates after the press, and
+        // the script's end (FUN_003033a8, word +4 of 1) sets +0x50 to two
+        // seconds, settles the row and the task's end blends to it.
+        let mut w = camera_world();
+        let mut mgr = on_the_row(&w);
+        w.staged_start = Some((
+            street_sim::gamebreaker::Sequence {
+                script: 8,
+                shooter: 0,
+                team: 0,
+                level: 2,
+                frame: 0,
+                held: 0,
+                actors: [None; 7],
+                native_clocks: [None; 7],
+                resume_pending: false,
+                finishing: 0,
+            },
+            2,
+        ));
+        stepped(
+            &mut mgr,
+            &mut w,
+            vec![street_sim::Event::Gamebreaker {
+                player: 0,
+                level: 2,
+            }],
+        );
+        assert!(!mgr.gamebreaker);
+        assert_eq!(mgr.active_helper, CameraHelperKind::Row);
+        w.tick += 1;
+        let script = CameraTick {
+            staged: Some(StagedView {
+                eye: Vec3::new(1.0, 2.0, 3.0),
+                at: Vec3::ZERO,
+                scalar: 0.7,
+                roll: 0.0,
+            }),
+            ..tick(&w)
+        };
+        mgr.update(&script);
+        assert_eq!(mgr.active_helper, CameraHelperKind::Staged);
+        assert!(!mgr.gamebreaker);
+        stepped(&mut mgr, &mut w, vec![]);
+        assert_eq!(mgr.celebration, CELEBRATION_TICKS[0] - 1);
+        assert_eq!(mgr.active_helper, CameraHelperKind::Blend);
+        assert!(!mgr.gamebreaker);
     }
 
     #[test]

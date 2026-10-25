@@ -766,3 +766,30 @@ Not the original's: the courtside eyes and the replays' coin. They come
 from the shared generators (`FUN_003a16b8`, the libc LCG), which the
 crowd, animation and speech also draw from, so the rewrite's own copies
 can't pick the same eyes.
+
+## A Level 2 gamebreaker's camera in the original (2026-10-25)
+
+The School's Level 2 lesson (25), fired from (-18, 22), captured with the
+same per-update sampler (`$EVIDENCE/street-level2-camera`). Manager `+0x40`
+stays 0 from the press through the script. The row stays on screen until
+the staged helper takes it, two updates after the press (the script's
+start). It holds through the basket and the replay. The update the script
+ends, `+0x50` is 120 and counts down from the next, and a blend runs 30
+updates into the row on its default focus (the ball under the basket).
+
+`FUN_003033a8` (slot `0x1f4`, the script's end) sets `+0x50` to
+`DAT_004d908c` when its message's word `+4` is 1, unless the intro still
+runs, then settles the row (`FUN_002fa4f8`). `FUN_00302c20` (the basket)
+does what it does for any gamebreaker basket with `+0x40` off: turns the
+camera on screen to the basket, shakes a row and marks a celebration
+owed outside lessons. Only a Level 1 starts the countdown there.
+
+The rewrite had two faults. It checked for a running script at the
+press, but the script starts two updates later, so a Level 2 took the
+Level 1 path: a blend to a courtside camera and `+0x40` set, never
+cleared by the script's end. It also never started the countdown at the
+script's end. Now `World::staged_start` counts as the script, and the
+script's end of a gamebreaker sets the countdown
+(`a_staged_level_two_keeps_the_row_until_its_script_and_owes_a_celebration`).
+In a match the celebration's courtside camera finds the scorer two seconds
+after the script ends. The School ends the lesson first.
