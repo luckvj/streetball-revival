@@ -13062,3 +13062,29 @@ cue's word 12 of 1, plans 0, 4, 5 and 7, which go through the floor in
 the original), `FUN_0032fe28`'s waypoint path (word 16 of 2 is a whole
 (x, y, z) point from words 20..28, the port reads two), and script 2's
 dunker, who leaves the floor about 15 frames before his body starts.
+
+Since (2026-10-25):
+
+- Bounce passes. `FUN_0032fe28` keeps each pass record's word 12 in its
+  waypoint entry (+0x18), `FUN_001488e8` hands it to the leg (+0x28) and
+  `FUN_0014c0c0` launches with it as the bounce flag: the floor once on the
+  way (`FUN_0014f728`'s first contact, `self_toss::solve_bounce_time`, the
+  floor's 0.8; the captures show the speed across kept and about 0.8 of
+  the rise). Plans 0, 4, 5 and 7 bounce where the School's runs do;
+  script 7's lob leaves at 9.65 (the original 9.37), meets the floor about
+  frame 61 and is caught at 80 at 16.95 (17.40).
+- The board-disable record (`FUN_00148760`). A leg to the backboard (word
+  16 of 1) carries its side (+0x14, `FUN_001404c0`); while it or the leg
+  before is such a leg aimed 13.25 or higher, the backboard, collar, rim
+  and basket on that side meet nothing. Script 4's bounce to the board
+  passed through the rim's ring in the original (14.0 at the board at
+  frame 58, ours 13.95) and on to the dunker; ours had hit the rim and
+  dropped loose (`Ball::fly_pass_with`). Flown straight, script 7's lob
+  had done the same.
+- Word 16 of 2 reads words 20, 24 and 28 as the point (`0x330060..`).
+
+`every_staged_dunker_flies_on_his_finishing_body` now runs all sixteen
+plans, the ball with the first pass's or shot's thrower, and fails a ball
+loose before the shot; each scores once (a shot that outlasts its script
+scores as the Level 2's). Still open: script 2's dunker leaves the floor
+about 15 frames before his body starts.
