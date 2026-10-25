@@ -91,7 +91,10 @@ pub struct ScreenCopy {
     pub alpha: f32,
     pub colour: f32,
     pub dither: f32,
-    pub _pad: f32,
+    /// Show the last picture again, nothing blended: a frame drawn with
+    /// no new update since the last (the original copies once a 60 Hz
+    /// frame, so a faster display must not blend more often).
+    pub hold: f32,
 }
 
 impl ScreenCopy {
@@ -101,7 +104,7 @@ impl ScreenCopy {
         alpha: 128.0,
         colour: 128.0,
         dither: 0.0,
-        _pad: 0.0,
+        hold: 0.0,
     };
 
     /// A copy at `alpha` and `colour`, dithered as the original's.
@@ -110,7 +113,7 @@ impl ScreenCopy {
             alpha: alpha as f32,
             colour: colour as f32,
             dither: 1.0,
-            _pad: 0.0,
+            hold: 0.0,
         }
     }
 }

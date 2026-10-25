@@ -12,7 +12,8 @@ struct ScreenCopy {
     alpha: f32,
     colour: f32,
     dither: f32,
-    _pad: f32,
+    // No new update since the last frame: the last picture again.
+    hold: f32,
 };
 
 @group(0) @binding(0) var screen: texture_2d<f32>;
@@ -45,6 +46,9 @@ fn decode(v: vec3<f32>) -> vec3<f32> {
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let sample = textureSample(screen, screen_sampler, in.uv);
+    if copy.hold >= 0.5 {
+        return textureSample(shown, screen_sampler, in.uv);
+    }
     // An identity copy: the frame as drawn.
     if copy.alpha >= 128.0 && copy.colour == 128.0 && copy.dither == 0.0 {
         return sample;

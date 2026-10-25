@@ -13248,3 +13248,14 @@ persistent id (field 0) the capture names. That id is not the record's
 index for all: the generic ballers' is their record less 11 and
 Mutombo's (record 81) is 101. Taking it as an index had given the story's
 generics and the School's actor 0 other heights.
+
+## The blur on a fast display (2026-10-25)
+
+`FUN_0030fce0` copies the drawn frame over the shown one once a 60 Hz
+frame, at alpha 2880 / fps (48) and colour 0xa0, which leaves the moving
+players' ghosts. The rewrite blended every frame it drew. On a display
+faster than 60 Hz the picture changes only with the game's updates, so
+the ghosts faded two to three times faster (at 144 Hz, 0.32 of a trail
+left after a 60th of a second instead of 0.625). A frame drawn with no
+new update since the last now shows the last picture again
+(`ScreenCopy::hold`), so the blur blends once an update.
