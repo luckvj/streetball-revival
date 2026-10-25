@@ -121,6 +121,8 @@ pub struct ScreenFx {
     /// The blur (`+0x10`): on, its delay (`+0x44`) and the copy it set.
     blur_on: bool,
     blur_delay: i32,
+    /// The fixed updates drawn ([`ScreenFx::draw`]), for the copy's hold.
+    updates: u64,
     copy: ScreenCopy,
     /// The staged script's effect layers and the frame its manager reached.
     staged: [Option<EffectLayer>; EFFECT_PLAYERS],
@@ -147,6 +149,7 @@ impl Default for ScreenFx {
             flash_at_script_end: false,
             blur_on: false,
             blur_delay: 0,
+            updates: 0,
             copy: USUAL,
             staged: [None; EFFECT_PLAYERS],
             script: None,
@@ -316,6 +319,7 @@ impl ScreenFx {
 
     /// Each quad's draw and step, then the blur's copy (`FUN_0030fce0`).
     pub fn draw(&mut self) {
+        self.updates += 1;
         let mut layers = ScreenLayers::default();
         let mut k = 0;
         let mut put = |drawn: Option<(u8, [i32; 4])>| {
@@ -375,6 +379,7 @@ pub fn step(
 pub fn show(
     mut commands: Commands,
     fx: Res<ScreenFx>,
+    mut shown_updates: Local<u64>,
     cameras: Query<(
         Entity,
         &Camera,
@@ -397,7 +402,18 @@ pub fn show(
         .map(|(e, ..)| e);
     for (entity, _, _, copy, layers, sideline) in &cameras {
         let mut camera = commands.entity(entity);
-        let want = (Some(entity) == last).then(|| if sideline { fx.copy() } else { USUAL });
+        let want = (Some(entity) == last).then(|| {
+            if !sideline {
+                return USUAL;
+            }
+            // The original blends its blur once a 60 Hz frame: a frame
+            // drawn with no new update shows the last picture again.
+            let mut copy = fx.copy();
+            if copy == BLUR && fx.updates == *shown_updates {
+                copy.hold = 1.0;
+            }
+            copy
+        });
         match want {
             Some(want) if copy != Some(&want) => {
                 camera.insert(want);
@@ -410,6 +426,7 @@ pub fn show(
         if !sideline {
             continue;
         }
+        *shown_updates = fx.updates;
         if fx.layers.any() {
             if layers != Some(&fx.layers) {
                 camera.insert(fx.layers);
