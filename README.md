@@ -12,7 +12,7 @@ a side, over the internet or a home network.
 > own disc image**. See [LEGAL.md](LEGAL.md).
 
 <p align="center">
-  <img src="docs/screenshots/launcher.jpg" alt="The Streetball Revival launcher: Ready to play, with Play, Change disc and Quit" width="720">
+  <img src="docs/screenshots/gamebreaker.webp" alt="A Level 2 gamebreaker: the GB2 burst, then the staged play down the court" width="720">
 </p>
 
 ## Get started
@@ -52,6 +52,22 @@ Tricks: hold turbo buttons while pressing the trick button; the more turbo
 buttons held, the fancier the move. Tricks fill your **gamebreaker** meter;
 when it is full, shoot for a gamebreaker.
 
+## Screenshots
+
+Every picture below is the rebuild running real matches, captured straight
+from the game.
+
+<p align="center">
+  <img src="docs/screenshots/dunk.webp" alt="A drive along the baseline and a dunk over a defender at The Cage" width="420">
+  <img src="docs/screenshots/moves.webp" alt="A ball handler working the dribble against a defender at The Cage" width="420">
+</p>
+
+| | |
+|:-:|:-:|
+| <img src="docs/screenshots/dunk.jpg" alt="A dunk contested at the rim" width="420"> | <img src="docs/screenshots/trick.jpg" alt="A trick move scoring 5,000 trick points" width="420"> |
+| <img src="docs/screenshots/sham.jpg" alt="A trick move on a night court" width="420"> | <img src="docs/screenshots/hurricane.jpg" alt="A spin move scoring 500 trick points in a day game" width="420"> |
+| <img src="docs/screenshots/gb2.jpg" alt="The GB2 burst that starts a Level 2 gamebreaker" width="420"> | <img src="docs/screenshots/staged.jpg" alt="The staged camera inside a Level 2 gamebreaker" width="420"> |
+
 ## Playing online
 
 On the Main Menu press **Select** (**P** on the keyboard) for **Online**.
@@ -76,7 +92,7 @@ an emulator (recorded matches, the front end's screens, Street School's
 lessons) and against its program code.
 
 The [parity scorecard](docs/PARITY_SCORECARD.md) tracks 211 behaviours today:
-**167 matched**, **24 known differences** and **20 not yet tested**. That is a
+**168 matched**, **24 known differences** and **19 not yet tested**. That is a
 selected list, not a whole-game percentage. The biggest open areas:
 
 - the computer's team play (where defenders stand, how often they block and
