@@ -4357,10 +4357,14 @@ pub fn sync_ball(
                         joint_transform.to_scale_rotation_translation();
                     (hand_at, hand_rot, scale.x, mode)
                 };
-                // On a script's clip the simulation holds the ball as the
-                // original's ball update does ([`street_sim::held`]): in
-                // the hand its frame holds out, eased through a blend.
-                if sim.world.channel(i).is_some_and(|c| !c.gait) {
+                // The simulation holds the ball as the original's ball
+                // update does (`FUN_0014e060`, [`street_sim::held`]): in the
+                // hand a script's frame holds out, eased through a blend,
+                // and on a gait clip the dribble between its release and
+                // catch frames (`street_sim::dribble`, checked against the
+                // played captures). The bounce below stands in only
+                // without the disc's animations.
+                if sim.world.channel(i).is_some() {
                     return Some(Vec3::from_array(ball.position));
                 }
                 if p.action != Action::None {

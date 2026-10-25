@@ -13229,3 +13229,13 @@ The gait clock's change moved two seeded checks:
 - The second capture's standing share is 0.430 (se 0.007) against 0.398,
   the seed sets +500 and +777 0.433 and 0.425 (0.425 before). The bound
   is set again by the rule at 0.055.
+
+## The drawn dribble (2026-10-25)
+
+The simulation has carried the held ball as `FUN_0014e060` does since
+2026-10-16 (`street_sim::dribble`, checked against the played captures'
+ball). The view kept its own stand-in for a holder on his gait, a bounce
+of `|cos(pi phase)|` between the floor and his hand, once a clip cycle.
+It now draws the simulation's ball for any holder whose channel the
+simulation runs, the gait's dribble included. The bounce stays only
+without the disc's animations.
