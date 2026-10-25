@@ -3322,9 +3322,13 @@ const RECORDED_BOUNDS: Bounds = Bounds {
 /// set again by the rule on 2026-10-24 with the velocity's readers seeing
 /// the stand path's zero (`Player::moving`): 213.8 (109.2, se 27.3) against
 /// 396 (324.1 before), 265 (the seed sets +500 325.2, +777 297.9: the base
-/// set is the low one).
+/// set is the low one). The defenders' standing share set again by the
+/// rule on 2026-10-25 with the gait clock on the skeleton's scale (the
+/// legs a fifth slower, as the original's): 0.430 (0.029, se 0.007)
+/// against 0.398 (0.425 before), 0.055 (the seed sets +500 0.433, +777
+/// 0.425; the long captures' 0.406 and 0.414 against 0.376 and 0.423).
 const ALL_50_SHORT_BOUNDS: Bounds = Bounds {
-    standing: 0.03,
+    standing: 0.055,
     away: 0.07,
     length: 3.0,
     in_tricks: 0.11,
