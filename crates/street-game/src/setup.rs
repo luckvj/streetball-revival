@@ -530,6 +530,11 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
             .map(|player| crate::clip::advanced_dunk_slots(clips, &moves, disc, player))
             .collect()
     });
+    // The C library's generator: each league player's model draws his
+    // shorts from it as it loads (`0x315cc8`).
+    let mut libc = world
+        .get_resource::<crate::session::Session>()
+        .map(|s| s.libc());
     let mut disc = world.resource_mut::<Disc>();
     disc.ball = court::ball(&mut disc.iso, ball_suffix)?;
     let court = court::load(&mut disc.iso, &setup.court)?;
@@ -592,6 +597,7 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
                         .then(|| sixth_men.iter().find(|&&(_, r)| usize::from(r) == record))
                         .flatten()
                         .map(|&(t, _)| usize::from(t)),
+                    shorts: libc.as_mut().map_or(0, |l| l.rand()),
                 },
             )?;
             look.scale *= cheats.body_scale();
@@ -663,6 +669,11 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     // Built on the session's generator as it stands, as the original
     // builds its game on the shared one (`session.rs`); a run without a
     // session (a test) starts one from the setup's seed.
+    if let Some(libc) = libc {
+        world
+            .resource_mut::<crate::session::Session>()
+            .set_libc(libc);
+    }
     if !world.contains_resource::<crate::session::Session>() {
         world.insert_resource(crate::session::Session::pinned(setup.seed));
     }

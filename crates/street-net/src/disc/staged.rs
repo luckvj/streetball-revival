@@ -80,14 +80,18 @@ pub fn attach_hands(
         let clip = clips
             .get(name)
             .ok_or_else(|| format!("missing staged clip {name}"))?;
+        // In place, as the staged body is drawn: the script's curves move
+        // the actor along his clip's travel, so the hand the ball sits in
+        // keeps only the root's rise (script 2's held ball had sat 7
+        // beyond its holder, the School's capture 2).
         let mut positions = Vec::with_capacity(clip.frames());
         let mut width_deltas = Vec::with_capacity(clip.frames());
         for frame in 0..clip.frames() {
             let right = clip
-                .joint_position(skeleton, 19, frame as f32, record.mirrored, false)
+                .joint_position(skeleton, 19, frame as f32, record.mirrored, true)
                 .ok_or("missing right hand")?;
             let left = clip
-                .joint_position(skeleton, 15, frame as f32, record.mirrored, false)
+                .joint_position(skeleton, 15, frame as f32, record.mirrored, true)
                 .ok_or("missing left hand")?;
             let at = match clip.state_at_mirrored(frame, record.mirrored) & 0xc {
                 8 => right,
@@ -103,7 +107,7 @@ pub fn attach_hands(
                     19,
                     frame as f32,
                     record.mirrored,
-                    false,
+                    true,
                     Some([1.0, 2.0, 2.0]),
                 )
                 .ok_or("missing width-adjusted right hand")?;
@@ -113,7 +117,7 @@ pub fn attach_hands(
                     15,
                     frame as f32,
                     record.mirrored,
-                    false,
+                    true,
                     Some([1.0, 2.0, 2.0]),
                 )
                 .ok_or("missing width-adjusted left hand")?;

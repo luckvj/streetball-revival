@@ -1588,6 +1588,8 @@ pub fn preview(
                 .then_some(editing.outfit_extras.team)
                 .flatten()
                 .map(usize::from),
+            // A created baller wears his own clothes, not team shorts.
+            shorts: 0,
         },
     ) {
         Ok(a) => a,

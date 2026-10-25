@@ -1164,7 +1164,7 @@ mod tests {
                                 19,
                                 frame as f32,
                                 record.mirrored,
-                                false,
+                                true,
                                 body,
                             )
                             .unwrap();
@@ -1174,7 +1174,7 @@ mod tests {
                                 15,
                                 frame as f32,
                                 record.mirrored,
-                                false,
+                                true,
                                 body,
                             )
                             .unwrap();
@@ -1276,7 +1276,7 @@ mod tests {
                     _ => continue,
                 };
                 let expected = clip
-                    .joint_position(&skeleton, hand, frame as f32, true, false)
+                    .joint_position(&skeleton, hand, frame as f32, true, true)
                     .unwrap()
                     .to_array();
                 assert_eq!(
@@ -1503,6 +1503,7 @@ mod tests {
             let (mut peak, mut landed, mut scores) = ((0.0f32, 0), None, 0);
             let mut shot = false;
             let mut takeoff = 0.0f32;
+            let mut balls = Vec::new();
             let mut updates = 0;
             // A shot may outlast its script and score as the Level 2's.
             while let Some(s) = world
@@ -1524,6 +1525,9 @@ mod tests {
                     world.ball.position
                 );
                 let h = world.players[dunker].height;
+                if s.held == 0 && [71u32, 123, 133].contains(&s.frame) {
+                    balls.push((s.frame, world.ball.position));
+                }
                 if s.frame == 98 {
                     takeoff = h;
                 }
@@ -1562,6 +1566,19 @@ mod tests {
                 // the staged clip's root lift (4.03) and peaks about 9.6
                 // at 129.
                 assert!((takeoff - 4.03).abs() < 0.05, "{takeoff}");
+                // The ball in the drawn (in-place) hand, then off the
+                // board and in the dunker's: the capture's 71, 123, 133.
+                for (frame, want, within) in [
+                    (71, [-23.57, 7.28, 0.35], 0.5),
+                    (123, [-28.31, 18.36, 0.45], 0.2),
+                    (133, [-29.25, 18.46, -0.01], 0.2),
+                ] {
+                    let at = balls.iter().find(|b| b.0 == frame).map(|b| b.1).unwrap();
+                    assert!(
+                        (0..3).all(|k| (at[k] - want[k]).abs() < within),
+                        "frame {frame}: {at:?}"
+                    );
+                }
                 assert!(
                     (peak.0 - 9.6).abs() < 0.1 && (128..=131).contains(&peak.1),
                     "{peak:?}"
