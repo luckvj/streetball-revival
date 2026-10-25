@@ -315,6 +315,7 @@ fn add_finishers(bank: &ScriptBank, plan: &mut SequencePlan) {
             slot,
             start_frame: cue.frame,
             animation: pose.animation,
+            release_bits: finisher.release_bits,
             spans: finisher
                 .spans
                 .iter()

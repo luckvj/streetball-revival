@@ -91,6 +91,10 @@ pub struct Finisher {
     pub spans: Vec<FinisherSpan>,
     /// Callback 21 calls the actual ball shot release (FUN_001729f8).
     pub release_tick: Option<u32>,
+    /// The actor's state word when callback 21 runs: the last `9b` before
+    /// it, which replaces the word (0 with none). The launcher reads bits 7
+    /// (a dunk) and 15 (the alley-oop leap) for its dunk path.
+    pub release_bits: u32,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -210,11 +214,15 @@ pub fn finishers_from_executable(data: &[u8]) -> Result<Vec<Finisher>> {
             let mut spans = Vec::new();
             let (mut tick, mut frame) = (0, 0);
             let mut release_tick = None;
+            let mut release_bits = 0;
             for (&pc, instruction) in &visited {
                 let opcode = elf.byte(pc)?;
                 if opcode == 0x83 && elf.word(pc + 1)? == 21 {
                     release_tick = Some(tick);
                     break;
+                }
+                if opcode == 0x9b {
+                    release_bits = elf.word(pc + 1)?;
                 }
                 if opcode == 0x8e
                     && let Some(blend) = &instruction.blend
@@ -242,6 +250,7 @@ pub fn finishers_from_executable(data: &[u8]) -> Result<Vec<Finisher>> {
                 address,
                 spans,
                 release_tick,
+                release_bits,
             });
         }
     }

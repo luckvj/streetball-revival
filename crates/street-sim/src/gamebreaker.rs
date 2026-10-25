@@ -78,6 +78,10 @@ pub struct FinishTrack {
     pub start_frame: u32,
     pub animation: u16,
     pub spans: Vec<FinishSpan>,
+    /// The actor's state word at the body's callback 21 (its last `9b`
+    /// before it): bit 7 or 15 sends the release down the launcher's dunk
+    /// path.
+    pub release_bits: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -1459,6 +1463,7 @@ impl Config {
                 out.push(finish.slot);
                 put32(&mut out, finish.start_frame);
                 out.extend(finish.animation.to_le_bytes());
+                put32(&mut out, finish.release_bits);
                 put32(&mut out, finish.spans.len() as u32);
                 for span in &finish.spans {
                     put32(&mut out, span.start_tick);
@@ -1640,6 +1645,7 @@ impl Config {
                 let slot = input.u8()?;
                 let start_frame = input.u32()?;
                 let animation = input.u16()?;
+                let release_bits = input.u32()?;
                 let mut spans = Vec::new();
                 for _ in 0..input.count(64)? {
                     spans.push(FinishSpan {
@@ -1654,6 +1660,7 @@ impl Config {
                     start_frame,
                     animation,
                     spans,
+                    release_bits,
                 });
             }
             plans.push(SequencePlan {

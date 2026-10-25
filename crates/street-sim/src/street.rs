@@ -1132,8 +1132,8 @@ impl World {
         // word 16 of 1 and otherwise `π/4 + π/8 × max(0, (20 − d) / 20)` for
         // his distance `d` from the rim across the floor: a shot's own arc,
         // its flight from the angle with the launcher's half-second and
-        // 14-unit floors. A shooter whose clip is dunking (state bit 7)
-        // takes the launcher's dunk path at the hand's pace (`0x14ad14`).
+        // 14-unit floors. A shooter in a dunk or the alley-oop leap takes
+        // the launcher's dunk path at the hand's pace.
         // The launcher's fourth argument (`FUN_00141038`'s script bands)
         // only records the basket for the side.
         let made = cue.word(8) == Some(0);
@@ -1157,11 +1157,17 @@ impl World {
         } else {
             ((20.0 - d) / 20.0).max(0.0) * f32::from_bits(0x3ec9_0fda) + f32::from_bits(0x3f49_0fdb)
         };
-        let dunking = pose.is_some_and(|p| {
-            self.poses
-                .get()
-                .is_some_and(|bank| bank.state(p.animation, p.animation_frame as i32) & 0x80 != 0)
-        });
+        // The launcher's dunk path (`0x14abf0..0x14ac18`): the shooter in a
+        // dunk (bit 7) or the alley-oop leap (bit 15). A staged actor's
+        // state word comes from his finishing body (its last `9b` before
+        // the callback 21 that releases the ball); the clips' own words
+        // hold only the hand flags.
+        let dunking = plan
+            .finishes
+            .iter()
+            .filter(|f| f.slot == role && f.start_frame <= sequence.frame)
+            .max_by_key(|f| f.start_frame)
+            .is_some_and(|f| f.release_bits & 0x8080 != 0);
         let shot = crate::Shot {
             shooter: player,
             hoop,
