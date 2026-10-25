@@ -21,14 +21,6 @@ use crate::{
     button, distance, player::DunkStyle, street, target_hoop, tuning,
 };
 
-/// A pick being set: `screener` heads for `defender` until `until` (tick).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Pick {
-    pub screener: usize,
-    pub defender: usize,
-    pub until: u64,
-}
-
 impl World {
     /// The shoot button with the ball (`FUN_0015a060`, raw
     /// `0x15b0f8..0x15b204`): a gamebreaker with two turbos held (the
@@ -416,67 +408,6 @@ impl World {
             }
         }
         false
-    }
-
-    /// Strategy (Triangle) near the long-range arc: the nearest teammate goes
-    /// to set a pick on the handler's defender.
-    pub(crate) fn call_for_pick(&mut self, i: usize) {
-        let team = self.team_of(i);
-        let Some(defender) = self.defender_in_front(i, 10.0).or_else(|| {
-            (0..self.players.len())
-                .filter(|&j| self.team_of(j) != team)
-                .min_by(|&a, &b| {
-                    let d = |j: usize| distance(self.players[j].position, self.players[i].position);
-                    d(a).total_cmp(&d(b))
-                })
-        }) else {
-            return;
-        };
-        let at = self.players[defender].position;
-        let screener = (0..self.players.len())
-            .filter(|&j| j != i && self.team_of(j) == team && self.players[j].free())
-            .min_by(|&a, &b| {
-                let d = |j: usize| distance(self.players[j].position, at);
-                d(a).total_cmp(&d(b))
-            });
-        if let Some(screener) = screener {
-            self.pick = Some(Pick {
-                screener,
-                defender,
-                until: self.tick + (tuning::PICK_TIME * crate::TICK_HZ as f32) as u64,
-            });
-        }
-    }
-
-    /// A pick lands when the screener reaches the defender, who is knocked
-    /// off the play for a moment.
-    pub(crate) fn step_pick(&mut self) {
-        let Some(pick) = self.pick else {
-            return;
-        };
-        let (s, d) = (&self.players[pick.screener], &self.players[pick.defender]);
-        if self.tick > pick.until || self.handler().is_none_or(|h| self.team_of(h) != s.team) {
-            self.pick = None;
-        } else if distance(s.position, d.position) < tuning::PICK_CONTACT && d.free() {
-            self.players[pick.defender].stumble(tuning::PICK_STUMBLE);
-            self.pick = None;
-            self.events.push(Event::Pick {
-                screener: pick.screener,
-                defender: pick.defender,
-            });
-        }
-    }
-
-    /// The handler's strategy button: a pick near the arc (the rewrite's
-    /// own). The alley-oop it calls is the computer teammates' (the AI
-    /// reads the button, `FUN_0018ac98`; the leaper's own press leaps,
-    /// [`crate::leap`]).
-    pub(crate) fn strategy(&mut self, i: usize) {
-        let hoop = target_hoop(self.team_of(i));
-        let to_rim = distance(self.players[i].position, self.rim_spot(hoop));
-        if (to_rim - tuning::ARC_RADIUS).abs() < tuning::PICK_ZONE {
-            self.call_for_pick(i);
-        }
     }
 
     /// Dunk style for scoring.

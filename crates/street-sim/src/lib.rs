@@ -96,7 +96,7 @@ pub use shooting::{
     NATIVE_AIM_HEIGHT, NATIVE_BACKBOARD_BOUNDS_X, NATIVE_BACKBOARD_BOUNDS_Y,
     NATIVE_BACKBOARD_BOUNDS_Z, NATIVE_NET_BOTTOM_HEIGHT, NATIVE_NET_CONE_SCALE,
     NATIVE_RIM_COLLAR_X, NATIVE_RIM_COLLAR_Z_MAX, NATIVE_RIM_ENTRY_CONE_ANGLE, NATIVE_RIM_HEIGHT,
-    NATIVE_RIM_OUTER_RADIUS, NATIVE_RIM_RADIUS, Pick, evaluate_shot_quality_tier,
+    NATIVE_RIM_OUTER_RADIUS, NATIVE_RIM_RADIUS, evaluate_shot_quality_tier,
 };
 pub use street::{Basket, Combo, TeamState};
 
@@ -268,14 +268,6 @@ pub mod tuning {
     /// How far a diver reaches for the ball without the disc's animations
     /// (the rewrite's stand-in for the dive's catch, [`crate::dive`]).
     pub const DIVE_PICKUP: f32 = 3.2;
-    /// Picks: called within `PICK_ZONE` of the arc; the screener has
-    /// `PICK_TIME` to reach the defender, who then stumbles. The screener
-    /// reaches him at the players' contact (two radii, `contact::RADIUS`,
-    /// which keeps them that far apart) and a little beyond.
-    pub const PICK_ZONE: f32 = 4.0;
-    pub const PICK_TIME: f32 = 3.0;
-    pub const PICK_CONTACT: f32 = 2.0 * crate::contact::RADIUS + 0.1;
-    pub const PICK_STUMBLE: f32 = 1.3;
 }
 
 /// Native ball gravity: `0014a3a4` uses 0x42009be3 times the default
@@ -462,7 +454,8 @@ pub enum Event {
     Dive {
         player: usize,
     },
-    /// A pick landed: `defender` is knocked off the play.
+    /// A screen on the holder's own defender by the arc (`0x3c6910`'s
+    /// kind 3, [`World::post_contact`]'s 500): `defender` was screened.
     Pick {
         screener: usize,
         defender: usize,
@@ -648,8 +641,6 @@ pub struct World {
     /// A caught pass still holding its receiver in the catch animation
     /// (actor+0xa4 bit 9) until `until` ([`timing::catch_hold`]).
     pub catch: Option<Catch>,
-    /// A pick being set.
-    pub pick: Option<Pick>,
     /// The tick each player last let go of each turbo button (L1, R1, L2,
     /// R2; `FUN_00130a28`'s controller+0xec), `u64::MAX` for none: one
     /// pressed again soon after dives ([`dive`]).
@@ -1082,7 +1073,6 @@ impl World {
             fresh_take: false,
             windup: None,
             catch: None,
-            pick: None,
             turbo_releases: vec![[u64::MAX; 4]; n],
             rng: rng::Rng::new(seed),
             previous_inputs: vec![Input::default(); n],
@@ -1567,7 +1557,6 @@ impl World {
         }
         // `FUN_00133bb0`: players in contact push apart.
         self.step_contacts(&start);
-        self.step_pick();
         if self.rules.unlimited_turbo {
             self.fill_turbo();
         }
@@ -1850,8 +1839,6 @@ impl World {
                 self.pass_button(i, input, aimed, start);
             } else if pressed & button::TRICK != 0 {
                 self.juke_press(i, input, turbos);
-            } else if pressed & button::R3 != 0 {
-                self.strategy(i);
             } else if pressed & button::SELECT != 0 {
                 self.pocket(i, turbos);
             }
@@ -2217,10 +2204,12 @@ impl World {
     /// `trunc((Steals âˆ’ 50) / 50 Â· 65)` catches the ball outright (a steal);
     /// otherwise it is knocked loose (`0x16d428`): 0.35 an update along the
     /// defender's facing turned by `r & 0x7f` (moving) or `(r & 0x7f) âˆ’
-    /// 0x80`, rising 0.125. The holder reels (`FUN_00159190`, reaction 3 or
-    /// 4 by `r & 1`, which draws again for its clip), barred from the ball
-    /// `r % 5 + 25` updates (the rewrite's stumble); a catch also gives the
-    /// swiper reaction 2 (one more draw). Handles play no part.
+    /// 0x80`, rising 0.125, spinning (four more draws). The holder's face (`FUN_00159190`, 3 or 4
+    /// by `r & 1`, which draws again); on the floor he reels on his
+    /// channel ([`trick::STRIPPED`]), caught or knocked; knocked, he is
+    /// barred from the ball `r % 5 + 25` updates and the swiper `fps ×
+    /// 0.84`; a catch also gives the swiper face 2 (one more draw).
+    /// Handles play no part.
     fn swipe(&mut self, i: usize) {
         use tuning::*;
         let Some(h) = self.handler() else {
@@ -2271,6 +2260,13 @@ impl World {
         // reaction's own draw for its clip (its time is over 0).
         self.rng.next_u32();
         self.face(h, 2 * TICK_HZ as i32);
+        // A holder on the floor (actor+0x34 0) reels on his channel by his
+        // dribble hand, caught or knocked (`0x16d360`, `0x16d3f8`).
+        if self.players[h].height == 0.0 {
+            let left = self.players[h].gait_channel.hand == 2;
+            self.begin_reaction_by(h, trick::STRIPPED, left);
+            self.reaction_tick(h);
+        }
         if !caught {
             let turn = (self.rng.next_u32() & 0x7f) as i32 - if moving { 0 } else { 0x80 };
             let facing = ((self.players[i].heading + std::f32::consts::PI) * 162.974_66 + 0.5)
@@ -2278,10 +2274,36 @@ impl World {
                 & 0x3ff;
             let a = (facing - turn) & 0x3ff;
             let away = [-input::native_sin_1024(a), -input::native_cos_1024(a)];
+            // The holder barred (actor+0x1a8) `r % 5 + 25` updates, the
+            // swiper `fps × 0.84` (`fps × 0.17` in lesson 16,
+            // `0x16d4b8..0x16d554`).
+            self.players[h].barred = (self.rng.next_u32() % 5 + 25) as u16;
+            let k = if self.lesson == Some(16) {
+                f32::from_bits(0x3e2e_147b)
+            } else {
+                f32::from_bits(0x3f57_0a3d)
+            };
+            self.players[i].barred = (TICK_HZ as f32 * k) as u16;
+            // Spinning about a random axis at `0.075 + u × 0.075`, free
+            // (`FUN_0014c408`), as a block's knock.
+            let mut axis = [0.0_f32; 3];
+            for c in &mut axis {
+                *c = (self.rng.next_u32() & 0x7fff_ffff) as f32 * f32::from_bits(0x3000_0000) - 0.5;
+            }
+            let l = math::len(math::len(axis[0], axis[1]), axis[2]);
+            let axis = if l <= 0.0001 {
+                [0.0, 1.0, 0.0]
+            } else {
+                axis.map(|c| c / l)
+            };
+            let u = (self.rng.next_u32() & 0x7fff_ffff) as f32 * f32::from_bits(0x3000_0000);
             self.ball.drop_loose();
             self.ball.velocity = [away[0] * 0.35 * 60.0, 0.125 * 60.0, away[1] * 0.35 * 60.0];
-            let barred = (self.rng.next_u32() % 5 + 25) as f32 * TICK_SECONDS;
-            self.players[h].stumble(barred);
+            self.ball.spin_axis = axis;
+            self.ball.spin = u * 0.075 + 0.075;
+            self.ball.airborne = true;
+            self.ball.flight_left = 0.0;
+            self.ball.flight_time = 0.0;
             return;
         }
         // The take of the held ball by the other side is slot 15's steal
@@ -2822,7 +2844,6 @@ impl World {
         let inbounder = actors[possessing_team][plan.order[0]];
         self.opening_toss = OpeningToss::None;
         self.give_and_go = None;
-        self.pick = None;
         self.possession = possessing_team;
         // A carried ball is let go first (`FUN_0014c408`).
         self.ball.drop_loose();
@@ -2860,7 +2881,6 @@ impl World {
         self.possession = 0;
         self.shot_clock = self.rules.shot_clock.unwrap_or(0.0);
         self.give_and_go = None;
-        self.pick = None;
         self.opening_toss = OpeningToss::Waiting(toss::WAIT_UPDATES);
         // The actors' reset for the match (`FUN_00156870`): game+0x94 too
         // (`0x1569c0`).

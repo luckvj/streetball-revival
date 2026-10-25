@@ -13259,3 +13259,45 @@ the ghosts faded two to three times faster (at 144 Hz, 0.32 of a trail
 left after a 60th of a second instead of 0.625). A frame drawn with no
 new update since the last now shows the last picture again
 (`ScreenCopy::hold`), so the blur blends once an update.
+
+## Screens, the strip's knock and the swipe's clock (2026-10-25)
+
+A demo match logged the actions the view still drew with its own clips
+and fades: swipes (32 in four minutes), stumbles (9) and a pass. The
+stumbles were the rewrite's own.
+
+- **The screen** (`0x135400..0x135640`): the screener plays
+  `0x3d0fb0[r % 3]` (`0x44c211`, `0x44c26a`, `0x44c2c3`, the setroughpick
+  clips) with `FUN_0019c2f8`; their callback 16 (`FUN_00175720`) sets his
+  wanted facing toward his nearest opponent (`FUN_00170dc0`), then an
+  `a6 2 1` window (the clearout's arms) stays open while the clip plays.
+  The defender plays `r %` the list at `0x3d0f28` (heavy: 5/3/4/3) or
+  `0x3d0f38` (light: 1/2/1/2) by the quarter the screener hit him from.
+  Nine of those twenty scripts were not yet among the rewrite's reactions
+  (`street_sim::trick::SCREENED_HEAVY`, `SCREENED_LIGHT`, `SCREENER`). The
+  rewrite had stumbled the defender for 1.3 s on a clip picked by his
+  index and played nothing on the screener. Every one of these scripts
+  sets channel 0's flags 0x42 (`91 42 00 82 00`): off balance, no
+  locomotion, as `down()` reads any reaction.
+- **R3**: the original's R3 only calls the side's strategy (vt+0x44,
+  `FUN_0018a708`, the AI's "set pick"). The rewrite also ran its own pick
+  (`World::strategy`: the nearest teammate sent at the handler's defender,
+  who stumbled 1.3 s on touch), for computer holders too through the
+  strategy bit. It is gone; screens come from the contacts alone.
+- **The strip's knock** (`0x16d3e0..0x16d7d4`): a holder on the floor
+  (actor+0x34 0) plays `0x44ca8b` (`steal_reaction_l_1`, record 397 or 396
+  by his dribble hand) whether the swipe takes the ball or knocks it; a
+  knock bars him `r % 5 + 25` updates (actor+0x1a8) and the swiper `fps ×
+  0.84` (`fps × 0.17` in lesson 16), then draws a spin axis and rate (four
+  draws, as a block's knock) before `FUN_0014c408` frees the ball. The
+  rewrite had stumbled the holder for the bar's length and drawn none of
+  the four. Not ported: the message `0x3c64e0` to the swiper's
+  controller.
+- **The swipe on screen**: the view drew the swipe's clip with its own
+  0.1 s fade, sped up to the script's span. It now shows the script's
+  five-update blend from the held clip and the wait's even steps to frame
+  23 (30 for the post-up steal), as the simulation poses it
+  (`channel::swipe_shown`).
+
+Left for the view's own fades: a pass without a catch row (a handoff, a
+lob to a leaper) and a trick whose clip the disc lacks.

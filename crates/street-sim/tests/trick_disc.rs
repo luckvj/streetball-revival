@@ -1365,6 +1365,36 @@ fn the_reaction_scripts_and_lists_are_the_executables() {
         trick::REACTIONS[usize::from(trick::STEP_THROUGH)].address,
         0x44c356
     );
+    // The screen (`0x135400..0x135640`): the screener's `0x3d0fb0[r % 3]`
+    // (`lui s0, 0x3d; addiu s0, s0, 0xfb0`), the defender's heavy and
+    // light tables (`addiu v1, v1, 0xf28` / `0xf38`) by the quarter.
+    assert_eq!(disc.word(0x1354bc), 0x3c10_003d);
+    assert_eq!(disc.word(0x1354c4), 0x2610_0fb0);
+    assert_eq!(disc.word(0x135544), 0x2463_0f28);
+    assert_eq!(disc.word(0x1355a4), 0x2463_0f38);
+    let screener: Vec<u32> = (0..3).map(|k| disc.word(0x3d0fb0 + 4 * k)).collect();
+    let named = |l: &[u8]| -> Vec<u32> {
+        l.iter()
+            .map(|&k| trick::REACTIONS[usize::from(k)].address)
+            .collect()
+    };
+    assert_eq!(screener, named(&trick::SCREENER));
+    for (table, ours) in [
+        (0x3d0f28, &trick::SCREENED_HEAVY),
+        (0x3d0f38, &trick::SCREENED_LIGHT),
+    ] {
+        for (quarter, list) in ours.iter().enumerate() {
+            let at = disc.word(table + 4 * quarter as u32);
+            let mut scripts = Vec::new();
+            for k in 0.. {
+                match disc.word(at + 4 * k) {
+                    0 => break,
+                    s => scripts.push(s),
+                }
+            }
+            assert_eq!(named(list), scripts, "{table:#x} quarter {quarter}");
+        }
+    }
 }
 
 #[test]

@@ -16,7 +16,7 @@ use crate::player::DunkStyle;
 use crate::street::Combo;
 use crate::{
     Action, Ball, BallState, Basket, Difficulty, Event, Gait, Goal, Hoop, Input, OpeningToss, Pass,
-    PassStyle, Phase, Pick, Player, Ratings, Rules, Scoring, Shot, TeamState, Tip, World, combo,
+    PassStyle, Phase, Player, Ratings, Rules, Scoring, Shot, TeamState, Tip, World, combo,
     rng::Rng,
 };
 
@@ -97,8 +97,10 @@ use crate::{
 /// looping span's clip length, the C library's word, each face's time);
 /// 76: each head's look; 77: the box-out's boxed man and partners; 78:
 /// posting up (state bit 11) and a script's asked test; 79: the restart's
-/// walk; 80: "iso3pt"'s missed juke; 81: a stand's planted feet.
-const VERSION: u8 = 82;
+/// walk; 80: "iso3pt"'s missed juke; 81: a stand's planted feet; 83:
+/// the rewrite's own pick gone, a reaction's `a6 2` window and the
+/// screen's reactions among the scripts.
+const VERSION: u8 = 83;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -135,7 +137,6 @@ impl World {
             fresh_take,
             windup,
             catch,
-            pick,
             turbo_releases,
             rng,
             previous_inputs,
@@ -274,19 +275,6 @@ impl World {
                 w.u8(*row);
                 w.u8(*flight);
                 w.uv(*since);
-            }
-        }
-        match pick {
-            None => w.u8(0),
-            Some(Pick {
-                screener,
-                defender,
-                until,
-            }) => {
-                w.u8(1);
-                w.us(*screener);
-                w.us(*defender);
-                w.uv(*until);
             }
         }
         w.uv(turbo_releases.len() as u64);
@@ -640,14 +628,6 @@ impl World {
             }),
             k => return Err(format!("bad catch flag {k}")),
         };
-        let pick = match r.u8()? {
-            0 => None,
-            _ => Some(Pick {
-                screener: r.us()?,
-                defender: r.us()?,
-                until: r.uv()?,
-            }),
-        };
         let n = r.len(64)?;
         let turbo_releases = (0..n)
             .map(|_| -> Result<[u64; 4], String> {
@@ -963,7 +943,6 @@ impl World {
             fresh_take,
             windup,
             catch,
-            pick,
             turbo_releases,
             rng,
             previous_inputs,
@@ -1958,6 +1937,7 @@ fn action_out(w: &mut Writer, a: &Action) {
                     w.f2(&r.drift);
                     w.f(r.vy);
                     w.bool(r.up);
+                    w.u8(r.window);
                 }
             }
         }
@@ -2164,6 +2144,7 @@ fn action_in(r: &mut Reader) -> Result<Action, String> {
                     drift: r.f2()?,
                     vy: r.f()?,
                     up: r.bool()?,
+                    window: r.u8()?,
                 }),
                 k => return Err(format!("bad reaction flag {k}")),
             },
