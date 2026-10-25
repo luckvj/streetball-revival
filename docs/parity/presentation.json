@@ -771,7 +771,7 @@
           "path": "crates/street-game/src/staged.rs",
           "locator": "tests::authoritative_staged_hands_use_each_database_players_native_body_geometry",
           "note": "attach_hands samples wide hands via joint_position_with_body_scale and writes width_deltas; hand_position applies per-player width ratio and height scale matching rendered joints within 1e-5.",
-          "sha256": "712f16f7db73cd2335e5507b9f5808c8863cdc6826673a1a09e2ff9cae08001a"
+          "sha256": "171a59ba27b48109833008cf6ea4501b7426153927b15f5e5aedfa0411784fff"
         },
         {
           "path": "crates/street-render/src/player.rs",
@@ -793,7 +793,7 @@
         }
       ],
       "tolerance": "Per-axis morphed hand tracking matching rendered joints within 1e-5 court units across all database players.",
-      "limitations": "Staged hand tracking matches morphed player joint geometry for all league database players. Continuous interactive live-gameplay ball handoffs remain separate. Re-pinned 2026-10-16 after the court's frame pass: staged.rs's disc tests and fixture mirror team 0's scripts; the cited tests `authoritative_staged_hands_use_each_database_players_native_body_geometry` pass on their scenes mirrored into the original's frame. 2026-10-20 (online on the disc): attach_hands moved to street-net's disc and builds the disc's hand tracks alone (bit for bit the same); each player's model scale and width ratio, which it used to set, are the match's own values setup.rs's load_match sets (World::set_match_values). Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Staged hand tracking matches morphed player joint geometry for all league database players. Continuous interactive live-gameplay ball handoffs remain separate. Re-pinned 2026-10-16 after the court's frame pass: staged.rs's disc tests and fixture mirror team 0's scripts; the cited tests `authoritative_staged_hands_use_each_database_players_native_body_geometry` pass on their scenes mirrored into the original's frame. 2026-10-20 (online on the disc): attach_hands moved to street-net's disc and builds the disc's hand tracks alone (bit for bit the same); each player's model scale and width ratio, which it used to set, are the match's own values setup.rs's load_match sets (World::set_match_values). Last re-pinned 2026-10-25 after staged bounce passes and the board-disable record (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture native live-rendered player joint positions and compare against hand_position in staged gamebreaker sequences."
     },
     {
@@ -6634,7 +6634,7 @@
           "path": "crates/street-sim/src/street.rs",
           "locator": "World::step_staged (Event::StagedRerun at the stop)",
           "note": "The script posts its replay command at its last frame.",
-          "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
+          "sha256": "e1bd5f2f884d46832ac68ee271ef8448d7c206581fe32ec987c2bab166c24c20"
         },
         {
           "path": "crates/street-sim/src/replay.rs",
@@ -6758,7 +6758,7 @@
         }
       ],
       "tolerance": "The School's run bit for bit (the manager's shown count, speed and frames left, the script's replay frame) and within 0.05 s on the wall clock; every machine starting the rerun at the same match tick, no checksum differing.",
-      "limitations": "No played match of the original's has had its staged rerun grabbed: the School's lesson run is the runtime evidence (its frames were not grabbed), the cameras are the scripts' own records at the script manager's replay frame. Only one of the sixteen plans has run in the original (GamLR2); the others' commands are read from the disc. The replay command's count (word 12 + 1) is one on all sixteen; more is not modelled. 2026-10-21 (item 7): the rerun's camera takes the staged helper's lens and roll, measured on the School's Level 2 rerun (presentation.staged_camera_lens_roll_follow). 2026-10-23: the match also holds a staged Level 2's 31 updates after its press for GB2's burst (Match::burst_hold, street_net::game::LEVEL2_BURST_HOLD, checked against the banner's 32 updates), as the game played alone holds them; the disc test asserts it holds. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "No played match of the original's has had its staged rerun grabbed: the School's lesson run is the runtime evidence (its frames were not grabbed), the cameras are the scripts' own records at the script manager's replay frame. Only one of the sixteen plans has run in the original (GamLR2); the others' commands are read from the disc. The replay command's count (word 12 + 1) is one on all sixteen; more is not modelled. 2026-10-21 (item 7): the rerun's camera takes the staged helper's lens and roll, measured on the School's Level 2 rerun (presentation.staged_camera_lens_roll_follow). 2026-10-23: the match also holds a staged Level 2's 31 updates after its press for GB2's burst (Match::burst_hold, street_net::game::LEVEL2_BURST_HOLD, checked against the banner's 32 updates), as the game played alone holds them; the disc test asserts it holds. Last re-pinned 2026-10-25 after staged bounce passes and the board-disable record (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "A played match's staged Level 2 in the original with the rerun's frames grabbed."
     },
     {
