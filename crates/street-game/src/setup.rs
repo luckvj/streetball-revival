@@ -158,18 +158,22 @@ pub struct FullMeters {
 /// ball, its holder is put at `(x, z)` and fires the gamebreaker on his own
 /// pad: two turbos, then shoot with them held (a testing aid, the way the
 /// original's School driver plays the lesson, so a staged plan can be
-/// compared with the original's at its region).
+/// compared with the original's at its region). `--level2-script n` picks
+/// that plan of the region's family (its other variants marked used, as
+/// `FUN_001851f0` leaves them after a pick), to match the original's draw.
 #[derive(Resource)]
 pub struct Level2At {
     at: [f32; 2],
+    script: Option<usize>,
     stage: u8,
     filled: u64,
 }
 
 impl Level2At {
-    pub fn new(at: [f32; 2]) -> Self {
+    pub fn new(at: [f32; 2], script: Option<usize>) -> Self {
         Self {
             at,
+            script,
             stage: 0,
             filled: 0,
         }
@@ -179,6 +183,21 @@ impl Level2At {
     /// update of live play.
     pub fn fill(&mut self, sim: &mut game::Sim) {
         if self.stage == 0 && matches!(sim.world.phase, street_sim::Phase::Live) {
+            if let Some(script) = self.script
+                && let Some(config) = sim.world.staged.clone()
+                && let Some((family, slot)) =
+                    config.families.iter().enumerate().find_map(|(f, row)| {
+                        row.iter().position(|&s| s == Some(script)).map(|k| (f, k))
+                    })
+            {
+                let eligible = config.families[family]
+                    .iter()
+                    .enumerate()
+                    .fold(0u8, |mask, (k, s)| {
+                        mask | if s.is_some() { 1 << k } else { 0 }
+                    });
+                sim.world.variety.used[family] = eligible & !(1 << slot);
+            }
             sim.world.teams[1].pocketed = true;
             sim.world
                 .set_meter(1, street_sim::street::METER_FULL as f32);

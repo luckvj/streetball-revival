@@ -39,16 +39,18 @@ pub fn image(t: &ssh::Texture) -> Image {
 /// for meshes drawn with a [`SkinnedMesh`](bevy::mesh::skinning::SkinnedMesh).
 pub fn mesh(m: &eagl::Mesh, skinned: bool) -> Mesh {
     // PS2 vertex colour 0x80 is 1.0; values above it brighten the texture.
+    // The GS modulates the texel by it in its own (display) values,
+    // `texel * colour >> 7`; Bevy multiplies in linear light, so the factor
+    // goes in as sRGB to scale the displayed texel by the same amount (as
+    // the crowd's tint does). A court's baked shade then darkens the
+    // picture as much as the original's.
     let colors: Vec<[f32; 4]> = m
         .colors
         .iter()
         .map(|c| {
-            [
-                c[0] as f32 / 128.0,
-                c[1] as f32 / 128.0,
-                c[2] as f32 / 128.0,
-                (c[3] as f32 / 128.0).min(1.0),
-            ]
+            let k = |v: u8| f32::from(v) / 128.0;
+            let linear = LinearRgba::from(Srgba::new(k(c[0]), k(c[1]), k(c[2]), 1.0));
+            [linear.red, linear.green, linear.blue, k(c[3]).min(1.0)]
         })
         .collect();
     let mut mesh = Mesh::new(

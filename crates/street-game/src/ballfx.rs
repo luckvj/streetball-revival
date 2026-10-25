@@ -76,7 +76,12 @@ pub enum Glow {
 }
 
 pub fn glow(w: &street_sim::World) -> Glow {
-    let breaking = w.ball.shot.is_some_and(|s| s.gamebreaker > 0)
+    // 0x14a968 sets 2 while the game's gamebreaker word (+0xf4) is on,
+    // which holds through a Level 2's staged script too: the School's
+    // capture shows the white sparks and the streamer on its lob.
+    let breaking = w.sequence.is_some()
+        || w.staged_start.is_some()
+        || w.ball.shot.is_some_and(|s| s.gamebreaker > 0)
         || w.players.iter().any(|p| {
             matches!(
                 p.action,

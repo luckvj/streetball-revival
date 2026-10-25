@@ -48,6 +48,8 @@ usage: street-game [--iso <path>] [--court <ID>] [--teams <home>,<away>] [--seed
                 and the Lakers); the Lakers' meter fills to a Level 2 and
                 their holder fires it from there once he has the ball (the
                 original's School targets, e.g. -18,22, pick its plans).
+  --level2-script  with --level2-at, the plan it fires (0..15), as the
+                original's draw picked it.
   --play-by-play  the rewrite's own line naming the latest play across the
                 top of the match (off: the original has no such line).
   --demo        the computer plays your team too.
