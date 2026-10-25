@@ -13012,3 +13012,53 @@ give the original's updates to the aim within 0.07 (all but one within
 release). The test is `staged_level_two_shots_fly_the_originals_arcs`
 (`STREET_L2_RICH`).
 
+### Level 2 dunkers on their finishing bodies (2026-10-24)
+
+Vj: the Level 2 dunks still didn't look right. The staged dunker never
+left the floor. A dunk plan's opcode-1 cue starts the dunker's finishing
+body (`FUN_00334178`, rows at `0x415740`: `gbdunk_1_01_3_mo`,
+`gbdunk_1_02_10_ho`, `gbdunk_2_04_5_mo`, `gbdunk_2_02_8_ho`,
+`gbdunk_3_01_5_ho`, `gbdunk_3_03_6_ho`, `gbdunk_4_01_1`,
+`gbdunk_4_02_11_mo` for plans 0..7). The body runs on the actor's own
+channel and physics. Its `9e` aim sends his hand to the rim, gravity brings
+him down and a landing wait ends it, like a gameplay dunk's script. The
+port read only the body's clip waits, so he played the dunk clip standing
+up. In the School's run of script 1 (`level2-batch/case09`) he rises from
+frame 100 to 7.86 above the floor at 137 and lands at 177.
+
+Built: the eight bodies are move rows (`timing::FINISH_ROWS`, their steps
+generated into `held_tables.rs` and checked by `trick_disc.rs`), and a
+plan's finish carries its row. From the cue's frame the sequence hands the
+role over (`Sequence::finishing`): his action is a dunk on the body's row,
+`flight_tick` moves him, the ball sits in the hand his clip shows
+(`place_held`), the script's poses leave him and the view draws him as a
+dunking player. The script's shot command still releases the ball. It
+falls on the update of the body's callback 21.
+
+Three more places the dunk needed:
+
+- The lob to a flying receiver. `FUN_0032fe28` (word 16 of 0) aims at a
+  dunker's or a leaper's hand (actor bits 7 or 15, `FUN_0016e9d0`,
+  `FUN_0016e9e0`) through `FUN_00330f98`: his model posed at the frame his
+  channel shows by the pass's end, on his place and wanted facing, the
+  hand by the clip's flags (bone 19, 15 or their middle), moved on by his
+  velocity and `½·g·n²` over the updates, y never under 12.5
+  (`World::lob_endpoint`). Any other receiver goes through `FUN_003301b8`.
+- The ball's motion. The staged update now keeps `Ball::moved` as the
+  game's update does. The dunk path paces itself by it, and with a stale
+  value the dunk left at the launcher's slowest pace (0.244 an update, the
+  original 0.489).
+- The ball through the net. A loose ball falls on its own update during
+  the sequence (`FUN_0014a968`). It used to hang at the rim until the
+  script ended.
+
+Script 1 against the School's run: the dunker within 0.15 across and 0.3
+up at every sample, the lob within 0.3, the catch and the carried ball
+within 0.2, the basket on the same update, the ball through the net
+within 0.01 to 0.45. Test: `every_staged_dunker_flies_on_his_finishing_body`.
+The other runs, matched by script header, now fly too, within 0.4 to 1.8 of
+the original's heights. Not yet the original's: bounce passes (a pass
+cue's word 12 of 1, plans 0, 4, 5 and 7, which go through the floor in
+the original), `FUN_0032fe28`'s waypoint path (word 16 of 2 is a whole
+(x, y, z) point from words 20..28, the port reads two), and script 2's
+dunker, who leaves the floor about 15 frames before his body starts.

@@ -855,7 +855,9 @@ impl World {
             self.sequence = Some(sequence);
         }
         let previous_ball = self.ball.position;
+        let held_before = self.held_offset();
         self.step_staged_pose();
+        self.step_staged_finishers(plan, &mut sequence, held_before);
         if sequence.held == 0 || native {
             self.events.push(Event::GamebreakerFrame {
                 script: sequence.script,
@@ -863,6 +865,10 @@ impl World {
                 mirrored: sequence.mirrored(),
             });
             self.step_staged_ball(&config, plan, &sequence, previous_ball);
+            // The ball's own motion this update (ball+0x40's displacement,
+            // which the next update's dunk path paces itself by), as the
+            // game's update keeps it.
+            self.ball.moved = std::array::from_fn(|k| self.ball.position[k] - previous_ball[k]);
         }
         // The freeze: the world stops at its frame while its camera moves.
         if !native
@@ -932,11 +938,107 @@ impl World {
                 .actors
                 .iter()
                 .position(|&actor| actor == Some(player))
+            && sequence.finishing & (1 << role) == 0
             && let Some(hand) =
                 config.hand_position(plan, &sequence, role as u8, sequence.pose_frame() as f32)
         {
             self.ball.position = hand;
             self.ball.velocity = [0.0; 3];
+        }
+    }
+
+    /// `FUN_00330f98` for a flying receiver `i`, `n` updates on.
+    fn lob_endpoint(&self, i: usize, n: i32) -> Option<[f32; 3]> {
+        let poses = self.poses.get()?;
+        let shown = self.move_shown_ahead(i, n)?;
+        let record = shown.record?;
+        let p = &self.players[i];
+        let mut place = self.place(i);
+        place.word = crate::timing::facing_word(p.wanted);
+        // cvt.w.s: the frame truncated.
+        let frame = shown.frame.max(0.0) as u8;
+        let pose = crate::jump::aim_pose(poses, record, frame, p.body(), place, None)?;
+        let j = |b: usize| pose.joints[b].position;
+        let hand = match poses.state(record, i32::from(frame)) & 0xc {
+            8 => j(19),
+            4 => j(15),
+            _ => std::array::from_fn(|k| (j(19)[k] + j(15)[k]) * 0.5),
+        };
+        let v = p.flight.velocity;
+        let n = n as f32;
+        let fall = 0.5 * crate::jump::gravity() * n * n;
+        Some([
+            hand[0] + v[0] * n,
+            (hand[1] + v[1] * n + fall).max(12.5),
+            hand[2] + v[2] * n,
+        ])
+    }
+
+    /// The finishing bodies (`FUN_00334178`, a plan's opcode-1 cue): from
+    /// its start a role's actor runs the body on his own channel and
+    /// physics as a dunk's script ([`gamebreaker::FinishTrack::row`]), so
+    /// its `9e` aims fly him to the rim, gravity brings him down and the
+    /// ball sits in the hand his clip shows; the script's poses leave him
+    /// until the sequence ends. The script's shot command still releases
+    /// the ball (the body's callback 21 falls on the same update), so his
+    /// own release moment does nothing here.
+    fn step_staged_finishers(
+        &mut self,
+        plan: &gamebreaker::SequencePlan,
+        sequence: &mut gamebreaker::Sequence,
+        held_before: Option<(usize, [f32; 3])>,
+    ) {
+        for finish in &plan.finishes {
+            let bit = 1u8 << finish.slot;
+            let (Some(row), Some(player)) = (
+                finish.row,
+                sequence
+                    .actors
+                    .get(usize::from(finish.slot))
+                    .copied()
+                    .flatten(),
+            ) else {
+                continue;
+            };
+            if sequence.finishing & bit != 0 || sequence.frame < finish.start_frame {
+                continue;
+            }
+            let Some(r) = crate::timing::move_row(row) else {
+                continue;
+            };
+            sequence.finishing |= bit;
+            self.sequence = Some(*sequence);
+            let hoop = target_hoop(sequence.team);
+            let p = &mut self.players[player];
+            // His facing stays the script's until the body's own turn.
+            p.wanted = p.heading;
+            let ahead = [
+                p.position[0] + libm::sinf(p.heading),
+                p.position[1] + libm::cosf(p.heading),
+            ];
+            self.begin_move(player, row);
+            self.players[player].start_dunk(
+                hoop,
+                ahead,
+                crate::player::DunkStyle::Normal,
+                (row, r.release, r.end),
+            );
+        }
+        for slot in 0..7 {
+            if sequence.finishing & (1 << slot) == 0 {
+                continue;
+            }
+            let Some(player) = sequence.actors[slot] else {
+                continue;
+            };
+            let at = self.players[player].position;
+            let held = self.ball.state == BallState::Held(player);
+            // His release moment is the script's shot command's.
+            let _ = self.players[player].step(&crate::Input::default(), held, None);
+            self.flight_tick(player, at);
+            if self.ball.state == BallState::Held(player) && !self.place_held(player, held_before) {
+                self.ball.carry(&self.players[player]);
+            }
         }
     }
 
@@ -975,7 +1077,11 @@ impl World {
                             sequence.actors.get(usize::from(role)).copied().flatten()
                     {
                         self.ball.hold(player);
-                        if let Some(hand) =
+                        if sequence.finishing & (1 << role) != 0 {
+                            if !self.place_held(player, None) {
+                                self.ball.carry(&self.players[player]);
+                            }
+                        } else if let Some(hand) =
                             config.hand_position(plan, sequence, role, sequence.frame as f32)
                         {
                             self.ball.position = hand;
@@ -988,7 +1094,9 @@ impl World {
             }
             BallState::Shot => self.step_ball(None),
             BallState::Held(_) => (),
-            _ => (),
+            // A ball nobody holds (through the net after the basket) falls
+            // on its own update (`FUN_0014a968`), the script's or not.
+            BallState::Loose => self.step_ball(None),
         }
         for cue in cues {
             if self.phase != Phase::Live || cue.source() == 6 || cue.target() == 6 {
@@ -1056,7 +1164,23 @@ impl World {
                 else {
                     return;
                 };
-                hand
+                match actor(cue.target()) {
+                    // A role on his finishing body flies on his own: the
+                    // hand his clip shows then, on the root his flight
+                    // reaches by the pass's end (his velocity and gravity,
+                    // down to the floor).
+                    // A dunker or a leaper (`FUN_0016e9d0`, `FUN_0016e9e0`:
+                    // actor bits 7, 15), as a role on his finishing body
+                    // is: `FUN_00330f98`, his model posed at the frame his
+                    // channel shows by the pass's end, on his place and
+                    // wanted facing, the hand by the clip's flags, moved
+                    // on by his velocity and gravity over the updates,
+                    // and never under 12.5.
+                    Some(player) if sequence.finishing & (1 << role) != 0 => self
+                        .lob_endpoint(player, cue.duration as i32)
+                        .unwrap_or(hand),
+                    _ => hand,
+                }
             }
             Some(1) => {
                 // FUN_0032fe28's high backboard waypoint, in court units.
@@ -1114,9 +1238,17 @@ impl World {
             return;
         };
         // The release happens at the scripted hand; a ball resting at a
-        // hover point comes off it the same way it would from a hand.
-        let Some(hand) = config.hand_position(plan, sequence, role, sequence.frame as f32) else {
-            return;
+        // hover point comes off it the same way it would from a hand. A
+        // role on its finishing body holds it in his own hand.
+        let finishing = sequence.finishing & (1 << role) != 0;
+        let hand = if finishing && self.ball.state == BallState::Held(player) {
+            self.ball.position
+        } else {
+            let Some(hand) = config.hand_position(plan, sequence, role, sequence.frame as f32)
+            else {
+                return;
+            };
+            hand
         };
         let hoop = target_hoop(sequence.team);
         let rim = self.hoops[hoop].rim;
@@ -1142,7 +1274,9 @@ impl World {
             .and_then(|k| u8::try_from(k).ok())
             .filter(|&k| k <= 5)
             .unwrap_or(0);
-        let pose = config.clip_pose(plan, sequence, role, sequence.frame as f32);
+        let pose = config
+            .clip_pose(plan, sequence, role, sequence.frame as f32)
+            .filter(|_| !finishing);
         let at = pose.map_or(self.players[player].position, |p| {
             let x = if sequence.mirrored() {
                 -p.position[0]

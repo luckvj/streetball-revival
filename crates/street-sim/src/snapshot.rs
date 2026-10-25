@@ -98,7 +98,7 @@ use crate::{
 /// 76: each head's look; 77: the box-out's boxed man and partners; 78:
 /// posting up (state bit 11) and a script's asked test; 79: the restart's
 /// walk; 80: "iso3pt"'s missed juke; 81: a stand's planted feet.
-const VERSION: u8 = 81;
+const VERSION: u8 = 82;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).

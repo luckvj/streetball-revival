@@ -1481,6 +1481,7 @@ mod tests {
             actors: [Some(0), Some(1), None, None, None, None, None],
             native_clocks: [None; 7],
             resume_pending: false,
+            finishing: 0,
         });
         valid.validate().unwrap();
         let back = World::from_snapshot(&valid.to_snapshot()).unwrap();

@@ -316,6 +316,7 @@ fn add_finishers(bank: &ScriptBank, plan: &mut SequencePlan) {
             start_frame: cue.frame,
             animation: pose.animation,
             release_bits: finisher.release_bits,
+            row: street_sim::timing::finish_row(finisher.address),
             spans: finisher
                 .spans
                 .iter()
