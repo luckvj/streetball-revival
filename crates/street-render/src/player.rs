@@ -31,6 +31,8 @@ pub enum Choice {
         record: Box<db::Player>,
         side: player::Side,
         team: Option<usize>,
+        /// The loader's `rand()` for his shorts ([`player::look_dressed`]).
+        shorts: u32,
     },
     /// Create-a-player kit parts by model name, dressed in the textures of
     /// league player `textures`.
@@ -101,11 +103,16 @@ impl PlayerAssets {
                     head_scale: 1.0,
                 })
             }
-            Choice::Player { record, side, team } => {
+            Choice::Player {
+                record,
+                side,
+                team,
+                shorts,
+            } => {
                 if let Some(gc) = Self::gamecube(record, *side, &skeleton) {
                     return Ok(gc);
                 }
-                let look = player::look_for_team(iso, record, *side, *team)?;
+                let look = player::look_dressed(iso, record, *side, *team, *shorts)?;
                 Ok(Self {
                     name: record.name(),
                     models: look.models,

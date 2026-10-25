@@ -238,6 +238,19 @@ pub fn look_for_team<R: Read + Seek>(
     side: Side,
     team: Option<usize>,
 ) -> Result<Look> {
+    look_dressed(iso, player, side, team, 0)
+}
+
+/// [`look_for_team`] with the loader's draw for the shorts (`rand()`,
+/// `0x315cc8`): a league player wears image `shorts % count` of his
+/// team's sheet.
+pub fn look_dressed<R: Read + Seek>(
+    iso: &mut Iso<R>,
+    player: &db::Player,
+    side: Side,
+    team: Option<usize>,
+    shorts: u32,
+) -> Result<Look> {
     // The player editor: a roster.json player's chosen model. (GameCube
     // models, `roster_edits::gamecube_model`, draw this fallback for now.)
     let swapped = crate::roster_edits::look_for(player);
@@ -271,9 +284,11 @@ pub fn look_for_team<R: Read + Seek>(
                 .map_err(|e| Error::format(format!("morph target of {name}: {e}")))?;
             target.apply(&mut body, 1.0)?;
             look.models.push(body);
-            // The game picks one of the team's six pairs of shorts at random.
-            let shorts = sheet(&entry(m.shorts_sheet)?, m.shorts_sheet)?;
-            if let Some(t) = shorts.textures.into_iter().next() {
+            // The game picks one of the team's six pairs of shorts at
+            // random: `rand() % count` over the sheet (`0x315cb8..0x315cf0`).
+            let images = sheet(&entry(m.shorts_sheet)?, m.shorts_sheet)?.textures;
+            let pick = (shorts as usize).checked_rem(images.len()).unwrap_or(0);
+            if let Some(t) = images.into_iter().nth(pick) {
                 look.textures.insert("shor".into(), t);
             }
             for part in m.accessories.iter().filter(|p| p.model.is_none()) {

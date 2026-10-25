@@ -197,6 +197,11 @@ impl Session {
         self.libc
     }
 
+    /// The C library's generator after draws made on a copy of it.
+    pub fn set_libc(&mut self, libc: Libc) {
+        self.libc = libc;
+    }
+
     /// [`Session::reseed`] after `side`'s team was set, when no person
     /// holds that side (`FUN_001dbb20` asks `FUN_001db280` for the
     /// controllers on it), as the match will seat them.

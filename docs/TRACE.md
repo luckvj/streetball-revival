@@ -13150,3 +13150,27 @@ The capture's cast differs from the School's earlier runs. The person
 shooting was Shaq, and the Nets had Van Horn (101) for Mutombo. The plans
 cast by place and shooter, so a frame-by-frame comparison needs the same
 six at the same spots.
+
+## The held ball's hand, the shorts, the tip-off's freedom (2026-10-25)
+
+- The staged held ball. `attach_hands` built each clip's hand track with
+  the root's travel, which the drawing had dropped the same day (the
+  script's curves already move the actor along it). Script 2's ball sat
+  7 beyond its holder and left on its pass that far ahead. The tracks
+  are now in place. In the staged test the ball is at (-23.37, 6.87) at
+  frame 71 (the capture -23.57, 7.28), and off the board in the dunker's
+  hands at 123 and 133 within 0.15 of the capture.
+- The shorts. The model loader draws the shorts from the C library's
+  generator, `rand() % count` over the team's sheet (`0x315cb8..0x315cf0`,
+  `FUN_003b42a0`). The rewrite always took the first pair. `load_match`
+  now draws one per player from the session's `Libc` as each model loads
+  (`player::look_dressed`).
+- The tip-off. Players move while the toss is up, as in the original.
+  `FUN_001587d8` reads the person's pad only when actor+0x298 is clear
+  and his controller is not the computer's (`FUN_00156d98`, game+0x24).
+  `FUN_00140880` clears the word for all six once the ball is in state 7.
+  While the referee holds the ball (state 3) the actor runs his AI frame
+  instead. In the opening capture of a played Pick Up game nobody moves
+  more than idle sway until the jumpers' scripts (378 to 380, 376 to 384
+  at frame 168). The rewrite freezes during the hold and frees at the
+  toss, and its jump falls on update 167.
