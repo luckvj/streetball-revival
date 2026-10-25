@@ -82,6 +82,10 @@ pub struct FinishTrack {
     /// before it): bit 7 or 15 sends the release down the launcher's dunk
     /// path.
     pub release_bits: u32,
+    /// The body as a move row ([`crate::timing::FINISH_ROWS`]): from its
+    /// start the actor runs it on his own channel and physics, flying on
+    /// its `9e` aims, as `FUN_00334178` hands him to it.
+    pub row: Option<u8>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -994,6 +998,10 @@ impl SequencePlan {
                 let (Some(pose), Some(player)) = (pose, sequence.actors[slot]) else {
                     continue;
                 };
+                // A role on its finishing body moves on its own.
+                if sequence.finishing & (1 << slot) != 0 {
+                    continue;
+                }
                 let Some(player) = players.get_mut(player) else {
                     continue;
                 };
@@ -1348,6 +1356,9 @@ impl Config {
                     || finish.start_frame >= plan.frame_count
                     || finish.animation >= 1144
                     || finish.spans.len() > 64
+                    || finish
+                        .row
+                        .is_some_and(|r| crate::timing::move_row(r).is_none())
                 {
                     return Err("invalid staged finisher".into());
                 }
@@ -1376,7 +1387,7 @@ impl Config {
     pub fn encode(&self) -> Vec<u8> {
         let payload = self.encode_payload();
         let compressed = miniz_oxide::deflate::compress_to_vec_zlib(&payload[4..], 6);
-        let mut out = b"GBC\x08".to_vec();
+        let mut out = b"GBC\x09".to_vec();
         put32(&mut out, (payload.len() - 4) as u32);
         out.extend(compressed);
         out
@@ -1389,7 +1400,7 @@ impl Config {
     }
 
     fn encode_payload(&self) -> Vec<u8> {
-        let mut out = b"GBC\x08".to_vec();
+        let mut out = b"GBC\x09".to_vec();
         put32(&mut out, self.plans.len() as u32);
         for plan in &self.plans {
             put32(&mut out, plan.script as u32);
@@ -1473,6 +1484,7 @@ impl Config {
                 put32(&mut out, finish.start_frame);
                 out.extend(finish.animation.to_le_bytes());
                 put32(&mut out, finish.release_bits);
+                out.push(finish.row.unwrap_or(u8::MAX));
                 put32(&mut out, finish.spans.len() as u32);
                 for span in &finish.spans {
                     put32(&mut out, span.start_tick);
@@ -1518,7 +1530,7 @@ impl Config {
         if data.len() > MAX_CONFIG_BYTES {
             return Err("staged configuration exceeds 128 KiB".into());
         }
-        let mut header = Input::new(data, b"GBC\x08")?;
+        let mut header = Input::new(data, b"GBC\x09")?;
         let decoded_size = header.u32()? as usize;
         if decoded_size > MAX_CONFIG_PAYLOAD_BYTES {
             return Err("inflated staged configuration exceeds 1 MiB".into());
@@ -1655,6 +1667,7 @@ impl Config {
                 let start_frame = input.u32()?;
                 let animation = input.u16()?;
                 let release_bits = input.u32()?;
+                let row = Some(input.u8()?).filter(|&r| r != u8::MAX);
                 let mut spans = Vec::new();
                 for _ in 0..input.count(64)? {
                     spans.push(FinishSpan {
@@ -1670,6 +1683,7 @@ impl Config {
                     animation,
                     spans,
                     release_bits,
+                    row,
                 });
             }
             plans.push(SequencePlan {
@@ -1849,6 +1863,7 @@ impl Config {
             actors: bind(players, shooter, plan.kind, plan.initial_positions()),
             native_clocks: [None; 7],
             resume_pending: false,
+            finishing: 0,
         })
     }
 }
@@ -1923,6 +1938,11 @@ pub struct Sequence {
     /// State7 expiry has enabled actor tasks; forward manager work resumes
     /// on the following world tick.
     pub resume_pending: bool,
+    /// The roles (one bit each) handed to their finishing bodies
+    /// ([`FinishTrack::row`]): their actors run the body on their own
+    /// channel and physics until the sequence ends; the script's poses
+    /// leave them.
+    pub finishing: u8,
 }
 
 impl Sequence {
@@ -2024,7 +2044,7 @@ impl Sequence {
     }
 
     pub fn encode(self) -> Vec<u8> {
-        let mut data = b"GBQ\x03".to_vec();
+        let mut data = b"GBQ\x04".to_vec();
         put32(&mut data, self.script as u32);
         put32(&mut data, self.frame);
         put32(&mut data, self.held);
@@ -2032,6 +2052,7 @@ impl Sequence {
         put32(&mut data, self.team as u32);
         data.push(self.level);
         data.push(u8::from(self.resume_pending));
+        data.push(self.finishing);
         for actor in self.actors {
             put32(&mut data, actor.map_or(u32::MAX, |i| i as u32));
         }
@@ -2045,7 +2066,7 @@ impl Sequence {
     }
 
     pub fn decode(data: &[u8]) -> Result<Self, String> {
-        let mut input = Input::new(data, b"GBQ\x03")?;
+        let mut input = Input::new(data, b"GBQ\x04")?;
         let script = input.u32()? as usize;
         let frame = input.u32()?;
         let held = input.u32()?;
@@ -2057,6 +2078,10 @@ impl Sequence {
             1 => true,
             _ => return Err("invalid native resume flag".into()),
         };
+        let finishing = input.u8()?;
+        if finishing & 0x80 != 0 {
+            return Err("invalid staged finishing roles".into());
+        }
         let mut actors = [None; 7];
         for actor in &mut actors {
             let value = input.u32()?;
@@ -2100,6 +2125,7 @@ impl Sequence {
             actors,
             native_clocks,
             resume_pending,
+            finishing,
         })
     }
     /// The scripts are authored attacking -x: the side attacking +x
@@ -2515,6 +2541,7 @@ mod tests {
             actors: [Some(0), None, None, None, None, None, None],
             native_clocks: [None; 7],
             resume_pending: false,
+            finishing: 0,
         };
         sequence.update_native_clocks(&plan, &[1.0]);
         assert!(sequence.native_clocks[0].is_some());
@@ -2626,7 +2653,7 @@ mod tests {
         };
         config.plans[0].actors[0].playback = Some(playback(10, 128, true, false));
         let encoded = config.encode();
-        assert_eq!(&encoded[..4], b"GBC\x08");
+        assert_eq!(&encoded[..4], b"GBC\x09");
         assert_eq!(Config::decode(&encoded).unwrap(), config);
         let original = config.canonical();
         config.plans[0].actors[0].playback.as_mut().unwrap().flags[8] = 1;
@@ -2728,6 +2755,7 @@ mod tests {
             actors: [Some(0), None, None, None, None, None, None],
             native_clocks: [None; 7],
             resume_pending: false,
+            finishing: 0,
         };
         assert_eq!(
             config.hand_position(&plan, &sequence, 0, 0.75),
@@ -2790,6 +2818,7 @@ mod tests {
             actors: [Some(1), None, None, None, None, None, None],
             native_clocks: [None; 7],
             resume_pending: false,
+            finishing: 0,
         };
         assert_eq!(
             config.hand_position(&plan(), &sequence, 0, 0.0),
@@ -2837,7 +2866,7 @@ mod tests {
         let mut oversized = encoded;
         oversized[4..8].copy_from_slice(&((MAX_CONFIG_PAYLOAD_BYTES + 1) as u32).to_le_bytes());
         assert!(Config::decode(&oversized).is_err());
-        let mut bomb = b"GBC\x08".to_vec();
+        let mut bomb = b"GBC\x09".to_vec();
         put32(&mut bomb, MAX_CONFIG_PAYLOAD_BYTES as u32);
         bomb.extend(miniz_oxide::deflate::compress_to_vec_zlib(
             &vec![0; MAX_CONFIG_PAYLOAD_BYTES + 1],
@@ -2919,6 +2948,7 @@ mod tests {
             actors: [Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), None],
             native_clocks: [None; 7],
             resume_pending: false,
+            finishing: 0,
         };
         assert_eq!(Sequence::decode(&sequence.encode()).unwrap(), sequence);
         let mut invalid = sequence;

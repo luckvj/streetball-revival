@@ -4126,6 +4126,14 @@ pub(crate) fn staging<'a>(
 impl Staging<'_> {
     pub(crate) fn pose(&self, player: usize, clips: &GameClips) -> Option<StagedPose> {
         let role = self.actors.iter().position(|a| *a == Some(player))?;
+        // A role on its finishing body is the simulation's dunker: drawn
+        // on his own place and his body's clip (`channel::sim_shown`).
+        if self
+            .sequence
+            .is_some_and(|s| s.finishing & (1 << role) != 0)
+        {
+            return None;
+        }
         let pose = self.plan.pose_at(self.frame)[role]?;
         let anim = clips.timeline.animation(pose.animation, self.mirrored)?;
         let phase = self
@@ -4952,6 +4960,7 @@ mod staged_display_tests {
                     actors,
                     native_clocks: [None; 7],
                     resume_pending: false,
+                    finishing: 0,
                 });
                 let staged = staging(&sim, None)
                     .unwrap()

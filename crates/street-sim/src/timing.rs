@@ -175,6 +175,33 @@ const fn putback(name: &'static str, script: u32, release: u8, end: u8) -> MoveR
     }
 }
 
+/// The staged Level 2 dunks' finishing bodies (`FUN_00334178`, started by a
+/// plan's opcode-1 cue): the body runs on the actor's own channel and
+/// physics, its `9e` aims flying him to the rim. Release and end as the
+/// putbacks' (callback 21's tick, the body's end).
+pub const FINISH_ROWS: [MoveRow; 8] = [
+    putback("gbdunk_1_01_3_mo", 0x44b4c2, 98, 156),
+    putback("gbdunk_1_02_10_ho", 0x44b57e, 84, 86),
+    putback("gbdunk_2_04_5_mo", 0x44b62a, 64, 82),
+    putback("gbdunk_2_02_8_ho", 0x44b6dc, 90, 126),
+    putback("gbdunk_3_01_5_ho", 0x44b798, 98, 100),
+    putback("gbdunk_3_03_6_ho", 0x44b82b, 88, 90),
+    putback("gbdunk_4_01_1", 0x44b8d7, 53, 55),
+    putback("gbdunk_4_02_11_mo", 0x44b988, 98, 128),
+];
+
+/// The first of [`FINISH_ROWS`] as a row.
+pub const FINISH_FIRST: u8 = PUTBACK_FIRST + PUTBACK_ROWS.len() as u8;
+
+/// The row of the finishing body at `script`, if it is one of
+/// [`FINISH_ROWS`].
+pub fn finish_row(script: u32) -> Option<u8> {
+    FINISH_ROWS
+        .iter()
+        .position(|r| r.script == script)
+        .map(|k| FINISH_FIRST + k as u8)
+}
+
 /// The first of [`PUTBACK_ROWS`] as a row.
 pub const PUTBACK_FIRST: u8 = (MOVE_ROWS.len() + LEAP_ROWS.len() + EXTRA_ROWS.len()) as u8;
 
@@ -194,9 +221,12 @@ pub fn move_row(row: u8) -> Option<&'static MoveRow> {
         let r = r.checked_sub(MOVE_ROWS.len())?;
         LEAP_ROWS.get(r).or_else(|| {
             let r = r.checked_sub(LEAP_ROWS.len())?;
-            EXTRA_ROWS
-                .get(r)
-                .or_else(|| PUTBACK_ROWS.get(r.checked_sub(EXTRA_ROWS.len())?))
+            EXTRA_ROWS.get(r).or_else(|| {
+                let r = r.checked_sub(EXTRA_ROWS.len())?;
+                PUTBACK_ROWS
+                    .get(r)
+                    .or_else(|| FINISH_ROWS.get(r.checked_sub(PUTBACK_ROWS.len())?))
+            })
         })
     })
 }

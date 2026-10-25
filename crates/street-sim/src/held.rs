@@ -167,9 +167,12 @@ pub fn move_row_steps(row: u8) -> Option<&'static [Step]> {
             let r = r.checked_sub(MOVE_STEPS.len())?;
             LEAP_STEPS.get(r).or_else(|| {
                 let r = r.checked_sub(LEAP_STEPS.len())?;
-                EXTRA_STEPS
-                    .get(r)
-                    .or_else(|| PUTBACK_STEPS.get(r.checked_sub(EXTRA_STEPS.len())?))
+                EXTRA_STEPS.get(r).or_else(|| {
+                    let r = r.checked_sub(EXTRA_STEPS.len())?;
+                    PUTBACK_STEPS
+                        .get(r)
+                        .or_else(|| FINISH_STEPS.get(r.checked_sub(PUTBACK_STEPS.len())?))
+                })
             })
         })
         .copied()
@@ -335,6 +338,29 @@ impl World {
             |_| 0,
         );
         Some(run)
+    }
+
+    /// What `i`'s scripted move's channel will show `ahead` updates on, its
+    /// run replayed that far (`FUN_00330f98` reads the channel's frame plus
+    /// its step times the updates).
+    pub(crate) fn move_shown_ahead(&self, i: usize, ahead: i32) -> Option<crate::trick::Shown> {
+        let p = &self.players[i];
+        let s = scripted(&p.action)?;
+        let first = p.channel_start.filter(|x| x.script == s.address);
+        let (left, side) = first.map_or((p.gait_channel.hand == 2, other_side(p)), |x| {
+            (x.left, x.side)
+        });
+        let (run, _) = replay(
+            s.steps,
+            s.updates + ahead,
+            left,
+            p.left_handed,
+            side,
+            p.flight.landing,
+            s.hang,
+            |_| 0,
+        );
+        Some(run.shown())
     }
 
     /// What `i`'s channel 0 shows: a trick's or a reaction's script, a

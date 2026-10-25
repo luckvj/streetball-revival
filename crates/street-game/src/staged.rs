@@ -218,6 +218,7 @@ mod tests {
                 actors,
                 native_clocks: [None; 7],
                 resume_pending: false,
+                finishing: 0,
             };
             let mut players = vec![street_sim::Player::new(v[5] as usize, [0.0; 2], 0.0)];
             let _ = plan.apply(&sequence, &mut players).count();
@@ -479,6 +480,7 @@ mod tests {
                     actors: [Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), None],
                     native_clocks: [None; 7],
                     resume_pending: false,
+                    finishing: 0,
                 };
                 let mut scales = [1.0; 6];
                 if role < 6 {
@@ -673,12 +675,12 @@ mod tests {
         assert!(seek_without_sample > 0);
         assert_eq!(config.hands.len(), 121);
         let encoded = config.encode();
-        assert_eq!(&encoded[..4], b"GBC\x08");
+        assert_eq!(&encoded[..4], b"GBC\x09");
         assert!(encoded.len() <= 128 * 1024);
         assert!(encoded.len() <= 192 * 1024);
         assert_eq!(Config::decode(&encoded).unwrap(), config);
         eprintln!(
-            "staged GBC8 bank_records={bank_records} records={records} looping={loops} adjusted_finite={adjusted_finite} edge_checks={edge_checks} channel_vs_sample_differences={seek_without_sample} hand_tracks={} compressed_bytes={} inflated_bytes={}",
+            "staged GBC9 bank_records={bank_records} records={records} looping={loops} adjusted_finite={adjusted_finite} edge_checks={edge_checks} channel_vs_sample_differences={seek_without_sample} hand_tracks={} compressed_bytes={} inflated_bytes={}",
             config.hands.len(),
             encoded.len(),
             u32::from_le_bytes(encoded[4..8].try_into().unwrap())
@@ -730,6 +732,7 @@ mod tests {
             actors: [Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), None],
             native_clocks: [None; 7],
             resume_pending: false,
+            finishing: 0,
         });
         for _ in 0..hold.frame {
             world.step(&[]);
@@ -852,6 +855,7 @@ mod tests {
                 actors: [Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), None],
                 native_clocks: [None; 7],
                 resume_pending: false,
+                finishing: 0,
             };
             for tick in 0..plan.frame_count {
                 sequence.frame = tick;
@@ -1196,6 +1200,7 @@ mod tests {
                             actors: [Some(0), None, None, None, None, None, None],
                             native_clocks: [None; 7],
                             resume_pending: false,
+                            finishing: 0,
                         };
                         let mut expected = local.to_array();
                         let mut origin = [2.0, 3.0, -1.0];
@@ -1303,6 +1308,9 @@ mod tests {
         assert!(!config.hands.is_empty());
         let court = street_assets::court::load(&mut iso, "RUCKER").unwrap();
         let hoops = crate::setup::hoops(&court).unwrap();
+        // The disc's animations, as a match installs them: a dunker's
+        // finishing body flies on his posed hands.
+        let disc = street_net::disc::Disc::read(&mut iso).unwrap();
         let mut failures = Vec::new();
         for plan in &config.plans {
             for team in 0..2 {
@@ -1321,6 +1329,8 @@ mod tests {
                 let actors = street_sim::gamebreaker::bind(&players, shooter, plan.kind, poses);
                 let mut world =
                     street_sim::World::new(hoops, players, street_sim::Rules::default(), 2002);
+                world.set_match_values(vec![Default::default(); 6], vec![1.0; 6], vec![1.0; 6]);
+                disc.install(&mut world).unwrap();
                 world.ball.hold(shooter);
                 world.phase = street_sim::Phase::Live;
                 world.possession = team;
@@ -1335,6 +1345,7 @@ mod tests {
                     actors,
                     native_clocks: [None; 7],
                     resume_pending: false,
+                    finishing: 0,
                 });
                 if plan.script == config.plans[0].script && team == 0 {
                     // The match's setup carries the match's own values, not
@@ -1435,5 +1446,104 @@ mod tests {
             }
         }
         assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
+
+    #[test]
+    fn every_staged_dunker_flies_on_his_finishing_body() {
+        // The dunk plans (0..7) hand their dunker to his finishing body
+        // (`FUN_00334178`): its `9e` aim flies him to the rim and he lands
+        // on his own. The School's run of script 1 (GamLR2's family 9,
+        // `level2-batch/case09`) peaks at 7.86 above the floor at frame 137
+        // and lands at 177.
+        let Ok(path) = std::env::var("STREET_ISO") else {
+            return;
+        };
+        let mut iso = street_assets::iso::Iso::open(path).unwrap();
+        let disc = street_net::disc::Disc::read(&mut iso).unwrap();
+        let bank = ScriptBank::read(&mut iso).unwrap();
+        let config = config(&bank).unwrap();
+        for script in 0..8 {
+            let plan = config.plan(script).unwrap();
+            let first = plan
+                .ball_cues
+                .iter()
+                .find_map(|c| usize::try_from(c.source()).ok())
+                .unwrap();
+            let positions = plan.initial_positions();
+            let players = (0..6)
+                .map(|i| street_sim::Player::new(1, positions[i].unwrap_or([0.0, 0.0]), 0.0))
+                .collect();
+            let mut world = street_sim::World::new(
+                street_sim::Hoop::native(),
+                players,
+                street_sim::Rules::default(),
+                2002,
+            );
+            world.set_match_values(vec![Default::default(); 6], vec![1.0; 6], vec![1.0; 6]);
+            disc.install(&mut world).unwrap();
+            world.phase = street_sim::Phase::Live;
+            world.ball.hold(first);
+            world.sequence = Some(street_sim::gamebreaker::Sequence {
+                script,
+                shooter: first,
+                team: 1,
+                level: 2,
+                frame: 0,
+                held: 0,
+                actors: [Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), None],
+                native_clocks: [None; 7],
+                resume_pending: false,
+                finishing: 0,
+            });
+            let dunker = usize::from(plan.finishes[0].slot);
+            let (mut peak, mut landed, mut scores) = ((0.0f32, 0), None, 0);
+            while let Some(s) = world.sequence {
+                world.step(&[]);
+                let h = world.players[dunker].height;
+                if world
+                    .sequence
+                    .is_some_and(|q| q.finishing & (1 << dunker) != 0)
+                {
+                    if h > peak.0 {
+                        peak = (h, s.frame);
+                    }
+                    if peak.0 > 0.0 && h <= 0.0 && landed.is_none() {
+                        landed = Some(s.frame);
+                    }
+                }
+                scores += world
+                    .events
+                    .iter()
+                    .filter(|e| {
+                        matches!(
+                            e,
+                            street_sim::Event::Score {
+                                basket: street_sim::Basket::Gamebreaker {
+                                    level: 2,
+                                    dunk: true,
+                                    ..
+                                },
+                                ..
+                            }
+                        )
+                    })
+                    .count();
+            }
+            assert!(
+                peak.0 > 1.0,
+                "script {script}: the dunker never left the floor"
+            );
+            assert_eq!(scores, 1, "script {script}");
+            if script == 1 {
+                assert!(
+                    (peak.0 - 7.86).abs() < 0.1 && (136..=138).contains(&peak.1),
+                    "{peak:?}"
+                );
+                assert!(
+                    landed.is_some_and(|f| (176..=178).contains(&f)),
+                    "{landed:?}"
+                );
+            }
+        }
     }
 }
