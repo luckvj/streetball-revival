@@ -1597,3 +1597,111 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod gait_clock {
+    /// `0x167cd0..0x167ce8` against the played captures: each update a
+    /// gait clip's frame advances the actor's motion over its record's
+    /// root distance (+0x18) times the skeleton's first scale
+    /// (`FUN_0019cd48`, the record's `native_body_scale`). Over the pads
+    /// captures' 60,342 updates 99.7% agree within 0.001 (the rest are
+    /// blends and torn samples); the old stand-in, height / 6.5, agreed on
+    /// almost none.
+    #[test]
+    fn the_gait_clock_advances_as_the_originals_captures_show() {
+        let (Ok(iso), Some(list)) = (
+            std::env::var("STREET_ISO"),
+            std::env::var_os("STREET_PLAYED_CAPTURE"),
+        ) else {
+            return;
+        };
+        let mut iso = street_assets::iso::Iso::open(iso).unwrap();
+        let gait = street_assets::gait::GaitData::read(&mut iso).unwrap();
+        let db = street_assets::db::players(&mut iso).unwrap();
+        let mut roots = std::collections::BTreeMap::<u16, Vec<f32>>::new();
+        for r in &gait.records {
+            for row in r.rows {
+                roots.entry(row).or_default().push(r.root_distance);
+            }
+        }
+        let (mut agree, mut checked) = (0usize, 0usize);
+        for path in std::env::split_paths(&list) {
+            let Ok(text) = std::fs::read_to_string(&path) else {
+                continue;
+            };
+            let mut scales = [None; 6];
+            let mut prev: Option<serde_json::Value> = None;
+            for line in text.lines() {
+                let Ok(s) = serde_json::from_str::<serde_json::Value>(line) else {
+                    continue;
+                };
+                if s["event"] == "pointers" {
+                    scales = [None; 6];
+                    for r in s["records"].as_array().into_iter().flatten() {
+                        if let (Some(id), Some(player)) = (r["id"].as_u64(), r["player_id"].as_u64())
+                            && let Some(slot) = scales.get_mut(id as usize)
+                        {
+                            *slot = db
+                                .get(player as usize)
+                                .and_then(|p| p.native_body_scale())
+                                .map(|s| s[0]);
+                        }
+                    }
+                    continue;
+                }
+                let Some(frame) = s["frame"].as_i64() else {
+                    continue;
+                };
+                if let Some(a) = &prev
+                    && a["frame"].as_i64() == Some(frame - 1)
+                {
+                    for k in 0..6 {
+                        let Some(scale) = scales[k] else {
+                            continue;
+                        };
+                        let (pa, pb) = (&a["actors"][k], &s["actors"][k]);
+                        let record = |p: &serde_json::Value| {
+                            p["channels"][0]["record"].as_u64().unwrap_or(u64::MAX)
+                        };
+                        let at = |p: &serde_json::Value| {
+                            p["channels"][0]["float_frame"].as_f64().unwrap_or(-1.0) as f32
+                        };
+                        let row = record(pb);
+                        if record(pa) != row || row > u64::from(u16::MAX) {
+                            continue;
+                        }
+                        // Rows whose records share one root distance.
+                        let Some(rd) = roots.get(&(row as u16)) else {
+                            continue;
+                        };
+                        if rd.iter().any(|&d| (d - rd[0]).abs() > 1e-6) {
+                            continue;
+                        }
+                        let m = &pb["motion"];
+                        let motion = m[0].as_f64().unwrap_or(0.0).hypot(m[2].as_f64().unwrap_or(0.0)) as f32;
+                        let step = at(pb) - at(pa);
+                        if motion < 0.01 || !(step > 0.0) || step > 3.0 {
+                            continue;
+                        }
+                        // The production formula on the original's motion.
+                        let want = street_sim::ordinary::calculate_gait_frame_step(
+                            rd[0],
+                            motion * street_sim::TICK_HZ as f32,
+                            scale,
+                        );
+                        checked += 1;
+                        agree += usize::from((step / want - 1.0).abs() < 1e-3);
+                    }
+                }
+                prev = Some(s);
+            }
+        }
+        if checked == 0 {
+            return;
+        }
+        assert!(
+            agree as f64 >= 0.995 * checked as f64,
+            "{agree} of {checked} updates agree"
+        );
+    }
+}
