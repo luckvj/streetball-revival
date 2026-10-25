@@ -3708,7 +3708,6 @@ pub fn sync_players(
         return;
     }
     let w = &sim.world;
-    let b = w.ball.position;
     let staging = staging(w, intro.as_deref());
     let ended = game_ended(w, tape.as_deref());
     for (index, mut transform, mut animator, mut visibility) in &mut players {
@@ -3763,16 +3762,14 @@ pub fn sync_players(
             }
             continue;
         }
-        // Animations face -z, the simulation's heading 0 faces +z. Players
-        // standing about face the ball.
-        let mut heading = p.heading;
+        // Animations face -z, the simulation's heading 0 faces +z. Each is
+        // drawn on his own facing, as the original draws the actor's:
+        // standing, its played captures have him 26 degrees off the ball at
+        // the median and past 90 a quarter of the time (the simulation's
+        // 39 and 26%). Turning a standing player to the ball here had
+        // snapped him back to his facing whenever he moved.
+        let heading = p.heading;
         let with_ball = w.ball.state == BallState::Held(i);
-        if p.action == Action::None && p.gait == Gait::Stand && !with_ball {
-            let (dx, dz) = (b[0] - p.position[0], b[2] - p.position[1]);
-            if dx.hypot(dz) > 1.0 {
-                heading = dx.atan2(dz);
-            }
-        }
         transform.rotation = Quat::from_rotation_y(heading + PI);
 
         // The move script the sim chose, on the VM's own clock

@@ -13190,3 +13190,27 @@ scores 9, 14, 18 and 20, and wins 16, 28, 36 and 40 of 40 seeded tosses.
 A press below the window (before the toss is in the top fifth of its
 rise) sets nothing, so a later one still counts
 (`a_persons_press_scores_by_how_near_the_apex_it_falls`).
+
+## The legs' clock and the standing facing (2026-10-25)
+
+Vj saw players almost gliding, and the computer's players flipping.
+
+- The gait clock. `0x167cd0..0x167ce8` takes the frame step as the motion
+  over the record's root distance (+0x18) times the skeleton's first
+  scale (`FUN_0019cd48` on actor+0x108, 1.2 to 1.3 for most). The port
+  used `height_ft / 6.5` clamped, about 1.0, so the legs cycled a fifth
+  too fast for the ground covered. The step now uses `Player::body`'s
+  height scale. One measure: the planted foot's travel in the clip
+  against the body's over the same updates, for every gait clip in the
+  two pads captures and in an AI match with the same six players' scales.
+  The original's run_1, run_3, BPJOG and RUN_CYCLE_WBALL_04_2_R show 0.52,
+  0.43, 0.52 and 0.61. The rewrite showed 0.64, 0.57, 0.66 and 0.78
+  before, and 0.55, 0.50, 0.54 and 0.60 now. Walks: walk_1 0.80, now 0.83.
+  (`the_gait_clock_runs_by_the_skeletons_scale`)
+- The standing facing. The view turned every standing player without
+  the ball to face it, and snapped him back to his own facing when he
+  moved. The original draws the actor's facing. In its played captures
+  a standing player is 26 degrees off the ball at the median and past 90
+  a quarter of the time. The simulation's facing gives 39 and 26%, and
+  turns at most 46 units an update (7 larger changes in 4,000 updates of
+  an AI match). The view now draws the simulation's facing.

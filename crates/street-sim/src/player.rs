@@ -1372,7 +1372,11 @@ impl Player {
             gait
         };
         let moving = self.gait != Gait::Stand;
-        let body_scale_x = (self.height_ft() / 6.5).clamp(0.7, 1.4);
+        // The skeleton's scale (`FUN_0019cd48` on actor+0x108, its first
+        // word): `0x167cd0..0x167ce8` divides the record's root distance
+        // by the motion and multiplies by it (a 6'6" player's 1.2; a
+        // stand-in of height / 6.5 had cycled the legs a fifth too fast).
+        let body_scale_x = self.body().height;
         self.gait_channel.update(
             held,
             moving,
