@@ -5356,3 +5356,28 @@ fn a_persons_press_scores_by_how_near_the_apex_it_falls() {
     // A press below the window does not use up the side's timing.
     assert_eq!(run(&[45, 10]), (18, 0));
 }
+
+#[test]
+fn the_gait_clock_runs_by_the_skeletons_scale() {
+    // `0x167cd0..0x167ce8`: the frame step is the motion over the record's
+    // root distance times the skeleton's first scale (`FUN_0019cd48`), so
+    // a bigger player's legs cycle slower over the same ground. A stand-in
+    // of height / 6.5 had cycled them about a fifth too fast.
+    let step = |height: f32| {
+        let mut w = three_on_three(5);
+        w.players[1].body = Some(crate::pose::Body {
+            height,
+            width: 1.0,
+            head: 1.0,
+        });
+        let mut inputs = vec![Input::default(); 6];
+        for _ in 0..30 {
+            inputs[1] = stick(1.0, 0.0);
+            w.step(&inputs);
+        }
+        assert!(w.players[1].speed > 1.0);
+        w.players[1].gait_channel.frame_step
+    };
+    let (unit, big) = (step(1.0), step(1.3));
+    assert!((unit / big - 1.3).abs() < 1e-3, "{unit} / {big}");
+}
