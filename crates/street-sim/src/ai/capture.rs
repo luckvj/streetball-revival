@@ -3327,6 +3327,11 @@ const RECORDED_BOUNDS: Bounds = Bounds {
 /// legs a fifth slower, as the original's): 0.430 (0.029, se 0.007)
 /// against 0.398 (0.425 before), 0.055 (the seed sets +500 0.433, +777
 /// 0.425; the long captures' 0.406 and 0.414 against 0.376 and 0.423).
+/// The passes loose at their timer set again by the rule on 2026-10-25
+/// with the screens' reactions and the rewrite's own pick gone (`docs/
+/// TRACE.md` "Screens, the strip's knock and the swipe's clock"): 0.75
+/// (0.93, se 0.23) against 0 (0.375 before), 1.5 (the seed sets +500
+/// 0.31, +777 0.44).
 const ALL_50_SHORT_BOUNDS: Bounds = Bounds {
     standing: 0.055,
     away: 0.07,
@@ -3338,7 +3343,7 @@ const ALL_50_SHORT_BOUNDS: Bounds = Bounds {
     counters: 7.0,
     shots: 5.0,
     jumps: [4.0, 2.0, 2.0],
-    loose: [0.5, 1.25, 0.75, 1.0, 0.08, 265.0],
+    loose: [0.5, 1.25, 1.5, 1.0, 0.08, 265.0],
 };
 
 /// A long capture without its rosters, as set for the first before its
