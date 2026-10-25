@@ -13122,3 +13122,31 @@ close-up) agreed. Three things did not:
 Still differing: the crowd stands at the wall in our School game (the
 lesson has none), the backboard is about 15% darker, and the original's
 motion ghosting on fast actors is stronger.
+
+## The finishing body's lift (2026-10-25)
+
+A second capture from (-24, 1) drew script 2. Its dunker held at 1.85
+from frame 87 (his last height key) and then rose slowly on his body,
+peaking 0.8 below the original's. The School's sample shows the lift
+directly. At frame 94 the staged clip 982 carries his root 2.0 above the
+body's (local root y 6.64 against 4.64). At 98, the body's first update,
+his height is 4.03, and the root is back at rest on clip 984. The body's
+script (`0x44b62a`) turns on the channel's resync flag (0x10000) in its
+first step, so its first frame lowers him by the root's rise from the
+clip the channel held. Coming down from 982 to 984, that lifts him.
+
+Two faults hid it. The body's channel started from the gameplay clip,
+not the staged one: `step_staged_finishers` now hands it the clip and
+frame the staged channel showed the update before (the record changes
+clip on the body's first frame too). The script's first update shows no
+clip yet, and `flight_root` cleared the resync there. An update showing
+no clip now takes no root step and keeps the flag, and a step from no
+clip measures from the held one. Script 2's dunker now leaves at 4.03
+and peaks at 9.62 on frame 130 (the original about 9.6 at 129;
+`every_staged_dunker_flies_on_his_finishing_body`). The other plans are
+unchanged.
+
+The capture's cast differs from the School's earlier runs. The person
+shooting was Shaq, and the Nets had Van Horn (101) for Mutombo. The plans
+cast by place and shooter, so a frame-by-frame comparison needs the same
+six at the same spots.

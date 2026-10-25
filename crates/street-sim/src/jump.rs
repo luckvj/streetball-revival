@@ -1157,14 +1157,17 @@ impl World {
             p.position[0] += m[0];
             p.position[1] += m[1];
         }
-        if f.flags & RESYNC != 0 {
+        // A script's first update may show no clip yet (its pick is
+        // still to come): the channel holds the clip it had, so there is
+        // no step to take and the resync stays for the first one.
+        if f.flags & RESYNC != 0 && after.record.is_some() {
             // The model's root height (actor+0xe4) as the channel showed it
             // before (the clip held through the blend at the script's
             // first update) and now, a blend's mixed.
             let now = root_y(&poses, Some(after), from);
             let then = match before {
-                Some(b) => root_y(&poses, Some(b), from),
-                None => root_y(&poses, None, from),
+                Some(b) if b.record.is_some() => root_y(&poses, Some(b), from),
+                _ => root_y(&poses, None, from),
             };
             if let (Some(now), Some(then)) = (now, then) {
                 p.height -= (now - then) * body.height;

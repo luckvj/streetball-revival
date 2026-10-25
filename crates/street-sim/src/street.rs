@@ -1049,6 +1049,23 @@ impl World {
                 crate::player::DunkStyle::Normal,
                 (row, r.release, r.end),
             );
+            // His channel held the script's clip until now, at the frame
+            // the staged channel shows: the body blends from it, and its
+            // resync flag (0x10000, on from 0x44b62a's first step) lifts
+            // him by that clip's root over the body's. Script 2's dunker
+            // leaves at 4.03 in the School's capture, 982's root at frame
+            // 21 two above 984's; from the gameplay clip he left at 1.85.
+            // The update before: its record may change clip on the
+            // body's first frame (984 starts at 98 too).
+            let shown = (sequence.pose_frame() as f32 - 1.0).max(0.0);
+            if let Some(pose) = plan.pose_at(shown)[usize::from(finish.slot)] {
+                let frame = plan
+                    .display_phase_at(usize::from(finish.slot), shown)
+                    .map_or(pose.animation_frame, |phase| phase.display_frame);
+                if let Some(start) = &mut self.players[player].channel_start {
+                    start.from = Some((pose.animation, frame));
+                }
+            }
         }
         for slot in 0..7 {
             if sequence.finishing & (1 << slot) == 0 {
