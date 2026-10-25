@@ -793,3 +793,18 @@ script's end of a gamebreaker sets the countdown
 (`a_staged_level_two_keeps_the_row_until_its_script_and_owes_a_celebration`).
 In a match the celebration's courtside camera finds the scorer two seconds
 after the script ends. The School ends the lesson first.
+
+## The picture's zoom (2026-10-25)
+
+`FUN_003797e0` sets the projection object's zoom `+0x190` to 1.3, and the
+rewrite drew every camera through it: a picture 1.3 times wider than the
+original's. The same object's viewport scales (`+0x120` and `+0x124`)
+undo it, so on screen a camera's lens `+0x98` is the tangent of half the
+4:3 picture's height. Grabs show it. Under the staged camera of the
+School's Level 2 alley-oop (script 3) the rim, and under the Street row
+two players, land within a few pixels of the original's picture only
+without the 1.3. With it, everything sits a quarter too close to the
+centre. `SCREEN_ZOOM` (1.0) is now the zoom the picture is drawn with.
+`CAMERA_PROJECTION_ZOOM` stays only for the tests that check the native
+matrix (`mode_fov_matches_native_projection_for_4_3_and_16_9`,
+`the_three_pictures_of_the_street_lens`).

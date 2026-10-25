@@ -182,6 +182,8 @@ struct Args {
     full_meters: Option<bool>,
     /// `--level2-at x,z`: the away holder fires a Level 2 from there.
     level2_at: Option<[f32; 2]>,
+    /// `--level2-script n`: the plan `--level2-at` fires.
+    level2_script: Option<usize>,
     /// `--demo-delay`: the idle demo's wait, seconds, over the disc's
     /// `demo_delay` (for checking the demo without the 120 s).
     demo_delay: Option<f64>,
@@ -224,6 +226,7 @@ fn parse_args() -> Result<Args, String> {
         online: None,
         full_meters: None,
         level2_at: None,
+        level2_script: None,
         demo_delay: None,
         play_by_play: false,
         roster_db: None,
@@ -326,6 +329,13 @@ fn parse_args() -> Result<Args, String> {
                 args.level2_at =
                     Some(at.ok_or(format!("--level2-at: {v:?} is not x,z (court units)"))?);
                 args.quick = true;
+            }
+            "--level2-script" => {
+                let v = value()?;
+                args.level2_script = Some(
+                    v.parse()
+                        .map_err(|_| format!("--level2-script: {v:?} is not a script"))?,
+                );
             }
             "--play-by-play" => args.play_by_play = true,
             "--roster-db" => args.roster_db = Some(value()?.into()),
@@ -607,6 +617,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     }
     let full_meters = args.full_meters;
     let level2_at = args.level2_at;
+    let level2_script = args.level2_script;
     let play_by_play = args.play_by_play;
     // The match intros play when the boot movies would: not in scripted
     // or screenshot runs unless `--intro` asks.
@@ -714,7 +725,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         app.insert_resource(setup::FullMeters { level2 });
     }
     if let Some(at) = level2_at {
-        app.insert_resource(setup::Level2At::new(at));
+        app.insert_resource(setup::Level2At::new(at, level2_script));
     }
     if play_by_play {
         app.insert_resource(hud::PlayByPlay);

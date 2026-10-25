@@ -23,7 +23,15 @@ use crate::{
 const CAMERA_HEIGHT: f32 = 24.0;
 const CAMERA_DISTANCE: f32 = 52.0;
 // FUN_003797e0 initializes the viewport zoom read as object +0x190.
+#[cfg(test)]
 const CAMERA_PROJECTION_ZOOM: f32 = 1.3;
+/// The zoom the picture shows: the projection object's viewport scales
+/// (`+0x120`/`+0x124`) undo `+0x190`'s 1.3, so a camera's lens `+0x98`
+/// is the tangent of half the 4:3 picture's height. Measured on the
+/// original's grabs (`docs/CAMERA_RECOVERY.md` "The picture's zoom"): the
+/// rim under a staged camera and two players under the Street row land
+/// within a few pixels only without the 1.3.
+const SCREEN_ZOOM: f32 = 1.0;
 
 /// The thirteen words of each 0x34-byte row at `0x498478` (ELF data):
 /// x bound, x offset, eye y, focus-z scale, the three depth offsets (+0x10
@@ -240,22 +248,23 @@ fn mode_vertical_fov(mode: usize, picture: Picture) -> f32 {
 /// flag, `wrapper+0xc`: the same horizontal angle at aspect 16/9, so the
 /// vertical angle's tangent shrinks by 3/4); and the rewrite's Wide picture
 /// (both flags: the horizontal half-angle's tangent widened by 4/3 before
-/// the 16/9 projection, which keeps the 4:3 vertical angle). For the Street
-/// row's lens 0.33 that is 46.44 degrees of height at 4:3, 35.67
-/// anamorphic and 46.44 wide, 59.54 degrees of width for the first two and
-/// 74.66 wide (`docs/CAMERA_RECOVERY.md` "The three pictures").
+/// the 16/9 projection, which keeps the 4:3 vertical angle), each at the
+/// picture's own zoom ([`SCREEN_ZOOM`]). For the Street row's lens 0.33
+/// that is 36.53 degrees of height at 4:3, 27.80 anamorphic and 36.53
+/// wide, 47.50 degrees of width for the first two and 60.80 wide
+/// (`docs/CAMERA_RECOVERY.md` "The three pictures", "The picture's zoom").
 fn lens_vertical_fov(scalar: f32, picture: Picture) -> f32 {
     let (horizontal_degrees, vertical_4_3) =
-        scalar_camera_projection(scalar, 4.0 / 3.0, CAMERA_PROJECTION_ZOOM);
+        scalar_camera_projection(scalar, 4.0 / 3.0, SCREEN_ZOOM);
     match picture {
         Picture::Standard => vertical_4_3,
         Picture::Anamorphic => {
-            consumed_camera_vertical_fov(horizontal_degrees, 16.0 / 9.0, CAMERA_PROJECTION_ZOOM)
+            consumed_camera_vertical_fov(horizontal_degrees, 16.0 / 9.0, SCREEN_ZOOM)
         }
         Picture::Wide => consumed_camera_vertical_fov(
             wide_horizontal_degrees(horizontal_degrees),
             16.0 / 9.0,
-            CAMERA_PROJECTION_ZOOM,
+            SCREEN_ZOOM,
         ),
     }
 }
@@ -3729,11 +3738,17 @@ pub fn sync_players(
                 // samplers (0019add0..0019adf8). Keep that fractional phase;
                 // 00330f98's integer hand endpoint is a separate consumer.
                 let looping = staged.looping.unwrap_or(false);
+                // In place: the script's curves already move the actor
+                // along his clip's travel (the original's proxy, as the
+                // School's Level 2 capture shows: script 3's passer moves
+                // 11.6 by frame 108 while his clip's root has gone 9.1
+                // at his 1.27 scale), so only the root's rise and fall
+                // is drawn; adding the travel again put him at the rim.
                 animator.play_with_mirror_and_heading(
                     &clip,
                     0.1,
                     looping,
-                    false,
+                    true,
                     staged.mirrored,
                     Some(staged.heading),
                 );
@@ -5480,24 +5495,39 @@ mod camera_pose_tests {
         // Independently rounded float32 native-polynomial/renderer oracle values.
         let expected_degrees_4_3 = [46.43959, 33.29466, 26.34143, 22.06907, 40.13587, 44.53931];
         let expected_degrees_16_9 = [35.67191, 25.27999, 19.908_8, 16.64154, 30.64436, 34.14695];
+        // The projection matrix's angles carry +0x190's 1.3; the picture
+        // shows them with it undone (the viewport scales, SCREEN_ZOOM).
+        let shown = |native: f32| {
+            2.0 * ((native.to_radians() * 0.5).tan() / CAMERA_PROJECTION_ZOOM)
+                .atan()
+                .to_degrees()
+        };
         for mode in 0..CAMERA_MODE_ROWS.len() {
+            let scalar = CAMERA_MODE_ROWS[mode].row_word7;
+            let (horizontal, native_4_3) =
+                scalar_camera_projection(scalar, 4.0 / 3.0, CAMERA_PROJECTION_ZOOM);
+            let native_16_9 =
+                consumed_camera_vertical_fov(horizontal, 16.0 / 9.0, CAMERA_PROJECTION_ZOOM);
+            assert!((native_4_3.to_degrees() - expected_degrees_4_3[mode]).abs() < 1e-4);
+            assert!((native_16_9.to_degrees() - expected_degrees_16_9[mode]).abs() < 1e-4);
             assert!(
                 (mode_vertical_fov(mode, Picture::Standard).to_degrees()
-                    - expected_degrees_4_3[mode])
-                    .abs()
-                    < 1e-4
+                    - shown(expected_degrees_4_3[mode]))
+                .abs()
+                    < 1e-3
             );
             assert!(
                 (mode_vertical_fov(mode, Picture::Anamorphic).to_degrees()
-                    - expected_degrees_16_9[mode])
-                    .abs()
-                    < 1e-4
+                    - shown(expected_degrees_16_9[mode]))
+                .abs()
+                    < 1e-3
             );
             // Wide keeps the 4:3 vertical angle (the renderer's third branch
             // through its own tangent and arctangent, an ulp or two apart).
             assert!(
-                (mode_vertical_fov(mode, Picture::Wide).to_degrees() - expected_degrees_4_3[mode])
-                    .abs()
+                (mode_vertical_fov(mode, Picture::Wide).to_degrees()
+                    - shown(expected_degrees_4_3[mode]))
+                .abs()
                     < 1e-3
             );
         }
@@ -5514,18 +5544,18 @@ mod camera_pose_tests {
     fn the_three_pictures_of_the_street_lens() {
         let scalar = CAMERA_MODE_ROWS[0].row_word7;
         assert!((scalar - 0.33).abs() < 1e-6);
-        let (horizontal, _) = scalar_camera_projection(scalar, 4.0 / 3.0, CAMERA_PROJECTION_ZOOM);
+        let (horizontal, _) = scalar_camera_projection(scalar, 4.0 / 3.0, SCREEN_ZOOM);
         let degrees = |p| lens_vertical_fov(scalar, p).to_degrees();
-        assert!((degrees(Picture::Standard) - 46.4396).abs() < 1e-3);
-        assert!((degrees(Picture::Anamorphic) - 35.6719).abs() < 1e-3);
-        assert!((degrees(Picture::Wide) - 46.4396).abs() < 1e-3);
+        assert!((degrees(Picture::Standard) - 36.5258).abs() < 1e-3);
+        assert!((degrees(Picture::Anamorphic) - 27.8027).abs() < 1e-3);
+        assert!((degrees(Picture::Wide) - 36.5258).abs() < 1e-3);
         let wide = wide_horizontal_degrees(horizontal);
         let half = |d: f32| (d.to_radians() * 0.5).tan();
         assert!((half(wide) - half(horizontal) * 4.0 / 3.0).abs() < 1e-5);
-        // The pictures' widths: the half-angle tangent times the zoom.
-        let shown = |d: f32| 2.0 * (half(d) * CAMERA_PROJECTION_ZOOM).atan().to_degrees();
-        assert!((shown(horizontal) - 59.54).abs() < 0.01);
-        assert!((shown(wide) - 74.66).abs() < 0.01);
+        // The pictures' widths: the half-angle tangent at the picture's zoom.
+        let shown = |d: f32| 2.0 * (half(d) * SCREEN_ZOOM).atan().to_degrees();
+        assert!((shown(horizontal) - 47.50).abs() < 0.01);
+        assert!((shown(wide) - 60.80).abs() < 0.01);
     }
 
     #[test]

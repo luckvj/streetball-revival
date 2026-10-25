@@ -13088,3 +13088,37 @@ plans, the ball with the first pass's or shot's thrower, and fails a ball
 loose before the shot; each scores once (a shot that outlasts its script
 scores as the Level 2's). Still open: script 2's dunker leaves the floor
 about 15 frames before his body starts.
+
+## Level 2's picture against the School's grabs (2026-10-25)
+
+The School's Level 2 alley-oop (script 3, fired from (-24, 1)) was set
+beside our run frame by frame (the original's grabs bracketed by script
+frame, ours by the game's update and the sequence's frame and freeze
+count). Positions, the cameras and the freeze at 70 (its white flash and
+close-up) agreed. Three things did not:
+
+- The court's shade. The courts carry their lighting in vertex colours,
+  which the GS multiplies into the texel in its own display values
+  (`texel * colour >> 7`). We multiplied in linear light, which lifts a
+  0.5 shade to about 0.73 on screen. The building's shadow across the
+  court and the light on the wall were nearly gone. `convert::mesh` now
+  passes the factor as sRGB, as the crowd's tint already did. This
+  applies to every court, prop and player mesh.
+- The ball's sparks and streamer. `0x14a968` sets the ball's +0x1a0 to 2
+  while the game's gamebreaker word (+0xf4) is on and not 9. It stays on
+  through the staged script, so the white sparks and the flag streamer
+  follow the ball from the burst to the basket. `ballfx::glow` only
+  counted a gamebreaker shot. It now counts `World::sequence` and
+  `World::staged_start` too.
+- Root travel drawn twice. The script's curves move each actor's proxy
+  along his clip's travel. Script 3's passer is 11.6 along by frame 108
+  while his clip's root has gone 9.1 at his 1.27 scale. The original
+  draws the body on that proxy. We also played the clip with its root's
+  travel, so a moving actor ran ahead of his place (the passer was drawn
+  past the rim where the original's catches the lob). Staged clips now
+  play in place,
+  keeping only the root's rise and fall.
+
+Still differing: the crowd stands at the wall in our School game (the
+lesson has none), the backboard is about 15% darker, and the original's
+motion ghosting on fast actors is stronger.
