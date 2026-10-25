@@ -1911,6 +1911,7 @@ impl World {
                 self.ball.airborne = true;
                 self.ball.flight_left = 0.0;
                 self.ball.flight_time = 0.0;
+                self.ball.flight_start = 0.0;
             }
         }
     }
