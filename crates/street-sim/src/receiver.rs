@@ -16,7 +16,8 @@
 //! still holds the ball, `0x15a708..0x15ab50` while it flies) keeps a
 //! moving receiver off the court's edges (`FUN_0016f668`, [`edge_turn`])
 //! and, with the spot run set, stops him once he is within 1 of the spot
-//! (2 when moving), on the floor: he faces the ball and plays
+//! while moving (2 standing, his velocity the zero vector; the distance
+//! counts his height), low enough: he faces the ball and plays
 //! `catch_stand_1` (`0x44319a`) in the flight, `breathe_1` (`0x4570f5`, the
 //! stand he holds until his catch row) before the release.
 
@@ -392,10 +393,14 @@ impl World {
             }
         }
         if self.spot_run.count == 1 {
-            let radius = if moving { 2.0 } else { 1.0 };
+            // `0x15a5fc..0x15a610`, `0x15a86c..0x15a880`: 1, or 2 when his
+            // velocity (+0x40) is the zero vector; `FUN_0018cdb0` from his
+            // place, height and all, to the spot on the floor.
+            let radius = if moving { 1.0 } else { 2.0 };
             let h = self.players[i].height;
             let low = if on_floor { h <= 0.0 } else { h < floor };
-            if low && distance(self.players[i].position, self.spot_run.spot) <= radius {
+            let d = distance(self.players[i].position, self.spot_run.spot);
+            if low && math::len(d, h) <= radius {
                 self.spot_run.count += 1;
             }
         }
