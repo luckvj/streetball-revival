@@ -130,12 +130,18 @@ def inputs(sample, actors):
     computer_carrier = (controllers is not None and holder is not None
                         and people[holder // 3] != 0 and controllers[holder] == 4)
     flier = possession in (0, 1) and any(bit(a, 15) for a in range(3 * possession, 3 * possession + 3))
-    margin = f32(sample[f"a{holder}_height"]) * 1.2 if holder is not None else 0.0
+    # The row's focus descriptor (+0x1a0): type 3, the ball's owner (else
+    # the ball, free), raises the focus by the owner's height (FUN_00305428);
+    # type 0, a fixed point (the basket after a gamebreaker basket), by
+    # nothing, and no free ball.
+    owner_focus = word(sample, 0x1A0) == 3
+    margin = (f32(sample[f"a{holder}_height"]) * 1.2
+              if holder is not None and owner_focus else 0.0)
     focus = [word(sample, 0xD0), word(sample, 0xD4), word(sample, 0xD8)]
     motion = [word(sample, 0xF0), word(sample, 0xF4), word(sample, 0xF8)]
     reference = [word(sample, 0x100), word(sample, 0x104), word(sample, 0x108)]
     ball = sample["ball_position"][:3]
-    return (focus + motion + reference + [margin, int(sample["ball_holder"] == 0)] + ball + [
+    return (focus + motion + reference + [margin, int(owner_focus and sample["ball_holder"] == 0)] + ball + [
         int(word(sample, 0x158) != 0), int(phase == 1), possession, side,
         int(2 <= phase <= 5 and sample.get("game_19c", 0) == 0), ball_state,
         int(sample["ball_gamebreaker"] != 0), sample.get("ball_distance", 0),

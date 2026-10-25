@@ -730,3 +730,39 @@ on-screen samples: 843 exact, and the other 174 torn reads, each field
 either this update's value or the next one's. The test is
 `staged_level2_cameras_follow_the_original` (`STREET_L2_CAMPROBE`). The
 other fifteen plans run the same code. Their cameras weren't probed.
+
+## A Level 1 gamebreaker in the original (2026-10-24)
+
+The Street School's Gamebreaker lesson (14) gives the person a full meter
+and a Level 1. It was captured twice with `tools/capture_camera_played.py`'s
+per-update sampler, driven from a copied PCSX2 profile
+(`$EVIDENCE/street-level1-camera`; manager `+0x4c` 0, as in a played
+match). Run 1's shot missed, run 2's scored.
+
+The sequence is the one the rewrite ports. The press puts the blend on
+screen (`+0x40` set) toward the courtside helper, narrow: x within ±23,
+low, z −35 on the School's court. The blend takes 30 updates. The shot
+leaves on that camera. Sixty updates after the press the first replay
+films from 100 up, its x a new courtside draw. The second replay is on
+another courtside eye. The task's end clears `+0x40` and blends back to the
+row over 30 updates, the outgoing courtside helper still updated. In run 2
+the basket turned the row to the basket (its focus descriptor `+0x1a0`
+from 3 to 0, the point type), shook it, and set the celebration countdown
+`+0x50` to 119. The School ends the lesson before it runs out.
+
+Numbers: the courtside helper's 60 updates on screen land within 1e-6
+(`played_match_courtside_follows_the_original`). The blend back's eye is
+`t × from + (1 − t) × row` within 4e-6 on all 57 updates. The row, carried
+from update to update on the captures' reads, stays within 1e-3 for all
+675 updates (`played_match_row_follows_the_original`).
+`tools/compare_camera_played.py` had raised the focus by the holder's
+height even when the row's focus is a point. The original and the
+rewrite's `row_inputs` don't (`FUN_00305428` reads an owner only for types
+3 and 2), so a catch under the basket's focus failed seven carried
+updates. The tool now reads `+0x1a0`. The four played sessions' cases are
+unchanged (their rows never had a point focus).
+
+Not the original's: the courtside eyes and the replays' coin. They come
+from the shared generators (`FUN_003a16b8`, the libc LCG), which the
+crowd, animation and speech also draw from, so the rewrite's own copies
+can't pick the same eyes.
