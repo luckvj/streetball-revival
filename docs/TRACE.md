@@ -13243,8 +13243,8 @@ without the disc's animations.
 The gait clock against all 23 played captures (`staged.rs` `gait_clock`):
 each actor's frame advance over the production step stays one constant,
 update for update (99.5% of 324,382 within 0.001 of his median), and the
-constant is 1 to 1e-6 for every actor once his record is found by its
-ratings. The capture tool's `player_id` misnames some records. The
-story's generic ballers come out 11 low: "202" is 213 Stephon, "213" is
-224, "193" is 204, "216" is 227. The School's actor 0 comes out as 101,
-Mutombo's 81. Their heights are the disc's.
+constant is 1 to 1e-6 for every actor, his record found by the
+persistent id (field 0) the capture names. That id is not the record's
+index for all: the generic ballers' is their record less 11 and
+Mutombo's (record 81) is 101. Taking it as an index had given the story's
+generics and the School's actor 0 other heights.
