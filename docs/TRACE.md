@@ -13242,12 +13242,9 @@ without the disc's animations.
 
 The gait clock against all 23 played captures (`staged.rs` `gait_clock`):
 each actor's frame advance over the production step stays one constant,
-update for update (99.5% of 324,382 within 0.001 of his median). The
-constant is 1 to 1e-6 for every actor whose session record is the disc's.
-Two kinds differ, each a constant. The School's actor 0 (record 101 in the
-capture's table) runs on an 86-inch scale (1.323, Mutombo's, actor 0 in
-the earlier School capture). The story capture's generic ballers each run
-on another whole inch's height scale than their disc record's: Lamar 72
-plays as 75, Andre 75 as 78, Stephon 78 as 71, Vince 77 as 76, Shawn 74
-as 76. The story's generic ballers take their own heights; not yet
-ported.
+update for update (99.5% of 324,382 within 0.001 of his median), and the
+constant is 1 to 1e-6 for every actor once his record is found by its
+ratings. The capture tool's `player_id` misnames some records. The
+story's generic ballers come out 11 low: "202" is 213 Stephon, "213" is
+224, "193" is 204, "216" is 227. The School's actor 0 comes out as 101,
+Mutombo's 81. Their heights are the disc's.

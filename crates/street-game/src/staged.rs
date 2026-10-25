@@ -1604,12 +1604,10 @@ mod gait_clock {
     /// gait clip's frame advances the actor's motion over its record's
     /// root distance (+0x18) times the skeleton's first scale
     /// (`FUN_0019cd48`). For each actor the advance over motion / root
-    /// distance stays one constant, his scale's inverse, update for update
-    /// (99.8% within 0.001 of his median over the 23 captures); where the
-    /// session's records are the disc's (the pads captures' casts), that
-    /// constant is the record's `native_body_scale` to 1e-4. A session's
-    /// edited records (the School's save, the story's street players) give
-    /// other scales, a constant ratio per actor.
+    /// distance stays one constant, update for update (99.5% within 0.001
+    /// of his median over the 23 captures), and that constant is 1 to 1e-4
+    /// with his record's `native_body_scale`, the record found by its
+    /// ratings.
     #[test]
     fn the_gait_clock_advances_as_the_originals_captures_show() {
         let (Ok(iso), Some(list)) = (
@@ -1645,8 +1643,24 @@ mod gait_clock {
                 if s["event"] == "pointers" {
                     scales = [None; 6];
                     for r in s["records"].as_array().into_iter().flatten() {
-                        if let (Some(id), Some(player)) =
-                            (r["id"].as_u64(), r["player_id"].as_u64())
+                        // The record by its ratings: the capture tool's
+                        // `player_id` misnames some (the story's generic
+                        // ballers 11 low, the School's actor 0 as 101 for
+                        // Mutombo's 81); its own id where none or several
+                        // match.
+                        let ratings: Option<Vec<i16>> = r["ratings"]
+                            .as_array()
+                            .map(|a| a.iter().map(|v| v.as_i64().unwrap_or(-1) as i16).collect());
+                        let by_ratings: Vec<usize> = ratings.map_or(Vec::new(), |want| {
+                            (0..db.len())
+                                .filter(|&k| db[k].ratings[..] == want[..])
+                                .collect()
+                        });
+                        let player = match by_ratings[..] {
+                            [one] => Some(one as u64),
+                            _ => r["player_id"].as_u64(),
+                        };
+                        if let (Some(id), Some(player)) = (r["id"].as_u64(), player)
                             && let Some(slot) = scales.get_mut(id as usize)
                         {
                             *slot = db
