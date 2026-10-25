@@ -5313,3 +5313,46 @@ fn staged_level_two_shots_fly_the_originals_arcs() {
     }
     assert!(checked > 0);
 }
+
+#[test]
+fn a_persons_press_scores_by_how_near_the_apex_it_falls() {
+    // FUN_0015eaa0 (0x15eb5c..0x15ebfc): the toss's apex from ball+0x118,
+    // the gravity's size an update; a press with the toss in the top
+    // fifth of its rise scores 1..20 by how near the apex. The sign of the
+    // gravity had made the apex fall below a rising toss, so any press
+    // short of the last update or two scored 1 and locked in (a person on
+    // team 0 then lost every tip-off).
+    let g = crate::GRAVITY * crate::TICK_SECONDS * crate::TICK_SECONDS;
+    let run = |presses: &[i32]| {
+        let mut w = three_on_three(1);
+        w.start_opening_toss();
+        let mut inputs = vec![Input::computer(); 6];
+        inputs[0] = Input::default();
+        for _ in 0..toss::WAIT_UPDATES {
+            w.step(&inputs);
+        }
+        let mut left = presses.to_vec();
+        for _ in 0..400 {
+            inputs[0] = Input::default();
+            let vy = w.ball.velocity[1] * crate::TICK_SECONDS;
+            let to_apex = (vy / g).floor() as i32;
+            if vy > 0.0 && left.first().is_some_and(|&e| to_apex <= e) {
+                inputs[0] = buttons(button::SHOOT);
+                left.remove(0);
+            }
+            w.step(&inputs);
+            if w.tip.winner >= 0 {
+                break;
+            }
+        }
+        (w.tip.timing[0], w.tip.winner)
+    };
+    // Too early (below the window) leaves nothing: the side gets 1.
+    assert_eq!(run(&[30]).0, 1);
+    assert_eq!(run(&[20]).0, 9);
+    assert_eq!(run(&[15]).0, 14);
+    assert_eq!(run(&[10]), (18, 0));
+    assert_eq!(run(&[2]), (20, 0));
+    // A press below the window does not use up the side's timing.
+    assert_eq!(run(&[45, 10]), (18, 0));
+}
