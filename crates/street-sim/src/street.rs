@@ -1192,8 +1192,11 @@ impl World {
                 ]
             }
             Some(2) => {
+                // A point of the record's own (`0x330060..0x3300f8`): words
+                // 20, 24 and 28, x turned for the mirrored side.
                 let [x, y] = cue.destination();
-                [if sequence.mirrored() { -x } else { x }, y, 0.0]
+                let z = cue.word(28).map_or(0.0, |w| f32::from_bits(w as u32));
+                [if sequence.mirrored() { -x } else { x }, y, z]
             }
             _ => return,
         };
