@@ -12694,7 +12694,8 @@ third capture's rosters about one pass a match is lost at its timer
 (the original's 1, 0, 0 in its three captures): a spot run's receiver
 stops 1.8 from the spot (within 2 when moving) while the pass goes to
 his hand posed on the spot; catch_stand_1's root travels 0.1, so it is
-not the catch clip that carries him.
+not the catch clip that carries him. (2026-10-25: the radii were the wrong way
+round; "The spot run's radius".)
 
 **The stand clips' roots carry their players.** A script's `91`
 (`FUN_00195858`) with 0x1000 keeps the clip's root off x and z
@@ -13301,3 +13302,20 @@ stumbles were the rewrite's own.
 
 Left for the view's own fades: a pass without a catch row (a handoff, a
 lob to a leaper) and a trick whose clip the disc lacks.
+
+
+## The spot run's radius (2026-10-25)
+
+`FUN_0015a060` stops a spot run's receiver (`DAT_003d70b4`) within 1.0 of
+the spot while he moves and 2.0 when his velocity (actor+0x40) is the
+zero vector: `0x15a5fc..0x15a610` before the release and
+`0x15a86c..0x15a880` in the flight load 1.0 and replace it with 2.0 only
+when the four-word compare with `0x4c9880` (zero) held. The distance is
+`FUN_0018cdb0`'s from his place, height included, to the spot on the
+floor. The rewrite had the radii the other way round, so a running
+receiver stopped about 1.8 short of the spot the pass is aimed at and
+`catch_stand_1` held him there while the ball went by: the catch-row-0
+passes lost at their timer on the third capture's rosters went from 12 to
+1 over the 16 bases (all such losses 29 to 25). Passes lost at their timer
+a match: first capture 2.31 to 2.44 (its losses are the trick passes off
+the glass), second 0.75 to 0.13, third 1.81 to 1.56.
