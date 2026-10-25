@@ -6634,7 +6634,7 @@
           "path": "crates/street-sim/src/street.rs",
           "locator": "World::step_staged (Event::StagedRerun at the stop)",
           "note": "The script posts its replay command at its last frame.",
-          "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+          "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
         },
         {
           "path": "crates/street-sim/src/replay.rs",
@@ -6758,7 +6758,7 @@
         }
       ],
       "tolerance": "The School's run bit for bit (the manager's shown count, speed and frames left, the script's replay frame) and within 0.05 s on the wall clock; every machine starting the rerun at the same match tick, no checksum differing.",
-      "limitations": "No played match of the original's has had its staged rerun grabbed: the School's lesson run is the runtime evidence (its frames were not grabbed), the cameras are the scripts' own records at the script manager's replay frame. Only one of the sixteen plans has run in the original (GamLR2); the others' commands are read from the disc. The replay command's count (word 12 + 1) is one on all sixteen; more is not modelled. 2026-10-21 (item 7): the rerun's camera takes the staged helper's lens and roll, measured on the School's Level 2 rerun (presentation.staged_camera_lens_roll_follow). 2026-10-23: the match also holds a staged Level 2's 31 updates after its press for GB2's burst (Match::burst_hold, street_net::game::LEVEL2_BURST_HOLD, checked against the banner's 32 updates), as the game played alone holds them; the disc test asserts it holds. Last re-pinned 2026-10-25 after the Level 2 camera at the press and the script end (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "No played match of the original's has had its staged rerun grabbed: the School's lesson run is the runtime evidence (its frames were not grabbed), the cameras are the scripts' own records at the script manager's replay frame. Only one of the sixteen plans has run in the original (GamLR2); the others' commands are read from the disc. The replay command's count (word 12 + 1) is one on all sixteen; more is not modelled. 2026-10-21 (item 7): the rerun's camera takes the staged helper's lens and roll, measured on the School's Level 2 rerun (presentation.staged_camera_lens_roll_follow). 2026-10-23: the match also holds a staged Level 2's 31 updates after its press for GB2's burst (Match::burst_hold, street_net::game::LEVEL2_BURST_HOLD, checked against the banner's 32 updates), as the game played alone holds them; the disc test asserts it holds. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "A played match's staged Level 2 in the original with the rerun's frames grabbed."
     },
     {

@@ -2,15 +2,15 @@
   "whole_game_accuracy_percent": null,
   "scope": "Version 1 selected obligations; inventory completeness is not certified.",
   "active_counts": {
-    "matched": 161,
+    "matched": 168,
     "mismatched": 24,
-    "untested": 26
+    "untested": 19
   },
   "active_total": 211,
   "matched_acceptance": {
-    "exact": 22,
+    "exact": 23,
     "numerical": 19,
-    "structural": 120
+    "structural": 126
   },
   "deferred": 1,
   "out_of_scope": 0,
@@ -1029,7 +1029,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "points::TRICK; World::score_trick",
               "note": "Production ladder and award arithmetic (a class-0 native identity no longer underflows the generic level), made when the trick's script ends.",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "crates/street-sim/src/tests/static_parity.rs",
@@ -1039,15 +1039,13 @@
             }
           ],
           "tolerance": "Exact integer base values for a supplied class 0..4.",
-          "limitations": "Base table, indexing and award arithmetic match. The full-versus-half qualifier comes from the rewrite's fakeout roll, not the native actor+0x218 latch; award timing and the drain scorer's keys in the shared ring (FUN_00143a88) are not modelled. Re-pinned 2026-10-16 after the trick moves pass: street.rs's `World::fake` became `World::score_trick` (the same ladder, halving, ring bypass and upward-rounded discount, now called when the trick's script clears bit 10, `0x157dd0`, with the full base from the fake's actor+0x218, `FUN_001372d8`, instead of the rewrite's roll); static_parity.rs's test drives `World::score_trick` with the same expectations; TRACE.md gained the section \"Trick moves on their scripts\" at its end; the arithmetic is unchanged. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: TRACE.md gained the section \"The combo ring, the meter's listeners, the statistics and the shot clock\" at its end and pointers to it in section 7 (the pushers' list, the meter section's ported list) and section 8 (the window's bound); street.rs's `TeamState` keeps the meter's repeat keys as script ids with its +0x50/+0x4c/+0x8 words and no chain; the fill gained the game-type and lesson gates; the trick, the counter and the cancel score through `crate::scoring`; `World::cash_combo`, `award_combo` and `break_combo` are gone; tests/static_parity.rs pushes stamped slots and writes the repeat keys as script ids; `World::score_trick` scores through `World::post_trick` (the same value); the test writes the repeat keys as script ids. Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Base table, indexing and award arithmetic match. The full-versus-half qualifier comes from the rewrite's fakeout roll, not the native actor+0x218 latch; award timing and the drain scorer's keys in the shared ring (FUN_00143a88) are not modelled. Re-pinned 2026-10-16 after the trick moves pass: street.rs's `World::fake` became `World::score_trick` (the same ladder, halving, ring bypass and upward-rounded discount, now called when the trick's script clears bit 10, `0x157dd0`, with the full base from the fake's actor+0x218, `FUN_001372d8`, instead of the rewrite's roll); static_parity.rs's test drives `World::score_trick` with the same expectations; TRACE.md gained the section \"Trick moves on their scripts\" at its end; the arithmetic is unchanged. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: TRACE.md gained the section \"The combo ring, the meter's listeners, the statistics and the shot clock\" at its end and pointers to it in section 7 (the pushers' list, the meter section's ported list) and section 8 (the window's bound); street.rs's `TeamState` keeps the meter's repeat keys as script ids with its +0x50/+0x4c/+0x8 words and no chain; the fill gained the game-type and lesson gates; the trick, the counter and the cancel score through `crate::scoring`; `World::cash_combo`, `award_combo` and `break_combo` are gone; tests/static_parity.rs pushes stamped slots and writes the repeat keys as script ids; `World::score_trick` scores through `World::post_trick` (the same value); the test writes the repeat keys as script ids. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture class and clip id across four recent moves and compare live production awards.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.combo_pattern_weights",
@@ -1117,7 +1115,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "World::configure_meter_fill; World::award",
               "note": "Recovered values reach live team meter updates.",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "crates/street-sim/src/tests/static_parity.rs",
@@ -1127,15 +1125,13 @@
             }
           ],
           "tolerance": "Same coefficients, branch order and thresholds; host f32 in the same operation order (the EE rounds toward zero); fractional meter retained.",
-          "limitations": "Static port of the blend and the Easy cap (skipped in the Trick Point and Gamebreaker Wins games since 2026-10-15). FUN_00143d38's early gates (FUN_0013e358, singleton +0x68, game types 3 and 7), its 49,999 stop, the team+0x10 path and the 0x43e2b8 mode scale (1.0 in normal play) are not exercised; the hold (team+0x18) is gameplay.meter_hold_decay. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: TRACE.md gained the section \"The combo ring, the meter's listeners, the statistics and the shot clock\" at its end and pointers to it in section 7 (the pushers' list, the meter section's ported list) and section 8 (the window's bound); street.rs's `TeamState` keeps the meter's repeat keys as script ids with its +0x50/+0x4c/+0x8 words and no chain; the fill gained the game-type and lesson gates; the trick, the counter and the cancel score through `crate::scoring`; `World::cash_combo`, `award_combo` and `break_combo` are gone; tests/static_parity.rs pushes stamped slots and writes the repeat keys as script ids; `World::award` is now only the tests' shorthand for a trick's points, and the fill it reaches gained the game-type and lesson gates. Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Static port of the blend and the Easy cap (skipped in the Trick Point and Gamebreaker Wins games since 2026-10-15). FUN_00143d38's early gates (FUN_0013e358, singleton +0x68, game types 3 and 7), its 49,999 stop, the team+0x10 path and the 0x43e2b8 mode scale (1.0 in normal play) are not exercised; the hold (team+0x18) is gameplay.meter_hold_decay. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: TRACE.md gained the section \"The combo ring, the meter's listeners, the statistics and the shot clock\" at its end and pointers to it in section 7 (the pushers' list, the meter section's ported list) and section 8 (the window's bound); street.rs's `TeamState` keeps the meter's repeat keys as script ids with its +0x50/+0x4c/+0x8 words and no chain; the fill gained the game-type and lesson gates; the trick, the counter and the cancel score through `crate::scoring`; `World::cash_combo`, `award_combo` and `break_combo` are gone; tests/static_parity.rs pushes stamped slots and writes the repeat keys as script ids; `World::award` is now only the tests' shorthand for a trick's points, and the fill it reaches gained the game-type and lesson gates. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture both crews' meter before/after identical events at Easy/Medium/Hard and story weights.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.turbo_rate_constants",
@@ -1370,7 +1366,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "World::score_trick",
               "note": "Direct identities, ceiling discount and class < 2 bypass match FUN_001438b8; the full-base qualifier is the fake's actor+0x218 (World::trick_contact).",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "$EVIDENCE/native-trick-base-flag-authority-review.json",
@@ -1416,7 +1412,7 @@
             }
           ],
           "tolerance": "Exact script index, ring chronology, base conditions, and final upward-rounded integer value.",
-          "limitations": "Audit 2026-10-14 (F06,F16) stands: the native actor+0x218 qualifier lifecycle and the VM award boundary are not ported. Re-read 2026-10-15: the scorer's ring at team+0x2c is shared with the class-17 drain scorer FUN_00143a88 (keys -3/-2, 3,000 or 5,000, the same discount), which the rewrite's drains do not touch, so the ring chronology differs after any drain. The base and discount arithmetic itself is matched (gameplay.trick_base_values, gameplay.direct_trick_repeat_key). Re-pinned 2026-10-16 after the trick moves pass: the actor+0x218 qualifier is now the fake's (`FUN_001372d8`, `World::trick_contact`) and the award is made when the script clears bit 10 (`0x157dd0`, `World::trick_tick`), so a trick cut short no longer scores; street.rs's `World::fake` became `World::score_trick` and static_parity.rs's test drives it (the arithmetic is unchanged). Still untested: the drain scorer's ring keys are not pushed, and no capture compares live awards. Re-pinned 2026-10-16 after the defenders' gait pass: trick.rs's press update walks without a guarding stance; `World::trick_tick`'s press update walks without a guarding stance; the rest of the cited region is unchanged. Re-pinned 2026-10-16 after the held-ball pass: street.rs records the gamebreaker shot's script start and gives `step_ball` no held offset; trick.rs gained `Step::Pick`, `Select`, `CURRENT`, `Run`'s handedness and side picks and blend counter, and callback 0's `Ran::take`; trick::Run's blends go through Run::blend (the same span), Step gained Pick, Run its picks. Re-pinned 2026-10-17 after the block-dunk pass: trick.rs gained `Step::Hang` (`Run::hang`, `Run::outer`, `Ran::hang_test`), and the fakeout's 10 on the first difficulty is a person's (`PERSON_ODDS`, was `COMPUTER_ODDS`); `World::trick_contact`'s 10 on the first difficulty goes to a person's trick, as `0x137650` reads (the draws unchanged). Updated 2026-10-17 (branch `meter-stats`; docs/TRACE.md \"The combo ring, the meter's listeners, the statistics and the shot clock\"): the class-17 passout scorer's key -3 is pushed and discounts the next (FUN_00143a88), and the ring is cleared at a catch after the possession changes (FUN_001447d0). Left: the passout's state 2 (key -2, 5,000; FUN_00142038 not modelled). The save state's halved repeat is consistent with the rule; no capture compares the awards one by one. 2026-10-22 evening: Head passouts now retain state2 through the second leg and pay5000/key-2, independently of board3000/key-3; upward-rounded repeat discount is unchanged. Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Audit 2026-10-14 (F06,F16) stands: the native actor+0x218 qualifier lifecycle and the VM award boundary are not ported. Re-read 2026-10-15: the scorer's ring at team+0x2c is shared with the class-17 drain scorer FUN_00143a88 (keys -3/-2, 3,000 or 5,000, the same discount), which the rewrite's drains do not touch, so the ring chronology differs after any drain. The base and discount arithmetic itself is matched (gameplay.trick_base_values, gameplay.direct_trick_repeat_key). Re-pinned 2026-10-16 after the trick moves pass: the actor+0x218 qualifier is now the fake's (`FUN_001372d8`, `World::trick_contact`) and the award is made when the script clears bit 10 (`0x157dd0`, `World::trick_tick`), so a trick cut short no longer scores; street.rs's `World::fake` became `World::score_trick` and static_parity.rs's test drives it (the arithmetic is unchanged). Still untested: the drain scorer's ring keys are not pushed, and no capture compares live awards. Re-pinned 2026-10-16 after the defenders' gait pass: trick.rs's press update walks without a guarding stance; `World::trick_tick`'s press update walks without a guarding stance; the rest of the cited region is unchanged. Re-pinned 2026-10-16 after the held-ball pass: street.rs records the gamebreaker shot's script start and gives `step_ball` no held offset; trick.rs gained `Step::Pick`, `Select`, `CURRENT`, `Run`'s handedness and side picks and blend counter, and callback 0's `Ran::take`; trick::Run's blends go through Run::blend (the same span), Step gained Pick, Run its picks. Re-pinned 2026-10-17 after the block-dunk pass: trick.rs gained `Step::Hang` (`Run::hang`, `Run::outer`, `Ran::hang_test`), and the fakeout's 10 on the first difficulty is a person's (`PERSON_ODDS`, was `COMPUTER_ODDS`); `World::trick_contact`'s 10 on the first difficulty goes to a person's trick, as `0x137650` reads (the draws unchanged). Updated 2026-10-17 (branch `meter-stats`; docs/TRACE.md \"The combo ring, the meter's listeners, the statistics and the shot clock\"): the class-17 passout scorer's key -3 is pushed and discounts the next (FUN_00143a88), and the ring is cleared at a catch after the possession changes (FUN_001447d0). Left: the passout's state 2 (key -2, 5,000; FUN_00142038 not modelled). The save state's halved repeat is consistent with the rule; no capture compares the awards one by one. 2026-10-22 evening: Head passouts now retain state2 through the second leg and pay5000/key-2, independently of board3000/key-3; upward-rounded repeat discount is unchanged. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture team meter+0x24/+0x28/+0x2c..+0x38 (schema 2 records them) and compare each trick's award.",
           "audit_review": {
             "date": "2026-10-14",
@@ -1428,11 +1424,9 @@
             "assessment": "Repeat arithmetic has bounded evidence, but the complete native qualifier lifecycle and original VM award boundary remain unverified."
           },
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.script69_authority",
@@ -1586,7 +1580,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "World::select_slot_by_level",
               "note": "select_slot_by_level is not called on any production path.",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "crates/street-sim/src/tests.rs",
@@ -1602,7 +1596,7 @@
             }
           ],
           "tolerance": "Exact state output and slot arbitration by level matching decompiled FUN_0015eff0.",
-          "limitations": "Audit 2026-10-14 (F11,F12): the generator is separately matched (gameplay.native_rng_algorithm); complete gameplay caller ordering is not established. Re-read 2026-10-15: World::select_slot_by_level is dead code (the AI's own FUN_0015eff0 port in ai/offence.rs is outside this pass); the native returns the 0x43d408 mask of a random level-matching row and draws before its empty check (a divide trap). Re-pinned 2026-10-16 after the trick moves pass: the trick press and the fake draw as the original does (`FUN_0015f0f0`, `FUN_001372d8`; trick.rs), replacing `World::fake`'s own chance rolls; street.rs's `World::fake` became `World::score_trick`, which draws nothing; tests.rs's trick tests start their scripts (`trick::pressed`); the cited helper and its test are unchanged. Re-pinned 2026-10-16 after the held-ball pass: street.rs records the gamebreaker shot's script start and gives `step_ball` no held offset; tests.rs declares `tests::held` and gives `step_ball` no held offset; trick.rs gained `Step::Pick`, `Select`, `CURRENT`, `Run`'s handedness and side picks and blend counter, and callback 0's `Ran::take`; trick::Run's blends go through Run::blend (the same span), Step gained Pick, Run its picks. Re-pinned 2026-10-17 after the block-dunk pass: trick.rs gained `Step::Hang` (`Run::hang`, `Run::outer`, `Ran::hang_test`), and the fakeout's 10 on the first difficulty is a person's (`PERSON_ODDS`, was `COMPUTER_ODDS`); `World::trick_contact`'s 10 on the first difficulty goes to a person's trick, as `0x137650` reads (the draws unchanged). Re-pinned 2026-10-17 after the turbo bars, the juke press and the counter stance: street.rs lost `World::counter` (now `crate::counter`); tests.rs's trick counter test moved to tests/counter_stance.rs and its turbo expectations follow the juke press's 0.2; trick.rs gained `World::juke_press` (the 0.2), `World::start_trick` no longer spends the rewrite's `TRICK_TURBO`, and `scripted_pose` poses the counter stance; `World::start_trick` no longer spends the rewrite's `TRICK_TURBO` (the juke press's 0.2 does). 2026-10-23: the gait selector (FUN_00168b30) now draws from the shared generator as the original does (its first draw on every call, the second only for a new pick); the first attract capture's live updates draw 8 or 9 times in the original (5,924 and 6,157 of 33,000 updates) and 3 in the rewrite before, 8 or 9 after (a 20,000-update rostered match). The call order within an update is still not established. 2026-10-23 (the generator's other consumers): the court's ambient effects draw their particles from the same generator (drift 0x1f4950 with 17 calls, the gamebreaker fire 0x1f717c with 14, steam and breath 0x20xxxx): in the second and third attract captures every live update draws 50..90 times (their courts' effects), in the first 8 or 9 with bursts of 20..40 for about 260 updates at a time (5%). Exact sequence parity needs those effects' draws in the simulation; their motion (VU0 code) is not ported. 2026-10-23 (the stand path and the faces): the stand path draws every update for each standing player off the ball (the offence's r % 15, the defence's r & 1) and when a holder's stand starts; every actor redraws his idle face (fps + r % fps, two draws) as FUN_00159240 does; the head's look (FUN_00159380) draws its new looks' target, time and teammate's slot as the original does (`street_sim::look`; the head is not posed). Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Audit 2026-10-14 (F11,F12): the generator is separately matched (gameplay.native_rng_algorithm); complete gameplay caller ordering is not established. Re-read 2026-10-15: World::select_slot_by_level is dead code (the AI's own FUN_0015eff0 port in ai/offence.rs is outside this pass); the native returns the 0x43d408 mask of a random level-matching row and draws before its empty check (a divide trap). Re-pinned 2026-10-16 after the trick moves pass: the trick press and the fake draw as the original does (`FUN_0015f0f0`, `FUN_001372d8`; trick.rs), replacing `World::fake`'s own chance rolls; street.rs's `World::fake` became `World::score_trick`, which draws nothing; tests.rs's trick tests start their scripts (`trick::pressed`); the cited helper and its test are unchanged. Re-pinned 2026-10-16 after the held-ball pass: street.rs records the gamebreaker shot's script start and gives `step_ball` no held offset; tests.rs declares `tests::held` and gives `step_ball` no held offset; trick.rs gained `Step::Pick`, `Select`, `CURRENT`, `Run`'s handedness and side picks and blend counter, and callback 0's `Ran::take`; trick::Run's blends go through Run::blend (the same span), Step gained Pick, Run its picks. Re-pinned 2026-10-17 after the block-dunk pass: trick.rs gained `Step::Hang` (`Run::hang`, `Run::outer`, `Ran::hang_test`), and the fakeout's 10 on the first difficulty is a person's (`PERSON_ODDS`, was `COMPUTER_ODDS`); `World::trick_contact`'s 10 on the first difficulty goes to a person's trick, as `0x137650` reads (the draws unchanged). Re-pinned 2026-10-17 after the turbo bars, the juke press and the counter stance: street.rs lost `World::counter` (now `crate::counter`); tests.rs's trick counter test moved to tests/counter_stance.rs and its turbo expectations follow the juke press's 0.2; trick.rs gained `World::juke_press` (the 0.2), `World::start_trick` no longer spends the rewrite's `TRICK_TURBO`, and `scripted_pose` poses the counter stance; `World::start_trick` no longer spends the rewrite's `TRICK_TURBO` (the juke press's 0.2 does). 2026-10-23: the gait selector (FUN_00168b30) now draws from the shared generator as the original does (its first draw on every call, the second only for a new pick); the first attract capture's live updates draw 8 or 9 times in the original (5,924 and 6,157 of 33,000 updates) and 3 in the rewrite before, 8 or 9 after (a 20,000-update rostered match). The call order within an update is still not established. 2026-10-23 (the generator's other consumers): the court's ambient effects draw their particles from the same generator (drift 0x1f4950 with 17 calls, the gamebreaker fire 0x1f717c with 14, steam and breath 0x20xxxx): in the second and third attract captures every live update draws 50..90 times (their courts' effects), in the first 8 or 9 with bursts of 20..40 for about 260 updates at a time (5%). Exact sequence parity needs those effects' draws in the simulation; their motion (VU0 code) is not ported. 2026-10-23 (the stand path and the faces): the stand path draws every update for each standing player off the ball (the offence's r % 15, the defence's r & 1) and when a holder's stand starts; every actor redraws his idle face (fps + r % fps, two draws) as FUN_00159240 does; the head's look (FUN_00159380) draws its new looks' target, time and teammate's slot as the original does (`street_sim::look`; the head is not posed). Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Resolve F11,F12 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Trace entire game multi-player action RNG draws and align caller sequences tick by tick.",
           "audit_review": {
             "date": "2026-10-14",
@@ -1616,9 +1610,7 @@
           "disposition": "active",
           "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.held_ball_attachment",
@@ -3200,7 +3192,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "World::step_staged; World::step_staged_ball; World::staged_shot; World::start_staged; World::begin_staged; World::step_staged_finishers; World::lob_endpoint",
               "note": "Production VM consumer executes exact sequence controls, ball attachments, and physical shot scoring.",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "$EVIDENCE/street-played-school-2.jsonl",
@@ -3252,7 +3244,7 @@
             }
           ],
           "tolerance": "Exact cue/freeze/release/score ticks and actor identities; position/hand bound 1e-4.",
-          "limitations": "Audit 2026-10-14 (F25): All-plan rewrite consistency tests and selected frozen native captures do not establish complete original execution of all16 sequences. Prior bounded evidence/limitations: Secondary camera cut interpolations during replays use production camera blend curves. Re-pinned 2026-10-15: TRACE's FUN_00334330 paragraph gained the 2026-10-15 raw re-read of the trick-id ladder and the shared drain ring; staged.rs and street.rs changed outside the cited items. Re-pinned 2026-10-16 after the dunk and rebound pass: TRACE.md gained the section \"Dunks and rebounds on the ball's states\" and three notes pointing to it (the launcher's flight now lasts the original's timer, \"Free-ball contacts\" no longer lists the dunk's half speed in the net as not modelled, the phase machine's ball states); street.rs's staged shot carries no slam; the cited `World::staged_shot`'s shot carries no slam. Updated 2026-10-17 (branch `meter-stats`; docs/TRACE.md \"The combo ring, the meter's listeners, the statistics and the shot clock\"): still no capture of the original running a Level 2 sequence (a person's Level 2 from each staged spot); the meter's state around one is unchanged (the task's end after its replays is not ported). 2026-10-19 (Street School as a capture suite, docs/TRACE.md \"Street School as a capture suite\"): one run compared with the original running (the School's Level 2 lesson: the disc's script 9 of the presser's family, its frame 0 two updates after the press, its freeze at frame 100 outside the game's count, the six within a mean floor distance of 0.22 of the authored track; `staged.rs`'s `the_schools_level_2_run_plays_a_disc_plan_from_two_updates_after_the_press`); the simulation now poses the script then (`World::staged_start`, `World::begin_staged`). Fifteen plans still want a run of their own. 2026-10-20 (online on the disc): plan and attach_hands moved from street-game's staged.rs to street-net's disc (every machine builds the plans from its own disc, the game for a match alone too; bit for bit the same: 16 plans, 121 hand tracks); the tests stay in staged.rs. 2026-10-20 (the online pass's last gaps): the script's replay command is the game's replay at its stop (World::step_staged posts Event::StagedRerun; presentation.online_staged_rerun); a freeze carries its word 12 (Hold::holds_replays), which holds the replay manager too; the plans' controls and the disc test say so. 2026-10-21 (item 7): a staged dunk's basket is a dunk's (the ball's kind 4) and scores by the points table. 2026-10-22 continuation: all16 plans now have normal-input native captures and767 exact sampled stateful clocks/scales. Signed manager-height rate handling is fixed by a failing World::step regression. Reference placement matches250 sampled placements across15 plans;58 loop-rate inputs match across9. Every exclusion and initial failed diagnostic is retained. These partial domains do not meet the full sequence acceptance, so this obligation remains untested. 2026-10-22 evening: Eight further guarded GamDN3b reference placements match exactly, extending combined reference samples to258 across all16 plan names. The thinner producer is declared and424 exclusions plus the failed second launch remain retained; full sequence acceptance is still unmet. 2026-10-24 (docs/TRACE.md \"Level 2 shots: the shooter's own launch\"): the School's sixteen Level 2 runs pair the eight shot families' arcs: each a make straight through the aim, released one update before its flight count, and the rewrite's angle rule, steepening and flight time give the original's updates to the aim within 0.07 (staged_level_two_shots_fly_the_originals_arcs); the dunk families' two-update flights are not paired. 2026-10-24 (docs/TRACE.md \"Level 2 dunkers on their finishing bodies\"): the dunk plans hand the dunker to his finishing body (FUN_00334178; timing::FINISH_ROWS, Sequence::finishing), which flies him on its 9e aim; the lob to him aims as FUN_00330f98 does; the staged update keeps Ball::moved and lets a loose ball fall. Script 1 against the School's run: the dunker within 0.15 across and 0.3 up, the lob within 0.3, the carried ball within 0.2, the basket on the same update (every_staged_dunker_flies_on_his_finishing_body); the other dunk runs within 0.4 to 1.8 of the original's heights. Not yet the original's: bounce passes (word 12 of 1), FUN_0032fe28's waypoint path and its (x, y, z) point for word 16 of 2, and script 2's dunker leaving the floor before his body starts. Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Audit 2026-10-14 (F25): All-plan rewrite consistency tests and selected frozen native captures do not establish complete original execution of all16 sequences. Prior bounded evidence/limitations: Secondary camera cut interpolations during replays use production camera blend curves. Re-pinned 2026-10-15: TRACE's FUN_00334330 paragraph gained the 2026-10-15 raw re-read of the trick-id ladder and the shared drain ring; staged.rs and street.rs changed outside the cited items. Re-pinned 2026-10-16 after the dunk and rebound pass: TRACE.md gained the section \"Dunks and rebounds on the ball's states\" and three notes pointing to it (the launcher's flight now lasts the original's timer, \"Free-ball contacts\" no longer lists the dunk's half speed in the net as not modelled, the phase machine's ball states); street.rs's staged shot carries no slam; the cited `World::staged_shot`'s shot carries no slam. Updated 2026-10-17 (branch `meter-stats`; docs/TRACE.md \"The combo ring, the meter's listeners, the statistics and the shot clock\"): still no capture of the original running a Level 2 sequence (a person's Level 2 from each staged spot); the meter's state around one is unchanged (the task's end after its replays is not ported). 2026-10-19 (Street School as a capture suite, docs/TRACE.md \"Street School as a capture suite\"): one run compared with the original running (the School's Level 2 lesson: the disc's script 9 of the presser's family, its frame 0 two updates after the press, its freeze at frame 100 outside the game's count, the six within a mean floor distance of 0.22 of the authored track; `staged.rs`'s `the_schools_level_2_run_plays_a_disc_plan_from_two_updates_after_the_press`); the simulation now poses the script then (`World::staged_start`, `World::begin_staged`). Fifteen plans still want a run of their own. 2026-10-20 (online on the disc): plan and attach_hands moved from street-game's staged.rs to street-net's disc (every machine builds the plans from its own disc, the game for a match alone too; bit for bit the same: 16 plans, 121 hand tracks); the tests stay in staged.rs. 2026-10-20 (the online pass's last gaps): the script's replay command is the game's replay at its stop (World::step_staged posts Event::StagedRerun; presentation.online_staged_rerun); a freeze carries its word 12 (Hold::holds_replays), which holds the replay manager too; the plans' controls and the disc test say so. 2026-10-21 (item 7): a staged dunk's basket is a dunk's (the ball's kind 4) and scores by the points table. 2026-10-22 continuation: all16 plans now have normal-input native captures and767 exact sampled stateful clocks/scales. Signed manager-height rate handling is fixed by a failing World::step regression. Reference placement matches250 sampled placements across15 plans;58 loop-rate inputs match across9. Every exclusion and initial failed diagnostic is retained. These partial domains do not meet the full sequence acceptance, so this obligation remains untested. 2026-10-22 evening: Eight further guarded GamDN3b reference placements match exactly, extending combined reference samples to258 across all16 plan names. The thinner producer is declared and424 exclusions plus the failed second launch remain retained; full sequence acceptance is still unmet. 2026-10-24 (docs/TRACE.md \"Level 2 shots: the shooter's own launch\"): the School's sixteen Level 2 runs pair the eight shot families' arcs: each a make straight through the aim, released one update before its flight count, and the rewrite's angle rule, steepening and flight time give the original's updates to the aim within 0.07 (staged_level_two_shots_fly_the_originals_arcs); the dunk families' two-update flights are not paired. 2026-10-24 (docs/TRACE.md \"Level 2 dunkers on their finishing bodies\"): the dunk plans hand the dunker to his finishing body (FUN_00334178; timing::FINISH_ROWS, Sequence::finishing), which flies him on its 9e aim; the lob to him aims as FUN_00330f98 does; the staged update keeps Ball::moved and lets a loose ball fall. Script 1 against the School's run: the dunker within 0.15 across and 0.3 up, the lob within 0.3, the carried ball within 0.2, the basket on the same update (every_staged_dunker_flies_on_his_finishing_body); the other dunk runs within 0.4 to 1.8 of the original's heights. Not yet the original's: bounce passes (word 12 of 1), FUN_0032fe28's waypoint path and its (x, y, z) point for word 16 of 2, and script 2's dunker leaving the floor before his body starts. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Pair full actor binding, launches, rendered poses/hands, ball cues and exact freeze/release/score ticks across all16 source-identified plans; capture and compare played gamebreaker and celebration cameras.",
           "match_type": "structural",
           "audit_review": {
@@ -3266,9 +3258,7 @@
           "disposition": "active",
           "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.native_rng_algorithm",
@@ -3321,7 +3311,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "World::score_trick",
               "note": "Snapshot-owned selected identities and ceiling repeat discount.",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "crates/street-sim/src/snapshot.rs",
@@ -3343,14 +3333,12 @@
             }
           ],
           "tolerance": "Exact direct script key and final discount for known native classes2..4 and four-slot repeat counts.",
-          "limitations": "Direct identity and discount arithmetic only. Full/half base qualifier is currently a generic fakeout adapter; native latched reaction producer and event time, fallback classes0/1, full VM and upstream physical input availability remain open. Re-pinned 2026-10-16 after the trick moves pass: `World::start_trick` moved to trick.rs (the press, `FUN_0015f0f0`; the direct slot's identity is unchanged) and street.rs's `World::fake` became `World::score_trick` (the same key and discount, made at the script's end); snapshot.rs (VERSION 42) stores the trick's script run and `fourth_native_repeat_rounds_the_award_up` scores through `World::score_trick`; static_parity.rs's test likewise; the awards are unchanged. Re-pinned 2026-10-16 after the held-ball pass: street.rs records the gamebreaker shot's script start and gives `step_ball` no held offset; snapshot.rs carries the held ball's anchor, each player's handedness and channel start, the scoop, `Run`'s picks and the catch row's facing (version 45); trick.rs gained `Step::Pick`, `Select`, `CURRENT`, `Run`'s handedness and side picks and blend counter, and callback 0's `Ran::take`; trick::Run's blends go through Run::blend (the same span), Step gained Pick, Run its picks. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: street.rs's `TeamState` keeps the meter's repeat keys as script ids with its +0x50/+0x4c/+0x8 words and no chain; the fill gained the game-type and lesson gates; the trick, the counter and the cancel score through `crate::scoring`; `World::cash_combo`, `award_combo` and `break_combo` are gone; snapshot.rs is version 49 (the manager, the meters' words, the clock, the assist, the watch, the lesson) and its tests read the repeat keys as script ids; tests/static_parity.rs pushes stamped slots and writes the repeat keys as script ids; `World::score_trick` scores through `World::post_trick` (the same value); the test reads the repeat keys as script ids; the test writes the repeat keys as script ids. Updated 2026-10-17 (branch counter-tricks; docs/TRACE.md \"The turbo bars, the juke press and the counter stance\"): every slot costs the juke press's 0.2 (FUN_0015c8e8; the rewrite's TRICK_TURBO by value class is gone), so the slot test plays the slot with just 0.2 left and nothing short of it. Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Direct identity and discount arithmetic only. Full/half base qualifier is currently a generic fakeout adapter; native latched reaction producer and event time, fallback classes0/1, full VM and upstream physical input availability remain open. Re-pinned 2026-10-16 after the trick moves pass: `World::start_trick` moved to trick.rs (the press, `FUN_0015f0f0`; the direct slot's identity is unchanged) and street.rs's `World::fake` became `World::score_trick` (the same key and discount, made at the script's end); snapshot.rs (VERSION 42) stores the trick's script run and `fourth_native_repeat_rounds_the_award_up` scores through `World::score_trick`; static_parity.rs's test likewise; the awards are unchanged. Re-pinned 2026-10-16 after the held-ball pass: street.rs records the gamebreaker shot's script start and gives `step_ball` no held offset; snapshot.rs carries the held ball's anchor, each player's handedness and channel start, the scoop, `Run`'s picks and the catch row's facing (version 45); trick.rs gained `Step::Pick`, `Select`, `CURRENT`, `Run`'s handedness and side picks and blend counter, and callback 0's `Ran::take`; trick::Run's blends go through Run::blend (the same span), Step gained Pick, Run its picks. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: street.rs's `TeamState` keeps the meter's repeat keys as script ids with its +0x50/+0x4c/+0x8 words and no chain; the fill gained the game-type and lesson gates; the trick, the counter and the cancel score through `crate::scoring`; `World::cash_combo`, `award_combo` and `break_combo` are gone; snapshot.rs is version 49 (the manager, the meters' words, the clock, the assist, the watch, the lesson) and its tests read the repeat keys as script ids; tests/static_parity.rs pushes stamped slots and writes the repeat keys as script ids; `World::score_trick` scores through `World::post_trick` (the same value); the test reads the repeat keys as script ids; the test writes the repeat keys as script ids. Updated 2026-10-17 (branch counter-tricks; docs/TRACE.md \"The turbo bars, the juke press and the counter stance\"): every slot costs the juke press's 0.2 (FUN_0015c8e8; the rewrite's TRICK_TURBO by value class is gone), so the slot test plays the slot with just 0.2 left and nothing short of it. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Map actor+218 state and native VM award timing.",
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.rawpose_integer_words",
@@ -3702,7 +3690,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "METER_HOLD; METER_DECAY; MeterClock; World::fill_meter; World::step_meters; World::start_gamebreaker_meter; World::end_gamebreaker_meter; World::pocket",
               "note": "Production meter.",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "crates/street-sim/src/tests/static_parity.rs",
@@ -3730,15 +3718,13 @@
             }
           ],
           "tolerance": "Same constants, gates and order; host f32 (the EE rounds toward zero).",
-          "limitations": "Static. Not modelled: the fill's AI-script and game-type 3/7 gates, the 49,999 stop, the matcher total added to every fill, the pick's and passout specials' fills. The gamebreaker task ends at the next catch or restart (the original after its replays). Re-pinned 2026-10-16 after the phase machine pass: TRACE.md gained the section \"The game's phase machine\"; street.rs: game+0x4a4 is set by the phase machine's case 4 in the game's update (`World::step_game_phase`), where `clock_meters_at_catch` guessed it at the catch, and `MeterClock`'s docs say so; meter_stats.rs: `the_meters_wait_for_a_team_to_have_the_ball_in_its_back_court` holds the ball in team 1's front court first and sees game+0x4a4 set in the update after the back-court catch. The hold and decay are unchanged. Re-pinned 2026-10-16 after the court's frame pass: TRACE.md gained the section \"The court's frame\" and notes pointing to it (7b's restart spots, \"Runtime captures\", \"The chooser's facing angle in the original's frame\" and its tests, \"The sector in the original's frame\"); the meter and statistics tests' scenes are mirrored into the original's frame; the cited tests `a_gamebreaker_basket_scales_the_next_fills_instead_of_filling`, `the_meters_wait_for_a_team_to_have_the_ball_in_its_back_court` pass on their scenes mirrored into the original's frame. Updated 2026-10-17 (branch `meter-stats`; docs/TRACE.md \"The combo ring, the meter's listeners, the statistics and the shot clock\"): the fill's gates (game types 3 and 7, the court intro's, the lessons' 49,999), the matcher's total in every fill, the pick's and the pump fake's 500, the passout's 3,000 and the dunk's finish values are ported. Left: the gamebreaker task's end after its replays (FUN_00144ef8). 2026-10-19 (Street School as a capture suite, docs/TRACE.md \"Street School as a capture suite\"): a gamebreaker's meter ends at its task's end (`World::step_gamebreaker_task`; the shot's 63 updates after the press in the School's capture, the meter emptied that update before the ball reached the rim), no longer at the next take or restart; in a lesson `World::pocket` pockets only in lesson 23 and cancels only in 24. Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Static. Not modelled: the fill's AI-script and game-type 3/7 gates, the 49,999 stop, the matcher total added to every fill, the pick's and passout specials' fills. The gamebreaker task ends at the next catch or restart (the original after its replays). Re-pinned 2026-10-16 after the phase machine pass: TRACE.md gained the section \"The game's phase machine\"; street.rs: game+0x4a4 is set by the phase machine's case 4 in the game's update (`World::step_game_phase`), where `clock_meters_at_catch` guessed it at the catch, and `MeterClock`'s docs say so; meter_stats.rs: `the_meters_wait_for_a_team_to_have_the_ball_in_its_back_court` holds the ball in team 1's front court first and sees game+0x4a4 set in the update after the back-court catch. The hold and decay are unchanged. Re-pinned 2026-10-16 after the court's frame pass: TRACE.md gained the section \"The court's frame\" and notes pointing to it (7b's restart spots, \"Runtime captures\", \"The chooser's facing angle in the original's frame\" and its tests, \"The sector in the original's frame\"); the meter and statistics tests' scenes are mirrored into the original's frame; the cited tests `a_gamebreaker_basket_scales_the_next_fills_instead_of_filling`, `the_meters_wait_for_a_team_to_have_the_ball_in_its_back_court` pass on their scenes mirrored into the original's frame. Updated 2026-10-17 (branch `meter-stats`; docs/TRACE.md \"The combo ring, the meter's listeners, the statistics and the shot clock\"): the fill's gates (game types 3 and 7, the court intro's, the lessons' 49,999), the matcher's total in every fill, the pick's and the pump fake's 500, the passout's 3,000 and the dunk's finish values are ported. Left: the gamebreaker task's end after its replays (FUN_00144ef8). 2026-10-19 (Street School as a capture suite, docs/TRACE.md \"Street School as a capture suite\"): a gamebreaker's meter ends at its task's end (`World::step_gamebreaker_task`; the shot's 63 updates after the press in the School's capture, the meter emptied that update before the ball reached the rim), no longer at the next take or restart; in a lesson `World::pocket` pockets only in lesson 23 and cancels only in 24. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture team meter+0xc/+0x18/+0x1c and game+0x4a4 through a full meter's 30 seconds and a gamebreaker.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.match_statistics",
@@ -5475,7 +5461,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "Basket::table_kind; Basket::level; Basket::points; Basket::taken",
               "note": "Baskets by the table.",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "crates/street-sim/src/tests.rs",
@@ -5491,14 +5477,12 @@
             }
           ],
           "tolerance": "Exact points.",
-          "limitations": "Runtime-checked on one staged Level 2 (the other side at 0, so its take unseen); the rest is the executable's table. Last re-pinned 2026-10-24 after Level 2 dunkers on their finishing bodies (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Runtime-checked on one staged Level 2 (the other side at 0, so its take unseen); the rest is the executable's table. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A Level 2 in a points game with both sides scoring.",
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.trick_point_game_end",
@@ -15269,7 +15253,7 @@
               "path": "crates/street-sim/src/street.rs",
               "locator": "World::step_staged (Event::StagedRerun at the stop)",
               "note": "The script posts its replay command at its last frame.",
-              "sha256": "b087f93f45fa41b7b16e003339b636bc430b41c4cbc4be3d744eddf8ca4cf810"
+              "sha256": "38d78118e90ff57b587ef2cef44cf53756326d4a44034ae97a1f7a917dd3e75e"
             },
             {
               "path": "crates/street-sim/src/replay.rs",
@@ -15393,14 +15377,12 @@
             }
           ],
           "tolerance": "The School's run bit for bit (the manager's shown count, speed and frames left, the script's replay frame) and within 0.05 s on the wall clock; every machine starting the rerun at the same match tick, no checksum differing.",
-          "limitations": "No played match of the original's has had its staged rerun grabbed: the School's lesson run is the runtime evidence (its frames were not grabbed), the cameras are the scripts' own records at the script manager's replay frame. Only one of the sixteen plans has run in the original (GamLR2); the others' commands are read from the disc. The replay command's count (word 12 + 1) is one on all sixteen; more is not modelled. 2026-10-21 (item 7): the rerun's camera takes the staged helper's lens and roll, measured on the School's Level 2 rerun (presentation.staged_camera_lens_roll_follow). 2026-10-23: the match also holds a staged Level 2's 31 updates after its press for GB2's burst (Match::burst_hold, street_net::game::LEVEL2_BURST_HOLD, checked against the banner's 32 updates), as the game played alone holds them; the disc test asserts it holds. Last re-pinned 2026-10-25 after the Level 2 camera at the press and the script end (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "No played match of the original's has had its staged rerun grabbed: the School's lesson run is the runtime evidence (its frames were not grabbed), the cameras are the scripts' own records at the script manager's replay frame. Only one of the sixteen plans has run in the original (GamLR2); the others' commands are read from the disc. The replay command's count (word 12 + 1) is one on all sixteen; more is not modelled. 2026-10-21 (item 7): the rerun's camera takes the staged helper's lens and roll, measured on the School's Level 2 rerun (presentation.staged_camera_lens_roll_follow). 2026-10-23: the match also holds a staged Level 2's 31 updates after its press for GB2's burst (Match::burst_hold, street_net::game::LEVEL2_BURST_HOLD, checked against the banner's 32 updates), as the game played alone holds them; the disc test asserts it holds. Last re-pinned 2026-10-25 after a staged pass's own point keeping its z (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A played match's staged Level 2 in the original with the rerun's frames grabbed.",
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-sim/src/street.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "presentation.online_rundown_names",
