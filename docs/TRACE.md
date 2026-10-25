@@ -10396,7 +10396,7 @@ With the run set, no catch row is parked (`0x162420..0x162450`). His own
 update (`FUN_0015a060`) keeps a moving receiver off the edges
 (`FUN_0016f668`: past ±25 or ±40.5 by his place plus his velocity, within
 0x57 of straight out he stops facing it, else he turns along it). With
-the run set, it stops him within 1 of the spot (2 moving), on the floor,
+the run set, it stops him within 1 of the spot moving (2 standing; corrected 2026-10-25), on the floor,
 facing the ball. In the flight he plays `catch_stand_1` at once
 (`0x15a708..0x15ab50`); before the release, `breathe_1`, held until his
 catch row (`0x15a4a8..0x15a700`). Ported as `crate::receiver`.
