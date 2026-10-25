@@ -567,7 +567,7 @@
         {
           "path": "crates/street-game/src/staged.rs",
           "locator": "gait_clock::the_gait_clock_advances_as_the_originals_captures_show",
-          "note": "The production frame step (calculate_gait_frame_step with the skeleton's first scale, FUN_0019cd48) against the pads captures' channel 0 float frames: 99.7% of 60,342 updates agree within 0.001.",
+          "note": "Each actor's gait frame advance over the production step (calculate_gait_frame_step, the record's skeleton scale) is one constant update for update over the 23 played captures (99.5% of 324,382 within 0.001 of his median); the constant is 1 to 1e-6 where the session's records are the disc's (all but the School's actor 0 and the story's generic ballers).",
           "sha256": "5093ca64bee133f71758aa9a98f839cec6f2ed20625eab9ce647cc9a8be81a84"
         }
       ],
