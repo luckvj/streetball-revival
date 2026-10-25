@@ -13214,3 +13214,18 @@ Vj saw players almost gliding, and the computer's players flipping.
   a quarter of the time. The simulation's facing gives 39 and 26%, and
   turns at most 46 units an update (7 larger changes in 4,000 updates of
   an AI match). The view now draws the simulation's facing.
+
+The gait clock's change moved two seeded checks:
+
+- A restart's scoop never took the ball. `World::touch_ball` lets the
+  restarting side start a scoop on a loose ball in phase 6 (`0x15c3c8`,
+  no phase test), but `scoop_tick` gave it only in live play. Callback 0
+  (`FUN_001775d8`) takes it whenever nobody holds it. The scoop now takes
+  it in a restart for the restarting side too. In the School's replay
+  test, lesson 10's third relaunch had an inbound go uncaught and roll to
+  a corner. The restart now ends at update 850 instead of waiting out the
+  rewrite's 20-second limit. The test's window is now that limit less an
+  update.
+- The second capture's standing share is 0.430 (se 0.007) against 0.398,
+  the seed sets +500 and +777 0.433 and 0.425 (0.425 before). The bound
+  is set again by the rule at 0.055.

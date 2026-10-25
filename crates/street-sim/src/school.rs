@@ -1466,7 +1466,12 @@ mod tests {
                 let side = expected_side(lesson, 1);
                 w.launch_lesson(lesson as u8, side, false, &inputs);
                 w.settle_presses(&inputs);
-                let end = (1..400).find(|_| {
+                // Short of the rewrite's limit (which would end it anyway):
+                // a relaunch's inbound can go uncaught and roll away, and the
+                // restarting side's scoop (callback 0, no phase test) takes
+                // it in phase 6 (lesson 10's third relaunch: 850 updates).
+                let limit = (crate::tuning::RESTART_LIMIT * crate::TICK_HZ as f32) as usize - 1;
+                let end = (1..limit).find(|_| {
                     for (i, input) in inputs.iter_mut().enumerate() {
                         *input = if w.people[i] {
                             crate::Input::default()

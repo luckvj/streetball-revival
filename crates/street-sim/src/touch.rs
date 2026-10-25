@@ -920,7 +920,17 @@ impl World {
         } else {
             Action::Scoop { play }
         };
-        if ran.take && !matches!(self.ball.state, BallState::Held(_)) && self.phase == Phase::Live {
+        // Callback 0 (`FUN_001775d8`) takes it if nobody holds it, with no
+        // phase test: a restart's scoop by the restarting side (started in
+        // phase 6 by [`World::touch_ball`]) takes it too, or the restart
+        // waited out its limit with the ball at his feet.
+        let restart_pickup = matches!(self.phase, Phase::DeadBall { .. })
+            && self.restarting()
+            && self.players[i].team == self.possession;
+        if ran.take
+            && !matches!(self.ball.state, BallState::Held(_))
+            && (self.phase == Phase::Live || restart_pickup)
+        {
             self.give(i);
         }
     }
