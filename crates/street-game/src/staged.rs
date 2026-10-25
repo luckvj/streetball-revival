@@ -1462,11 +1462,13 @@ mod tests {
         let disc = street_net::disc::Disc::read(&mut iso).unwrap();
         let bank = ScriptBank::read(&mut iso).unwrap();
         let config = config(&bank).unwrap();
-        for script in 0..8 {
+        for script in 0..16 {
             let plan = config.plan(script).unwrap();
+            // The presser holds it: the first pass's or shot's thrower.
             let first = plan
                 .ball_cues
                 .iter()
+                .filter(|c| c.opcode() == 0 || c.opcode() == 2)
                 .find_map(|c| usize::try_from(c.source()).ok())
                 .unwrap();
             let positions = plan.initial_positions();
@@ -1495,10 +1497,30 @@ mod tests {
                 resume_pending: false,
                 finishing: 0,
             });
-            let dunker = usize::from(plan.finishes[0].slot);
+            let dunker = plan.finishes.first().map_or(0, |f| usize::from(f.slot));
+            let mut last = world.sequence.unwrap();
             let (mut peak, mut landed, mut scores) = ((0.0f32, 0), None, 0);
-            while let Some(s) = world.sequence {
+            let mut shot = false;
+            let mut updates = 0;
+            // A shot may outlast its script and score as the Level 2's.
+            while let Some(s) = world
+                .sequence
+                .or_else(|| (world.ball.state == street_sim::BallState::Shot).then_some(last))
+            {
+                last = s;
+                updates += 1;
+                assert!(updates < 1000);
                 world.step(&[]);
+                // The passes reach their catchers: the bounce passes off
+                // the floor, the legs to and from the backboard past the
+                // rim (the board-disable record).
+                shot |= world.ball.state == street_sim::BallState::Shot;
+                assert!(
+                    shot || world.ball.state != street_sim::BallState::Loose,
+                    "script {script}: loose at frame {} {:?}",
+                    s.frame,
+                    world.ball.position
+                );
                 let h = world.players[dunker].height;
                 if world
                     .sequence
@@ -1518,11 +1540,7 @@ mod tests {
                         matches!(
                             e,
                             street_sim::Event::Score {
-                                basket: street_sim::Basket::Gamebreaker {
-                                    level: 2,
-                                    dunk: true,
-                                    ..
-                                },
+                                basket: street_sim::Basket::Gamebreaker { level: 2, .. },
                                 ..
                             }
                         )
@@ -1530,7 +1548,7 @@ mod tests {
                     .count();
             }
             assert!(
-                peak.0 > 1.0,
+                script >= 8 || peak.0 > 1.0,
                 "script {script}: the dunker never left the floor"
             );
             assert_eq!(scores, 1, "script {script}");

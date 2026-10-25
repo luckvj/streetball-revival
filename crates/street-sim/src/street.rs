@@ -947,6 +947,32 @@ impl World {
         }
     }
 
+    /// A bounce pass's launch (`FUN_0014c0c0` with its flag,
+    /// `FUN_0014f728`): the floor met once on the way, `n` updates to
+    /// `to`; units a second.
+    fn bounce_velocity(&self, from: [f32; 3], to: [f32; 3], n: u32) -> Option<[f32; 3]> {
+        let dt = crate::TICK_SECONDS;
+        let total = n as f32;
+        let floor = self.ball.radius;
+        let t1 = crate::self_toss::solve_bounce_time(
+            from[1],
+            floor,
+            to[1],
+            total,
+            crate::GRAVITY * dt * dt,
+            crate::ball::FLOOR_RESTITUTION,
+        )?;
+        if t1 <= 0.0 || t1 >= total {
+            return None;
+        }
+        let (t1, t) = (t1 * dt, total * dt);
+        Some([
+            (to[0] - from[0]) / t,
+            0.5 * crate::GRAVITY * t1 - (from[1] - floor) / t1,
+            (to[2] - from[2]) / t,
+        ])
+    }
+
     /// `FUN_00330f98` for a flying receiver `i`, `n` updates on.
     fn lob_endpoint(&self, i: usize, n: i32) -> Option<[f32; 3]> {
         let poses = self.poses.get()?;
@@ -1064,11 +1090,27 @@ impl World {
             .filter(|cue| cue.opcode() == 0 && cue.frame < sequence.frame)
             .max_by_key(|cue| cue.frame)
             .copied();
+        // The board-disable record (`FUN_00148760`): a leg to the backboard
+        // (word 16 of 1, its side in the leg, aimed 15 less the radius,
+        // 13.25 or more) turns the backboard, collar, rim and basket off on
+        // that side for it and the leg after it.
+        let passes: Vec<_> = plan
+            .ball_cues
+            .iter()
+            .filter(|cue| cue.opcode() == 0 && cue.frame < sequence.frame)
+            .collect();
+        let board_off = passes
+            .iter()
+            .rev()
+            .take(2)
+            .any(|cue| cue.word(16) == Some(1))
+            .then_some(if sequence.mirrored() { 1.0 } else { -1.0 });
         match self.ball.state {
             BallState::Pass => {
                 let landed = active_pass
                     .is_some_and(|cue| sequence.frame >= cue.frame.saturating_add(cue.duration));
-                let arrived = (self.ball.flight_left > 0.0 && self.ball.fly_pass()) || landed;
+                let arrived =
+                    (self.ball.flight_left > 0.0 && self.ball.fly_pass_with(board_off)) || landed;
                 if arrived && let Some(cue) = active_pass {
                     self.ball.flight_left = 0.0;
                     if cue.word(16) == Some(0)
@@ -1209,17 +1251,35 @@ impl World {
             })
             .unwrap_or(from);
         let duration = cue.duration.max(1) as f32 * crate::TICK_SECONDS;
-        self.ball.launch(self.ball.position, destination, duration);
-        self.ball.state = BallState::Pass;
-        self.ball.shot = None;
-        self.ball.pass = Some(crate::Pass {
+        let pass = crate::Pass {
             from,
             to,
             tried: 0,
             via: crate::ball::Via::Direct,
             catch: crate::ball::NO_CATCH,
             since: self.tick,
-        });
+        };
+        // The record's word 12 goes with each leg to the ball's launch
+        // (`FUN_001488e8`, `FUN_0014c0c0`'s flag): 1 bounces it off the
+        // floor on the way (`FUN_0014f728`'s first contact), a bounce pass.
+        let from_point = self.ball.position;
+        match self.bounce_velocity(from_point, destination, cue.duration) {
+            Some(velocity) if cue.word(12) == Some(1) => self.ball.throw_with_velocity(
+                from_point,
+                velocity,
+                duration,
+                crate::Pass {
+                    via: crate::ball::Via::Floor,
+                    ..pass
+                },
+            ),
+            _ => {
+                self.ball.launch(from_point, destination, duration);
+                self.ball.state = BallState::Pass;
+                self.ball.shot = None;
+                self.ball.pass = Some(pass);
+            }
+        }
         self.events.push(Event::Pass {
             from,
             to,

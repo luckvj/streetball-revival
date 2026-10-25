@@ -1495,7 +1495,14 @@ impl Ball {
     /// side's hoop to its point ([`Step::board_off`]); it ends there, or
     /// when it touches the glass (the sim's own guard).
     pub(crate) fn fly_pass(&mut self) -> bool {
-        let board_off = match self.pass {
+        self.fly_pass_with(None)
+    }
+
+    /// [`Ball::fly_pass`] under a board-disable record of the caller's
+    /// (`FUN_00148760`: a leg of the path aimed at the backboard of side
+    /// `board_off`), as well as a glass pass's own.
+    pub(crate) fn fly_pass_with(&mut self, board_off: Option<f32>) -> bool {
+        let glass_off = match self.pass {
             Some(Pass {
                 via: Via::Glass { hoop },
                 ..
@@ -1507,7 +1514,7 @@ impl Ball {
         let contact = self.step(
             native_rims(),
             Step {
-                board_off,
+                board_off: glass_off.or(board_off),
                 ..Step::default()
             },
         );
@@ -1516,7 +1523,7 @@ impl Ball {
             return false;
         }
         self.flight_left -= TICK_SECONDS;
-        let glass = board_off.is_some();
+        let glass = glass_off.is_some();
         (contact.board && glass) || self.flight_left <= 0.0
     }
 
