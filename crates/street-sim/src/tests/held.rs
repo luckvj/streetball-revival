@@ -283,3 +283,22 @@ fn the_held_ball_state_survives_a_snapshot() {
     let back = World::from_snapshot(&w.to_snapshot()).unwrap();
     assert_eq!(back.players[0].action, w.players[0].action);
 }
+
+#[test]
+fn a_change_of_gait_row_shows_as_the_channels_blend() {
+    // The locomotion's row change blends from the old row's clip over 6
+    // updates (flag 0x200000, the counter 1 on its first update): channel
+    // 0 reports it, so the held ball takes `FUN_0014e060`'s blend path.
+    let mut w = world();
+    let from = (7u16, 3.0f32);
+    w.players[0].gait_channel.blend_from = Some(from);
+    w.players[0].gait_channel.blend_counter = 2;
+    let c = w.channel(0).unwrap();
+    assert!(c.gait);
+    assert_eq!(c.from, Some(from));
+    assert_eq!(c.counter, Some((2, 6)));
+    assert_eq!(c.shown.blend, Some(5.0 / 6.0));
+    w.players[0].gait_channel.blend_counter = 0;
+    let c = w.channel(0).unwrap();
+    assert_eq!((c.from, c.counter, c.shown.blend), (None, None, None));
+}

@@ -573,14 +573,20 @@ impl World {
 
     fn gait_channel_shown(&self, i: usize) -> Channel {
         let f = self.gait_frame(i);
+        // A change of row blends from the old row's clip held at its frame
+        // (flag 0x200000, the counter +0x70 over +0x6c, 1 on its first
+        // update), as [`World::actor_pose`] poses it.
+        let g = &self.players[i].gait_channel;
+        let n = crate::pose::GAIT_BLEND;
+        let blending = (1..=n).contains(&g.blend_counter) && g.blend_from.is_some();
         Channel {
             shown: Shown {
                 record: Some(f.record),
                 frame: f.time,
-                blend: None,
+                blend: blending.then(|| (n + 1 - g.blend_counter) as f32 / n as f32),
             },
-            from: None,
-            counter: None,
+            from: if blending { g.blend_from } else { None },
+            counter: blending.then_some((g.blend_counter as u16, n as u16)),
             gait: true,
         }
     }
