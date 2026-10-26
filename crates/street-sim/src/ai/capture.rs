@@ -3263,7 +3263,11 @@ struct Bounds {
 /// again by the rule on 2026-10-26 with the game's distance tables sorted
 /// as the original's (`ai::native_sort`): 1176 (240, se 60) against 762
 /// (1115 before), 600 (+500 1093, +777 895; the second and third captures
-/// within 50 of their matches).
+/// within 50 of their matches). The passes loose at their timer set again
+/// by the rule on 2026-10-26 with the gait's blends on channel 0 (the held
+/// ball eased through a change of gait row): 3.06 (1.29, se 0.32) against
+/// 1 (2.12 before), 3.5 (+500 2.13, +777 1.75; the second and third
+/// captures fell, 0.56 to 0.25 and 1.75 to 1.62).
 const FIRST_BOUNDS: Bounds = Bounds {
     standing: 0.055,
     away: 0.025,
@@ -3275,7 +3279,7 @@ const FIRST_BOUNDS: Bounds = Bounds {
     counters: 6.5,
     shots: 8.0,
     jumps: [8.0, 3.5, 13.5],
-    loose: [1.0, 2.0, 2.0, 1.5, 0.095, 600.0],
+    loose: [1.0, 2.0, 3.5, 1.5, 0.095, 600.0],
 };
 
 /// The third capture's, on its rosters (and any recorded capture's). The
