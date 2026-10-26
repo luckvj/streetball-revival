@@ -523,41 +523,91 @@ fn apply(
     }
 }
 
+/// The court's area in a window `w` by `h` (physical pixels), as `(x,
+/// width)`, when it does not fill the window: the middle 4:3 with
+/// Widescreen off.
+pub fn scene_box(w: u32, h: u32, picture: Picture) -> Option<(u32, u32)> {
+    (picture == Picture::Standard && w * 3 > h * 4).then(|| {
+        let width = h * 4 / 3;
+        ((w - width) / 2, width)
+    })
+}
+
+/// The 2D layer's area (the menus, the HUD, the loading pictures): the
+/// court's 4:3 with Widescreen off; On and Wide, the window up to 16:9 and
+/// the middle 16:9 of a wider one, so an ultrawide window widens the court
+/// but keeps the 2D art at its PS2 widescreen shape instead of stretching
+/// it.
+pub fn ui_box(w: u32, h: u32, picture: Picture) -> Option<(u32, u32)> {
+    if picture == Picture::Standard {
+        return scene_box(w, h, picture);
+    }
+    (w * 9 > h * 16).then(|| {
+        let width = h * 16 / 9;
+        ((w - width) / 2, width)
+    })
+}
+
+/// The 2D layer's left edge in the window's logical pixels (where the
+/// court's camera puts a point, less this, is where the HUD draws it).
+pub fn ui_left(window: &Window, picture: Picture) -> f32 {
+    let (w, h) = (window.physical_width(), window.physical_height());
+    let ui = ui_box(w, h, picture).map_or(0, |(x, _)| x);
+    let scene = scene_box(w, h, picture).map_or(0, |(x, _)| x);
+    (ui as f32 - scene as f32) / window.scale_factor()
+}
+
 /// Widescreen off: every picture in the middle 4:3 of the window. On and
-/// Wide draw across the whole window.
+/// Wide: the court across the whole window, the 2D layer across it up to
+/// 16:9 ([`ui_box`]).
 fn letterbox(
     o: Res<Options>,
     over: Option<Res<PictureOverride>>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    mut cameras: Query<(&mut Camera, Option<&bevy::camera::RenderTarget>)>,
+    mut cameras: Query<(
+        &mut Camera,
+        Option<&bevy::camera::RenderTarget>,
+        Has<Camera3d>,
+    )>,
 ) {
     let Ok(window) = windows.single() else {
         return;
     };
     let (w, h) = (window.physical_width(), window.physical_height());
-    let want = if picture(Some(&o), over.as_deref()) != Picture::Standard || w * 3 <= h * 4 {
-        None
-    } else {
-        let width = h * 4 / 3;
-        Some(Viewport {
-            physical_position: UVec2::new((w - width) / 2, 0),
+    let shown = picture(Some(&o), over.as_deref());
+    let viewport = |b: Option<(u32, u32)>| {
+        b.map(|(x, width)| Viewport {
+            physical_position: UVec2::new(x, 0),
             physical_size: UVec2::new(width, h),
             ..default()
         })
     };
-    for (mut camera, target) in &mut cameras {
+    let scene = viewport(scene_box(w, h, shown));
+    let ui = viewport(ui_box(w, h, shown));
+    let to_window = |target: Option<&bevy::camera::RenderTarget>| {
+        !matches!(target, Some(bevy::camera::RenderTarget::Image(_)))
+    };
+    // The bars' black runs while some picture leaves the window's edges
+    // bare: the court's 4:3, or the 2D layer's box with no court behind it
+    // (a court across the window keeps its own clear colour).
+    let court = cameras
+        .iter()
+        .any(|(c, target, is_3d)| is_3d && c.is_active && to_window(target));
+    let bars = scene.is_some() || (ui.is_some() && !court);
+    for (mut camera, target, is_3d) in &mut cameras {
         // The pictures drawn into an image (the 3D baller's panel, the
         // star board's) keep their own size.
-        if matches!(target, Some(bevy::camera::RenderTarget::Image(_))) {
+        if !to_window(target) {
             continue;
         }
         if camera.order == -100 {
-            if camera.is_active != want.is_some() {
-                camera.is_active = want.is_some();
+            if camera.is_active != bars {
+                camera.is_active = bars;
             }
             continue;
         }
-        let same = match (&camera.viewport, &want) {
+        let want = if is_3d { &scene } else { &ui };
+        let same = match (&camera.viewport, want) {
             (None, None) => true,
             (Some(a), Some(b)) => {
                 a.physical_position == b.physical_position && a.physical_size == b.physical_size
@@ -567,6 +617,25 @@ fn letterbox(
         if !same {
             camera.viewport = want.clone();
         }
+    }
+}
+
+#[cfg(test)]
+mod picture_tests {
+    use super::*;
+
+    #[test]
+    fn an_ultrawide_window_widens_the_court_and_boxes_the_2d_at_16_9() {
+        // 21:9: the court fills it; the 2D layer keeps 16:9 in the middle.
+        assert_eq!(scene_box(2520, 1080, Picture::Wide), None);
+        assert_eq!(ui_box(2520, 1080, Picture::Wide), Some((300, 1920)));
+        assert_eq!(ui_box(5120, 1440, Picture::Anamorphic), Some((1280, 2560)));
+        // 16:9 and narrower: everything across the window.
+        assert_eq!(ui_box(1920, 1080, Picture::Wide), None);
+        assert_eq!(ui_box(1600, 1200, Picture::Anamorphic), None);
+        // Widescreen off: both in the middle 4:3.
+        assert_eq!(scene_box(1920, 1080, Picture::Standard), Some((240, 1440)));
+        assert_eq!(ui_box(1920, 1080, Picture::Standard), Some((240, 1440)));
     }
 }
 

@@ -3564,6 +3564,19 @@ pub fn spawn_camera(commands: &mut Commands) {
         SidelineCamera,
         DespawnOnExit(Screen::Playing),
     ));
+    // The HUD and the match's pages on their own camera over the court, so
+    // an ultrawide window can widen the court and keep them at 16:9
+    // (`options::ui_box`).
+    commands.spawn((
+        Camera2d,
+        Camera {
+            order: 1,
+            clear_color: ClearColorConfig::None,
+            ..default()
+        },
+        IsDefaultUiCamera,
+        DespawnOnExit(Screen::Playing),
+    ));
 }
 
 /// `FUN_002f9ab0`: the sides a court part or crowd seat belongs to, from
@@ -4462,7 +4475,17 @@ pub fn sync_indicator(
     mut rings: Query<(&Indicator, &mut Transform, &mut Visibility)>,
     mut badges: Query<(&Badge, &mut Node, &mut Visibility), Without<Indicator>>,
     cameras: Query<(&Camera, &GlobalTransform), With<SidelineCamera>>,
+    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    options: Option<Res<crate::options::Options>>,
+    over: Option<Res<crate::options::PictureOverride>>,
 ) {
+    // The HUD's camera starts where the 2D layer's box does.
+    let left = windows.single().map_or(0.0, |w| {
+        crate::options::ui_left(
+            w,
+            crate::options::picture(options.as_deref(), over.as_deref()),
+        )
+    });
     // Whom person `k` (1P = 0) drives, here or online elsewhere.
     let people = control.people();
     let seat = |k: usize| people.iter().find(|p| p.0 == k).map(|p| p.2);
@@ -4490,7 +4513,7 @@ pub fn sync_indicator(
             });
         *visibility = match at {
             Some(at) => {
-                node.left = Val::Px(at.x - BADGE_SIZE.x / 2.0);
+                node.left = Val::Px(at.x - left - BADGE_SIZE.x / 2.0);
                 node.top = Val::Px(at.y - BADGE_SIZE.y);
                 Visibility::Visible
             }
