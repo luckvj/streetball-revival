@@ -46,7 +46,8 @@
 //! record. The rewrite's own, labelled: `a9` (the glass aim) and the
 //! planted points' correction (`93`..`95` only set their flags) are not
 //! modelled; a blend's foot-synced start (`-9`, one pass row, `0x454f5c`)
-//! starts at frame 0; the gait channel's own blends are not modelled.
+//! starts at frame 0. The gait channel's own blends (a change of row over
+//! 6 updates) show through [`World::channel`] too.
 
 use crate::pose;
 use crate::trick::{self, Run, Shown, Step};

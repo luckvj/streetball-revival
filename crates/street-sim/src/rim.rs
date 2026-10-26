@@ -19,11 +19,16 @@
 //!   sways the pole by 3.75 and holds it at the swing's quarter while he
 //!   hangs; letting go (slot 43, `0x1573a8`) lets it swing on;
 //! - a slam's callback 27 (slot 44, `FUN_001720a8`) sways it by 3 when the
-//!   dunker is the ball's last shooter.
+//!   dunker is the ball's last shooter;
+//! - a player's head up under the board from behind (slot 75,
+//!   `FUN_001389a8`, [`crate::World`]'s hoop contacts) sways it by 1.5;
+//! - a game's winning dunk or alley-oop (slot 26, `FUN_001f6d98`, in
+//!   every game type but 1) tears it off ([`Rim::tear`]): the bend falls
+//!   to −90 and dangles.
 //!
-//! Not ported: a player's body against the rim (slot 75, `FUN_001389a8`,
-//! a sway of 1.5) and the rim torn off (`0x1f6e88`, +0x80/+0x88: the bend
-//! falls to −90 and dangles), which nothing in the rewrite starts.
+//! Not traced: what the render hoop shows after a tear beyond bone 4's
+//! bend (the game's reset shows its groups again, `FUN_00317448`). Not
+//! ported: the users' counter 7 the torn rim adds to.
 
 /// The hoop model's bones 1..4 (the root, bone 0, sits at the model's
 /// origin unturned).
@@ -234,6 +239,16 @@ impl Rim {
             self.held = held;
             self.kick = 3.75;
         }
+    }
+
+    /// The rim torn off by a game's winning dunk (`0x1f6e58..0x1f6ea0`:
+    /// +0x88, +0x80 and +0x70 set, the global `0x400054` bit 3 the users'
+    /// counter 7 reads after the game): it bends down 4 an update to −90
+    /// and dangles there.
+    pub fn tear(&mut self) {
+        self.dangles = true;
+        self.torn = true;
+        self.bend = true;
     }
 
     /// A ball off the rim (`FUN_0013e498`, `FUN_0013e4b0`).
@@ -463,6 +478,29 @@ mod tests {
             assert!((q[2] - (d / 2.0).to_radians().sin()).abs() < 2e-6, "{d}");
             assert!((q[3] - (d / 2.0).to_radians().cos()).abs() < 2e-6, "{d}");
         }
+    }
+
+    #[test]
+    fn a_torn_rim_falls_and_dangles() {
+        let mut rim = Rim::default();
+        rim.tear();
+        // −4 an update from 0: past −90 by the 23rd, then held there.
+        for _ in 0..23 {
+            rim.update();
+        }
+        assert_eq!(rim.bend_angle, -90.0);
+        assert!(rim.dropped);
+        // The dangle swings 40 either way, halving each turn.
+        let mut most: f32 = 0.0;
+        for _ in 0..200 {
+            rim.update();
+            most = most.max(rim.dangle.abs());
+        }
+        assert!(most > 30.0 && most <= 40.0, "{most}");
+        assert!(rim.dangle_amplitude < 40.0);
+        // It never comes back up.
+        assert_eq!(rim.bend_angle, -90.0);
+        assert!(rim.bend);
     }
 
     #[test]

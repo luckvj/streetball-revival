@@ -214,6 +214,33 @@ fn a_game_winning_dunk_pays_no_meter_and_its_own_class() {
 }
 
 #[test]
+fn a_game_winning_dunk_tears_the_rim_on_the_balls_side() {
+    let mut w = scene();
+    w.ball.position = [36.5, 11.0, 0.2];
+    let post = BasketPost {
+        shooter: 0,
+        assister: None,
+        base: 2,
+        kind: 4,
+        gamebreaker: 0,
+        wins: false,
+        tip_slam: false,
+        finish: 1,
+        style: 0,
+    };
+    // Not the winner: the rim stays.
+    w.post_basket(post);
+    assert!(!w.rims[1].torn);
+    // The winner (`FUN_001f6d98`): the +x rim torn, the other untouched.
+    w.post_basket(BasketPost { wins: true, ..post });
+    assert!(w.rims[1].torn && w.rims[1].dangles && w.rims[1].bend);
+    assert!(!w.rims[0].torn);
+    // Torn and unheld, it takes no hang (callback 28, `0x1724cc`).
+    w.players[0].position = [36.0, 0.5];
+    assert!(!w.hangs(0));
+}
+
+#[test]
 fn a_gamebreakers_value_follows_fun_001439e8() {
     use crate::scoring::gamebreaker_value;
     assert_eq!(gamebreaker_value(1, 2, 2), 25_000);

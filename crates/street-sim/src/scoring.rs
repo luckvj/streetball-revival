@@ -507,6 +507,9 @@ impl World {
         let mut extra = -1;
         if post.wins && wide && game_type != 1 {
             class = 6;
+            // `FUN_001f6d98` (the same slot): the winning dunk tears the
+            // rim off on the ball's side.
+            self.rims[crate::rim::post_side(self.ball.position[0])].tear();
         }
         if post.gamebreaker != 0 {
             value = gamebreaker_value(post.gamebreaker, post.kind, post.base);
