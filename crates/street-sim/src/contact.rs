@@ -102,6 +102,122 @@ const LIMBS: [(usize, f32, Counts); 5] = [
 /// wanted facing (a quarter turn).
 const LIMB_ARC: i32 = 0x101;
 
+/// The rim plane the hoop tests take (`0x41400000`) and the body's room
+/// about the ring's middle (`0x3fb8bb99`, the ring's 0.79 and the body's
+/// 0.65), squared `0x40054e35`.
+const RIM_PLANE: f32 = 12.0;
+const RIM_ROOM: f32 = f32::from_bits(0x3fb8_bb99);
+
+/// `FUN_001382b0`: a body from `feet` to `top` at `at` against the rim on
+/// side `side` (its middle at 36.75 out): reaching the rim's plane (or
+/// rising toward it), within the ring's room in front of its middle, out
+/// to its edge; between the middle and the board (36.75..38), out across
+/// to either side of the slab. Scaled by how near the top comes to the
+/// plane when it is below.
+fn rim_push(feet: f32, top: f32, at: [f32; 2], side: f32, rise: f32) -> Option<[f32; 2]> {
+    if RIM_PLANE < feet || (top < RIM_PLANE && rise <= 0.0) {
+        return None;
+    }
+    let x = side * 36.75;
+    let dx = at[0] - x;
+    let z = at[1];
+    let push = if dx * dx + z * z < f32::from_bits(0x4005_4e35) && at[0].abs() <= 36.75 {
+        let n = libm::sqrtf(dx * dx + z * z);
+        [dx / n * RIM_ROOM - dx, z / n * RIM_ROOM - z]
+    } else if (36.75..=38.0).contains(&at[0].abs()) && z.abs() <= RIM_ROOM {
+        [
+            0.0,
+            if 0.0 <= z {
+                RIM_ROOM - z
+            } else {
+                -RIM_ROOM - z
+            },
+        ]
+    } else {
+        return None;
+    };
+    let k = if top < RIM_PLANE {
+        top / RIM_PLANE
+    } else {
+        1.0
+    };
+    Some(push.map(|v| v * k))
+}
+
+/// `FUN_001384e0`: a body against the board on side `side` (its face at
+/// 38, 4.4 either side; the bottom 11.5): the nearest of its forward bones
+/// (`0x3d10b8`, `0x3d10d0`: the hands, the shins, the feet; off balance,
+/// the hands above 9.5 reaching furthest, `0x3d10e8`) within the slab's
+/// width (1.4, narrowing past 3 across) is pushed out of it, toward the
+/// court in front, away behind. And whether his head (bone 21) is up
+/// under the board from behind it (`0x13877c..0x1388cc`): over 10.5
+/// within 3 of the middle and his nearest bone within 1 of the face, or
+/// within 1.5 of the middle (the timed second chance of AIDetect+0x28's
+/// frames is never armed).
+fn board_push(
+    top: f32,
+    at: [f32; 2],
+    side: f32,
+    rise: f32,
+    pose: &crate::pose::Pose,
+    down: bool,
+) -> (Option<[f32; 2]>, bool) {
+    const BOTTOM: f32 = 11.5;
+    if top < BOTTOM && rise <= 0.0 {
+        return (None, false);
+    }
+    let bone = |k: usize| pose.joints[k].position;
+    let forward = [15, 19, 2, 6, 3, 7];
+    let mut z = at[1];
+    if down {
+        for k in forward {
+            if bone(k)[2].abs() < z.abs() {
+                z = bone(k)[2];
+            }
+        }
+    }
+    if f32::from_bits(0x408c_cccd) <= z.abs() {
+        return (None, false);
+    }
+    let mut width = f32::from_bits(0x3fb3_3333);
+    if 3.0 <= z.abs() {
+        width -= z.abs() - 3.0;
+    }
+    let face = side * 38.0;
+    let mut x = at[0];
+    let dir;
+    let behind = face.abs() <= x.abs();
+    if behind {
+        dir = if 0.0 <= face { 1.0 } else { -1.0 };
+        for k in forward {
+            if bone(k)[0].abs() < x.abs() {
+                x = bone(k)[0];
+            }
+        }
+    } else {
+        dir = if 0.0 <= face { -1.0 } else { 1.0 };
+        if down {
+            for k in [15, 19] {
+                let b = bone(k);
+                if x.abs() < b[0].abs() && 9.5 < b[1] {
+                    x = b[0];
+                }
+            }
+        }
+    }
+    let head = bone(21)[1];
+    let bonk = behind
+        && at[1].abs() < 3.0
+        && 10.5 < head
+        && (x.abs() < face.abs() + 1.0 || at[1].abs() < 1.5);
+    if (x - face).abs() >= width {
+        return (None, bonk);
+    }
+    let push = [(face - x) + dir * width, 0.0];
+    let k = if top < BOTTOM { top / BOTTOM } else { 1.0 };
+    (Some(push.map(|v| v * k)), bonk)
+}
+
 /// Past any limb's reach from the pelvis (a tall player's head is about
 /// 3.5 from it): no pair further apart than twice this can touch.
 const LIMB_MAX: f32 = 6.0;
@@ -175,6 +291,118 @@ impl World {
                 if d < reach && self.may_touch(a, b) {
                     self.bump(a, b, reach, d);
                 }
+            }
+        }
+        self.hoop_contacts();
+    }
+
+    /// The hoops against the bodies (`0x134110..0x134210`, after the
+    /// pairs): a block jumper (bit 12, not the glass pair's bit 19), a
+    /// rebound jumper (bit 8, not a lay-up's bit 13), a passer in the air
+    /// or a man off balance in the air (flag 0x40), never a dunker (bit 7),
+    /// meets the rim and the board ([`World::hoop_contact`]).
+    fn hoop_contacts(&mut self) {
+        if self.poses.get().is_none() {
+            return;
+        }
+        for i in 0..self.players.len() {
+            let p = &self.players[i];
+            let aloft = p.height > 0.0;
+            let meets = match p.action {
+                Action::Dunking { .. } => false,
+                Action::Jumping { block: Some(j), .. } => {
+                    !crate::block::SCRIPTS[usize::from(j.script)].glass
+                }
+                Action::ReboundJump { .. } => true,
+                Action::Passing { .. } => aloft,
+                _ => self.down(i) && aloft,
+            };
+            if meets {
+                self.hoop_contact(i);
+            }
+        }
+    }
+
+    /// `FUN_001389a8`: `i`'s body against the hoop on his side, the rim
+    /// (`FUN_001382b0`) then the board (`FUN_001384e0`), each push held to
+    /// [`MAX_PUSH`]; he moves (not a passer, `0x138ca0`) and stays on the
+    /// court (`FUN_0016f900`), his velocity across halved where it runs
+    /// into the push (`0x138cd0..0x138dbc`). His head into the board while
+    /// he rises, not passing nor off balance, plays reaction `0x44bd94`
+    /// and sways the rim by 1.5 (slot 75, `0x3c6920`, `FUN_001414d8`).
+    fn hoop_contact(&mut self, i: usize) {
+        let Some(pose) = self.actor_pose(i) else {
+            return;
+        };
+        let y = |k: usize| pose.joints[k].position[1];
+        // The head and the hands' highest (`0x43d110`), the feet's lowest.
+        let top = [21, 15, 19].map(y).into_iter().fold(-100.0f32, f32::max);
+        let feet = y(3).min(y(7));
+        let p = &self.players[i];
+        let rise = p.rise;
+        let before = p.position;
+        let side = if before[0] >= 0.0 { 1.0 } else { -1.0 };
+        let mut at = before;
+        let mut moved = false;
+        let push_by = |at: &mut [f32; 2], push: [f32; 2]| {
+            let len = crate::math::len(push[0], push[1]);
+            let k = if len > MAX_PUSH { MAX_PUSH / len } else { 1.0 };
+            at[0] += push[0] * k;
+            at[1] += push[1] * k;
+        };
+        if let Some(push) = rim_push(feet, top, at, side, rise) {
+            push_by(&mut at, push);
+            moved = true;
+        }
+        let (board, bonk) = board_push(top, at, side, rise, &pose, self.down(i));
+        if let Some(push) = board {
+            push_by(&mut at, push);
+            moved = true;
+        }
+        if moved {
+            if !matches!(self.players[i].action, Action::Passing { .. }) {
+                self.players[i].position = at;
+                self.contain(i, before);
+                at = self.players[i].position;
+            }
+            let d = [at[0] - before[0], at[1] - before[1]];
+            self.halve_drift(i, d);
+        }
+        if bonk
+            && !matches!(self.players[i].action, Action::Passing { .. })
+            && !self.down(i)
+            && rise > 0.0
+        {
+            self.react(i, crate::trick::KNOCK_BEHIND);
+            let side = crate::rim::post_side(self.players[i].position[0]);
+            let rim = &mut self.rims[side];
+            if !(rim.torn && !rim.held) {
+                rim.sway(1.5);
+            }
+        }
+    }
+
+    /// `0x138cd0..0x138dbc`: each part of `i`'s velocity across that runs
+    /// against `push` is halved.
+    fn halve_drift(&mut self, i: usize, push: [f32; 2]) {
+        let halve = |v: &mut f32, d: f32| {
+            if d != 0.0 && (*v >= 0.0) != (d >= 0.0) {
+                *v *= 0.5;
+            }
+        };
+        let p = &mut self.players[i];
+        match &mut p.action {
+            Action::Jumping { block: Some(j), .. } => {
+                halve(&mut j.drift[0], push[0]);
+                halve(&mut j.drift[1], push[1]);
+            }
+            Action::ReboundJump { drift, .. } => {
+                halve(&mut drift[0], push[0]);
+                halve(&mut drift[1], push[1]);
+            }
+            _ => {
+                halve(&mut p.flight.velocity[0], push[0]);
+                halve(&mut p.flight.velocity[2], push[1]);
             }
         }
     }
@@ -684,5 +912,29 @@ impl World {
         {
             brain.screened_by = b as i32;
         }
+    }
+}
+
+#[cfg(test)]
+mod hoop_tests {
+    use super::*;
+
+    #[test]
+    fn a_body_at_the_rim_goes_out_to_its_edge() {
+        // Under the +x rim's middle, 0.5 in front of it, head over the plane.
+        let push = rim_push(9.0, 12.5, [36.25, 0.0], 1.0, 0.0).unwrap();
+        assert!((push[0] + (RIM_ROOM - 0.5)).abs() < 1e-5, "{push:?}");
+        // Between the middle and the board: out across.
+        let push = rim_push(9.0, 12.5, [37.5, 0.4], 1.0, 0.0).unwrap();
+        assert!((push[1] - (RIM_ROOM - 0.4)).abs() < 1e-5, "{push:?}");
+        // Below the plane and falling: nothing; rising, scaled.
+        assert!(rim_push(5.0, 11.0, [36.25, 0.0], 1.0, -0.1).is_none());
+        let up = rim_push(5.0, 11.0, [36.25, 0.0], 1.0, 0.1).unwrap();
+        assert!(
+            (up[0] + (RIM_ROOM - 0.5) * 11.0 / 12.0).abs() < 1e-5,
+            "{up:?}"
+        );
+        // Feet above the plane: clear of it.
+        assert!(rim_push(12.5, 18.0, [36.25, 0.0], 1.0, 0.0).is_none());
     }
 }
