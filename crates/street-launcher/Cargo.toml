@@ -15,3 +15,8 @@ eframe = "0.31.1"
 rfd = "0.15.3"
 serde_json = "1"
 image = { version = "0.25.10", default-features = false, features = ["png"] }
+# The carried game is deflated at build time and inflated on its first run.
+miniz_oxide = "0.8.9"
+
+[build-dependencies]
+miniz_oxide = "0.8.9"

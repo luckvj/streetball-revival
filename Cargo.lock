@@ -6401,6 +6401,7 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "image",
+ "miniz_oxide 0.8.9",
  "rfd",
  "serde_json",
  "street-assets",

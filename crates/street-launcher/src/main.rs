@@ -112,9 +112,12 @@ fn game_in(dir: &Path) -> Option<PathBuf> {
         .find(|p| p.is_file())
 }
 
-/// The game carried inside the one-file download (`build.rs`).
+/// The game carried inside the one-file download, deflated (`build.rs`),
+/// and its size and hash unpacked.
 #[cfg(embedded_game)]
-static GAME: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/street-game"));
+static GAME: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/street-game.deflate"));
+#[cfg(embedded_game)]
+const GAME_LEN: &str = env!("STREET_GAME_LEN");
 
 /// The carried game, written out to `<local app data>\Streetball
 /// Revival\game-<hash>` the first time this build runs (older builds'
@@ -127,10 +130,15 @@ fn unpacked_game() -> Option<PathBuf> {
         .join("Streetball Revival");
     let name = format!("game-{}", env!("STREET_GAME_HASH"));
     let path = base.join(&name).join(GAME_NAME);
-    if std::fs::metadata(&path).map(|m| m.len()).ok() != Some(GAME.len() as u64) {
+    let len: u64 = GAME_LEN.parse().ok()?;
+    if std::fs::metadata(&path).map(|m| m.len()).ok() != Some(len) {
+        let game = miniz_oxide::inflate::decompress_to_vec(GAME).ok()?;
+        if game.len() as u64 != len {
+            return None;
+        }
         std::fs::create_dir_all(path.parent()?).ok()?;
         let part = path.with_extension("part");
-        std::fs::write(&part, GAME).ok()?;
+        std::fs::write(&part, game).ok()?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -777,7 +785,9 @@ mod tests {
     #[test]
     fn the_carried_game_unpacks() {
         let path = unpacked_game().unwrap();
-        assert_eq!(std::fs::read(&path).unwrap(), GAME);
+        let game = std::fs::read(&path).unwrap();
+        assert_eq!(game.len().to_string(), GAME_LEN);
+        assert_eq!(miniz_oxide::deflate::compress_to_vec(&game, 9), GAME);
         assert_eq!(unpacked_game(), Some(path));
     }
 
