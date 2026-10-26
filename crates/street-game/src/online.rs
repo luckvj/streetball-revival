@@ -743,7 +743,12 @@ fn spawn_lobby(
 fn pump(mut online: ResMut<Online>) {
     let now = online.now();
     if let Some(reach) = &mut online.reach {
-        reach.poll();
+        let waiting = reach.outcome.is_none();
+        if let Some(outcome) = reach.poll()
+            && waiting
+        {
+            info!("online: router: {outcome:?}");
+        }
     }
     let beacon = online.hosting.map(|port| street_net::lan::Beacon {
         version: street_net::VERSION,
@@ -1509,20 +1514,17 @@ fn lobby_page(
         Stage::Building | Stage::Proposed => "Loading the match...".to_owned(),
         _ => "Waiting for the other side's picks.".to_owned(),
     };
-    let code = online
-        .reach
-        .as_ref()
-        .and_then(|r| r.outcome.as_ref()?.code());
+    // The host's join code (or why there is none) under the help: User
+    // Setup's layout draws the original's button legends, not the keys.
+    let help = match hosting_line(online) {
+        Some(line) => format!(
+            "{help}
+{line}"
+        ),
+        None => help,
+    };
     let client = online.client.as_ref();
     let mut keys = Vec::new();
-    if let Some(code) = code {
-        keys.push(format!("Code {code}"));
-    }
-    if online.hosting.is_some()
-        && let Some(ip) = online.lan
-    {
-        keys.push(format!("Network {ip}"));
-    }
     if let Some(rtt) = client.and_then(|c| c.rtt()) {
         keys.push(format!("Ping {} ms", rtt.as_millis()));
     }
@@ -1549,6 +1551,33 @@ fn lobby_page(
         0,
     ));
     pieces
+}
+
+/// The host's line on the lobby: the join code friends type, or what the
+/// router said when there is none, and this machine's address on its own
+/// network.
+fn hosting_line(online: &Online) -> Option<String> {
+    use crate::reach::Outcome;
+    online.hosting?;
+    let network = online
+        .lan
+        .map(|ip| format!("    Network {ip}"))
+        .unwrap_or_default();
+    let reach = online.reach.as_ref().map(|r| r.outcome.as_ref());
+    Some(match reach {
+        Some(None) => format!("Getting your join code...{network}"),
+        Some(Some(Outcome::Open { public })) => {
+            format!("Join code {}{network}", street_net::code::encode(*public))
+        }
+        Some(Some(Outcome::Closed {
+            public: Some(public),
+        })) => format!(
+            "Join code {} (forward UDP {} on your router){network}",
+            street_net::code::encode(*public),
+            public.port()
+        ),
+        _ => format!("No join code: only your own network can join{network}"),
+    })
 }
 
 /// In the match: the connection dropping ends it, unless it is over anyway.
