@@ -46,11 +46,15 @@ jobs:
       - name: Gather the release folder
         shell: pwsh
         run: |
+          # The launcher and START HERE alone at the top; the programs it
+          # starts in bin, the papers in docs.
           $dir = 'dist/Streetball Revival'
-          New-Item -ItemType Directory -Path $dir
-          Copy-Item -LiteralPath 'target/release/${{ matrix.launcher }}', 'target/release/${{ matrix.binary }}', 'target/release/${{ matrix.server }}', 'target/release/${{ matrix.export }}', 'README.md', 'LEGAL.md', 'LICENSE' -Destination $dir
+          New-Item -ItemType Directory -Path "$dir/bin", "$dir/docs"
+          Copy-Item -LiteralPath 'target/release/${{ matrix.launcher }}' -Destination $dir
           Copy-Item -LiteralPath 'docs/START_HERE.txt' -Destination "$dir/START HERE.txt"
-          Copy-Item -LiteralPath 'docs/PLAYING.md' -Destination "$dir/HOW TO PLAY ONLINE.md"
+          Copy-Item -LiteralPath 'target/release/${{ matrix.binary }}', 'target/release/${{ matrix.server }}', 'target/release/${{ matrix.export }}' -Destination "$dir/bin"
+          Copy-Item -LiteralPath 'README.md', 'LEGAL.md', 'LICENSE' -Destination "$dir/docs"
+          Copy-Item -LiteralPath 'docs/PLAYING.md' -Destination "$dir/docs/HOW TO PLAY ONLINE.md"
       - name: Zip the release (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
@@ -58,13 +62,25 @@ jobs:
       - name: Zip the release (Linux, keeping the programs runnable)
         if: matrix.os == 'ubuntu-latest'
         run: cd dist && zip -r '../streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip' 'Streetball Revival'
+      - name: The one-file game (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $env:STREET_GAME_EMBED = "$PWD/target/release/${{ matrix.binary }}"
+          cargo build --release -p street-launcher
+          Copy-Item -LiteralPath 'target/release/${{ matrix.launcher }}' -Destination 'StreetballRevival-${{ github.ref_name }}-windows.exe'
       - uses: actions/upload-artifact@v4
         with:
           name: streetball-revival-${{ matrix.platform }}
-          path: streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
+          path: |
+            streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
+            StreetballRevival-${{ github.ref_name }}-windows.exe
+          if-no-files-found: ignore
       - uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           name: Streetball Revival ${{ github.ref_name }} (beta)
-          files: streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
+          files: |
+            StreetballRevival-${{ github.ref_name }}-windows.exe
+            streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
           body_path: .github/RELEASE_NOTES.md

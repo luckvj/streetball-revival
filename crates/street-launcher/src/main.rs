@@ -5,8 +5,10 @@
 //! it asks for the disc image and checks it is the USA PlayStation 2
 //! release the game reads (SLUS-20651); the path is kept in
 //! `Documents\Streetball Revival\launcher.json`, beside the game's save.
-//! After that it opens on Play, which starts `street-game` next to it with
-//! `--iso <disc>`.
+//! After that it opens on Play, which starts `street-game` with
+//! `--iso <disc>`: the one in the release's `bin` folder or beside the
+//! launcher, else (the one-file download) the copy carried inside the
+//! launcher, written out to the user's local app data once per build.
 
 #![cfg_attr(not(test), windows_subsystem = "windows")]
 
@@ -91,16 +93,64 @@ fn check_disc(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// The game program beside the launcher.
+const GAME_NAME: &str = if cfg!(windows) {
+    "street-game.exe"
+} else {
+    "street-game"
+};
+
+/// The game program: in the release's `bin` folder beside the launcher
+/// (which keeps the launcher the one program at the folder's top), else
+/// beside it, as in a build, else the copy carried inside the launcher.
 fn game_program() -> Option<PathBuf> {
-    let name = if cfg!(windows) {
-        "street-game.exe"
-    } else {
-        "street-game"
-    };
-    let dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
-    let path = dir.join(name);
-    path.is_file().then_some(path)
+    game_in(std::env::current_exe().ok()?.parent()?).or_else(unpacked_game)
+}
+
+fn game_in(dir: &Path) -> Option<PathBuf> {
+    [dir.join("bin").join(GAME_NAME), dir.join(GAME_NAME)]
+        .into_iter()
+        .find(|p| p.is_file())
+}
+
+/// The game carried inside the one-file download (`build.rs`).
+#[cfg(embedded_game)]
+static GAME: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/street-game"));
+
+/// The carried game, written out to `<local app data>\Streetball
+/// Revival\game-<hash>` the first time this build runs (older builds'
+/// copies removed).
+#[cfg(embedded_game)]
+fn unpacked_game() -> Option<PathBuf> {
+    let base = std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))?
+        .join("Streetball Revival");
+    let name = format!("game-{}", env!("STREET_GAME_HASH"));
+    let path = base.join(&name).join(GAME_NAME);
+    if std::fs::metadata(&path).map(|m| m.len()).ok() != Some(GAME.len() as u64) {
+        std::fs::create_dir_all(path.parent()?).ok()?;
+        let part = path.with_extension("part");
+        std::fs::write(&part, GAME).ok()?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&part, std::fs::Permissions::from_mode(0o755)).ok()?;
+        }
+        std::fs::rename(&part, &path).ok()?;
+        for old in std::fs::read_dir(&base).ok()?.flatten() {
+            let file_name = old.file_name();
+            let old_name = file_name.to_string_lossy();
+            if old_name.starts_with("game-") && old_name != name {
+                let _ = std::fs::remove_dir_all(old.path());
+            }
+        }
+    }
+    Some(path)
+}
+
+#[cfg(not(embedded_game))]
+fn unpacked_game() -> Option<PathBuf> {
+    None
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -194,7 +244,7 @@ impl Launcher {
         };
         let Some(game) = game_program() else {
             self.message = Some((
-                "street-game wasn't found next to the launcher. Unzip the whole release into one folder."
+                "The game's files weren't found or couldn't be unpacked. Download the release again and run it from there."
                     .into(),
                 ERR,
             ));
@@ -659,27 +709,26 @@ fn install_fonts(ctx: &egui::Context) {
     ctx.set_fonts(fonts);
 }
 
-/// The window's icon: a purple square with a light slash.
+/// The window's icon: the MyBaller MB, the `.ico`'s 64-pixel image (a PNG
+/// inside it; the larger ones are the badge with its name, too small to read
+/// in a title bar).
 fn icon() -> egui::IconData {
-    let n = 64u32;
-    let mut rgba = Vec::with_capacity((n * n * 4) as usize);
-    for y in 0..n {
-        for x in 0..n {
-            let t = (x + y) as f32 / (2 * n) as f32;
-            let slash = ((x as i32 - (n as i32 - 1 - y as i32)).abs() as f32) < 7.0;
-            let (r, g, b) = if slash {
-                (0xf4, 0xf1, 0xfa)
-            } else {
-                let mix = |a: u8, b: u8| (a as f32 + (b as f32 - a as f32) * t) as u8;
-                (mix(0x9b, 0x3a), mix(0x30, 0x10), mix(0xff, 0x70))
-            };
-            rgba.extend_from_slice(&[r, g, b, 255]);
-        }
-    }
+    let ico: &[u8] = include_bytes!("../assets/icon.ico");
+    let u32_at = |i: usize| u32::from_le_bytes(ico[i..i + 4].try_into().unwrap()) as usize;
+    let count = usize::from(u16::from_le_bytes([ico[4], ico[5]]));
+    let e = (0..count)
+        .map(|k| 6 + 16 * k)
+        .find(|&e| ico[e] == 64)
+        .expect("the icon has a 64-pixel image");
+    let (size, offset) = (u32_at(e + 8), u32_at(e + 12));
+    let png =
+        image::load_from_memory_with_format(&ico[offset..offset + size], image::ImageFormat::Png)
+            .expect("the icon's images are PNGs")
+            .into_rgba8();
     egui::IconData {
-        rgba,
-        width: n,
-        height: n,
+        width: png.width(),
+        height: png.height(),
+        rgba: png.into_raw(),
     }
 }
 
@@ -703,6 +752,40 @@ mod tests {
         save_disc(&config, Path::new("C:/games/disc.iso")).unwrap();
         assert_eq!(load_disc(&config), Some(PathBuf::from("C:/games/disc.iso")));
         let _ = std::fs::remove_dir_all(config.parent().unwrap());
+    }
+
+    #[test]
+    fn the_game_is_found_in_bin_first() {
+        let dir = std::env::temp_dir().join("street-launcher-bin-test");
+        let name = if cfg!(windows) {
+            "street-game.exe"
+        } else {
+            "street-game"
+        };
+        std::fs::create_dir_all(dir.join("bin")).unwrap();
+        assert_eq!(game_in(&dir), None);
+        std::fs::write(dir.join(name), b"").unwrap();
+        assert_eq!(game_in(&dir), Some(dir.join(name)));
+        std::fs::write(dir.join("bin").join(name), b"").unwrap();
+        assert_eq!(game_in(&dir), Some(dir.join("bin").join(name)));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Run with `STREET_GAME_EMBED` set (and `LOCALAPPDATA` pointed at a
+    /// scratch folder): the carried game comes out whole, and again.
+    #[cfg(embedded_game)]
+    #[test]
+    fn the_carried_game_unpacks() {
+        let path = unpacked_game().unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), GAME);
+        assert_eq!(unpacked_game(), Some(path));
+    }
+
+    #[test]
+    fn the_window_icon_is_the_ico_s_64_pixel_mb() {
+        let icon = icon();
+        assert_eq!((icon.width, icon.height), (64, 64));
+        assert_eq!(icon.rgba.len(), 64 * 64 * 4);
     }
 
     #[test]

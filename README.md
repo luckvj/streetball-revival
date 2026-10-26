@@ -29,16 +29,17 @@ a side, over the internet or a home network.
 1. **Make a disc image of your own copy** of the game: the USA PlayStation 2
    release, serial **SLUS-20651** (the full title is in [LEGAL.md](LEGAL.md)).
    Save it as a `.iso` file anywhere on your PC.
-2. **Download** the latest zip from this repository's **Releases** page and
-   unzip it into a folder of its own.
-3. **Run `StreetballRevival.exe`**, press **Browse** and pick your `.iso` (or
-   drop it on the window). The launcher checks it is the right release and
-   remembers it.
+2. **Download** `StreetballRevival-…-windows.exe` from the latest release on
+   this repository's [Releases](https://github.com/luckvj/streetball-revival/releases)
+   page: the whole game in one file. (A zip of the same game, and one for
+   Linux, are there too. The "Source code" files are not the game.)
+3. **Open it**, press **Browse** and pick your `.iso` (or drop it on the
+   window). The launcher checks it is the right release and remembers it.
 4. Press **Play**.
 
 If Windows says *"Windows protected your PC"*, click **More info**, then
-**Run anyway** (this free project's files aren't signed). `START HERE.txt` in
-the zip covers controls, settings and troubleshooting.
+**Run anyway** (this free project's files aren't signed). The release page
+covers controls, settings and troubleshooting.
 
 The launcher keeps the disc's location in `Documents\Streetball Revival`,
 next to your save. Change it any time with **Change disc**.
