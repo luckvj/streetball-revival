@@ -26,6 +26,16 @@
 //! (`0x1ab958`, checked on the listener's slot 41), the music stops and the
 //! next song opens on its intro, then its groove. The rewrite counts its
 //! fixed 60 Hz ticks for the VBlanks.
+//!
+//! The dunk mix (`0x1ab070`, docs/TRACE.md "The dunk mix drops the
+//! music"): a dunker's take-off at a finish of 2 or more (slot 4) or a
+//! pass to an alley-oop flier (slot 18), while the groove plays with
+//! interactive music on, sets the song's stream dry level to 0 and sends
+//! it to the effects, whose area the game never sets up: the music drops
+//! out (0.5 s on, its volume goes to 0 too, `0x1ab198`) until the slam,
+//! a block, a basket, a miss, a catch, a steal, a rebound, a pass to anyone
+//! else, a meter filling or a violation puts it back (`0x1ab210`). The
+//! one-shots (`WHOOSH`, `TRICKS`) are not the stream and keep playing.
 
 use std::{
     fs::File,
@@ -54,6 +64,8 @@ use crate::game::{Sim, TickEvents};
 struct Inbox {
     commands: Vec<Command>,
     value: u8,
+    /// The dunk mix: the song's stream silent.
+    dry_off: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -78,6 +90,8 @@ pub struct MusicLink {
     breaking: Option<usize>,
     /// Time for the next song: the game side swaps it in.
     pub(crate) next: bool,
+    /// The dunk mix is on (the manager's states 5 and 6).
+    mixed: bool,
 }
 
 /// A gamebreaker ending more than this long into a song moves on to the
@@ -98,6 +112,17 @@ impl MusicLink {
             groove: false,
             breaking: None,
             next: false,
+            mixed: false,
+        }
+    }
+
+    /// `0x1ab070` / `0x1ab210`: the dunk mix on or off.
+    fn mix(&mut self, on: bool) {
+        if self.mixed != on {
+            self.mixed = on;
+            if let Ok(mut inbox) = self.inbox.lock() {
+                inbox.dry_off = on;
+            }
         }
     }
 
@@ -254,6 +279,8 @@ pub struct PathSource {
     lanes: Vec<Lane>,
     right: Option<f32>,
     frames: u64,
+    /// The dunk mix: the stream's segments play on, unheard.
+    dry_off: bool,
 }
 
 impl PathSource {
@@ -263,6 +290,7 @@ impl PathSource {
             return;
         };
         self.player.value = inbox.value;
+        self.dry_off = inbox.dry_off;
         let commands = std::mem::take(&mut inbox.commands);
         drop(inbox);
         for c in commands {
@@ -356,8 +384,10 @@ impl PathSource {
                     } else {
                         l
                     };
-                    out[0] += l;
-                    out[1] += rr;
+                    if !self.dry_off {
+                        out[0] += l;
+                        out[1] += rr;
+                    }
                 }
                 Audio::Sounds {
                     bank,
@@ -426,6 +456,7 @@ impl Decodable for PathSong {
             lanes: (0..tracks).map(|_| Lane::idle()).collect(),
             right: None,
             frames: 0,
+            dry_off: false,
         }
     }
 }
@@ -498,12 +529,51 @@ fn tip_off(link: &mut MusicLink, w: &World) {
     }
 }
 
+/// The dunk mix's starts and ends among the listener's slots: `0x1ab070`
+/// from slots 4 (a take-off at a finish of 2 or more, `0x1a4a7c`) and 18
+/// (a pass to a flier, `0x1a6010`), only while the song is in its groove
+/// (the manager's state 1) with interactive music on; `0x1ab210`, which
+/// acts only in states 5 and 6, from slots 12, 15, 16, 17, 18 (a pass to
+/// anyone else), 21, 26, 27, 52 and 66.
+fn dunk_mix(link: &mut MusicLink, e: &Event, interactive: bool) {
+    match *e {
+        Event::TakeOff {
+            leap: false,
+            finish,
+            ..
+        } if finish >= 2 => {
+            if link.groove && interactive {
+                link.mix(true);
+            }
+        }
+        Event::Launched { leaper: true, .. } => {
+            if link.groove && interactive {
+                link.mix(true);
+            }
+        }
+        Event::Slam { .. }
+        | Event::Steal { .. }
+        | Event::Counter { .. }
+        | Event::Block { .. }
+        | Event::Rebound { .. }
+        | Event::Pickup { .. }
+        | Event::Launched { leaper: false, .. }
+        | Event::Catch { .. }
+        | Event::Score { .. }
+        | Event::RimOut
+        | Event::ShotClockViolation { .. }
+        | Event::GamebreakerReady { .. } => link.mix(false),
+        _ => {}
+    }
+}
+
 /// The simulation's moments, as music events. Runs after every tick.
 pub fn cues(
     link: Option<ResMut<MusicLink>>,
     sim: Res<Sim>,
     tick: Res<TickEvents>,
     time: Res<Time<Real>>,
+    options: Option<Res<crate::options::Options>>,
 ) {
     let Some(mut link) = link else { return };
     if tick.replay || link.over {
@@ -517,7 +587,9 @@ pub fn cues(
     if link.next {
         return;
     }
+    let interactive = options.as_ref().is_none_or(|o| o.0.interactive);
     for e in &tick.events {
+        dunk_mix(&mut link, e, interactive);
         match *e {
             Event::GamebreakerReady { team } => {
                 link.groove = false;
@@ -591,6 +663,43 @@ mod tests {
 
     fn posted(link: &MusicLink) -> Vec<Command> {
         std::mem::take(&mut link.inbox.lock().unwrap().commands)
+    }
+
+    #[test]
+    fn a_big_dunk_drops_the_music_until_the_slam() {
+        let mut link = MusicLink::new(Arc::default());
+        link.opened(0, true);
+        let dry_off = |link: &MusicLink| link.inbox.lock().unwrap().dry_off;
+        let take_off = |finish| Event::TakeOff {
+            player: 0,
+            leap: false,
+            finish,
+            dunk: 0,
+        };
+        // A finish of 1 keeps the music; 2 drops it until the slam.
+        dunk_mix(&mut link, &take_off(1), true);
+        assert!(!dry_off(&link));
+        dunk_mix(&mut link, &take_off(2), true);
+        assert!(dry_off(&link));
+        dunk_mix(&mut link, &Event::Slam { player: 0, hoop: 0 }, true);
+        assert!(!dry_off(&link));
+        // A pass to a flier drops it too; not without interactive music,
+        // nor outside the groove.
+        let lob = |leaper| Event::Launched {
+            from: 0,
+            to: 1,
+            kick: false,
+            leaper,
+        };
+        dunk_mix(&mut link, &lob(true), false);
+        assert!(!dry_off(&link));
+        dunk_mix(&mut link, &lob(true), true);
+        assert!(dry_off(&link));
+        dunk_mix(&mut link, &lob(false), true);
+        assert!(!dry_off(&link));
+        link.groove = false;
+        dunk_mix(&mut link, &take_off(3), true);
+        assert!(!dry_off(&link));
     }
 
     #[test]
