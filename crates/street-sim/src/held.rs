@@ -382,6 +382,21 @@ impl World {
             Action::Stumbling {
                 reaction: Some(r), ..
             } => return Some(of(&r.run, r.from)),
+            // The rebound jump's and the block jump's scripts on their own
+            // clocks ([`World::rebound_channel`], [`crate::block::Jump`]).
+            Action::ReboundJump { .. } => return self.rebound_channel(i),
+            Action::Jumping { block: Some(j), .. } => {
+                return Some(Channel {
+                    shown: Shown {
+                        record: Some(j.record()),
+                        frame: j.frame(),
+                        blend: j.blend(),
+                    },
+                    from: j.from,
+                    counter: j.blend().map(|_| (j.tick + 1, j.blend_len())),
+                    gait: false,
+                });
+            }
             _ => {}
         }
         if let Some(c) = self.catch_row_playing(i) {

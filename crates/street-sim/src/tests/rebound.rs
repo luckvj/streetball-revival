@@ -312,3 +312,54 @@ fn a_rebound_jump_and_the_balls_states_survive_a_snapshot() {
     bad.ball.touched = true;
     assert!(bad.validate().is_err());
 }
+
+#[test]
+fn a_ball_caught_in_a_rebound_jump_rides_the_jumps_clip() {
+    // `FUN_0014e060` holds the ball on the clip channel 0 shows: after a
+    // catch in the air that is the rebound script's, not his gait.
+    let bank = crate::pose::disc_bank();
+    let crate::pose::Bank::Disc(poses) = bank.clone() else {
+        return;
+    };
+    for seed in 0..4 {
+        let mut w = rebound_scene(seed);
+        w.poses = bank.clone();
+        w.step(&[buttons(button::JUMP), Input::default()]);
+        let mut held_in_air = false;
+        for _ in 1..80 {
+            idle(&mut w);
+            if w.ball.state != BallState::Held(0) || w.players[0].height <= 0.0 {
+                continue;
+            }
+            let Action::ReboundJump { script, branch, .. } = w.players[0].action else {
+                continue;
+            };
+            let c = w.channel(0).unwrap();
+            let record = SCRIPTS[usize::from(script)].records[usize::from(branch)];
+            assert_eq!(c.shown.record, Some(record), "seed {seed}");
+            assert!(!c.gait);
+            if c.shown.blend.is_none() {
+                let pose = poses
+                    .pose(
+                        crate::pose::Frame {
+                            record,
+                            time: c.shown.frame,
+                            looping: false,
+                        },
+                        w.players[0].body(),
+                        w.place(0),
+                    )
+                    .unwrap();
+                let b = w.ball.position;
+                let near = [pose::RIGHT_HAND, pose::LEFT_HAND].iter().any(|&k| {
+                    let h = pose.joints[k].position;
+                    crate::math::len3(b[0] - h[0], b[1] - h[1], b[2] - h[2]) < 1.2
+                });
+                assert!(near, "seed {seed}: the ball {b:?} off the clip's hands");
+                held_in_air = true;
+            }
+            break;
+        }
+        assert!(held_in_air, "seed {seed}: no catch in the air");
+    }
+}
