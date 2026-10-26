@@ -51,12 +51,6 @@
           "sha256": "4adce6ad05ad90f7d929bcc93090ccce485fc7af38973f2e87f2480a4cc8e889"
         },
         {
-          "path": "docs/parity/review_pair.md",
-          "locator": "Camera final report audit",
-          "note": "Independent verification of six input bits, source hashes, native signs and zero/one-ULP errors.",
-          "sha256": "a4e8db5df1a66730b04c78565fde833c1cf31648366fbfdacca905963f9a0da3"
-        },
-        {
           "path": "$EVIDENCE/street-camera-production-viewport-comparison.json",
           "locator": "comparison.metrics; original_capture.fields and bookends",
           "note": "Actual compiled production comparison with observed viewport/aspect/zoom; failure and follow-up both retained.",
@@ -137,7 +131,7 @@
       ],
       "tolerance": "Scalar comparison retains 102/103 matches at exact angle and matrix <=4 ULP; one historical failure is unpaired in render timing. Separate consumed-angle stage passes 103/103, all206 diagonals within4 ULP, maximum3 ULP.",
       "limitations": "Audit 2026-10-14 (F19,F30): Consumed-angle component evidence is retained, but the stated same-generation native lens-to-render correspondence remains unresolved. Prior bounded evidence/limitations: Raw trace and10000-sample timeline show lens values can be published before renderer angle/matrix values, including21 observed immediate triples. Stable bookends cannot certify a common generation. Historical fresh48 failure remains recorded and is not marked passed or conclusively attributed. Consumed-angle stage is supported independently; full camera/controller and real PS2 hardware parity remain unproven. Played-match lens generation (2026-10-15) is checked through the row controller case; the scalar-to-render stage is unchanged. Pictures (2026-10-15, options defaults): FUN_00323450's three projections are ported as Picture::Standard (the 4:3 picture, the default, pillarboxed in a wider window as the original's reset leaves Widescreen off), Anamorphic (the Widescreen option: the PS2's 16/9 branch at the same horizontal angle) and Wide (the both-flags branch nothing in the original sets, the rewrite's own choice: the 4:3 height plus the sides); for lens 0.33 the heights are 46.44/35.67/46.44 degrees and the widths 59.54/59.54/74.66. The screenshots are the rewrite's three pictures of one quick match; the original's anamorphic frame itself was not captured. Re-pinned 2026-10-18 after the presentation pass: CAMERA_RECOVERY.md gained the section \"The row's selection, the source adapter's inputs and the shared roll (2026-10-18)\" and dated notes pointing to it in \"Camera manager events and helper selection\", \"Instant replays, the replay director and the task order\", \"The row in a played match\" and \"Native camera source motion adapter\"; the cited region is unchanged. Reviewed 2026-10-18: not ported this pass; the projection is still the rewrite's scalar path with no original render-completion marker to compare against (the next probe stands). Its view.rs pins were already stale at 945a317 and are left for that comparison. 2026-10-18 (the scorecard's review): view.rs re-read: the eight cited items are byte-identical to b31cac2's, where the second view.rs pin was taken; the first (62432b6) cited a subset of the same items and is folded into it. Re-pinned; the status stays untested (no original render-completion marker for a same-generation comparison yet). Last re-pinned 2026-10-25 after after the screens, the strip's knock and the swipe's clock (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Resolve F19,F30 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Establish an original render-completion marker or read-only execution trace before claiming same-generation scalar-to-render parity; use the consumed-stage adapter for projection comparisons.",
+      "next_probe": "Establish an original render-completion marker or read-only execution trace before claiming same-generation scalar-to-render parity; use the consumed-stage adapter for projection comparisons.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",
@@ -550,7 +544,7 @@
       ],
       "tolerance": "Complete structural correspondence across all five presentation stages: court translucent geometry, skinned player meshes, projected shadows, native camera projection, and frontend layout overlays.",
       "limitations": "Audit 2026-10-14 (F01,F23): No paired complete original/rewrite framebuffer comparison exists. Prior bounded evidence/limitations: Structural parity of all visual pipeline stages; modern floating-point Bevy/WGPU rasterizer replaces PS2 GS 4MB eDRAM fixed-point 12.4 hardware rasterizer. Re-pinned 2026-10-15: look::build now draws the Screen pages' rows on their nodes, kind-34 legends and the kind-5 help line (the front-end merge); no framebuffer comparison was added. Re-pinned 2026-10-18 after the front end pass: look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; look.rs's build draws every title through look::title (the title widget's two outlines, FUN_0020f7d0) and leaves Choose Baller, the intros and the map (Style::Screen 54, 49..51, 56) to draw their own pieces. Last re-pinned 2026-10-25 after the gait check lookup and the blur hold (re-pins that leave the cited region unchanged replace this line). 2026-10-24: the final 16-bit dithered store into the shown buffer is drawn on every screen; the frame before it is still not compared pixel for pixel.",
-      "next_probe": "Resolve F01,F23 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Acquire synchronized original and rewrite frames with identical camera/state/viewport for color/depth comparison.",
+      "next_probe": "Acquire synchronized original and rewrite frames with identical camera/state/viewport for color/depth comparison.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",
@@ -595,7 +589,7 @@
       ],
       "tolerance": "Discrete diffuse response, zero specular reflectance, and directional alignment with authentic court sun direction.",
       "limitations": "Audit 2026-10-14 (F23): StandardMaterial parameters and sun alignment have no paired native ToonShade/Skin lighting output validation. Prior bounded evidence/limitations: Hardware-accelerated PBR pipeline approximates the fixed-function PS2 VU0/VU1 microcode toon lighting math. Last re-pinned 2026-10-25 after the held ball and shorts (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Resolve F23 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Compare lit vertex or fragment outputs under controlled poses and court lighting.",
+      "next_probe": "Compare lit vertex or fragment outputs under controlled poses and court lighting.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",
@@ -633,7 +627,7 @@
       ],
       "tolerance": "Exact geometric ray-plane intersection matching native VU1 ArbitraryShadow formula; single-coat non-overlapping shadow coverage.",
       "limitations": "Audit 2026-10-14 (F23): Host depth-writing lifted/layered shadow meshes have no native destination-alpha/coverage output comparison. Prior bounded evidence/limitations: Geometric projection uses CPU skinning and depth writes to prevent double-darkening, matching native GS destination-alpha result without requiring PS2 hardware eDRAM. Last re-pinned 2026-10-25 after dunk met by the defender's posed hands (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Resolve F23 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Compare isolated native and production shadow masks over overlapping limbs.",
+      "next_probe": "Compare isolated native and production shadow masks over overlapping limbs.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",
@@ -671,7 +665,7 @@
       ],
       "tolerance": "Exact joint index/weight mapping and inverse bindpose matrices from disc EAGL geometry.",
       "limitations": "Audit 2026-10-14 (F23,F24): No native evaluated vertex/normal comparison validates the complete production consumer. Prior bounded evidence/limitations: Hardware-accelerated skinning shader executes Bevy/WGPU linear blend skinning across the recovered 22-joint hierarchy. Last re-pinned 2026-10-25 after the held ball and shorts (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Resolve F23,F24 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Capture native evaluated vertex/normal output for a fixed rig/pose and compare the production skinning consumer before rasterization.",
+      "next_probe": "Capture native evaluated vertex/normal output for a fixed rig/pose and compare the production skinning consumer before rasterization.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",
@@ -710,7 +704,7 @@
       ],
       "tolerance": "Exact 1024-circle quantization (162.97466 rad-to-circle) and 22-unit deadzone threshold matching FUN_00196698.",
       "limitations": "Independent Gemini review 2026-10-14 (G04,G05): Gait phase is assigned then advanced again in the renderer; original VM timing/blend/action authority remains incomplete. Earlier claimed scope: Bounded evidence retained: Display transition consumer matches native quantized heading compensation, root crossfade slerp, action restart logic, and gait channel phase synchronization. Re-pinned 2026-10-15: view::sync_players now sets a moving player's animator speed to 0 so the sim's gait channel alone advances the frame (the G04 double advance), picks the clip from the playing gait record, and blends replay-tape poses; blend and action authority were not re-reviewed, so the status stands. Re-pinned 2026-10-15 (the display on the script clock): the shot, dunk, lay-up, pump fake, pass and catch clips now follow their scripts' blends (the renderer's crossfade at the script's counter/length) and waits on the sim's updates (crate::channel, street_assets::playback), with the heading compensation applied at the script's blend start; the ordinary gait transitions and the other actions keep the fixed 0.1..0.3 s crossfades and the retimed clips, so G05/F06 stand for those. Re-pinned 2026-10-15 (the display on the script clock): the shot, dunk, lay-up, pump fake, pass and catch clips now follow their scripts' blends (the renderer's crossfade at the script's counter/length) and waits on the sim's updates (crate::channel, street_assets::playback), with the heading compensation applied at the script's blend start; the ordinary gait transitions and the other actions keep the fixed 0.1..0.3 s crossfades and the retimed clips, so G05/F06 stand for those. Re-pinned 2026-10-16 after the pass flight pass: view.rs's `sync_players` gained a fallback clip for `Action::TipJump`; `sync_players` gained one arm (`Action::TipJump`'s fallback clip); the rest of the cited region is unchanged. Re-pinned 2026-10-16 after the dunk and rebound pass: street-game's view.rs shows a rebound jump the channel cannot play with the rebound clip; the cited `sync_players` shows a rebound jump the channel cannot play with the rebound clip. Re-pinned 2026-10-16 after the turnovers pass: view.rs plays a swipe's own clip and side over its span; the cited sync_players plays a swipe's own clip and side over its span; the other actions are unchanged. Re-pinned 2026-10-16 after the blocks and dribble pass: view.rs's `sync_players` draws a traced block jump from its own clock; `sync_players` draws a traced block jump from its own clock (`channel::block_shown`) before the channel branch; the rest is unchanged. Re-pinned 2026-10-16 after the trick moves pass: view.rs's `sync_players` shows a trick's or reaction's script clip on the sim's clock (`channel::script_shown`) and its trick fallback runs the script's length; `sync_players` shows a trick's or reaction's script clip first; the rest of the cited region is unchanged. Re-pinned 2026-10-16 after the held-ball pass: view.rs draws the simulation's channel on scripted moves and its held ball while a script plays, and leaves the scoop to its script; sync_players draws the simulation's channel on scripted moves first (channel::sim_shown, the same script clock) and sync_ball the simulation's held ball while a script plays. Re-pinned 2026-10-17 after the alley-oop's leap and the dive: view.rs reads a leaper from `Player::leaping` (`sync_players`, the camera's `observe` and `row_inputs`) and plays the dive's clip on its script's clock; `sync_players` reads a leaper from `Player::leaping` and plays the dive on its script's clock. Re-pinned 2026-10-18 after the presentation pass: CAMERA_RECOVERY.md gained the section \"The row's selection, the source adapter's inputs and the shared roll (2026-10-18)\" and dated notes pointing to it in \"Camera manager events and helper selection\", \"Instant replays, the replay director and the task order\", \"The row in a played match\" and \"Native camera source motion adapter\"; animation.rs gained Clip::root_rotation; view.rs's source adapter takes the simulation's physical vector, state bits, stop clips and vertical gate (CameraSourceSample, CameraSourceState), the camera's rows follow native_camera_row, and game_ended hides the players, the ball and the rings at the game's end; the cited sync_players also hides the players at the game's end (view::game_ended); its channel branch is unchanged. 2026-10-23 (the gait blend): a change from one gait record's row to another now crossfades on the simulation's channel (street_sim::pose::GAIT_BLEND, 6 updates, the old row's clip held at its frame, the weight the counter's), as World::actor_pose already posed it; the stand-in clips fade over the same 0.1 s; a stop to the stand clips and the other actions keep renderer fades, so G05 stands for those. 2026-10-24: the stop is shown on the stand script's own blend from the simulation's channel (channel::script_or_stand_shown with the gait clip it started from held, the script's Blend counter), as the tricks, reactions, scoop and counter stance are; the renderer's fades are left for the actions shown without a script clip (view.rs sync_players' fallback match), so G05 stands for those. 2026-10-25 (docs/TRACE.md \"Screens, the strip's knock and the swipe's clock\"): a swipe is shown on its script's blend and wait from the simulation's swipe clock (channel::swipe_shown), and the stumbles are reaction scripts now (the screen's and the strip's); the renderer's fades are left for a pass without a catch row and a trick whose clip the disc lacks, so G05 stands for those. Last re-pinned 2026-10-25 after after the screens, the strip's knock and the swipe's clock (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Resolve G05 with the ordinary programs' own blend counters (street_assets::ordinary) driving the gait transitions as crate::channel drives the move scripts; then Resolve G05 with the ordinary programs' own blend counters (street_assets::ordinary) driving the gait transitions as crate::channel drives the move scripts; then Resolve G04,G05 in docs/GEMINI_WORK_REVIEW_2026-10-14.md with actual production-path/native acceptance. Resolve F06,F07 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Capture outgoing/incoming buffers, native blend counter, quantized heading correction and root compensation; compare actual production Animator transition output at each aligned tick.",
+      "next_probe": "Drive the gait transitions with the ordinary programs' own blend counters (street_assets::ordinary), as crate::channel drives the move scripts; then capture outgoing/incoming buffers, native blend counter, quantized heading correction and root compensation; compare actual production Animator transition output at each aligned tick.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",
@@ -807,7 +801,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Kind-10 front-end nodes; FUN_00221ba8 / FUN_00222590 / FUN_0021f8f0",
           "note": "Recovery establishes disabled, scroll and explicit-link modes plus prop-33/34 list/row binding. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/menu.rs",
@@ -819,7 +813,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Screen rows, legends, the help line and the navigation rule (2026-10-15, merged)",
           "note": "The navigation rule as FUN_0021f8f0 and its readers give it. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -829,7 +823,7 @@
         }
       ],
       "tolerance": "Exact integer target row for valid static links; disabled and malformed/dead-end links retain the current row.",
-      "limitations": "Re-read 2026-10-15: modes and links are read as FUN_00221ba8/FUN_002e3b18 give them (a missing mode is 0, no step; a missing link is node 0; mode 1 scrolls, mode 2 follows the link within the list), and the list is the one the traced constructor registers its rows on for classes 3, 5, 6 and 102..104; elsewhere the dominant prop-33 group is the rewrite's own choice. No runtime cursor trace was compared. Re-pinned 2026-10-16 after the session's generator pass: menu.rs's `navigate` reseeds the session's generator at Choose Team's commit and the story starts; the cited `navigate` gained only those reseed calls and a session parameter; its navigation is unchanged. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's navigate lost the Gym page's arm and opens the career star's editor from the map (open_baller); the navigation the case cites is otherwise unchanged. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; menu.rs's navigate now steps Choose Baller's slots, the map's cities by their nodes' links (locked ones skipped) and a city's courts (map_view::city_step), and the map's Circle opens Edit Baller. 2026-10-20 (the card's messages): the memory card's dialogs own the keys while the card works (card_menu, card_hold); navigate notes the pages it found. 2026-10-20 (the transitions' pass): navigate runs only while no transition runs (presses during a movie or an arrival wait for the new screen, transition::queue_presses); Main opens on Play It and My Team on Create A Baller however they are reached (menu::watch). 2026-10-20 (the idle demo's pass): the title takes Start alone (FUN_002d3cf0), and Main no press while it loads the idle demo (attract::takes_presses). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Re-read 2026-10-15: modes and links are read as FUN_00221ba8/FUN_002e3b18 give them (a missing mode is 0, no step; a missing link is node 0; mode 1 scrolls, mode 2 follows the link within the list), and the list is the one the traced constructor registers its rows on for classes 3, 5, 6 and 102..104; elsewhere the dominant prop-33 group is the rewrite's own choice. No runtime cursor trace was compared. Re-pinned 2026-10-16 after the session's generator pass: menu.rs's `navigate` reseeds the session's generator at Choose Team's commit and the story starts; the cited `navigate` gained only those reseed calls and a session parameter; its navigation is unchanged. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's navigate lost the Gym page's arm and opens the career star's editor from the map (open_baller); the navigation the case cites is otherwise unchanged. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; menu.rs's navigate now steps Choose Baller's slots, the map's cities by their nodes' links (locked ones skipped) and a city's courts (map_view::city_step), and the map's Circle opens Edit Baller. 2026-10-20 (the card's messages): the memory card's dialogs own the keys while the card works (card_menu, card_hold); navigate notes the pages it found. 2026-10-20 (the transitions' pass): navigate runs only while no transition runs (presses during a movie or an arrival wait for the new screen, transition::queue_presses); Main opens on Play It and My Team on Create A Baller however they are reached (menu::watch). 2026-10-20 (the idle demo's pass): the title takes Start alone (FUN_002d3cf0), and Main no press while it loads the idle demo (attract::takes_presses). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare class-3 and class-6 up/down cursor traces against the original running under the same row availability."
     },
     {
@@ -843,13 +837,13 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Dynamic navigation, unavailable widget skipping, and kind-36 direction override",
           "note": "Decompiled FUN_0021f8f0, FUN_00222590, FUN_00222678, FUN_00222770 from SLUS_206.51. Mode 2 is forced and direction overridden for kind 36; target availability (bound widget flags & 2) is checked and unavailable widgets are skipped recursively. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Screen rows, legends, the help line and the navigation rule (2026-10-15, merged)",
           "note": "The recursion over unavailable targets and the kind-36 reading. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -865,7 +859,7 @@
         }
       ],
       "tolerance": "Widget identity/availability and final navigation target must match exactly.",
-      "limitations": "Re-read 2026-10-15: an unavailable target (no bound widget, or one whose +0x5b bit 1 is clear, FUN_00222770; the rewrite's screen_row_available) is stepped over in the same direction as FUN_0021f8f0 recurses, a ring of unavailable nodes stopping without a step where the original would not return. The kind-36 override comes from a bound widget of that kind, which no layout authors and none of these screens binds, so nothing is applied; bound kind-36 widgets are not modelled. No runtime capture of availability transitions. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Re-read 2026-10-15: an unavailable target (no bound widget, or one whose +0x5b bit 1 is clear, FUN_00222770; the rewrite's screen_row_available) is stepped over in the same direction as FUN_0021f8f0 recurses, a ring of unavailable nodes stopping without a step where the original would not return. The kind-36 override comes from a bound widget of that kind, which no layout authors and none of these screens binds, so nothing is applied; bound kind-36 widgets are not modelled. No runtime capture of availability transitions. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture widget +0x5b transitions on the map and controller screens in PCSX2 and compare the cursor against the rewrite's steps.",
       "gemini_review": {
         "date": "2026-10-14",
@@ -887,7 +881,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Authored sprite frames; FUN_0039a900 / FUN_00210048",
           "note": "The native eight-byte 0x7c frame header and four signed corner pairs determine bounds and dimensions. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-assets/src/ssh.rs",
@@ -909,7 +903,7 @@
         }
       ],
       "tolerance": "Exact signed corner/bounds integers for supported axis-aligned frames.",
-      "limitations": "This obligation covers crop geometry only, not selection color, runtime binding, animation or pixel output. The crop helper rejects nonordinary corner ordering; native four-corner UV behavior is broader. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "This obligation covers crop geometry only, not selection color, runtime binding, animation or pixel output. The crop helper rejects nonordinary corner ordering; native four-corner UV behavior is broader. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare mirrored/rotated frame UV output and native selected/unselected bullet/tab rendering separately."
     },
     {
@@ -923,7 +917,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "List display widgets, kind 36, and segmented-bar renderer; FUN_002e5d30 / FUN_00218950 / FUN_00218a80",
           "note": "Xrefs confirm FUN_00218950 is exclusively called by layout parser FUN_002e5d30; no runtime screen constructor instantiates kind 31. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -939,8 +933,8 @@
         }
       ],
       "tolerance": "Exact runtime widget presence, binding, visibility and native coordinates; no visual tolerance has been established.",
-      "limitations": "Audit 2026-10-14 (F21): Generic kind31 drawing and static frame checks do not establish screen-specific runtime widget creation/binding/visibility. Prior bounded evidence/limitations: Kind 31 is an uninstantiated engine layout primitive; geometry verified statically against decompiled FUN_00218950 / FUN_00218a80. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; look.rs's build draws every title through look::title (the title widget's two outlines, FUN_0020f7d0) and leaves Choose Baller, the intros and the map (Style::Screen 54, 49..51, 56) to draw their own pieces. 2026-10-19 (sixth pass): look::shoulder_tabs draws a tab strip's arrows and L1 and R1 (High Scores, Rewards). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Resolve F21 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Trace screen list population and widget construction, then compare each bound widget's presence/selection/visibility with native runtime.",
+      "limitations": "Audit 2026-10-14 (F21): Generic kind31 drawing and static frame checks do not establish screen-specific runtime widget creation/binding/visibility. Prior bounded evidence/limitations: Kind 31 is an uninstantiated engine layout primitive; geometry verified statically against decompiled FUN_00218950 / FUN_00218a80. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; look.rs's build draws every title through look::title (the title widget's two outlines, FUN_0020f7d0) and leaves Choose Baller, the intros and the map (Style::Screen 54, 49..51, 56) to draw their own pieces. 2026-10-19 (sixth pass): look::shoulder_tabs draws a tab strip's arrows and L1 and R1 (High Scores, Rewards). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Trace screen list population and widget construction, then compare each bound widget's presence/selection/visibility with native runtime.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",
@@ -961,7 +955,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Native Options slider (kind 6); FUN_002370c0 / FUN_0021d148 / FUN_0021d410 / leaf 0x237948",
           "note": "Native frames, UV trims, content width, local offsets, fill thresholds and rounding are recovered. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -977,7 +971,7 @@
         }
       ],
       "tolerance": "Exact frames, width 170 and local offsets; recovered threshold/rounding equations for a fresh stateless evaluation.",
-      "limitations": "This is local geometry only. It does not claim native persistent child widths, widget bindings, outer placements or screenshot/pixel parity. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's draw lost the Gym page from its backdrop table; the drawing the case cites is otherwise unchanged. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "This is local geometry only. It does not claim native persistent child widths, widget bindings, outer placements or screenshot/pixel parity. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's draw lost the Gym page from its backdrop table; the drawing the case cites is otherwise unchanged. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare native and production local child rectangles/UVs for zero, fill 4/8 boundaries, rounding cases and full fill."
     },
     {
@@ -991,7 +985,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Native Options slider (kind 6) / lifecycle paragraph",
           "note": "Decompiled FUN_0021d410 from SLUS_206.51. Verified that FUN_0021d410 is the sole child updater invoked by decrement FUN_002378c8 and increment FUN_00237908. Discrete volume levels 0..10 produce fill <=4 (child 1 width 0, children 2/3 hidden) and fill >8 (child 1 width 4, child 2 ROUND(fill-8), child 3 placed at 9+width-1). Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -1001,7 +995,7 @@
         }
       ],
       "tolerance": "Exact child width/visibility sequence after each increment/decrement.",
-      "limitations": "Immediate-mode evaluated widget matches the recovered native state machine and child geometry; native PS2 software GS blit pipeline remains separate. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Immediate-mode evaluated widget matches the recovered native state machine and child geometry; native PS2 software GS blit pipeline remains separate. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture in-game Options UI framebuffer sequence across continuous slider manipulation."
     },
     {
@@ -1015,7 +1009,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Runtime row binding and screen-specific widget registration; FUN_0029e230 / FUN_002beef8 / FUN_002a3c60 / FUN_002a03c0 / FUN_002a0fe0 / FUN_00289a10 / FUN_0028a970 / FUN_00288be0",
           "note": "Decompiled native screen registration functions for classes 3, 5, 6, 56, 102, 103, 104; each explicitly registers row widgets into its kind-9 list and pairs with kind-10 navigation nodes. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-assets/tests/fe_disc.rs",
@@ -1027,7 +1021,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Screen rows, legends, the help line and the navigation rule (2026-10-15, merged)",
           "note": "The row binding, the row widget, the help line and the legends as traced. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -1043,7 +1037,7 @@
         }
       ],
       "tolerance": "Exact row-to-widget identity, authored coordinates and selection/visibility dispatch.",
-      "limitations": "Re-read 2026-10-15: on classes 3, 5, 6 and 102..104 the rows draw at their nodes' points in registration order (FUN_0021f580/FUN_0021f230/FUN_00222420; the Main Menu's nodes moved by (0, -20) and its created sixth row in font 4, FUN_0029e230), in the row widget's colours with the highlighted row's pulse and stars (FUN_0021c590/FUN_0021cd28/FUN_0021c628/FUN_0021c9e0), with the help line in font 1 and 0xffc99b0d (FUN_0021af18/FUN_0021afa8) and the kind-34 button legends (FUN_0021a530/FUN_0021ab10, region word 0). The other screens keep the generic layout; confirm/cancel animations and transitions are not ported; no screenshot of the original was compared with the rewrite's. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's draw lost the Gym page from its backdrop table; the drawing the case cites is otherwise unchanged. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; look.rs's build draws every title through look::title (the title widget's two outlines, FUN_0020f7d0) and leaves Choose Baller, the intros and the map (Style::Screen 54, 49..51, 56) to draw their own pieces. 2026-10-19 (third pass): build's Style::Screen arm also draws layouts 59 and 60's legends and leaves layout 61's to cab_view.rs; the row binding is unchanged. 2026-10-19 (sixth pass): class 97's rows (Game Data, elements 10..15) are registered with their binding (list 9). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Re-read 2026-10-15: on classes 3, 5, 6 and 102..104 the rows draw at their nodes' points in registration order (FUN_0021f580/FUN_0021f230/FUN_00222420; the Main Menu's nodes moved by (0, -20) and its created sixth row in font 4, FUN_0029e230), in the row widget's colours with the highlighted row's pulse and stars (FUN_0021c590/FUN_0021cd28/FUN_0021c628/FUN_0021c9e0), with the help line in font 1 and 0xffc99b0d (FUN_0021af18/FUN_0021afa8) and the kind-34 button legends (FUN_0021a530/FUN_0021ab10, region word 0). The other screens keep the generic layout; confirm/cancel animations and transitions are not ported; no screenshot of the original was compared with the rewrite's. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's draw lost the Gym page from its backdrop table; the drawing the case cites is otherwise unchanged. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; look.rs's build draws every title through look::title (the title widget's two outlines, FUN_0020f7d0) and leaves Choose Baller, the intros and the map (Style::Screen 54, 49..51, 56) to draw their own pieces. 2026-10-19 (third pass): build's Style::Screen arm also draws layouts 59 and 60's legends and leaves layout 61's to cab_view.rs; the row binding is unchanged. 2026-10-19 (sixth pass): class 97's rows (Game Data, elements 10..15) are registered with their binding (list 9). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Screenshot the original's Main Menu and Play It in PCSX2 and compare row positions, colours and the pulse against the rewrite's at 640x480.",
       "gemini_review": {
         "date": "2026-10-14",
@@ -1066,7 +1060,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Screen key dispatch, action codes, and page lifecycle",
           "note": "Decompiled FUN_002e8c90, FUN_00221cf0, FUN_0021fa48, and FUN_00245b88 from SLUS_206.51. Recovered native input action table: ADVANCE_PRESS (0x23/35, confirm), CANCEL_PRESS (0x25/37, cancel), HELP_PRESS (0x27/39), directional pad UP/DOWN/LEFT/RIGHT (0x1b..0x1e), and navigation stack lifecycle. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/menu.rs",
@@ -1082,7 +1076,7 @@
         }
       ],
       "tolerance": "Exact action code mapping and navigation stack page/cursor state transitions.",
-      "limitations": "Bounded evidence retained: Static recovery of engine input action tables and stack state transitions; Main Menu and Play It directional graph navigation connected. Re-pinned 2026-10-15: navigate now filters rows through screen_row_available (FUN_0021f8f0's rule), maps Play It's cursor onto the original's four rows, and adds the rewrite's own extra-button shortcuts (Online from Main, Watch A Game from Play It); the native dispatch test is unchanged and the merge was checked against the decompile (docs/FRONTEND_RECOVERY.md, last section). Re-pinned 2026-10-16 after the session's generator pass: menu.rs's `navigate` reseeds the session's generator at Choose Team's commit and the story starts; the cited `navigate` gained only those reseed calls and a session parameter; its key dispatch is unchanged. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's navigate lost the Gym page's arm and opens the career star's editor from the map (open_baller); the navigation the case cites is otherwise unchanged. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; menu.rs's navigate now steps Choose Baller's slots, the map's cities by their nodes' links (locked ones skipped) and a city's courts (map_view::city_step), and the map's Circle opens Edit Baller. 2026-10-20 (the card's messages): the memory card's dialogs own the keys while the card works (card_menu before navigate, card_hold after). 2026-10-20 (the transitions' pass): presses during a transition's movie or arrival wait and reach the new screen, one while the old screen leaves is dropped (transition::queue_presses before the navigation). 2026-10-20 (the idle demo's pass): Start during a transition clip that has a follow-on (the title's intro) ends it and reaches no screen (transition::queue_presses). 2026-10-20 (the movies pass): Start during a transition's movies goes to the new screen's check alone (the title's, the DVD pages'), other presses then to none (transition::queue_presses). 2026-10-20 (Select's questions): the rewrite's extra-button shortcuts are gone: Online, Watch A Game and the created teams' list are PC Settings' rows, and Select (a pad's, P on the keyboard) asks the original's question on 21 screens (presentation.ui_select_dialogs). 2026-10-21 (item 7): MenuInput listens to one controller where a screen takes only the user's pad (Choose Region). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Bounded evidence retained: Static recovery of engine input action tables and stack state transitions; Main Menu and Play It directional graph navigation connected. Re-pinned 2026-10-15: navigate now filters rows through screen_row_available (FUN_0021f8f0's rule), maps Play It's cursor onto the original's four rows, and adds the rewrite's own extra-button shortcuts (Online from Main, Watch A Game from Play It); the native dispatch test is unchanged and the merge was checked against the decompile (docs/FRONTEND_RECOVERY.md, last section). Re-pinned 2026-10-16 after the session's generator pass: menu.rs's `navigate` reseeds the session's generator at Choose Team's commit and the story starts; the cited `navigate` gained only those reseed calls and a session parameter; its key dispatch is unchanged. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's navigate lost the Gym page's arm and opens the career star's editor from the map (open_baller); the navigation the case cites is otherwise unchanged. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; menu.rs's navigate now steps Choose Baller's slots, the map's cities by their nodes' links (locked ones skipped) and a city's courts (map_view::city_step), and the map's Circle opens Edit Baller. 2026-10-20 (the card's messages): the memory card's dialogs own the keys while the card works (card_menu before navigate, card_hold after). 2026-10-20 (the transitions' pass): presses during a transition's movie or arrival wait and reach the new screen, one while the old screen leaves is dropped (transition::queue_presses before the navigation). 2026-10-20 (the idle demo's pass): Start during a transition clip that has a follow-on (the title's intro) ends it and reaches no screen (transition::queue_presses). 2026-10-20 (the movies pass): Start during a transition's movies goes to the new screen's check alone (the title's, the DVD pages'), other presses then to none (transition::queue_presses). 2026-10-20 (Select's questions): the rewrite's extra-button shortcuts are gone: Online, Watch A Game and the created teams' list are PC Settings' rows, and Select (a pad's, P on the keyboard) asks the original's question on 21 screens (presentation.ui_select_dialogs). 2026-10-21 (item 7): MenuInput listens to one controller where a screen takes only the user's pad (Choose Region). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture runtime controller packet traces and verify frame-accurate screen transitions."
     },
     {
@@ -1096,7 +1090,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Movie panel placements, loops, and loading screens",
           "note": "Decompiled FUN_002c3948, FUN_002c5190, FUN_0029dfb0, FUN_0029c3a8, FUN_0029a828, FUN_0029a8c0 from SLUS_206.51. Verified exact panel coordinates at 461/70 (448, 112, 608, 260) for rewards/trophies and (58, 110, 290, 326) for main menu city view, alongside 25-card legend rotation and 10-strip 640x512 loading textures. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/menu.rs",
@@ -1112,8 +1106,8 @@
         }
       ],
       "tolerance": "Exact asset/frame identity and native panel rectangles/lifecycle.",
-      "limitations": "Audit 2026-10-14 (F22): Loop IDs/rectangle tests do not validate synchronized frame timing, native compositing, viewport or complete lifecycle. Prior bounded evidence/limitations: Movie playback uses software/Bevy texture stream rather than native IPU hardware MPEG decoding; loop selection and layout rectangles match exactly. Re-pinned 2026-10-15: the city loop's placement was corrected to (265, 240), 320x240 under the rows of classes 3/5/6/102/103/104 with none on Title (docs/FRONTEND_RECOVERY.md, City loop placement; loop_movie_for_page, movie_panel_rect and the test follow), and loading::picture assembles 640x512 and may take an HD pack's picture. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's draw lost the Gym page from its backdrop table; the drawing the case cites is otherwise unchanged. 2026-10-19 (fifth pass): The Moves is the Edit Moves panel browsing (presentation.ui_the_moves): its clip plays in the film room's widget (edit_moves::FILM_ROOM, (350, 110) 224x144) after Cross, as Edit Moves' does; movie_panel_rect and its test follow. 2026-10-20 (seventh pass): loading.rs's choice follows FUN_0029c3a8 (presentation.ui_loading_screen); loading::picture is unchanged. 2026-10-20 (the movies pass): every screen's loop by its slot +0x15c (presentation.ui_screen_loops): XLP0004 is User Setup's, not Edit Moves'. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Resolve F22 in docs/FULL_PARITY_AUDIT_2026-10-14.md using paired original/current-production acceptance. Capture native whole-loop video frame CRC for movie playback sequence.",
+      "limitations": "Audit 2026-10-14 (F22): Loop IDs/rectangle tests do not validate synchronized frame timing, native compositing, viewport or complete lifecycle. Prior bounded evidence/limitations: Movie playback uses software/Bevy texture stream rather than native IPU hardware MPEG decoding; loop selection and layout rectangles match exactly. Re-pinned 2026-10-15: the city loop's placement was corrected to (265, 240), 320x240 under the rows of classes 3/5/6/102/103/104 with none on Title (docs/FRONTEND_RECOVERY.md, City loop placement; loop_movie_for_page, movie_panel_rect and the test follow), and loading::picture assembles 640x512 and may take an HD pack's picture. Re-pinned 2026-10-18 after the audio, modes and saves pass: menu.rs opens the career star's editor from the map's Edit Baller in place of the Gym; menu.rs's draw lost the Gym page from its backdrop table; the drawing the case cites is otherwise unchanged. 2026-10-19 (fifth pass): The Moves is the Edit Moves panel browsing (presentation.ui_the_moves): its clip plays in the film room's widget (edit_moves::FILM_ROOM, (350, 110) 224x144) after Cross, as Edit Moves' does; movie_panel_rect and its test follow. 2026-10-20 (seventh pass): loading.rs's choice follows FUN_0029c3a8 (presentation.ui_loading_screen); loading::picture is unchanged. 2026-10-20 (the movies pass): every screen's loop by its slot +0x15c (presentation.ui_screen_loops): XLP0004 is User Setup's, not Edit Moves'. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Capture native whole-loop video frame CRC for movie playback sequence.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",
@@ -1166,7 +1160,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Full parity audit F20,F22; live integration paths cited in report",
           "note": "Existing native recovery and current source show the audited integration boundary. Re-pinned 2026-10-15 after the pre-match screens pass: four sections appended; the cited section unchanged. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -1182,8 +1176,8 @@
         }
       ],
       "tolerance": "Exact native discrete state, event order and tick boundary; output tolerance must be declared before paired measurement.",
-      "limitations": "Independent Gemini review 2026-10-14 (G10): Main row overflow is fixed, but complete native GUI viewport/aspect/compositing output was not compared and full-window stretching remains. Earlier claimed scope: Bounded evidence retained: Main Menu row count restored to exact 6 authored rows without footer overlap; vertical coordinate extrapolation clamped before footer. Re-pinned 2026-10-15: docs/FRONTEND_RECOVERY.md gained the city-loop, row-availability and screen-row sections, and look::build and menu.rs draw the Screen pages' rows on their nodes with legends and the help line; viewport/aspect compositing was not compared. 2026-10-16: the in-game screens (HUD, pause, dialogs, banner) draw in the layouts' space as the front end does; the HUD's constructor moves its elements 16 up (FUN_002bb660) and its run-time places are 16 lower in that space (docs/TRACE.md, the in-game screens). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Resolve G10 in docs/GEMINI_WORK_REVIEW_2026-10-14.md with actual production-path/native acceptance. Follow F20,F22 in docs/FULL_PARITY_AUDIT_2026-10-14.md; capture the original and current production at the same initial state/input/tick boundary and retain all failures/exclusions.",
+      "limitations": "Independent Gemini review 2026-10-14 (G10): Main row overflow is fixed, but complete native GUI viewport/aspect/compositing output was not compared and full-window stretching remains. Earlier claimed scope: Bounded evidence retained: Main Menu row count restored to exact 6 authored rows without footer overlap; vertical coordinate extrapolation clamped before footer. Re-pinned 2026-10-15: docs/FRONTEND_RECOVERY.md gained the city-loop, row-availability and screen-row sections, and look::build and menu.rs draw the Screen pages' rows on their nodes with legends and the help line; viewport/aspect compositing was not compared. 2026-10-16: the in-game screens (HUD, pause, dialogs, banner) draw in the layouts' space as the front end does; the HUD's constructor moves its elements 16 up (FUN_002bb660) and its run-time places are 16 lower in that space (docs/TRACE.md, the in-game screens). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Capture the original and current production at the same initial state/input/tick boundary and retain all failures/exclusions.",
       "audit_review": {
         "date": "2026-10-14",
         "findings": [
@@ -1277,7 +1271,7 @@
       "evidence": [],
       "tolerance": "Exact native discrete state, event order and tick boundary; output tolerance must be declared before paired measurement.",
       "limitations": "New audit coverage gap (F29). No complete paired original/current-production output comparison is asserted.",
-      "next_probe": "Follow F29 in docs/FULL_PARITY_AUDIT_2026-10-14.md; capture the original and current production at the same initial state/input/tick boundary and retain all failures/exclusions.",
+      "next_probe": "Capture the original and current production at the same initial state/input/tick boundary and retain all failures/exclusions.",
       "audit_review": {
         "date": "2026-10-14",
         "findings": [
@@ -1534,7 +1528,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The way into a Pick Up Game; Difficulty (class 0x69, layout 105)",
           "note": "FUN_002bf428 sends Pick Up Game, League Challenge and Be A Legend to class 0x69; FUN_00284100/FUN_00284280/FUN_00284848 traced. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -1568,7 +1562,7 @@
         }
       ],
       "tolerance": "The traced rows, texts and legends at the layout's points; the two screenshots compared by eye, not by pixel.",
-      "limitations": "The row text draws at the node's point; the original's sits a few pixels lower (the row widget's text offset is not traced). The transition blur and the screen's movie loop timing are not compared. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; Difficulty now goes on by Play It's row (after_difficulty): Choose Baller in Be A Legend, User Setup in the League Challenge, Choose Sides in a Pick Up Game; Be A Legend and the League Challenge go through it. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The row text draws at the node's point; the original's sits a few pixels lower (the row widget's text offset is not traced). The transition blur and the screen's movie loop timing are not compared. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; Difficulty now goes on by Play It's row (after_difficulty): Choose Baller in Be A Legend, User Setup in the League Challenge, Choose Sides in a Pick Up Game; Be A Legend and the League Challenge go through it. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Measure the row text's offset from its node on the original's frame and apply it to every registered-row screen."
     },
     {
@@ -1582,7 +1576,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "User Setup (classes 0xc..0x13, layout 11)",
           "note": "FUN_00297848, FUN_002979a8, FUN_002401b8 (raw MIPS for its tail), FUN_00243730, FUN_00246880, FUN_00245b88, FUN_002445c0, FUN_00298210, FUN_00297c40 traced. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/users.rs",
@@ -1670,7 +1664,7 @@
         }
       ],
       "tolerance": "Each state's pieces at the constructor's offsets in the layout's columns; screenshots compared by eye.",
-      "limitations": "The rewrite's page is driven by one cursor moving between columns (left/right), where the original's columns each answer only their controller at once; states 5, 6 and 8, the empty columns' blink and the cheat checker's column states are not ported; 'Ready' and the side word's heights are read from the screenshot. 2026-10-23: Choose Sides opens with the owner's controller between AWAY and HOME, nothing picked (FUN_002979a8: the owner's column in state 10; usersetup_start.png), and stepping off a side keeps the chooser (it went to \"Press START\"); other controllers join on START. The online lobby draws these columns per person (users::pieces_in), six narrower ones for three on three in the option rows' font, the rewrite's own. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The rewrite's page is driven by one cursor moving between columns (left/right), where the original's columns each answer only their controller at once; states 5, 6 and 8, the empty columns' blink and the cheat checker's column states are not ported; 'Ready' and the side word's heights are read from the screenshot. 2026-10-23: Choose Sides opens with the owner's controller between AWAY and HOME, nothing picked (FUN_002979a8: the owner's column in state 10; usersetup_start.png), and stepping off a side keeps the chooser (it went to \"Press START\"); other controllers join on START. The online lobby draws these columns per person (users::pieces_in), six narrower ones for three on three in the option rows' font, the rewrite's own. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the original with two pads (a multitap) for the two-column states and class 0x1c."
     },
     {
@@ -1684,7 +1678,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Choose Team (classes 0x19..0x1c, layout 26)",
           "note": "FUN_0026e1a8, FUN_0026fb00, FUN_0026fb88, FUN_0026e5c8/FUN_0026e3e0/FUN_0026e558/FUN_0026e7f0, FUN_0026e2e8, FUN_00222a50/FUN_00222ef8, FUN_00270108, FUN_00270428, FUN_00270848, FUN_00270c78, FUN_002710a0, FUN_0026f238, FUN_001ec028, FUN_00218458 traced. Re-pinned 2026-10-15 after the Choose Court / My Rules pass (palette swaps, the font's text height, the court and rules screens).",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/chooseteam.rs",
@@ -1772,7 +1766,7 @@
         }
       ],
       "tolerance": "The traced pieces at the layout's points and the grid's order; screenshots compared by eye.",
-      "limitations": "Random's draw is the rewrite's; the created teams were not captured. The rewrite keeps a page per side: with people on both sides the other side's panel is drawn live with its cursor on its team, but only the page's own side moves. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; chooseteam.rs: the computer side's darkening through look::black_alpha; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; the computer side's darkening takes look::black_alpha (the window composites in linear light). Re-pinned 2026-10-19 after the front end's second pass: FRONTEND_RECOVERY.md's last section was replaced by this pass's sections; chooseteam.rs's meter drawing moved into chooseteam::meter; look.rs gained gs_blend, the tile art and the screens' own-widget classes 29, 41, 53 and 96; the frame pieces in every palette now blend as the GS does (look::gs_blend: the palettes' alphas are 0x25 and 0x49 of 0x80) and the art also holds the portrait tiles, the boss's card and the Vol. 2 logo; the meter (now chooseteam::meter) sits at its cell's corner as FUN_002185c0 places it, 3 pixels left and 1 up of before, on the grab's crowns. 2026-10-19 (third pass): the double tiles at the cursor's offsets (-28 All-Stars, +28 Old School, 0x4d1200 and 0x4d1208 read from RAM), the name by its top's middle (align 1), the computer's panel keeping its meters' values, the live list dimming all but the focused tile to 0x9f (FUN_0026eb08's +0x124), Team Lunatics on Rewards card 2 (FUN_001ed118); chooseteam.png 13.0 at (1, 2) against the rewrite's choose_team.png. 2026-10-23: a grid tile is the logo sheet's 64x64 image's frame 0 (55x53, its own bevel), drawn at its size on the node (FUN_00223698), not the whole texture stretched to the cursor; chooseteam.png's tiles now sit cell to cell as ours do. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Random's draw is the rewrite's; the created teams were not captured. The rewrite keeps a page per side: with people on both sides the other side's panel is drawn live with its cursor on its team, but only the page's own side moves. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; chooseteam.rs: the computer side's darkening through look::black_alpha; look.rs: look::title, black_alpha, bullet_star, button_icon; build's title and Screen arms; the computer side's darkening takes look::black_alpha (the window composites in linear light). Re-pinned 2026-10-19 after the front end's second pass: FRONTEND_RECOVERY.md's last section was replaced by this pass's sections; chooseteam.rs's meter drawing moved into chooseteam::meter; look.rs gained gs_blend, the tile art and the screens' own-widget classes 29, 41, 53 and 96; the frame pieces in every palette now blend as the GS does (look::gs_blend: the palettes' alphas are 0x25 and 0x49 of 0x80) and the art also holds the portrait tiles, the boss's card and the Vol. 2 logo; the meter (now chooseteam::meter) sits at its cell's corner as FUN_002185c0 places it, 3 pixels left and 1 up of before, on the grab's crowns. 2026-10-19 (third pass): the double tiles at the cursor's offsets (-28 All-Stars, +28 Old School, 0x4d1200 and 0x4d1208 read from RAM), the name by its top's middle (align 1), the computer's panel keeping its meters' values, the live list dimming all but the focused tile to 0x9f (FUN_0026eb08's +0x124), Team Lunatics on Rewards card 2 (FUN_001ed118); chooseteam.png 13.0 at (1, 2) against the rewrite's choose_team.png. 2026-10-23: a grid tile is the logo sheet's 64x64 image's frame 0 (55x53, its own bevel), drawn at its size on the node (FUN_00223698), not the whole texture stretched to the cursor; chooseteam.png's tiles now sit cell to cell as ours do. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the created teams in the grid; compare a palette-swapped frame pixel for pixel."
     },
     {
@@ -1782,14 +1776,14 @@
       "match_type": "structural",
       "evidence_kind": "runtime",
       "tolerance": "The traced pieces at the layout's points; the original's grabs and the rewrite's screenshots compared by eye.",
-      "limitations": "The Random tile's draw is the rewrite's hash in place of rand(); the locked picture's shade and the dialog picture's placement (the dialog layer is not traced) are the rewrite's; the help popup and the exit dialog are not built; the region word's hiding of the location is not followed. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; the dialogs' 0x4f dim takes look::black_alpha. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The Random tile's draw is the rewrite's hash in place of rand(); the locked picture's shade and the dialog picture's placement (the dialog layer is not traced) are the rewrite's; the help popup and the exit dialog are not built; the region word's hiding of the location is not followed. Re-pinned 2026-10-18 after the front end pass: FRONTEND_RECOVERY.md: the front end pass's sections appended; menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; the dialogs' 0x4f dim takes look::black_alpha. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Trace the dialog layer (FUN_00260a68, FUN_002d9a30) for the picture's placement; capture a court bought in the shop.",
       "evidence": [
         {
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Choose Court (class 0x21, layout 33)",
           "note": "FUN_00267b00, FUN_00267f10, FUN_00267ca8, FUN_002688f0, FUN_00268ce0, FUN_002686e0, FUN_00269610, FUN_002696a8, FUN_0021b550, FUN_0024f508 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/choosecourt.rs",
@@ -1884,14 +1878,14 @@
       "match_type": "structural",
       "evidence_kind": "runtime",
       "tolerance": "The traced pieces at their points, the records' limits and steps; screenshots compared by eye.",
-      "limitations": "The Gamebreaker Wins turbo spot is edited and shown but not carried into the sim's rules; the cancel dialog's panel is the rewrite's drawing; the right arrow is the left one mirrored (the original turns frame 0 by 180 through a UV set not decoded); the sounds, the help popup and the exit dialog are not built. 2026-10-20 (the transitions' pass): Spot Points' trick points step 50,000 shrinking from a million (FUN_002cb620), where the rewrite took 100,000. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The Gamebreaker Wins turbo spot is edited and shown but not carried into the sim's rules; the cancel dialog's panel is the rewrite's drawing; the right arrow is the left one mirrored (the original turns frame 0 by 180 through a UV set not decoded); the sounds, the help popup and the exit dialog are not built. 2026-10-20 (the transitions' pass): Spot Points' trick points step 50,000 shrinking from a million (FUN_002cb620), where the rewrite took 100,000. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Carry the turbo spot into the match; trace the kind-0x1c dialog panel.",
       "evidence": [
         {
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Set Challenge, \"My Rules\" (class 0x27, layout 39)",
           "note": "FUN_002c8ad0, FUN_002c8d08, FUN_002c9740, FUN_002ca060, FUN_002cb6d0, FUN_002cba40, FUN_002cb620, FUN_002cb6a0, FUN_002cb548, FUN_002cb490 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/myrules.rs",
@@ -2212,7 +2206,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Choose Baller (class 0x36, layout 54)",
           "note": "FUN_002cd930/FUN_002ce270/FUN_002ce618/FUN_002cdce8/FUN_002cdf10/FUN_002cd9c8 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/careers.rs",
@@ -2270,7 +2264,7 @@
         }
       ],
       "tolerance": "Every traced piece at its node and colour; mean difference at the frame offset no more than the matched Difficulty screen's. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grabs' frame offset, 1 right and 3 down, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way (11.3 before the titles were redrawn).",
-      "limitations": "The career dialog's words and rows sit about 3 rows low; Male, Female and Premade all open the rewrite's premade list (classes 0x4a..0x4c not built); Continue Career always opens the map; the Help legend is 0x98a8b9 where the original's is white (not traced). 2026-10-19 (third pass): Male, Female and Premade open the original's premade picker (class 0x4c, presentation.ui_create_baller_premade); the wizard (0x4a, 0x4b) is still the rewrite's list pages. The legend's white is written into its text after the legend's load (docs/FRONTEND_RECOVERY.md, \"The Help legend's white\"). 2026-10-19 (fourth pass): Male and Female open Create Baller's wizard (classes 0x4a, 0x4b, presentation.ui_create_baller_wizard) on a new baller in a star slot of the career's own; YES starts the career on it and opens the crew; Premade opens the picker. 2026-10-19 (fifth pass): the Help legend's white is PCSX2's recompiler's zero-extended prop read (presentation.ui_help_legend_colour); the EE's grey is kept; a new career's baller starts at 1,500 points. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The career dialog's words and rows sit about 3 rows low; Male, Female and Premade all open the rewrite's premade list (classes 0x4a..0x4c not built); Continue Career always opens the map; the Help legend is 0x98a8b9 where the original's is white (not traced). 2026-10-19 (third pass): Male, Female and Premade open the original's premade picker (class 0x4c, presentation.ui_create_baller_premade); the wizard (0x4a, 0x4b) is still the rewrite's list pages. The legend's white is written into its text after the legend's load (docs/FRONTEND_RECOVERY.md, \"The Help legend's white\"). 2026-10-19 (fourth pass): Male and Female open Create Baller's wizard (classes 0x4a, 0x4b, presentation.ui_create_baller_wizard) on a new baller in a star slot of the career's own; YES starts the career on it and opens the crew; Premade opens the picker. 2026-10-19 (fifth pass): the Help legend's white is PCSX2's recompiler's zero-extended prop read (presentation.ui_help_legend_colour); the EE's grey is kept; a new career's baller starts at 1,500 points. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Build classes 0x4a..0x4c; place the front-end dialog from DAT_003f7170 at run time."
     },
     {
@@ -2284,7 +2278,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Be A Legend's event intros (classes 0x31..0x33, layouts 49..51)",
           "note": "The three builds and the kind-11 box traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/event_intro.rs",
@@ -2312,7 +2306,7 @@
         }
       ],
       "tolerance": "The traced pieces at their points; the Pick Up intro compared at the frame offset. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grabs' frame offset, 1 right and 3 down, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way (11.3 before the titles were redrawn).",
-      "limitations": "Only the Pick Up intro is compared; the tournament and street challenge builds are static; the bottom legends sit about 3 rows high. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Only the Pick Up intro is compared; the tournament and street challenge builds are static; the bottom legends sit about 3 rows high. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare a tournament and a street challenge intro with their grabs."
     },
     {
@@ -2326,7 +2320,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The map and a city's events (class 0x38, layout 56)",
           "note": "FUN_002a03c0/FUN_002a14f8/FUN_002a0c00/FUN_00234f10/FUN_00234a50/FUN_002349c8/FUN_002a1bb0 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/map_view.rs",
@@ -2396,7 +2390,7 @@
         }
       ],
       "tolerance": "The traced pieces at their points and colours; mean difference at the frame offset no more than the matched Difficulty screen's. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grabs' frame offset, 1 right and 3 down, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way (11.3 before the titles were redrawn).",
-      "limitations": "The reputation fill is drawn from the rewrite's reputation points (the original's record field 15); the landmarks' offsets are the earlier trace's; the rewrite's own crew page stands for the original's class 0x4d at a new career. 2026-10-19: the crew is the original's Create Team in mode 1 (class 0x62, create_team.rs; class 0x4d is Choose Team's join screen), the cited region unchanged. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The reputation fill is drawn from the rewrite's reputation points (the original's record field 15); the landmarks' offsets are the earlier trace's; the rewrite's own crew page stands for the original's class 0x4d at a new career. 2026-10-19: the crew is the original's Create Team in mode 1 (class 0x62, create_team.rs; class 0x4d is Choose Team's join screen), the cited region unchanged. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare the map with more cities open and a reputation level reached."
     },
     {
@@ -2410,7 +2404,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Titles (kind 35) and the text widget's outline",
           "note": "FUN_0020f6c0/FUN_0020f778/FUN_0020f7d0/FUN_00238d20.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -2444,7 +2438,7 @@
         }
       ],
       "tolerance": "The title region (55, 35)..(405, 95) best matched at the frame offset on Main Menu, Play It, Difficulty and Choose Baller; compared by eye in a 2x zoom.",
-      "limitations": "The outline copies' alpha (the widget's alpha to the sixth power) is drawn at 1; the in-game titles (XLAY_GM boards) keep their drop shadow. 2026-10-19 (sixth pass): the title is the layout's first kind-35 element with words (High Scores' layout holds an empty one first). 2026-10-20 (the transitions' pass): titles carry look::Role::Title, which the transitions slide (presentation.ui_screen_transitions). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The outline copies' alpha (the widget's alpha to the sixth power) is drawn at 1; the in-game titles (XLAY_GM boards) keep their drop shadow. 2026-10-19 (sixth pass): the title is the layout's first kind-35 element with words (High Scores' layout holds an empty one first). 2026-10-20 (the transitions' pass): titles carry look::Role::Title, which the transitions slide (presentation.ui_screen_transitions). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Draw the boards' kind-35 titles the same way and compare them with the results grabs."
     },
     {
@@ -2458,7 +2452,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The front end's grabs and how they compare (Translucent black in linear light)",
           "note": "The measurement and the rule.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -2492,7 +2486,7 @@
         }
       ],
       "tolerance": "The light kept under the dialog within the grab's; the whole frame's mean difference at the frame offset under the matched Difficulty screen's.",
-      "limitations": "Measured on Choose Baller's dialog only; the result boards' and the pause's panels darken by the same rule but were not compared with grabs in this pass; coloured translucent pieces still composite in linear light. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Measured on Choose Baller's dialog only; the result boards' and the pause's panels darken by the same rule but were not compared with grabs in this pass; coloured translucent pieces still composite in linear light. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare The Rundown and the pause panel with results_rundown_win.png and pause_top.png."
     },
     {
@@ -2506,7 +2500,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Choose Players' portrait grids (class 0x1d, 2026-10-19)",
           "note": "FUN_0022ff80/FUN_00223698/FUN_00222420/FUN_002315b8/FUN_002312e8/FUN_002318b8/FUN_00231b40/FUN_002322a8/FUN_002323b8/FUN_0026a860/FUN_0026a198/FUN_0026a068 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/choose.rs",
@@ -2600,7 +2594,7 @@
         }
       ],
       "tolerance": "The traced pieces at their points and colours; the picks, undo, Ready and both sides' turns as the tests run them; against the grab of the same home team the person's panel within 2 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The grabs taken after a match or in the later groups (Update Team, Create Team, My Team, the League Challenge) sit at (1, -1), four rows higher than the others' (1, 3).",
-      "limitations": "The picks' variants (keys 0x31, 0x33, 0x34) are not read; the full crown's sparkle (FUN_00218628) is not drawn; two people on one side were checked by the tests, not by a shot (the keyboard is one device); the Help legend is 0x98a8b9 where the original's is white (not found). 2026-10-19 (third pass): a side nobody holds shows FUN_001dbe30's three (modes.computer_lineups). 2026-10-19 (third pass): a side nobody holds moves its highlight through its picks a second at a time (FUN_002324d8; the shared counter 0x3f68ac from 0 here), and the League Challenge's side lists its team's roster; league_choose_players.png 13.5 at (1, -1). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The picks' variants (keys 0x31, 0x33, 0x34) are not read; the full crown's sparkle (FUN_00218628) is not drawn; two people on one side were checked by the tests, not by a shot (the keyboard is one device); the Help legend is 0x98a8b9 where the original's is white (not found). 2026-10-19 (third pass): a side nobody holds shows FUN_001dbe30's three (modes.computer_lineups). 2026-10-19 (third pass): a side nobody holds moves its highlight through its picks a second at a time (FUN_002324d8; the shared counter 0x3f68ac from 0 here), and the League Challenge's side lists its team's roster; league_choose_players.png 13.5 at (1, -1). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Shoot two people at once with a pad."
     },
     {
@@ -2614,7 +2608,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Update Team (class 0x60, layout 96)",
           "note": "FUN_002d61a0/FUN_002d6248/FUN_002325e8/FUN_00232e50/FUN_002d66c0/FUN_002d6c00/FUN_002d6fd0 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/update_view.rs",
@@ -2678,7 +2672,7 @@
         }
       ],
       "tolerance": "The traced pieces at their points; the dialogs within the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The grabs taken after a match or in the later groups (Update Team, Create Team, My Team, the League Challenge) sit at (1, -1), four rows higher than the others' (1, 3).",
-      "limitations": "The page follows a won story game; the shots were opened through a local hook (not committed) with three generic ballers as the beaten team; the comparisons' players differ. 2026-10-20 (the card's messages): an accepted change saves to the card (FUN_002d7238); after a won tournament Update Team opens from the bracket's Cross. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The page follows a won story game; the shots were opened through a local hook (not committed) with three generic ballers as the beaten team; the comparisons' players differ. 2026-10-20 (the card's messages): an accepted change saves to the card (FUN_002d7238); after a won tournament Update Team opens from the bracket's Cross. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Shoot the page after a won story game."
     },
     {
@@ -2692,7 +2686,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Create Team and the crew (classes 0x35, 0x62, layout 53)",
           "note": "FUN_0027dd80/FUN_0027e458/FUN_0027f430/FUN_00280040/FUN_0027fc48/FUN_001ed1f8 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/create_team.rs",
@@ -2822,7 +2816,7 @@
         }
       ],
       "tolerance": "The traced pieces at their points; the steps and picks as the tests run them; within 4 of the Difficulty baseline where the faces match. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The grabs taken after a match or in the later groups (Update Team, Create Team, My Team, the League Challenge) sit at (1, -1), four rows higher than the others' (1, 3).",
-      "limitations": "My Team's fifth pick opens the rewrite's editor for its city, name and logo; Triangle on a keyboard accepts what is typed; Cancel and Return to Choose Baller? is not asked; the locals are drawn from the session's C library generator, whose front-end draws are not the original's, so the faces differ. 2026-10-19 (third pass): the crew's Welcome board, its city and name keyboards and Choose Logo are ported (FUN_002810d0's states, FUN_0024c2a8, FUN_0024d8a8, FUN_0024cac0), the career's team (city, name, logo) kept in the save; bal_crew_welcome.png 15.7, bal_crew_city.png 10.9, bal_crew_name.png 10.8, bal_crew_logo.png 15.5 at (1, 3). 2026-10-19 (fifth pass): My Team's fifth pick goes on to the crew's city and name keyboards and Choose Logo, then \"Do you want to save your team?\" (Yes, No, CANCEL; Yes makes the team in the first free of the ten slots and goes to the Main Menu); Triangle with no pick to take back asks Cancel and Return to My Team? or, on the crew, Cancel and Return to Choose Baller? (FUN_002810d0's states 3 and 4); the full list's strings are read by no code (docs/FRONTEND_RECOVERY.md, My Team's Create Team). 2026-10-20 (the card's messages): the crew's Create Team saves to the card (FUN_002808c0 mode 1); My Team's after the card widget's question (below). 2026-10-20 (the transitions' pass): My Team's ends with the card widget's question (presentation.ui_create_team_card_question). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "My Team's fifth pick opens the rewrite's editor for its city, name and logo; Triangle on a keyboard accepts what is typed; Cancel and Return to Choose Baller? is not asked; the locals are drawn from the session's C library generator, whose front-end draws are not the original's, so the faces differ. 2026-10-19 (third pass): the crew's Welcome board, its city and name keyboards and Choose Logo are ported (FUN_002810d0's states, FUN_0024c2a8, FUN_0024d8a8, FUN_0024cac0), the career's team (city, name, logo) kept in the save; bal_crew_welcome.png 15.7, bal_crew_city.png 10.9, bal_crew_name.png 10.8, bal_crew_logo.png 15.5 at (1, 3). 2026-10-19 (fifth pass): My Team's fifth pick goes on to the crew's city and name keyboards and Choose Logo, then \"Do you want to save your team?\" (Yes, No, CANCEL; Yes makes the team in the first free of the ten slots and goes to the Main Menu); Triangle with no pick to take back asks Cancel and Return to My Team? or, on the crew, Cancel and Return to Choose Baller? (FUN_002810d0's states 3 and 4); the full list's strings are read by no code (docs/FRONTEND_RECOVERY.md, My Team's Create Team). 2026-10-20 (the card's messages): the crew's Create Team saves to the card (FUN_002808c0 mode 1); My Team's after the card widget's question (below). 2026-10-20 (the transitions' pass): My Team's ends with the card widget's question (presentation.ui_create_team_card_question). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Run My Team's Create Team through the same boards and its save ask."
     },
     {
@@ -2836,7 +2830,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Choose Region (class 0x29, layout 41)",
           "note": "FUN_0026b408/FUN_0026b760/FUN_0026c430/FUN_0026c5c8/FUN_0026c6f8 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/region_view.rs",
@@ -2882,7 +2876,7 @@
         }
       ],
       "tolerance": "The traced pieces at their points; within 3 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The grabs taken after a match or in the later groups (Update Team, Create Team, My Team, the League Challenge) sit at (1, -1), four rows higher than the others' (1, 3).",
-      "limitations": "The disabled pieces' light is measured (0.31; the Vol. 2 logo 0.15), not traced. 2026-10-19 (third pass): the League Challenge's Choose Team (class 0x19) comes before it (presentation.ui_league_choose_team). 2026-10-21 (item 7): every key on the screen answers only the user's pad, seated for the run (menu::listens_to), as the original's takes no key but the user's. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The disabled pieces' light is measured (0.31; the Vol. 2 logo 0.15), not traced. 2026-10-19 (third pass): the League Challenge's Choose Team (class 0x19) comes before it (presentation.ui_league_choose_team). 2026-10-21 (item 7): every key on the screen answers only the user's pad, seated for the run (menu::listens_to), as the original's takes no key but the user's. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the boss's card's other frames."
     },
     {
@@ -2896,7 +2890,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Create A Baller (class 0x3d)",
           "note": "FUN_002cd930 in mode 1.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/careers.rs",
@@ -2924,7 +2918,7 @@
         }
       ],
       "tolerance": "Within 1 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The grabs taken after a match or in the later groups (Update Team, Create Team, My Team, the League Challenge) sit at (1, -1), four rows higher than the others' (1, 3).",
-      "limitations": "The original's slots are the careers' ballers; the rewrite's six created ballers fill the first six (the last four stay empty) and read 0/500; the confirm opens the rewrite's wizard or editor without the original's dialogs. 2026-10-19 (fourth pass): the slot's dialog is shown (Male, Female, Premade, Cancel on an empty slot; Edit Baller, Edit Moves, Cancel on a baller): my_team_ballers_new.png 5.6, my_team_baller_dialog.png 5.9 at (2, -1); Male and Female open the wizard, Premade the picker for the slot. 2026-10-19 (fifth pass): the dialog's Edit Moves opens Edit Moves (class 0x55) on the editor's screen (presentation.ui_edit_moves). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The original's slots are the careers' ballers; the rewrite's six created ballers fill the first six (the last four stay empty) and read 0/500; the confirm opens the rewrite's wizard or editor without the original's dialogs. 2026-10-19 (fourth pass): the slot's dialog is shown (Male, Female, Premade, Cancel on an empty slot; Edit Baller, Edit Moves, Cancel on a baller): my_team_ballers_new.png 5.6, my_team_baller_dialog.png 5.9 at (2, -1); Male and Female open the wizard, Premade the picker for the slot. 2026-10-19 (fifth pass): the dialog's Edit Moves opens Edit Moves (class 0x55) on the editor's screen (presentation.ui_edit_moves). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Share the created ballers with the careers as the original does."
     },
     {
@@ -2938,7 +2932,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Meters, translucent palettes and portraits (2026-10-19)",
           "note": "The palettes' alphas, FUN_002185c0, the portraits' frames.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -2966,7 +2960,7 @@
         }
       ],
       "tolerance": "A frame line within 10 of the grab's colour (107, 19, 17 against 100, 13, 15); the crowns within a pixel.",
-      "limitations": "The blend is exact over black and close over the dark panels these pieces lie on; other translucent sprites are not converted. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The blend is exact over black and close over the dark panels these pieces lie on; other translucent sprites are not converted. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Convert the other translucent front-end sprites the same way where a grab shows them."
     },
     {
@@ -2980,7 +2974,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The League Challenge's Choose Team (class 0x19, 2026-10-19)",
           "note": "FUN_0026f4f0/FUN_0026e1a8/FUN_0026f568/FUN_0026f7c0/FUN_0026f958/FUN_0026fa98/FUN_0026eff8/FUN_002324d8 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/chooseteam.rs",
@@ -3044,7 +3038,7 @@
         }
       ],
       "tolerance": "The traced pieces at the layout's points; within 3 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The League Challenge's grabs sit at (1, -1).",
-      "limitations": "Random's draw is the rewrite's own (the original's FUN_003a16b8() % 29 on the shared generator); the help screen (Square) is not built; back goes to Play It, not User Setup (the rewrite replaces User Setup's page). 2026-10-21 (item 7): an League Challenge game plays Play It's put-back Normal rules (prepare_league), not league scoring. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Random's draw is the rewrite's own (the original's FUN_003a16b8() % 29 on the shared generator); the help screen (Square) is not built; back goes to Play It, not User Setup (the rewrite replaces User Setup's page). 2026-10-21 (item 7): an League Challenge game plays Play It's put-back Normal rules (prepare_league), not league scoring. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab the screen with a created team and Team Lunatics unlocked."
     },
     {
@@ -3058,7 +3052,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The brackets on their layouts' screens (2026-10-19)",
           "note": "The style fix, the nickname, the middle anchor by text height.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/bracket_view.rs",
@@ -3110,7 +3104,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 3 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The pre-match and Be A Legend grabs sit at (1, 3); those taken after a match (Update Team, the brackets) and the My Team and League Challenge groups at (1, -1).",
-      "limitations": "The grabs' tournaments, crews and boss are other ones than the rewrite's shots (another career); the bracket's crew numbers count from the rewrite's own base. 2026-10-20 (the card's messages): a decided tournament's bracket leaves on Cross for Update Team or through the card's save (FUN_002cd0f8). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The grabs' tournaments, crews and boss are other ones than the rewrite's shots (another career); the bracket's crew numbers count from the rewrite's own base. 2026-10-20 (the card's messages): a decided tournament's bracket leaves on Cross for Update Team or through the card's save (FUN_002cd0f8). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab a bracket from the same career state as a rewrite shot."
     },
     {
@@ -3124,7 +3118,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The completion boards (classes 0x3b, 0x3c)",
           "note": "FUN_002a46b8/FUN_002a4898/FUN_00261c48/FUN_00261cc0/FUN_002621a0/FUN_00262100 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/completed_view.rs",
@@ -3170,7 +3164,7 @@
         }
       ],
       "tolerance": "The layouts' pieces at their points with the traced words and values; no grab to compare.",
-      "limitations": "Be A Legend's board is not grabbed from the original (built from its constructor). 2026-10-20 (the card's messages): Cross leaves through the card's save (FUN_002621a0, FUN_002a4898). 2026-10-20 (the transitions' pass): the league board grabbed (its won state written through PINE): the rewrite's 14.4; its Cross goes to join a team when the challenge's team holds a created baller (presentation.ui_join_team_screen), and both boards otherwise to Main through the card's save. 2026-10-20 (the idle demo's pass): the runtime's league board plays XLP0006 turning in its left panel (presentation.ui_league_board_trophy_loop, mismatched). 2026-10-20 (the movies pass): the league board plays XLP0006 at (100, 146) and Be A Legend's XLP0016 at (69, 141) (presentation.ui_league_board_trophy_loop, ui_screen_loops). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Be A Legend's board is not grabbed from the original (built from its constructor). 2026-10-20 (the card's messages): Cross leaves through the card's save (FUN_002621a0, FUN_002a4898). 2026-10-20 (the transitions' pass): the league board grabbed (its won state written through PINE): the rewrite's 14.4; its Cross goes to join a team when the challenge's team holds a created baller (presentation.ui_join_team_screen), and both boards otherwise to Main through the card's save. 2026-10-20 (the idle demo's pass): the runtime's league board plays XLP0006 turning in its left panel (presentation.ui_league_board_trophy_loop, mismatched). 2026-10-20 (the movies pass): the league board plays XLP0006 at (100, 146) and Be A Legend's XLP0016 at (69, 141) (presentation.ui_league_board_trophy_loop, ui_screen_loops). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Reach both boards in the original (PINE writes to finish a career and a challenge) and grab them."
     },
     {
@@ -3184,7 +3178,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Create Baller's screen and the premade picker (classes 0x4a..0x4c)",
           "note": "FUN_00273a08/FUN_00273f58/FUN_002748a8/FUN_00274a40/FUN_00277be8/FUN_00277cf0/FUN_00277fa8/FUN_00278098/FUN_00274260/FUN_002743d0 traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/cab_view.rs",
@@ -3242,7 +3236,7 @@
         }
       ],
       "tolerance": "The layouts' pieces at their points; within 5 of the Difficulty baseline (the 3D baller differs). Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The pre-match and Be A Legend grabs sit at (1, 3).",
-      "limitations": "The 3D baller stands whole in the rewrite's default outfit where the original frames it chest-up in the record's outfit (the model viewer's camera per panel is not traced); the career dialog's Male and Female open this picker, not the wizard (the wizard's panels, layouts 65 and 67..73, are still the rewrite's list pages). 2026-10-19 (fourth pass): the premade wears its record's outfit, framed chest up by the viewer's mode 3 (FUN_002dc0e0; its height fitted to the grab), 13.4 at (1, 3); EDIT opens the wizard on the premade (presentation.ui_create_baller_wizard); YES, EDIT and CANCEL are the dialog's rows (before, only CANCEL answered). 2026-10-20 (seventh pass): the picker's camera is its traced (0, -6.1833, 36.7) under the run-time projection: 13.1 (its panel 16.6). 2026-10-20 (the card's messages): \"Is This Your Baller?\" YES saves to the card (FUN_002796a0). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The 3D baller stands whole in the rewrite's default outfit where the original frames it chest-up in the record's outfit (the model viewer's camera per panel is not traced); the career dialog's Male and Female open this picker, not the wizard (the wizard's panels, layouts 65 and 67..73, are still the rewrite's list pages). 2026-10-19 (fourth pass): the premade wears its record's outfit, framed chest up by the viewer's mode 3 (FUN_002dc0e0; its height fitted to the grab), 13.4 at (1, 3); EDIT opens the wizard on the premade (presentation.ui_create_baller_wizard); YES, EDIT and CANCEL are the dialog's rows (before, only CANCEL answered). 2026-10-20 (seventh pass): the picker's camera is its traced (0, -6.1833, 36.7) under the run-time projection: 13.1 (its panel 16.6). 2026-10-20 (the card's messages): \"Is This Your Baller?\" YES saves to the card (FUN_002796a0). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Trace FUN_002db8b8's camera per panel and build the wizard's panels on the same renderer."
     },
     {
@@ -3256,7 +3250,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Create Baller's wizard (classes 0x4a, 0x4b, 2026-10-19)",
           "note": "The panels' constructors, vtables, lists, read-outs and the viewer's cameras traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/cab_view.rs",
@@ -3350,7 +3344,7 @@
         }
       ],
       "tolerance": "The layouts' pieces at their points; within 6 of the Difficulty baseline (the 3D baller and the Total differ). Compared as docs/FRONTEND_RECOVERY.md describes (the rewrite moved by the grab's frame offset, then the mean absolute difference per channel over (20, 20)..(620, 460)); the matched Difficulty screen scores 10.9 against its grab the same way. The My Team grabs sit at (1, -1).",
-      "limitations": "the head's turn runs on the clip's phase, which the Look grab caught elsewhere; What Does This Mean? (wdtm.txt) is out of reach (presentation.ui_help_overlay). 2026-10-19 (fifth pass): a new baller starts at 1,500 (FUN_002740b8, ballers::START_POINTS; my_team_wizard_build.png 13.5 at (1, -1) with Total 1,500 DP); Build's Triangle asks the exit or, from the premade picker, the back-up question, and the points' dialog is the original's (docs/FRONTEND_RECOVERY.md, Create Baller's and Edit Baller's questions). 2026-10-20 (seventh pass): the projection read at run time (FUN_00378328(5.0, 199/272, 10, 300): 6.83 degrees down), the cameras in the model's own units; the head panels play 0x476 (createplayer_look) with the camera on bone 21's posed height: Build 13.2 (its panel 11.8), Look 17.8 (17.2), 16.7 (12.6) shot 0.6 s into the panel: the rest is the head turn's phase. 2026-10-20 (the card's messages): CREATE's YES saves to the card (FUN_002745d8). Last re-pinned 2026-10-25 after the held ball and shorts (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "the head's turn runs on the clip's phase, which the Look grab caught elsewhere; What Does This Mean? (wdtm.txt) is out of reach (presentation.ui_help_overlay). 2026-10-19 (fifth pass): a new baller starts at 1,500 (FUN_002740b8, ballers::START_POINTS; my_team_wizard_build.png 13.5 at (1, -1) with Total 1,500 DP); Build's Triangle asks the exit or, from the premade picker, the back-up question, and the points' dialog is the original's (docs/FRONTEND_RECOVERY.md, Create Baller's and Edit Baller's questions). 2026-10-20 (seventh pass): the projection read at run time (FUN_00378328(5.0, 199/272, 10, 300): 6.83 degrees down), the cameras in the model's own units; the head panels play 0x476 (createplayer_look) with the camera on bone 21's posed height: Build 13.2 (its panel 11.8), Look 17.8 (17.2), 16.7 (12.6) shot 0.6 s into the panel: the rest is the head turn's phase. 2026-10-20 (the card's messages): CREATE's YES saves to the card (FUN_002745d8). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab Look at the clip's start to compare the head's turn."
     },
     {
@@ -3364,7 +3358,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Edit Baller (class 0x4f) on its panels (2026-10-19)",
           "note": "The screen, its panels and their tabs traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/cab_view.rs",
@@ -3428,7 +3422,7 @@
         }
       ],
       "tolerance": "The layouts' pieces at their points; within 5 of the Difficulty baseline (the 3D baller and the Total differ). Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way. The My Team grabs sit at (1, -1).",
-      "limitations": "The rewrite takes a bought item's price when the baller is saved (the original at the question's Yes). Exit's Start icon is set after the layout's load in the original (layout 79 names Triangle); not traced. 2026-10-19 (fifth pass): Start asks the exit question (editplyr.txt 9), Cross on an item not owned the buy question (3) or the points' dialog (5), Triangle does nothing (my_team_editor_buy.png 11.9 at (1, -1)); Circle opens Edit Moves on the editor's screen (presentation.ui_edit_moves); the refunds' questions (10, 11) are never built by the executable (no code loads their text ids). 2026-10-20 (seventh pass): the viewer's run-time projection (presentation.ui_create_baller_wizard): my_team_editor.png 13.5, its picture panel 10.5. 2026-10-20 (the card's messages): leaving with a changed baller saves to the card (FUN_0028c3f0). Last re-pinned 2026-10-25 after the held ball and shorts (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The rewrite takes a bought item's price when the baller is saved (the original at the question's Yes). Exit's Start icon is set after the layout's load in the original (layout 79 names Triangle); not traced. 2026-10-19 (fifth pass): Start asks the exit question (editplyr.txt 9), Cross on an item not owned the buy question (3) or the points' dialog (5), Triangle does nothing (my_team_editor_buy.png 11.9 at (1, -1)); Circle opens Edit Moves on the editor's screen (presentation.ui_edit_moves); the refunds' questions (10, 11) are never built by the executable (no code loads their text ids). 2026-10-20 (seventh pass): the viewer's run-time projection (presentation.ui_create_baller_wizard): my_team_editor.png 13.5, its picture panel 10.5. 2026-10-20 (the card's messages): leaving with a changed baller saves to the card (FUN_0028c3f0). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Trace the editor's buy dialog (FUN_0028c?? with editplyr.txt 4) and the legend's icon setter."
     },
     {
@@ -3442,7 +3436,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Edit Moves (class 0x55) on the editor's screen (2026-10-19)",
           "note": "The screen, the panel's two steps, the tables and the questions traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/edit_moves.rs",
@@ -3506,7 +3500,7 @@
         }
       ],
       "tolerance": "The layouts' pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way. The My Team grabs sit at (1, -1).",
-      "limitations": "The rewrite takes a bought move's points when the baller is saved (the original at Yes); the preview runs until the focus moves (the clip's end is not traced); the buy dialog's body is opaque where the original's lets the screen through. 2026-10-20 (the card's messages): leaving with changed moves saves to the card (FUN_0028c3f0). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The rewrite takes a bought move's points when the baller is saved (the original at Yes); the preview runs until the focus moves (the clip's end is not traced); the buy dialog's body is opaque where the original's lets the screen through. 2026-10-20 (the card's messages): leaving with changed moves saves to the card (FUN_0028c3f0). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Trace the movie widget's end (FUN_0022e1f0) and the width dialogs' body alpha."
     },
     {
@@ -3520,7 +3514,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The Help legend's white, found (2026-10-19)",
           "note": "The writer traced through PINE in the project's PCSX2 runtime; the recompiler against the interpreter.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -3548,7 +3542,7 @@
         }
       ],
       "tolerance": "The colour on the R5900's LWL/LWR semantics (PCSX2's interpreter).",
-      "limitations": "The grabs taken under PCSX2's EE recompiler show white where the value's bytes sit at an offset of 2 mod 4 (its unaligned load comes back zero-extended); the rewrite follows the interpreter (the hardware's documented semantics), not the recompiler. No real PS2 capture. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The grabs taken under PCSX2's EE recompiler show white where the value's bytes sit at an offset of 2 mod 4 (its unaligned load comes back zero-extended); the rewrite follows the interpreter (the hardware's documented semantics), not the recompiler. No real PS2 capture. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "A capture from real hardware (or a PCSX2 issue reference) would settle the R5900's LWR upper half."
     },
     {
@@ -3562,7 +3556,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Options (class 0x28, layout 40, 2026-10-19)",
           "note": "The screen, its rows, values, keys and legends traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/options_view.rs",
@@ -3626,7 +3620,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way.",
-      "limitations": "Adjust Screen opens the rewrite's PC Settings in place of the TV picture adjuster (presentation.ui_adjust_screen_pc_settings); the Help overlay's table holds no rows for Options (class 0x28), so Square shows nothing there, as in the original. 2026-10-20 (seventh pass): a focused slider grabbed: options_slider.png 13.3. 2026-10-20 (the card's messages): leaving with changed settings (and before Trax or Game Data) saves to the card (FUN_002a4d18, FUN_002a53b0), the list keeping its place under the dialogs. 2026-10-20 (the movies pass): Circle goes to the credits' screen (class 9; presentation.ui_credits); Select's question (0x85) was not built then (presentation.ui_select_dialogs). 2026-10-20 (Select's questions): Select asks \"Exit to Main Menu?\" (0x85; Yes puts the settings back and goes to Main; presentation.ui_select_dialogs). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Adjust Screen opens the rewrite's PC Settings in place of the TV picture adjuster (presentation.ui_adjust_screen_pc_settings); the Help overlay's table holds no rows for Options (class 0x28), so Square shows nothing there, as in the original. 2026-10-20 (seventh pass): a focused slider grabbed: options_slider.png 13.3. 2026-10-20 (the card's messages): leaving with changed settings (and before Trax or Game Data) saves to the card (FUN_002a4d18, FUN_002a53b0), the list keeping its place under the dialogs. 2026-10-20 (the movies pass): Circle goes to the credits' screen (class 9; presentation.ui_credits); Select's question (0x85) was not built then (presentation.ui_select_dialogs). 2026-10-20 (Select's questions): Select asks \"Exit to Main Menu?\" (0x85; Yes puts the settings back and goes to Main; presentation.ui_select_dialogs). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None on this screen; Adjust Screen is presentation.ui_adjust_screen_pc_settings."
     },
     {
@@ -3640,7 +3634,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Inside Vol. 2's The Moves on the Edit Moves panel (2026-10-19)",
           "note": "The screen, list, header, cover, legends and keys traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/edit_moves.rs",
@@ -3686,7 +3680,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way.",
-      "limitations": "The film room's still before a preview is the backdrop's (the original's grab shows the same); the Help overlay's table holds no rows for The Moves' class; the original's L1 wrap and a locked card move were not grabbed. 2026-10-20 (the movies pass): Inside's movie rows play as the page's transition into itself (presentation.ui_inside_dvd_movies). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The film room's still before a preview is the backdrop's (the original's grab shows the same); the Help overlay's table holds no rows for The Moves' class; the original's L1 wrap and a locked card move were not grabbed. 2026-10-20 (the movies pass): Inside's movie rows play as the page's transition into itself (presentation.ui_inside_dvd_movies). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab The Moves after L1 from the first category and on a category with a locked card move."
     },
     {
@@ -3700,7 +3694,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Trax (class 0x30",
           "note": "The screen, its rows and keys traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/trax_view.rs",
@@ -3752,7 +3746,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way.",
-      "limitations": "2026-10-20 (the card's messages): leaving with changed songs saves to the card (FUN_00265978 case 0x18). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "2026-10-20 (the card's messages): leaving with changed songs saves to the card (FUN_00265978 case 0x18). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab the Interactive experience's list."
     },
     {
@@ -3766,7 +3760,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Game Data (class 97",
           "note": "The screen, its rows, notices and questions traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/game_data.rs",
@@ -3812,7 +3806,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way.",
-      "limitations": "The rewrite saves to a file (presentation.ui_game_data_file_saves): the memory card's own dialogs stand as its file notices; the card's message box stands 5 rows higher than the rewrite's dialog. 2026-10-20 (the card's messages): Save and Load run the card's own work (presentation.ui_game_data_file_saves); the deletes' questions stand in the card's box (the empty Delete Name 6.5), open on NO, and \"Delete successful.\" is a message alone; leaving after a delete saves. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The rewrite saves to a file (presentation.ui_game_data_file_saves): the memory card's own dialogs stand as its file notices; the card's message box stands 5 rows higher than the rewrite's dialog. 2026-10-20 (the card's messages): Save and Load run the card's own work (presentation.ui_game_data_file_saves); the deletes' questions stand in the card's box (the empty Delete Name 6.5), open on NO, and \"Delete successful.\" is a message alone; leaving after a delete saves. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab the card's save over an existing save (the overwrite question)."
     },
     {
@@ -3826,7 +3820,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The Help overlay (`FUN_00250000`",
           "note": "The overlay, its table and layout traced; shown only while Square is held.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/help_view.rs",
@@ -3896,7 +3890,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way.",
-      "limitations": "The overlay's point (its run-time DAT_003f6b70) and the title's place are measured; Create Baller's \"What Does This Mean?\" (wdtm.txt, FUN_00250b28) is out of reach on this disc: action 0x45 is neither named (FUN_002ec008 registers 0x01..0x44) nor bound (USERFE.CFG), so Square shows Help there as everywhere. 2026-10-20 (seventh pass): the table is the whole of 0x46fbc8 (291 rows), the page's class the panel's, the rows wrapped at 220 in the executable's own font: help_wizard_build.png 12.6, help_editor_outfit.png 10.7. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The overlay's point (its run-time DAT_003f6b70) and the title's place are measured; Create Baller's \"What Does This Mean?\" (wdtm.txt, FUN_00250b28) is out of reach on this disc: action 0x45 is neither named (FUN_002ec008 registers 0x01..0x44) nor bound (USERFE.CFG), so Square shows Help there as everywhere. 2026-10-20 (seventh pass): the table is the whole of 0x46fbc8 (291 rows), the page's class the panel's, the rows wrapped at 220 in the executable's own font: help_wizard_build.png 12.6, help_editor_outfit.png 10.7. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab Help on a bracket and a city intro."
     },
     {
@@ -3910,7 +3904,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "High Scores (class 10, layout 10",
           "note": "The screen, its tables and their placing traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/score_view.rs",
@@ -3962,7 +3956,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way.",
-      "limitations": "Pass Outs is the rewrite's own table (the original's ten hold none). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Pass Outs is the rewrite's own table (the original's ten hold none). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab the tables after a played Pick Up game with a named user to check a row placed live."
     },
     {
@@ -3976,7 +3970,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The loading screen (class 0x2c",
           "note": "The screen's states traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/loading_view.rs",
@@ -4058,7 +4052,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way.",
-      "limitations": "The cards differ from the grabs' (the first is the session's draw); Pick Up's tips 1..3 are not grabbed. 2026-10-20 (seventh pass): the picture follows FUN_0029c3a8 by mode (the attract's logo; the School's, the League Challenge's and Be A Legend's cards; Pick Up's card and street tip in turn), the tip pages (FUN_0029b828: loading_tip_b2p.png 12.0) and the first card's random start (FUN_0029a510, Session::draw). 2026-10-20 (the load back): the ring lights its first star at once and all twelve at the load's end (FUN_0029b228's next time 0 as made, FUN_0029b520(.., 0xc)); the front end's mode is kept for the load back (loading::Mode, presentation.ui_return_loading), which draws on this screen. 2026-10-20 (the card's messages): a Pick Up rematch no longer shows this load (presentation.ui_rematch). 2026-10-20 (the transitions' pass): the load arrives after its transition (xmt0008 from Choose Court; presentation.ui_screen_transitions). 2026-10-20 (the idle demo's pass): the attract's load says \"Loading Demo\" (load.txt 6) at (292, 375) (FUN_0029c490, mode 0), grabbed: 12.1. Last re-pinned 2026-10-24 after the shown buffer's dither, the copy on every screen's last camera (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The cards differ from the grabs' (the first is the session's draw); Pick Up's tips 1..3 are not grabbed. 2026-10-20 (seventh pass): the picture follows FUN_0029c3a8 by mode (the attract's logo; the School's, the League Challenge's and Be A Legend's cards; Pick Up's card and street tip in turn), the tip pages (FUN_0029b828: loading_tip_b2p.png 12.0) and the first card's random start (FUN_0029a510, Session::draw). 2026-10-20 (the load back): the ring lights its first star at once and all twelve at the load's end (FUN_0029b228's next time 0 as made, FUN_0029b520(.., 0xc)); the front end's mode is kept for the load back (loading::Mode, presentation.ui_return_loading), which draws on this screen. 2026-10-20 (the card's messages): a Pick Up rematch no longer shows this load (presentation.ui_rematch). 2026-10-20 (the transitions' pass): the load arrives after its transition (xmt0008 from Choose Court; presentation.ui_screen_transitions). 2026-10-20 (the idle demo's pass): the attract's load says \"Loading Demo\" (load.txt 6) at (292, 375) (FUN_0029c490, mode 0), grabbed: 12.1. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab Pick Up's other three tip pages."
     },
     {
@@ -4072,7 +4066,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Rewards and Trophies",
           "note": "The screens, their grid, dialogs and close-up traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/rewards_view.rs",
@@ -4160,7 +4154,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way.",
-      "limitations": "A jersey's close-up is not grabbed. 2026-10-20 (seventh pass): Circle turns a legend's card to its back (FUN_002c4c38; XARWDBK by FUN_002c2fb8's rule): rewards_legend_closeup.png 12.3, rewards_card_back.png 11.5; the development points' amount (element 14) and recipient (dev_recipient.png 12.7); a jersey's Mitchell & Ness label (element 23); the dialogs fit to the last glyph's ink (rewards_cannot.png 11.7). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "A jersey's close-up is not grabbed. 2026-10-20 (seventh pass): Circle turns a legend's card to its back (FUN_002c4c38; XARWDBK by FUN_002c2fb8's rule): rewards_legend_closeup.png 12.3, rewards_card_back.png 11.5; the development points' amount (element 14) and recipient (dev_recipient.png 12.7); a jersey's Mitchell & Ness label (element 23); the dialogs fit to the last glyph's ink (rewards_cannot.png 11.7). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab a jersey's close-up (a career with a jersey bought)."
     },
     {
@@ -4174,7 +4168,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Street School's lesson menu and its one game",
           "note": "The game, the menu, its states, keys and the one-game flow traced.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/school_menu.rs",
@@ -4298,7 +4292,7 @@
         }
       ],
       "tolerance": "The layout's pieces at their points; within 5 of the Difficulty baseline. Compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9 the same way. The panel's left half and title lie over the court, which differs (the rewrite's camera and players); the opaque right half is the comparison.",
-      "limitations": "The legend's and the shoulder icons' places are measured; Dunk to Lay-up's and Give 'n Go's second prompts are not grabbed. 2026-10-20 (seventh pass): the prompt (FUN_002ba3b0; school_lesson0-2.png 20.4, its icon 15.7) and the five tutorial pages (FUN_002bb338; 15.3 to 19.0, the held game behind differing) are built; state 1 hides elements 87 and 88 (the menu's L1 and R1 icons) and the arrows. 2026-10-20 (the online pass's last gaps): step_sim also holds the game for a staged script's end update after its rerun (Tape::holds_world); the lesson menu's hold is unchanged. Last re-pinned 2026-10-24 after the shown buffer's dither, the copy on every screen's last camera (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The legend's and the shoulder icons' places are measured; Dunk to Lay-up's and Give 'n Go's second prompts are not grabbed. 2026-10-20 (seventh pass): the prompt (FUN_002ba3b0; school_lesson0-2.png 20.4, its icon 15.7) and the five tutorial pages (FUN_002bb338; 15.3 to 19.0, the held game behind differing) are built; state 1 hides elements 87 and 88 (the menu's L1 and R1 icons) and the arrows. 2026-10-20 (the online pass's last gaps): step_sim also holds the game for a staged script's end update after its rerun (Tape::holds_world); the lesson menu's hold is unchanged. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab Dunk to Lay-up's second prompt in a School capture."
     },
     {
@@ -4312,7 +4306,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Still to build, and what each needs: Known difference, accepted (Vj, 2026-10-20); Options",
           "note": "The difference and its reason.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/options.rs",
@@ -4328,7 +4322,7 @@
         }
       ],
       "tolerance": "What the row opens.",
-      "limitations": "Known difference, accepted by Vj 2026-10-20: Adjust Screen opens the rewrite's PC Settings (a window or full screen, the Wide picture, vibration) instead of the TV picture adjuster (FUN_0025b150): a PC's window has no television picture to move. 2026-10-20 (the card's messages): changed PC settings save with the Options when Options is left (the card's save). 2026-10-20 (Select's questions): PC Settings also holds the rewrite's own Online, Watch A Game and Created Teams rows and the project's notice (presentation.ui_pc_settings_rewrite_rows). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Known difference, accepted by Vj 2026-10-20: Adjust Screen opens the rewrite's PC Settings (a window or full screen, the Wide picture, vibration) instead of the TV picture adjuster (FUN_0025b150): a PC's window has no television picture to move. 2026-10-20 (the card's messages): changed PC settings save with the Options when Options is left (the card's save). 2026-10-20 (Select's questions): PC Settings also holds the rewrite's own Online, Watch A Game and Created Teams rows and the project's notice (presentation.ui_pc_settings_rewrite_rows). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None: the adjuster moves a television's picture."
     },
     {
@@ -4342,7 +4336,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The memory card's messages, the boot and the rematch (2026-10-20: The widget; The flows; The file as the card; The box",
           "note": "The widget's work, every flow and time measured, how the file's state reads as the card's, the box.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/card.rs",
@@ -4526,7 +4520,7 @@
         }
       ],
       "tolerance": "Every dialog the reachable card states show, in the original's order, words, rows, lit row and box, within 5 of the Difficulty baseline (the matched Difficulty screen scores 10.9); each step's time within 0.1 s of the runtime's; the file written only where the card is written.",
-      "limitations": "Known difference, accepted by Vj 2026-10-21: the save is a file in Documents\\Streetball Revival and its messages say the PC (card::pc_words over memcard_ps2.txt), not the memory card; the card's flow, rows and placement are the original's, its timing with --original-load-times. The file's state reads as a card's in the nearest honest way: the file there as the game's data, no file as a formatted card without it (with a fresh card's 8,000 KB, where the runtime's grab shows 7,897 beside a hidden save), a damaged file as data that fails to load. No card, an unformatted card and a full one have no state of the file to stand for, so their messages (memcard_ps2.txt 32..38, 41, 53, 55..58) do not show. Times are the runtime's PCSX2 card (one to three runs a step); a console's card may differ. \"Save failed. Retry?\" and \"Load failed. Retry?\" are built from FUN_002298d0 and FUN_0022c150, not grabbed. Superseded: until 2026-10-20 the card's dialogs stood as the rewrite's file notices, which Vj did not accept. 2026-10-20 (the transitions' pass): card_menu ends My Team's Create Team's save: My Team when saved, else the grid (presentation.ui_create_team_card_question). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Known difference, accepted by Vj 2026-10-21: the save is a file in Documents\\Streetball Revival and its messages say the PC (card::pc_words over memcard_ps2.txt), not the memory card; the card's flow, rows and placement are the original's, its timing with --original-load-times. The file's state reads as a card's in the nearest honest way: the file there as the game's data, no file as a formatted card without it (with a fresh card's 8,000 KB, where the runtime's grab shows 7,897 beside a hidden save), a damaged file as data that fails to load. No card, an unformatted card and a full one have no state of the file to stand for, so their messages (memcard_ps2.txt 32..38, 41, 53, 55..58) do not show. Times are the runtime's PCSX2 card (one to three runs a step); a console's card may differ. \"Save failed. Retry?\" and \"Load failed. Retry?\" are built from FUN_002298d0 and FUN_0022c150, not grabbed. Superseded: until 2026-10-20 the card's dialogs stood as the rewrite's file notices, which Vj did not accept. 2026-10-20 (the transitions' pass): card_menu ends My Team's Create Team's save: My Team when saved, else the grid (presentation.ui_create_team_card_question). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab \"Save failed. Retry?\" (a card pulled while saving)."
     },
     {
@@ -4540,7 +4534,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The memory card's messages, the boot and the rematch (2026-10-20: Where the card saves",
           "note": "Each caller and its condition.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/menu.rs",
@@ -4652,7 +4646,7 @@
         }
       ],
       "tolerance": "The save at each of the original's points and nowhere else, over the screen that asked; its dialogs as presentation.ui_game_data_file_saves.",
-      "limitations": "Grabbed over Options and the load back; the other points share the same flow and are placed from their callers (FUN_002a4d18, FUN_00265978, FUN_00273388, FUN_00299110, FUN_002745d8, FUN_002796a0, FUN_002808c0, FUN_0028c3f0, FUN_002c1370, FUN_002d7238, FUN_002621a0, FUN_002a4898, FUN_002cd0f8, FUN_00288290, FUN_00266e70, FUN_0029d5a8). The class 0x4d join-a-team screen's save (FUN_00271dc0) is built (presentation.ui_join_team_screen). 2026-10-20 (the transitions' pass): My Team's Create Team saves after the card widget's question (presentation.ui_create_team_card_question). 2026-10-20 (the idle demo's pass): the idle demo's game goes to the load back with no save, as the original's mode 0 (presentation.ui_idle_attract). Last re-pinned 2026-10-24 after the shown buffer's dither, the copy on every screen's last camera (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Grabbed over Options and the load back; the other points share the same flow and are placed from their callers (FUN_002a4d18, FUN_00265978, FUN_00273388, FUN_00299110, FUN_002745d8, FUN_002796a0, FUN_002808c0, FUN_0028c3f0, FUN_002c1370, FUN_002d7238, FUN_002621a0, FUN_002a4898, FUN_002cd0f8, FUN_00288290, FUN_00266e70, FUN_0029d5a8). The class 0x4d join-a-team screen's save (FUN_00271dc0) is built (presentation.ui_join_team_screen). 2026-10-20 (the transitions' pass): My Team's Create Team saves after the card widget's question (presentation.ui_create_team_card_question). 2026-10-20 (the idle demo's pass): the idle demo's game goes to the load back with no save, as the original's mode 0 (presentation.ui_idle_attract). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab the bracket's and Update Team's saves after a won tournament."
     },
     {
@@ -4666,7 +4660,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The load back to the front end (class 0x2f",
           "note": "The screen, its picture's choice, its measured time and presses, compared.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/loading.rs",
@@ -4784,7 +4778,7 @@
         }
       ],
       "tolerance": "The picture by mode and its pieces at their points, within 5 of the Difficulty baseline (compared as docs/FRONTEND_RECOVERY.md describes; the matched Difficulty screen scores 10.9); the time no shorter than original's load; no press taken.",
-      "limitations": "Known difference, accepted by Vj 2026-10-21: the load back stands 0.6 s by default (crate::pace); the measured 3.27 s below is kept behind --original-load-times. The picture stands from the game's end for the shortest of the eleven loads measured in the runtime (3.27 s; 327 to 329 hundredths): the original's 0.86 s and 0.46 s of the game's last frame before it, and the picture's 0.3 s into the next screen's stream, are not held, and a console's drive may load at another pace. Pick Up's Street Tips pages were reached with a tip card owned through PINE; the covers past cover 0 and the tournaments' covers are from FUN_0029a670's trace, not grabbed. 2026-10-20 (the card's messages): the card's save after the load runs over the page dimmed (presentation.ui_card_save_points: Checking 11.9, the question 10.0). 2026-10-20 (the transitions' pass): the menus arrive after the load back through xmtblur (presentation.ui_screen_transitions). 2026-10-20 (the idle demo's pass): the idle demo's game comes back through it to the title (FUN_0029d920, mode 0; presentation.ui_idle_attract). Last re-pinned 2026-10-24 after the shown buffer's dither, the copy on every screen's last camera (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Known difference, accepted by Vj 2026-10-21: the load back stands 0.6 s by default (crate::pace); the measured 3.27 s below is kept behind --original-load-times. The picture stands from the game's end for the shortest of the eleven loads measured in the runtime (3.27 s; 327 to 329 hundredths): the original's 0.86 s and 0.46 s of the game's last frame before it, and the picture's 0.3 s into the next screen's stream, are not held, and a console's drive may load at another pace. Pick Up's Street Tips pages were reached with a tip card owned through PINE; the covers past cover 0 and the tournaments' covers are from FUN_0029a670's trace, not grabbed. 2026-10-20 (the card's messages): the card's save after the load runs over the page dimmed (presentation.ui_card_save_points: Checking 11.9, the question 10.0). 2026-10-20 (the transitions' pass): the menus arrive after the load back through xmtblur (presentation.ui_screen_transitions). 2026-10-20 (the idle demo's pass): the idle demo's game comes back through it to the title (FUN_0029d920, mode 0; presentation.ui_idle_attract). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab a cover past the first (a career at 130 points or with a tournament won)."
     },
     {
@@ -4798,7 +4792,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The memory card's messages, the boot and the rematch (2026-10-20: The boot's loading screen",
           "note": "The trace, the three boots measured, what the rewrite shows.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/boot.rs",
@@ -4916,7 +4910,7 @@
         }
       ],
       "tolerance": "The picture and bar at their places within 5 of the Difficulty baseline; the bar's width at each moment within 2 pixels of the measured fill; the picture's time within 0.15 s of the runtime's; the card's messages as presentation.ui_game_data_file_saves; no press taken.",
-      "limitations": "Known difference, accepted by Vj 2026-10-21: the loading screens are quick by default (the boot's picture 1.0 s, its bar filling across it, crate::pace); the measured hold below is kept behind --original-load-times. The time and fill are the runtime's boot (three boots agree within 0.15 s); a console's drive may load at another pace. xldfrscn.bin, a French console's (FUN_00342088 = 2), is not shown: the rewrite runs in English. The boot shows when the movies would (not in scripted, screenshot or quick runs; --intro forces it). Last re-pinned 2026-10-25 after the Level 2 picture fixes (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Known difference, accepted by Vj 2026-10-21: the loading screens are quick by default (the boot's picture 1.0 s, its bar filling across it, crate::pace); the measured hold below is kept behind --original-load-times. The time and fill are the runtime's boot (three boots agree within 0.15 s); a console's drive may load at another pace. xldfrscn.bin, a French console's (FUN_00342088 = 2), is not shown: the rewrite runs in English. The boot shows when the movies would (not in scripted, screenshot or quick runs; --intro forces it). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -4930,7 +4924,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The front end's transitions, join a team and the rematch rules (2026-10-20): The rematch rules",
           "note": "The dialog, its keys and steps, My Rules' step fixed.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/rematch_rules.rs",
@@ -4964,7 +4958,7 @@
         }
       ],
       "tolerance": "The dialog's rows, words, steps and bounds as FUN_0025dc88 and FUN_0025f3f8 give them; the panel within 5 of the Difficulty baseline; no load between the press and the new game.",
-      "limitations": "The panel's place is read off post_4.png. The frame stays black for the rebuild (0.1 s in a scripted run) where the original keeps the court. Superseded: until 2026-10-20 REMATCH played again at once. 2026-10-20 (the idle demo's pass): the idle demo's game has neither the pause nor the boards (presentation.ui_idle_attract). Last re-pinned 2026-10-24 after the shown buffer's dither, the copy on every screen's last camera (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The panel's place is read off post_4.png. The frame stays black for the rebuild (0.1 s in a scripted run) where the original keeps the court. Superseded: until 2026-10-20 REMATCH played again at once. 2026-10-20 (the idle demo's pass): the idle demo's game has neither the pause nor the boards (presentation.ui_idle_attract). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -4978,7 +4972,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The front end's transitions, join a team and the rematch rules (2026-10-20): Transitions",
           "note": "The four steps, the tables by class, eleven pairs measured, the scores.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/transition.rs",
@@ -5108,7 +5102,7 @@
         }
       ],
       "tolerance": "Each pair's movie as the tables give it; the press to the new screen's state 4 within 70 ms of the runtime's in the eleven measured pairs; presses during a movie or the arrival kept, during the leaving dropped; frames within 5 of the Difficulty baseline (10.9).",
-      "limitations": "The unmeasured pairs follow the tables read from the screens' slots and deadlines (FUN_002d8398). The hold before a movie's first frame (0.22 s; 0.033 without a movie) is the runtime's; a console's disc may differ. Scripted runs count --at on a clock that stops during transitions. Superseded: until 2026-10-20 the rewrite cut straight between screens. 2026-10-20 (the idle demo's pass): into the title the transition plays the title's own movies, which FUN_002ddb40 names for class 99 once a title has stood (xmt0018 with its soundtrack, then FUN_002e1618's xmt0015 after the same hold; Start ends the intro); measured on the idle demo's turn (presentation.ui_idle_attract). 2026-10-20 (the movies pass): presses while a transition's movie plays are dropped, as the original empties its pad events every update then (0x2de7b8; boot 2: Down 1.2 s into xmt0000 reached no screen; run 5's press landed as a 9-frame xmtfblur ended), and those while the new screen arrives wait for it; a change plays a reel (the movie task's queue: the boot's four, the title's two, the credits' xnufx and xmtfblur, a DVD page's movies), each movie over on its clock at its picture count (presentation.ui_boot_movies). 2026-10-20 (Select's questions): the changes with no movie among Main's screens play the transition sound at the press as their keys do (FUN_001a1b88(.., 0), transition::hand_whoosh); Main makes its loop anew after Difficulty and the DVD pages (settling 0.11 s, by sameloop); Select's Yes from Trax and Create Baller's wizard holds 0.30 and 0.41 s longer (Change::hold_ms); the model within 70 ms of nineteen measured Yes pairs (presentation.ui_select_dialogs). Last re-pinned 2026-10-24 after the shown buffer's dither, the copy on every screen's last camera (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The unmeasured pairs follow the tables read from the screens' slots and deadlines (FUN_002d8398). The hold before a movie's first frame (0.22 s; 0.033 without a movie) is the runtime's; a console's disc may differ. Scripted runs count --at on a clock that stops during transitions. Superseded: until 2026-10-20 the rewrite cut straight between screens. 2026-10-20 (the idle demo's pass): into the title the transition plays the title's own movies, which FUN_002ddb40 names for class 99 once a title has stood (xmt0018 with its soundtrack, then FUN_002e1618's xmt0015 after the same hold; Start ends the intro); measured on the idle demo's turn (presentation.ui_idle_attract). 2026-10-20 (the movies pass): presses while a transition's movie plays are dropped, as the original empties its pad events every update then (0x2de7b8; boot 2: Down 1.2 s into xmt0000 reached no screen; run 5's press landed as a 9-frame xmtfblur ended), and those while the new screen arrives wait for it; a change plays a reel (the movie task's queue: the boot's four, the title's two, the credits' xnufx and xmtfblur, a DVD page's movies), each movie over on its clock at its picture count (presentation.ui_boot_movies). 2026-10-20 (Select's questions): the changes with no movie among Main's screens play the transition sound at the press as their keys do (FUN_001a1b88(.., 0), transition::hand_whoosh); Main makes its loop anew after Difficulty and the DVD pages (settling 0.11 s, by sameloop); Select's Yes from Trax and Create Baller's wizard holds 0.30 and 0.41 s longer (Change::hold_ms); the model within 70 ms of nineteen measured Yes pairs (presentation.ui_select_dialogs). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Measure the rarer pairs (Choose Region, the map, the League Challenge's screens) against the tables."
     },
     {
@@ -5122,7 +5116,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The front end's transitions, join a team and the rematch rules (2026-10-20): Join a team",
           "note": "The screen, its keys, the sixth men, how it was reached, the scores.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/join_view.rs",
@@ -5240,7 +5234,7 @@
         }
       ],
       "tolerance": "The screen when the original shows it, its words, pieces and questions within 5 of the Difficulty baseline; the sixth man kept, saved and played as the original keeps him.",
-      "limitations": "Reached with the challenge's won state written through PINE, not by playing the whole challenge. Superseded: until 2026-10-20 the rewrite's board always left through the card's save. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Reached with the challenge's won state written through PINE, not by playing the whole challenge. Superseded: until 2026-10-20 the rewrite's board always left through the card's save. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -5254,7 +5248,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The front end's transitions, join a team and the rematch rules (2026-10-20): Found and fixed on the way",
           "note": "The title screen.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/look.rs",
@@ -5288,7 +5282,7 @@
         }
       ],
       "tolerance": "Within 5 of the Difficulty baseline (10.9).",
-      "limitations": "Superseded: until 2026-10-20 the title stood on backdrop 17 without its words. 2026-10-20 (the idle demo's pass): the idle demo is built (presentation.ui_idle_attract): \"Loading Demo...\" in the prompt's place without the stars, and the title takes Start alone (FUN_002d3cf0; Cross is eaten). 2026-10-20 (the movies pass): the first title arrives through the boot's movies (presentation.ui_boot_movies). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Superseded: until 2026-10-20 the title stood on backdrop 17 without its words. 2026-10-20 (the idle demo's pass): the idle demo is built (presentation.ui_idle_attract): \"Loading Demo...\" in the prompt's place without the stars, and the title takes Start alone (FUN_002d3cf0; Cross is eaten). 2026-10-20 (the movies pass): the first title arrives through the boot's movies (presentation.ui_boot_movies). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -5302,7 +5296,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The front end's transitions, join a team and the rematch rules (2026-10-20): Found and fixed on the way (My Team's Create Team asks the card widget's question)",
           "note": "The flow, its times and scores.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/create_team.rs",
@@ -5372,7 +5366,7 @@
         }
       ],
       "tolerance": "Each dialog's words, rows and lit row and the card's steps as presentation.ui_game_data_file_saves, within 5 of the Difficulty baseline.",
-      "limitations": "Measured with Autosave on and the game's data on the card (YES) and NO; 0xce, 0xd4 and a declined or failed save (ending as NO, the widget's +0xb0 clear) are read from the code, not grabbed. Superseded: until 2026-10-20 the rewrite asked \"Do you want to save your team?\" (state 4, which nothing opens) and went to Main unsaved. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Measured with Autosave on and the game's data on the card (YES) and NO; 0xce, 0xd4 and a declined or failed save (ending as NO, the widget's +0xb0 clear) are read from the code, not grabbed. Superseded: until 2026-10-20 the rewrite asked \"Do you want to save your team?\" (state 4, which nothing opens) and went to Main unsaved. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Grab 0xce and 0xd4 (a team of the same name; ten teams made)."
     },
     {
@@ -5386,7 +5380,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The idle attract demo (2026-10-20)",
           "note": "The timer, \"Loading Demo...\", the turns, the game and the title again as measured, the rewrite's pieces, the scores.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/attract.rs",
@@ -5618,7 +5612,7 @@
         }
       ],
       "tolerance": "The demo when, and as, the original starts it: the timer's 120 s within a frame, Main's restarts, the 4 s, the turns, the picks drawn as FUN_001db7f8 draws them on the session's generator, the ways back; the title again's transition within 110 ms of the two measured; the screens within 5 of the Difficulty baseline (10.9).",
-      "limitations": "The rewrite's load into the demo stands as long as its other loads (the original's 7.2 to 13 s follow its disc's reads). The game's end goes to the load back 0.97 s after the won basket's replay, as after Start (the runtime's 1.3 s, within half a second). Main's timer pausing under the Help overlay follows the code (FUN_002d7ad8), not a measurement. The command line's --demo keeps the rewrite's own pause and boards. Superseded: until 2026-10-20 the rewrite waited on the title and Main forever. 2026-10-20 (the movies pass): the title's turn plays TITLE_REEL through the movie task's chain (presentation.ui_boot_movies); its Start check stays armed until a Start is taken (+0x70), so a Start during the zoom with none before plays the zoom again; the model 0.10 and 0.14 s short of the two turns. Last re-pinned 2026-10-25 after the Level 2 picture fixes (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The rewrite's load into the demo stands as long as its other loads (the original's 7.2 to 13 s follow its disc's reads). The game's end goes to the load back 0.97 s after the won basket's replay, as after Start (the runtime's 1.3 s, within half a second). Main's timer pausing under the Help overlay follows the code (FUN_002d7ad8), not a measurement. The command line's --demo keeps the rewrite's own pause and boards. Superseded: until 2026-10-20 the rewrite waited on the title and Main forever. 2026-10-20 (the movies pass): the title's turn plays TITLE_REEL through the movie task's chain (presentation.ui_boot_movies); its Start check stays armed until a Start is taken (+0x70), so a Start during the zoom with none before plays the zoom again; the model 0.10 and 0.14 s short of the two turns. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -5632,7 +5626,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The movies: the boot's, the DVD pages', the credits and the screens' loops (2026-10-20): The movie task and its Start check; The boot's movies",
           "note": "The task, the check, the four boots, the rewrite's pieces.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/transition.rs",
@@ -5744,7 +5738,7 @@
         }
       ],
       "tolerance": "The original's movies in its order and timing (the boot's 61.56 s within 20 ms, each movie's frames on time), its presses (none reach a screen; Start only during the intro), the song from the zoom; the screens within 5 of the Difficulty baseline (10.9).",
-      "limitations": "Superseded: until 2026-10-20 the rewrite played XMT0017, XNUFX, XMT0016 and XMT0018 on an intro screen of its own, any button skipping each, with no zoom. The regional variants (xmtfr, xmtjp, xmtpl) are not played: the US disc. The title's later turns are 0.10 and 0.14 s shorter in the model than the two measured. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Superseded: until 2026-10-20 the rewrite played XMT0017, XNUFX, XMT0016 and XMT0018 on an intro screen of its own, any button skipping each, with no zoom. The regional variants (xmtfr, xmtjp, xmtpl) are not played: the US disc. The title's later turns are 0.10 and 0.14 s shorter in the model than the two measured. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -5758,7 +5752,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The movies: the boot's, the DVD pages', the credits and the screens' loops (2026-10-20): The screens' loops",
           "note": "The slot, the runtime's loop widget, the place.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/menu.rs",
@@ -5798,7 +5792,7 @@
         }
       ],
       "tolerance": "The loop where and as the original plays it.",
-      "limitations": "Superseded: until 2026-10-20 the rewrite dropped the loop (no call had been traced). The board's turn in the grabs depends on when each was taken. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Superseded: until 2026-10-20 the rewrite dropped the loop (no call had been traced). The board's turn in the grabs depends on when each was taken. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -5812,7 +5806,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The movies: the boot's, the DVD pages', the credits and the screens' loops (2026-10-20): The DVD pages' movies",
           "note": "The keys, the transition, the five movies measured, the rewrite's pieces.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/transition.rs",
@@ -5882,7 +5876,7 @@
         }
       ],
       "tolerance": "The movies as the original plays them, its keys and the page after; the screens within 5 of the Difficulty baseline (10.9).",
-      "limitations": "Superseded: until 2026-10-20 the rewrite played them on its own movie screen, any button skipping, back to the movie's row. Play All's movies untouched to their ends were not timed (5 min; the chain is the boot's machinery). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Superseded: until 2026-10-20 the rewrite played them on its own movie screen, any button skipping, back to the movie's row. Play All's movies untouched to their ends were not timed (5 min; the chain is the boot's machinery). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -5896,7 +5890,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The movies: the boot's, the DVD pages', the credits and the screens' loops (2026-10-20): The screens' loops",
           "note": "The slots (0x298e20, 0x272f38, 0x272e90, 0x26b330, 0x2699f0, 0x2cbe08, FUN_002a4bc8, 0x262498), the runtime's loop widget, the places.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/menu.rs",
@@ -5966,7 +5960,7 @@
         }
       ],
       "tolerance": "Each loop on its screen at its slot's place, under the screen's widgets, made anew or kept as FUN_002ddb40 does; the screens within 5 of the Difficulty baseline (10.9).",
-      "limitations": "Found 2026-10-20 (the movies pass) and built: until then the rewrite played only the city loop and Rewards'. My Rules' loop and the League Challenge's Choose Team's are read from their slots (the runtime's loop widget was not read on them). XLP0007 and XLP0008 are on the disc but no screen names them. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Found 2026-10-20 (the movies pass) and built: until then the rewrite played only the city loop and Rewards'. My Rules' loop and the League Challenge's Choose Team's are read from their slots (the runtime's loop widget was not read on them). XLP0007 and XLP0008 are on the disc but no screen names them. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -5980,7 +5974,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "The movies: the boot's, the DVD pages', the credits and the screens' loops (2026-10-20): The credits",
           "note": "The screens, the archive, the roll's steps, the runtime's runs.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/credits.rs",
@@ -6074,7 +6068,7 @@
         }
       ],
       "tolerance": "The screens and rolls as the original shows them: the words, styles and places, the rise and fades within an update, NuFX's roll's length within 50 ms; within 5 of the Difficulty baseline (10.9).",
-      "limitations": "Found 2026-10-20 (the movies pass) and built: until then the rewrite's Circle opened a page of its own words (\"Streetball Revival: an unofficial rebuild ...\"). The picture's stream before its fade (18 updates) is fitted to NuFX's roll's measured length. the developer's roll was not timed to its end (its 422 rows run some 6 minutes). The French and PAL texts are not shown: the US disc. 2026-10-20 (Select's questions): the rewrite's own words stand on PC Settings (presentation.ui_pc_settings_rewrite_rows). Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Found 2026-10-20 (the movies pass) and built: until then the rewrite's Circle opened a page of its own words (\"Streetball Revival: an unofficial rebuild ...\"). The picture's stream before its fade (18 updates) is fitted to NuFX's roll's measured length. the developer's roll was not timed to its end (its 422 rows run some 6 minutes). The French and PAL texts are not shown: the US disc. 2026-10-20 (Select's questions): the rewrite's own words stand on PC Settings (presentation.ui_pc_settings_rewrite_rows). Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -6088,7 +6082,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Select's questions and the rewrite's own rows (2026-10-20)",
           "note": "The question, where it is asked, what Yes does, whose presses, the runs, the rewrite's pieces, the scores.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/exit_ask.rs",
@@ -6464,7 +6458,7 @@
         }
       ],
       "tolerance": "The question where, and only where, the original asks it: its words, rows, lit row and keys, the answers and what they do, the change back to Main within 70 ms of the runtime; each screen with it within 5 of the Difficulty baseline (10.9).",
-      "limitations": "Superseded: until 2026-10-20 the rewrite had no question and gave the pad's Select to its own rows (Online on Main, Watch A Game on Play It, the created teams' list on My Team), now PC Settings' rows (presentation.ui_pc_settings_rewrite_rows). Grabbed on 22 screens (6.6 to 10.3); Choose Players (requested over My Rules it hung the runtime), the map, the brackets and the editor's screens (a career or a baller the runtime's card has not; the runtime's Inside list stepped past The Moves) rest on their code. The user's pad (+0xd4: the map's, the brackets' and Choose Region's keys) was not modelled until 2026-10-20 (Select only since then: any controller answers their other keys); the seats stand for +0xd8. The answers' sounds 0xf and 9 are the rewrite's menu sounds' confirm. 2026-10-20 (the online pass's last gaps): the map, an undecided bracket and Choose Region answer Select only from the user's own pad (+0xd4: the pad seated for the run; select_asks); their other keys still take any controller, where the original's Choose Region takes no key but the user's. 2026-10-21 (item 7): Choose Region's other keys now take only the user's pad too. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Superseded: until 2026-10-20 the rewrite had no question and gave the pad's Select to its own rows (Online on Main, Watch A Game on Play It, the created teams' list on My Team), now PC Settings' rows (presentation.ui_pc_settings_rewrite_rows). Grabbed on 22 screens (6.6 to 10.3); Choose Players (requested over My Rules it hung the runtime), the map, the brackets and the editor's screens (a career or a baller the runtime's card has not; the runtime's Inside list stepped past The Moves) rest on their code. The user's pad (+0xd4: the map's, the brackets' and Choose Region's keys) was not modelled until 2026-10-20 (Select only since then: any controller answers their other keys); the seats stand for +0xd8. The answers' sounds 0xf and 9 are the rewrite's menu sounds' confirm. 2026-10-20 (the online pass's last gaps): the map, an undecided bracket and Choose Region answer Select only from the user's own pad (+0xd4: the pad seated for the run; select_asks); their other keys still take any controller, where the original's Choose Region takes no key but the user's. 2026-10-21 (item 7): Choose Region's other keys now take only the user's pad too. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -6478,7 +6472,7 @@
           "path": "docs/FRONTEND_RECOVERY.md",
           "locator": "Select's questions and the rewrite's own rows (2026-10-20): The rewrite's own rows",
           "note": "Where each went.",
-          "sha256": "0e146e511278be3ade5421de839b6cf10440cf05462ef82c4ed1d80525cbf98e"
+          "sha256": "433b7e57085f840077734dfe24d80655a974b9bd9444a540318b6fc3582a5b46"
         },
         {
           "path": "crates/street-game/src/options.rs",
@@ -6524,7 +6518,7 @@
         }
       ],
       "tolerance": "Nothing of the rewrite's on the original's screens; the notice word for word.",
-      "limitations": "The rewrite's own page (behind the one accepted difference, presentation.ui_adjust_screen_pc_settings), not a parity with the original: the obligation is that the original's screens stay the original's. The notice's words as d3af7d9^:crates/street-game/src/menu.rs's Page::Credits had them. 2026-10-20 (online on the disc): README's Playing online now says a match online plays the rules of a match alone, its replays too, everyone needing the same release's disc (gameplay.online_rules_equal_local); the rows are unchanged. 2026-10-21: Vj asked for Online one press from the Main Menu: Select there opens it, and the Main Menu's legend shows SELECT Online beside the original's Help (look::with_online_pair), an accepted change to the original's Main screen. Last re-pinned 2026-10-25 after README screenshots and block test progress (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The rewrite's own page (behind the one accepted difference, presentation.ui_adjust_screen_pc_settings), not a parity with the original: the obligation is that the original's screens stay the original's. The notice's words as d3af7d9^:crates/street-game/src/menu.rs's Page::Credits had them. 2026-10-20 (online on the disc): README's Playing online now says a match online plays the rules of a match alone, its replays too, everyone needing the same release's disc (gameplay.online_rules_equal_local); the rows are unchanged. 2026-10-21: Vj asked for Online one press from the Main Menu: Select there opens it, and the Main Menu's legend shows SELECT Online beside the original's Help (look::with_online_pair), an accepted change to the original's Main screen. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -6534,12 +6528,6 @@
       "match_type": "structural",
       "evidence_kind": "runtime",
       "evidence": [
-        {
-          "path": "docs/AUDIT_1TO1_2026-10-18.md",
-          "locator": "6.1: Done 2026-10-20 (instant replays)",
-          "note": "How replays hold online.",
-          "sha256": "3786995c062335c33035528a30fdb80cd4b9960f2eed0981b5a9602ed908eabe"
-        },
         {
           "path": "crates/street-sim/src/replay.rs",
           "locator": "module docs; Slot; Objects; Manager; Director; GamebreakerTask; Press; Replays; update; restore; Replays::encode; Replays::decode; tests",
@@ -6618,12 +6606,6 @@
       "match_type": "structural",
       "evidence_kind": "runtime",
       "evidence": [
-        {
-          "path": "docs/AUDIT_1TO1_2026-10-18.md",
-          "locator": "6.1: Closed 2026-10-20; 9 item 6: Fixed 2026-10-20",
-          "note": "What was left and how it closed.",
-          "sha256": "3786995c062335c33035528a30fdb80cd4b9960f2eed0981b5a9602ed908eabe"
-        },
         {
           "path": "docs/TRACE.md",
           "locator": "The staged Level 2's rerun as the game's replay, and the online pass's last gaps (2026-10-20)",
@@ -6768,12 +6750,6 @@
       "match_type": "structural",
       "evidence_kind": "runtime",
       "evidence": [
-        {
-          "path": "docs/AUDIT_1TO1_2026-10-18.md",
-          "locator": "6.1: Closed 2026-10-20 (the Rundown's names)",
-          "note": "Why they differed.",
-          "sha256": "3786995c062335c33035528a30fdb80cd4b9960f2eed0981b5a9602ed908eabe"
-        },
         {
           "path": "docs/TRACE.md",
           "locator": "The staged Level 2's rerun as the game's replay, and the online pass's last gaps (2026-10-20): The Rundown's names",
