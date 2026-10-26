@@ -945,9 +945,19 @@ impl Reassembly {
             .retain(|_, p| now.saturating_sub(p.since) < Self::EXPIRY);
         let key = (from, id);
         if !self.pending.contains_key(&key) {
-            let mine = self.pending.keys().filter(|(a, _)| *a == from).count();
-            if mine >= Self::PER_SENDER {
-                return None;
+            // A sender at its limit gives up its oldest unfinished message
+            // for the new one: what it sends again supersedes what a lost
+            // part left behind.
+            let mine: Vec<((SocketAddr, u16), Duration)> = self
+                .pending
+                .iter()
+                .filter(|((a, _), _)| *a == from)
+                .map(|(k, p)| (*k, p.since))
+                .collect();
+            if mine.len() >= Self::PER_SENDER
+                && let Some((oldest, _)) = mine.iter().min_by_key(|(k, since)| (*since, k.1))
+            {
+                self.pending.remove(oldest);
             }
         }
         let p = self.pending.entry(key).or_insert_with(|| Pending {

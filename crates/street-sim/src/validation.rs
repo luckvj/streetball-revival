@@ -67,6 +67,8 @@ impl World {
             give_and_go,
             fresh_take: _,
             dribble_armed: _,
+            rims,
+            rim_rigs,
             windup,
             catch,
             turbo_releases,
@@ -120,6 +122,32 @@ impl World {
             seen[k] = true;
         }
         floats(turbo, "turbo bars")?;
+        // A swing's step runs to any size once its amplitude dies away
+        // (the original's last wraps divide by it too): finite is enough.
+        for rim in rims {
+            require(
+                [
+                    rim.bend_phase,
+                    rim.bend_angle,
+                    rim.sway_phase,
+                    rim.sway_angle,
+                    rim.dangle_step,
+                    rim.sway_step,
+                    rim.amplitude,
+                    rim.dangle_amplitude,
+                    rim.kick,
+                    rim.decay,
+                    rim.dangle,
+                ]
+                .iter()
+                .all(|v| v.is_finite()),
+                "rim",
+            )?;
+        }
+        for rig in rim_rigs {
+            floats(rig.t.as_flattened(), "rim rig")?;
+            floats(rig.r.as_flattened(), "rim rig")?;
+        }
         // A world read from a snapshot holds the match's own disc values
         // and none of the disc's tables until its machine installs them
         // ([`crate::disc`]): what is checked against the tables waits.
@@ -524,10 +552,13 @@ impl World {
                 dribble: _,
                 channel_start,
                 flight,
+                on_rim: _,
+                aim_point,
             } = p;
             team(*t)?;
             floats(&[*rise], "player rise")?;
             floats(&flight.velocity, "player flight")?;
+            floats(aim_point, "player aim point")?;
             floats(&flight.moved, "player flight")?;
             floats(&flight.point, "player flight")?;
             floats(&[flight.slide], "player flight")?;

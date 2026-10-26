@@ -12,6 +12,66 @@ use crate::convert;
 #[derive(Component, Debug, Clone)]
 pub struct DrawGroup(pub String);
 
+/// How a bone moved from its rest pose: a point that rode it goes to
+/// `to + rot (p − from)`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BoneMove {
+    pub rot: Quat,
+    pub from: Vec3,
+    pub to: Vec3,
+}
+
+impl BoneMove {
+    pub const STILL: BoneMove = BoneMove {
+        rot: Quat::IDENTITY,
+        from: Vec3::ZERO,
+        to: Vec3::ZERO,
+    };
+
+    pub fn apply(&self, p: Vec3) -> Vec3 {
+        self.to + self.rot * (p - self.from)
+    }
+}
+
+/// A hoop mesh whose vertices ride the hoop's bones (`<court>d` the -x
+/// hoop, side 0, and `<court>b` the +x one, side 1), weighted as the
+/// model's skin gives them, for the rims' give ([`HoopSkin::pose`]).
+#[derive(Component, Debug, Clone)]
+pub struct HoopSkin {
+    pub side: usize,
+    pub mesh: Handle<Mesh>,
+    rest: Vec<[f32; 3]>,
+    joints: Vec<[u16; 4]>,
+    weights: Vec<[f32; 4]>,
+    shown: [BoneMove; 5],
+}
+
+impl HoopSkin {
+    /// Bones 0..4's moves in the hoop model's space.
+    pub fn pose(&mut self, moves: [BoneMove; 5], meshes: &mut Assets<Mesh>) {
+        if moves == self.shown {
+            return;
+        }
+        self.shown = moves;
+        let positions: Vec<[f32; 3]> = self
+            .rest
+            .iter()
+            .zip(self.joints.iter().zip(&self.weights))
+            .map(|(p, (j, w))| {
+                let p = Vec3::from_array(*p);
+                let mut out = Vec3::ZERO;
+                for (b, weight) in j.iter().zip(w) {
+                    out += *weight * moves[usize::from(*b).min(4)].apply(p);
+                }
+                out.to_array()
+            })
+            .collect();
+        if let Some(mut mesh) = meshes.get_mut(&self.mesh) {
+            mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+        }
+    }
+}
+
 /// Spawn every model of `court` (except draw groups the game hides) at the
 /// placement the game gives it. Returns the model entities.
 pub fn spawn(
@@ -57,15 +117,28 @@ pub fn spawn(
                     materials.add(m)
                 })
                 .clone();
+            let handle = meshes.add(convert::mesh(mesh, false));
             let mut child = commands.spawn((
                 Name::new(format!(
                     "{}:{}",
                     model.name,
                     mesh.texture.as_deref().unwrap_or("-")
                 )),
-                Mesh3d(meshes.add(convert::mesh(mesh, false))),
+                Mesh3d(handle.clone()),
                 MeshMaterial3d(material),
             ));
+            if let Some(side) = hoop_side(&id, &model.name)
+                && mesh.joints.len() == mesh.positions.len()
+            {
+                child.insert(HoopSkin {
+                    side,
+                    mesh: handle,
+                    rest: mesh.positions.clone(),
+                    joints: mesh.joints.clone(),
+                    weights: mesh.weights.clone(),
+                    shown: [BoneMove::STILL; 5],
+                });
+            }
             if let Some(group) = &mesh.group {
                 child.insert(DrawGroup(group.clone()));
             }
@@ -74,9 +147,7 @@ pub fn spawn(
         }
         // The hoops (`<court>b`, `<court>d`) cast shadows, as their
         // `ArbitraryShadow` copies (`c`, `c2`) do in the game.
-        let hoop = model.name.len() == id.len() + 1
-            && model.name.starts_with(&id)
-            && (model.name.ends_with('b') || model.name.ends_with('d'));
+        let hoop = hoop_side(&id, &model.name).is_some();
         if hoop {
             commands
                 .entity(parent)
@@ -90,6 +161,16 @@ pub fn spawn(
         spawned.push(parent);
     }
     spawned
+}
+
+/// The hoop a court model is: `<court>d` the -x hoop (0), `<court>b` the
+/// +x one (1).
+fn hoop_side(court: &str, model: &str) -> Option<usize> {
+    match model.strip_prefix(court)? {
+        "d" => Some(0),
+        "b" => Some(1),
+        _ => None,
+    }
 }
 
 /// Where a model sits among the court's ground layers: every court has its

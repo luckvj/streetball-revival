@@ -368,6 +368,8 @@ pub struct Ran {
     pub hop: Option<(i16, f32, f32)>,
     /// Callback 53: the self-toss launch.
     pub launch: bool,
+    /// Callback 27 (`FUN_001720a8`): the slam's word to the rim.
+    pub slam_shake: bool,
     /// Callback 7: the facing from the pelvis.
     pub face: bool,
     /// `9c 0x400`: bit 10 cleared.
@@ -624,6 +626,10 @@ impl Run {
                 }
                 Step::Call(53) => {
                     ran.launch = true;
+                    true
+                }
+                Step::Call(27) => {
+                    ran.slam_shake = true;
                     true
                 }
                 Step::Call(18) => {

@@ -59,6 +59,7 @@ pub mod receiver;
 pub mod records;
 pub mod replay;
 pub mod restart;
+pub mod rim;
 pub mod rng;
 mod rules;
 pub mod school;
@@ -645,6 +646,11 @@ pub struct World {
     /// `DAT_003d5600`: the dribble's bounce sound is armed
     /// ([`World::dribble_bounce`]).
     pub dribble_armed: bool,
+    /// The hoops' give ([`rim`]): index 0 the hoop at -x, 1 at +x.
+    pub rims: [rim::Rim; 2],
+    /// Their models' bones (the court's hoop skeletons; Rucker's without
+    /// the disc). Not part of a snapshot: every peer loads the same court.
+    pub rim_rigs: [rim::Rig; 2],
     /// A pass pressed and still in the passer's hands until its animation
     /// lets go ([`passing::Windup`]).
     pub windup: Option<passing::Windup>,
@@ -1082,6 +1088,8 @@ impl World {
             give_and_go: None,
             fresh_take: false,
             dribble_armed: false,
+            rims: [rim::Rim::default(); 2],
+            rim_rigs: [rim::Rig::default(); 2],
             windup: None,
             catch: None,
             turbo_releases: vec![[u64::MAX; 4]; n],
@@ -1580,6 +1588,11 @@ impl World {
                 row: w.row,
                 tick: u16::from(timing::PASS_ROWS[usize::from(w.row)].release - w.left + 1),
             };
+        }
+        // The two AIPhysBackboards update after the players
+        // (`FUN_001496c8`).
+        for rim in &mut self.rims {
+            rim.update();
         }
         // `FUN_00133bb0`: players in contact push apart.
         self.step_contacts(&start);
@@ -3379,6 +3392,12 @@ impl World {
         }
     }
 
+    /// Slot 30 (`FUN_00141d48`): the ball off the rim or the collar bends
+    /// the rim on its side ([`rim::Rim::bend`]).
+    fn rim_struck(&mut self) {
+        self.rims[rim::post_side(self.ball.position[0])].bend();
+    }
+
     fn step_ball(&mut self, held_before: Option<(usize, [f32; 3])>) {
         match self.ball.state {
             // `FUN_0014e060`: the ball on whatever clip the holder's channel
@@ -3399,6 +3418,7 @@ impl World {
                 let (shot, rim) = self.ball.fly(rims, self.sequence.is_some());
                 if rim {
                     self.rim_touched();
+                    self.rim_struck();
                 }
                 if let Some(shot) = shot {
                     if shot.made {
@@ -3450,6 +3470,7 @@ impl World {
                     .step(self.hoops.map(|h| h.rim), ball::Step::default());
                 if contact.rim {
                     self.rim_touched();
+                    self.rim_struck();
                 }
                 if contact.floor {
                     self.ball.rebound = false;
