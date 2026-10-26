@@ -401,6 +401,7 @@ impl Plugin for GamePlugin {
                     crate::intro::step,
                     (
                         view::sync_players,
+                        view::sync_hands,
                         crate::referee::sync,
                         view::sync_ball,
                         view::sync_indicator,
