@@ -333,10 +333,19 @@ pub fn read(
         Ok((cam, camera, eye)) => (
             native_angles(cam.forward().to_array()).1,
             camera.logical_viewport_size().map_or(0, |size| {
+                // The screen the original shows is 16:9 at most: an
+                // ultrawide window's wider court leaves its sides out.
+                let width = size.x.min(size.y * 16.0 / 9.0);
+                let left = (size.x - width) / 2.0;
                 off_screen(
                     &sim.world,
-                    |at| camera.world_to_viewport(eye, at).ok(),
-                    size,
+                    |at| {
+                        camera
+                            .world_to_viewport(eye, at)
+                            .ok()
+                            .map(|s| Vec2::new(s.x - left, s.y))
+                    },
+                    Vec2::new(width, size.y),
                 )
             }),
         ),
