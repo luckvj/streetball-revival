@@ -408,17 +408,22 @@ impl Ctx<'_> {
         }
     }
 
-    /// `FUN_00181710` (`FUN_0016ec80`): the actor plays a post-up dribble
-    /// (animation families 0x2c0..0x2c3, 0x2c8, 0x2c9). The sim has no
-    /// post-up, so never.
-    pub fn posting_up(&self, _j: usize) -> bool {
-        false
+    /// `FUN_00181710` (`FUN_0016ec80`): the actor's channel is on the
+    /// post-up's clips (records 704..707, 712, 713).
+    pub fn posting_up(&self, j: usize) -> bool {
+        self.w.on_post_up_clip(j)
     }
 
-    /// `FUN_00181730` (`FUN_0016ebe8`): the actor plays a post defence
-    /// (families 0x2cc..0x2cf, 0x18e, 0x18f). Never in the sim.
-    pub fn post_defending(&self, _j: usize) -> bool {
-        false
+    /// `FUN_001816f0` (`FUN_0016ea20`): state bit 11, posting (the post
+    /// call's `9b 0x800`, the backdown's dribble).
+    pub fn posting(&self, j: usize) -> bool {
+        self.w.posting(j)
+    }
+
+    /// `FUN_00181730` (`FUN_0016ebe8`): the actor's channel is on the post
+    /// defence's records (716..719, 398, 399).
+    pub fn post_defending(&self, j: usize) -> bool {
+        matches!(self.w.channel_row(j), 716..=719 | 398 | 399)
     }
 
     /// The player's front behaviour is "set pick" (type 1).

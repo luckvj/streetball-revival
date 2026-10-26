@@ -592,7 +592,7 @@ impl Defense {
         if self.held < self.hold {
             self.held += 1;
         }
-        if ctx.posting_up(man)
+        if ctx.posting(man)
             && ctx.has_ball(man)
             && ctx.post_defending(i)
             && ctx.between(i, man) < 4.0
@@ -1082,7 +1082,7 @@ impl Defense {
         let receiving = ctx.w.ball.state == crate::BallState::Pass
             && ctx.w.ball.pass.is_some_and(|p| p.to == man);
         let posting =
-            ctx.posting_up(man) || (!ctx.human_player(man) && ctx.fronts.get(man) == Some(&7));
+            ctx.posting(man) || (!ctx.human_player(man) && ctx.fronts.get(man) == Some(&7));
         // The two nearest the rim (game+0x3ec, +0x3f0).
         let mut by_rim: Vec<usize> = (0..ctx.w.players.len()).collect();
         by_rim.sort_by(|&a, &b| ctx.hoop_dist(a).total_cmp(&ctx.hoop_dist(b)));
@@ -1140,8 +1140,8 @@ impl Defense {
                 || (has
                     && ctx.pads.get(man).is_some_and(|&p| p & bits::JUKE != 0)
                     && ctx.turbo(man) >= 0.2);
-            let held_off = !juking
-                && (ctx.posting_up(man) || self.press || busy(ctx, man) || ctx.leaping(man));
+            let held_off =
+                !juking && (ctx.posting(man) || self.press || busy(ctx, man) || ctx.leaping(man));
             if !held_off {
                 let mut least = gap;
                 let turbo = ctx.turbo(man);

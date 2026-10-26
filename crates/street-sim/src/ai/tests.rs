@@ -202,6 +202,31 @@ fn the_defenders_spot_follows_fun_00108148() {
     assert!(close(gap(&w, false, &|d| d.press = true), 3.0));
     assert!(close(gap(&w, true, &|d| d.pick_sag = true), -1.5));
     assert!(close(gap(&w, true, &|_| {}), 3.5));
+    // A posting man (state bit 11, `FUN_001816f0`: the post call's `9b
+    // 0x800`) is guarded from the post: the defender 3 off, on his line
+    // to the rim, closes to 1 (`0x108290..0x108380`), sag or not.
+    w.players[0].posting = true;
+    w.set_turbo(0, 1.0);
+    assert!(close(gap(&w, false, &|_| {}), 1.0));
+    assert!(close(gap(&w, false, &|d| d.sag = true), 1.0));
+}
+
+#[test]
+fn the_post_mans_lob_call_is_the_post_calls_hold() {
+    // "post pause" presses 0x800000 (`0x113800`), the hold the actor's
+    // post call reads (actor+0x78, `0x15b544`): the sim's held trick
+    // button off the ball.
+    let w = front_court(4);
+    let input = with_ctx(&w, |ctx| {
+        let pad = Pad {
+            buttons: pad::bits::POST_CALL,
+            target: -1,
+            ..Default::default()
+        };
+        pad::to_input(ctx, 1, &pad)
+    })
+    .0;
+    assert!(input.held(crate::button::TRICK));
 }
 
 #[test]
