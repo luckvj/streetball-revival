@@ -5011,6 +5011,49 @@ fn a_change_of_gait_row_blends_the_pose_from_the_old_row() {
     );
 }
 
+/// A computer screener's pick press (`FUN_0015a060`, `0x15b5c4..
+/// 0x15b6e8`) plays a setroughpick past its callback 16
+/// ([`trick::PICKS`]); its clearout's arms knock the defender he steps
+/// into. Off the floor there is no pick.
+#[test]
+fn a_computer_screeners_pick_press_knocks_the_defender_he_steps_into() {
+    let poses = crate::pose::disc_bank();
+    if poses.get().is_none() {
+        return;
+    }
+    let mut w = World::new(
+        hoops(),
+        vec![
+            Player::new(0, [-30.0, 10.0], 0.0),
+            Player::new(0, [0.0, 0.0], -std::f32::consts::FRAC_PI_2),
+            Player::new(1, [-2.4, 0.0], std::f32::consts::FRAC_PI_2),
+        ],
+        Rules::default(),
+        1,
+    );
+    w.poses = poses;
+    w.phase = Phase::Live;
+    w.game_phase.phase = crate::game_phase::phase::FRONT_COURT;
+    w.ball.hold(0);
+    w.players[1].height = 1.0;
+    assert!(!w.pick_press(1));
+    w.players[1].height = 0.0;
+    assert!(w.pick_press(1));
+    let script = |w: &World, i: usize| match w.players[i].action {
+        Action::Stumbling {
+            reaction: Some(r), ..
+        } => Some(r.script),
+        _ => None,
+    };
+    assert!(trick::PICKS.contains(&script(&w, 1).expect("the screener's pick")));
+    let mut knocked = false;
+    for _ in 0..40 {
+        w.step(&[Input::default(); 3]);
+        knocked |= script(&w, 2).is_some();
+    }
+    assert!(knocked, "the defender stands");
+}
+
 /// The screen reaction (raw `0x135400..0x135570`): an offensive player
 /// without the ball who keeps pushing into the same defender, facing him,
 /// knocks him off balance on the 31st contact (the count `0x3d0f74` from

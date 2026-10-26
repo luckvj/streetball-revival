@@ -100,8 +100,9 @@ use crate::{
 /// walk; 80: "iso3pt"'s missed juke; 81: a stand's planted feet; 83:
 /// the rewrite's own pick gone, a reaction's `a6 2` window and the
 /// screen's reactions among the scripts; 84: the count a shot's timer
-/// started from (the updates it has flown).
-const VERSION: u8 = 84;
+/// started from (the updates it has flown); 85: a computer screener's
+/// three pick scripts among the reactions.
+const VERSION: u8 = 85;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).

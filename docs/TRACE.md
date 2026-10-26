@@ -13373,3 +13373,28 @@ his standing reach in for the bones, about 8.5 for a man flat-footed,
 over almost every dunk's ball. Now `World::top_bone`, as the pass out of a
 shot already read it. On the third capture's rosters the lay-ups in the
 air out of a dunk fall from 5.2 a game to 1.4 (the first's 2.3).
+
+### A computer screener's pick press (2026-10-25)
+
+`FUN_0015a060` without the ball (raw `0x15b5c4..0x15b798`): the pick press
+(pad +0x7c & 0x4000000, the "set pick" and "pick off ball" nodes' press
+as the screener steps into the defender). For a computer's actor
+(`FUN_00172220`: no controller, game+0xf4 0 or 1, else controller type 4)
+on the floor, outside a restart and with none of +0xa4's 0x9388 (a shot, a
+dunk, a rebound jump, his catch row, a block jump, a leap), `0x43f028[rand()
+% 3]` on his channel: `0x44c222`, `0x44c27b`, `0x44c2d4`, the setroughpick
+scripts entered 0x11 past their callback 16 (records 650..652, the
+clearout's arms' window `a6 2 1` for 30 or 38 updates). A person's press
+wants both turbos (+0x78 & 0x40000) and half the bar (`FUN_00190c08`) for
+the whole scripts (`0x43f038`), else the "no turbo" message (`0x3c6520`);
+held 0x400000 is the stance (`0x44ba7b`, record 64), not played. The sim
+dropped the press (`Input::with` masks to the buttons), so a screen only
+knocked a man by the still screener's contact count. Now
+`button::PICK`, `World::pick_press`, `trick::PICKS` (the reactions grow to
+85: celebrations from 64, the loser's from 81). "Set pick" also waits
+while the screener plays a pick clip (`FUN_001817e0` → `FUN_0016eb80`:
+channel 0's record, or the blend's, minus 650 under 3, at `0x1187a4` and
+`0x118b08`), `Ctx::picking`. On the third capture's rosters the handler's
+updates at a shot quality of 6 or 7 (12..29.75 out) go from 117 to 144 a
+game (the original's 203), block jumps at a shooter from 8.4 to 9.9 (10),
+shots 38.8 to 40.0 (43); the first capture's are about the same.

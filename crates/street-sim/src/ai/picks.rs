@@ -9,9 +9,9 @@
 //! (`crate::contact`). The screener's two pick presses (`0x400000` while
 //! he waits at his spot, `0x4000000` as he steps into the defender) start
 //! the original's pick animations (families `0x28a..0x28c`, which
-//! `FUN_0016eb80` asks after); the simulation has no pick animation, so
-//! the pad keeps the bits and the sim reads none of them, and "playing a
-//! pick animation" is always no.
+//! `FUN_0016eb80` asks after): the sim plays the press as
+//! [`crate::trick::PICKS`] ([`crate::World::pick_press`]); the stance is
+//! not played.
 //!
 //! Its timing constants are the static initialisers' (`FUN_00118188`
 //! raw `0x118358..0x1183b8`, `FUN_00119630` raw `0x119800..0x119854`):
@@ -164,8 +164,9 @@ impl SetPick {
         let Some(h) = self.holder(ctx) else {
             return true;
         };
-        // Playing a pick animation (`FUN_001817e0`): never in the sim.
-        if self.anim != 0 {
+        // Playing a pick animation (`FUN_001817e0`), or the frames of the
+        // pick still to go (+0x60).
+        if ctx.picking(i) || self.anim != 0 {
             return false;
         }
         if self.hold == 0 && 20.0 < dist(ctx.pos(h), self.origin) {
@@ -210,7 +211,7 @@ impl SetPick {
             self.touched = ctx.between(i, d) <= f32::from_bits(0x402c_cccd);
         }
         let mut roll = false;
-        if self.anim != 0 {
+        if ctx.picking(i) || self.anim != 0 {
             if 0 < self.anim {
                 self.anim -= 1;
             }
