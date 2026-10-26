@@ -1124,6 +1124,7 @@ impl World {
                         player: i,
                         leap: p.leaping() && id != Some(30),
                         finish: finish as u8,
+                        dunk: id.map_or(0, |id| id as u16),
                     });
                 }
             }

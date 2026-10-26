@@ -461,11 +461,13 @@ pub enum Event {
     /// jump (`9e`, `FUN_001988b0`, `0x199840..0x199890`: on the floor, the
     /// slot 4 message, class `0x3c64b0`). `leap`: the flier's branch of its
     /// handler (`0x1a4a50`: state bit 15 and a dunk id other than 30);
-    /// `finish`: the dunk's finish (actor+0x24c, 0..4).
+    /// `finish`: the dunk's finish (actor+0x24c, 0..4); `dunk`: the dunk id
+    /// (actor+0x1e8), 0 for none.
     TakeOff {
         player: usize,
         leap: bool,
         finish: u8,
+        dunk: u16,
     },
     /// The ball thrown from a holder's hands (`FUN_0014c0c0`,
     /// `0x14c290..0x14c2d8`: ball+0xf4 set; class `0x3c65a0`, slot 18):
