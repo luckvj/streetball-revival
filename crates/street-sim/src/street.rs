@@ -749,7 +749,15 @@ impl World {
         let person = |j: usize| self.people.get(j).copied().unwrap_or(false);
         let driven = !person(i)
             && (0..self.players.len()).any(|j| self.players[j].team == team && person(j));
-        if !self.rules.gamebreakers || level == 0 || self.gamebreaker_task.is_some() || driven {
+        // Only outside the School's lessons, or in the Gamebreaker and Level
+        // 2 lessons (game vt+0xb4 -1, 14, 25, `0x159db0..0x159e1c`).
+        let lesson = self.lesson.is_some_and(|l| !matches!(l, 14 | 25));
+        if !self.rules.gamebreakers
+            || level == 0
+            || self.gamebreaker_task.is_some()
+            || driven
+            || lesson
+        {
             return false;
         }
         self.start_gamebreaker_meter(team, level);
