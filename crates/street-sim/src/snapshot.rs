@@ -103,8 +103,8 @@ use crate::{
 /// started from (the updates it has flown); 85: a computer screener's
 /// three pick scripts among the reactions; 93: the "no turbo" message
 /// ([`Event::NoTurbo`]); 94: the take-off and the throw from the hands
-/// ([`Event::TakeOff`], [`Event::Launched`]).
-const VERSION: u8 = 94;
+/// ([`Event::TakeOff`], [`Event::Launched`]); 95: the take-off's dunk id.
+const VERSION: u8 = 95;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -3082,11 +3082,13 @@ fn event(w: &mut Writer, e: &Event) {
             player,
             leap,
             finish,
+            dunk,
         } => {
             w.u8(37);
             w.us(player);
             w.bool(leap);
             w.u8(finish);
+            w.uv(u64::from(dunk));
         }
         Event::Launched {
             from,
@@ -3280,6 +3282,7 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
             player: r.us()?,
             leap: r.bool()?,
             finish: r.u8()?,
+            dunk: u16::try_from(r.uv()?).map_err(|_| "invalid dunk id")?,
         },
         38 => Event::Launched {
             from: r.us()?,

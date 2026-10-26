@@ -30,7 +30,7 @@
 //! | a pick or a trick counter knocks a player off balance | body 0x4f 0 at the one knocked (slot 74) |
 //! | a faked-out defender is knocked down | body 0x4f at the one knocked (slot 74): kind 0 a stagger, kind 1 the fall (`FUN_001a5288`'s knock level − 1; a fall adds sweetener 5) |
 //! | an ordinary player's animated joint 10 crosses the floor threshold | body 0x4f kind 2 by the joint's drop, crowd 0x29, exertion (slot 76); scripted presentation suppresses the observer |
-//! | a trick of level 1..3 | sweetener 0x4a kind 7 + level (slot 2); HUD 0x4d kind 4, crowd 0x29 and a taunt (slot 13, shared with dunk releases) |
+//! | a trick of level 1..3 | sweetener 0x4a kind 7 + level and, for four players' own moves, the signature 0x47 (slot 2); HUD 0x4d kind 4, crowd 0x29 and a taunt (slot 13, shared with dunk releases) |
 //! | a meter fills | HUD 0x4d kind 2 (12 at level 2), the loop 0x22 (slot 66) |
 //! | a gamebreaker goes up | transition 0x4c, the loop 0x21 (slot 64) |
 //! | a meter is pocketed / cancelled | HUD 0x4d kind 16 / crowd 0x3d; the loop 0x22 stops (slots 70, 71) |
@@ -147,6 +147,8 @@ pub(crate) mod ev {
     pub const BODY: i32 = 0x4f;
     pub const TRANSITION: i32 = 0x4c;
     pub const HUD: i32 = 0x4d;
+    /// A signature player's own sound (`[angle, kind]`): slots 2, 4, 11.
+    pub const SIGNATURE: i32 = 0x47;
     pub const EXERTION: i32 = 0x50;
 }
 
@@ -565,6 +567,9 @@ pub struct Effects {
     pub(crate) voices: Vec<i32>,
     /// Each player's speaking voice (`0x1acb68`).
     speakers: Vec<Option<u16>>,
+    /// Each player's signature bit (`0x1a7800`: his record's id 145..151,
+    /// [`signature_bit`]), for the signature sound 0x47.
+    pub(crate) signatures: Vec<u8>,
     /// Milliseconds of play run so far.
     clock: f64,
     /// The rewrite's stand-in for the game's `rand()` where a listener
@@ -876,6 +881,7 @@ impl Effects {
             shot_clock: i32::MAX,
             voices: Vec::new(),
             speakers: Vec::new(),
+            signatures: Vec::new(),
             clock: 0.0,
             rng: seed | 1,
             tipped: false,
@@ -1039,6 +1045,12 @@ fn start_match(
     ) else {
         return;
     };
+    fx.signatures = setup
+        .lineups
+        .iter()
+        .flatten()
+        .map(|&r| disc.players.get(r).map_or(0, |p| signature_bit(p.id)))
+        .collect();
     fx.open_court();
     commands.spawn((
         AudioPlayer(buses.add(bus)),
@@ -1313,6 +1325,43 @@ fn leads(w: &street_sim::World, player: usize) -> bool {
     w.score[side] > w.score[1 - side]
 }
 
+/// `0x1a7800`: the bit a player record's id (field 0) gives the signature
+/// sounds, from the table at `0x45be70` (ids 145..151: Stretch, Bonafide,
+/// Biggie Little, Dime, Whitewater, none, Osmosis); 0 for the rest.
+pub(crate) fn signature_bit(id: i16) -> u8 {
+    match id {
+        145 => 0x10,
+        146 => 2,
+        147 => 1,
+        148 => 4,
+        149 => 0x20,
+        151 => 8,
+        _ => 0,
+    }
+}
+
+/// The signature sound's kind for a trick (slot 2, `0x1a62a0..0x1a633c`):
+/// the trick's script (actor+0x264) by the one player whose it is.
+fn trick_signature(script: u16, bit: u8) -> Option<i32> {
+    match (script, bit) {
+        (18, 1) => Some(5),
+        (68, 4) => Some(1),
+        (10, 8) => Some(3),
+        (60, 0x10) => Some(6),
+        _ => None,
+    }
+}
+
+/// The signature sound's kind for a dunk's take-off (slot 4,
+/// `0x1a4ab0..0x1a4afc`): dunk id 53 by Stretch, 56 by Bonafide.
+fn dunk_signature(dunk: u16, bit: u8) -> Option<i32> {
+    match (dunk, bit) {
+        (53, 0x10) => Some(6),
+        (56, 2) => Some(0),
+        _ => None,
+    }
+}
+
 /// HUD sounds pan to the team's side (`0x1a7548`).
 pub(crate) fn side(team: usize) -> i32 {
     if team > 0 { 0xdfff } else { 0x2000 }
@@ -1483,13 +1532,15 @@ pub(crate) fn fire_events(
             // on the shared count; a flier sweetener 10 at the ball (in a
             // lesson only one with an id, the game's vt+0xb4); a dunker sets
             // the block flag and, finished at level 2 or more, sweetener 13
-            // at the ball. Not modelled: the music's duck at those levels
-            // (`0x1ab070`), dunk ids 53 and 56's 0x47 for two players'
-            // records (`0x1a7800`), and 0x51 inside a staged gamebreaker.
+            // at the ball, or in its place the signature sound for dunk id
+            // 53 by Stretch or 56 by Bonafide ([`dunk_signature`]). Not
+            // modelled: the music's duck at finishes of 2 or more
+            // (`0x1ab070`) and 0x51 inside a staged gamebreaker.
             Event::TakeOff {
                 player,
                 leap,
                 finish,
+                dunk,
             } => {
                 let (a, d) = at(player_at(player));
                 if every_other(&mut fx.exertions) {
@@ -1503,7 +1554,10 @@ pub(crate) fn fire_events(
                     }
                 } else {
                     fx.block_flag = true;
-                    if finish >= 2 {
+                    let bit = fx.signatures.get(player).copied().unwrap_or(0);
+                    if let Some(kind) = dunk_signature(dunk, bit) {
+                        fx.fire(&[ev::SIGNATURE, a, kind]);
+                    } else if finish >= 2 {
                         fx.fire(&[ev::SWEETENER, ba, bd, 1000, 13]);
                     }
                 }
@@ -1681,6 +1735,7 @@ pub(crate) fn fire_events(
             Event::Trick {
                 player,
                 level,
+                script,
                 fakeout,
                 ..
             } => {
@@ -1690,6 +1745,12 @@ pub(crate) fn fire_events(
                 let (a, d) = at(player_at(player));
                 if (0..3).contains(&game_level) {
                     fx.fire(&[ev::SWEETENER, a, d, 1000, 7 + game_level]);
+                }
+                // Then the signature sound for four players' own moves
+                // (else event 0x4b, which the routing `0x19ed30` drops).
+                let bit = fx.signatures.get(player).copied().unwrap_or(0);
+                if let Some(kind) = trick_signature(script, bit) {
+                    fx.fire(&[ev::SIGNATURE, a, kind]);
                 }
                 // The move lands (slot 13, `FUN_001a5a78` — the scoring
                 // listener routes trick lands, ring classes 10/11, to it;
@@ -2077,6 +2138,19 @@ mod tests {
             sum += f64::from((left * left + right * right) * 0.5);
         }
         (sum / frames.max(1) as f64).sqrt() as f32
+    }
+
+    #[test]
+    fn signature_sounds_need_their_players_own_moves() {
+        // `0x45be70`'s table by record id, then slots 2 and 4's pairs.
+        assert_eq!(signature_bit(147), 1, "Biggie Little");
+        assert_eq!(signature_bit(150), 0);
+        assert_eq!(signature_bit(140), 0);
+        assert_eq!(trick_signature(18, signature_bit(147)), Some(5));
+        assert_eq!(trick_signature(18, signature_bit(148)), None);
+        assert_eq!(trick_signature(60, signature_bit(145)), Some(6));
+        assert_eq!(dunk_signature(56, signature_bit(146)), Some(0));
+        assert_eq!(dunk_signature(53, signature_bit(146)), None);
     }
 
     #[test]
