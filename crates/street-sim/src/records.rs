@@ -726,6 +726,9 @@ pub struct Settings {
     pub visual_effects: bool,
     /// Adjust Screen, on a PC: full screen rather than a window.
     pub full_screen: bool,
+    /// The rewrite's Smooth Motion (PC Settings): the court drawn between
+    /// the game's 60 updates a second on faster screens.
+    pub smooth: bool,
     /// Controller Layout A, B or C (0..2) for 1P..4P.
     pub layouts: [u8; 4],
     /// Trax: the songs switched off, one bit each (the in-game songs
@@ -811,6 +814,7 @@ impl Default for Settings {
             wide: false,
             visual_effects: true,
             full_screen: false,
+            smooth: true,
             layouts: [0; 4],
             songs_off: 1 << RUCKER_CLASSIC_SONG_BIT,
             sequential: false,
@@ -860,6 +864,7 @@ impl Settings {
         out.extend_from_slice(&self.songs_off.to_le_bytes());
         out.push(self.camera);
         out.push(u8::from(self.interactive));
+        out.push(u8::from(self.smooth));
         out
     }
 
@@ -896,6 +901,9 @@ impl Settings {
             }
             if let Some(&interactive) = bytes.get(17) {
                 s.interactive = interactive != 0;
+            }
+            if let Some(&smooth) = bytes.get(18) {
+                s.smooth = smooth != 0;
             }
         }
         Some(s)
