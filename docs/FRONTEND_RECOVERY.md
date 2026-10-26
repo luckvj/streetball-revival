@@ -984,7 +984,7 @@ in use by another session, so no new grab was taken).
 ## The front end's grabs and how they compare (2026-10-18)
 
 The second audit's piece 5 started here (branch `frontend-legend`). Every
-screen section 5 of `docs/AUDIT_1TO1_2026-10-18.md` lists was grabbed from
+screen that audit's section 5 listed was grabbed from
 the original where a fresh boot and a few PINE writes could reach it: 160
 grabs in `$EVIDENCE/street-frontend-original/`, indexed by its `INDEX.md`
 (screen, class, layout, what each shows, the save states written and what
