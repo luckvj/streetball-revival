@@ -200,7 +200,11 @@ impl World {
             && p.height == 0.0
             && self.catch_row_playing(i).is_none()
             && !(self.ball.state == BallState::Pass && self.ball.pass.is_some_and(|q| q.to == i));
-        if self.locomotion_held(i, input) {
+        // A catch row's script takes his channel from any stand, the ones
+        // that hold his walk too (the post call's: `FUN_0019c2f8` replaces
+        // the script).
+        let catching = self.catch_row_playing(i).is_some();
+        if !catching && self.locomotion_held(i, input) {
             return;
         }
         if !free || (input.moves() && !self.held_still(i)) {

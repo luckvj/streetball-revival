@@ -1461,9 +1461,8 @@ impl World {
             // ([`backdown`]).
             if self.players[i].team != self.possession {
                 self.post_slide(i);
-            } else {
-                self.post_call(i, &input);
             }
+            self.post_call(i, &input);
             self.pick_stance(i, &input);
             self.players[i].restart_walk = self.game_phase.phase == game_phase::phase::RESTART;
             // `FUN_00163d40`: a guard's mode and the gait record, before
@@ -2018,6 +2017,10 @@ impl World {
     /// in a rebound jump, catching nor posting (+0xa4 & 0xb00) starts
     /// [`stand::PICK_STANCE`] again every update.
     pub(crate) fn pick_stance(&mut self, i: usize, input: &Input) {
+        // A catch row on his channel is not record 64 ([`World::post_call`]).
+        if self.catch_row_playing(i).is_some() {
+            return;
+        }
         let held = input.held(button::PICK_STANCE);
         if !held {
             if self.channel_row(i) == 64 {
@@ -2328,7 +2331,13 @@ impl World {
     /// knock.
     fn swipe_lands(&mut self, i: usize, h: usize, roll: i32, moving: bool) {
         let (p, q) = (&self.players[i], &self.players[h]);
-        let steals = (p.ratings.steals * 99.0).round().clamp(0.0, 99.0) as i32;
+        // A person's swipe steals on 99 in the Steal and Dive lessons (game
+        // vt+0xb4 8, 16, `0x16d0fc..0x16d15c`).
+        let steals = if matches!(self.lesson, Some(8 | 16)) && self.people[i] {
+            99
+        } else {
+            (p.ratings.steals * 99.0).round().clamp(0.0, 99.0) as i32
+        };
         let mut odds = (steals as f32 / 99.0 * 64.0) as i32 + 20;
         let (team, other) = (p.team, q.team);
         if self.rules.difficulty == Difficulty::Easy {
@@ -2341,8 +2350,10 @@ impl World {
         if odds < roll {
             return;
         }
-        let caught =
-            (self.rng.next_u32() % 100) as i32 <= ((steals - 50) as f32 / 50.0 * 65.0) as i32;
+        // The Dive lesson always knocks it loose (`0x16d2e8..0x16d300`).
+        let caught = (self.rng.next_u32() % 100) as i32
+            <= ((steals - 50) as f32 / 50.0 * 65.0) as i32
+            && self.lesson != Some(16);
         // The holder's face (`FUN_00159190(holder, r & 1 ? 3 : 4, fps Ã—
         // 2)`, raw `0x16d318..0x16d33c`; not played): the `r & 1`, and the
         // reaction's own draw for its clip (its time is over 0).

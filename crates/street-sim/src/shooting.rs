@@ -47,6 +47,15 @@ impl World {
         }
         // game+0x94 goes once `FUN_0016b4b8` has run (`0x15b204`).
         self.fresh_take = false;
+        // The Block lessons (game vt+0xb4 9, 11) shoot `0x44ed73` from
+        // anywhere (`0x16b514..0x16b574`).
+        if matches!(self.lesson, Some(9 | 11)) {
+            let rim = self.rim_spot(hoop);
+            let script = crate::timing::BLOCK_LESSON_SHOT;
+            self.begin_script(i, crate::timing::SHOT_SCRIPTS[script].script);
+            self.players[i].start_shot(hoop, rim, 0, false, script);
+            return;
+        }
         let rim = self.rim_spot(hoop);
         let buttons = self.players[i].action_buttons;
         let window = self.dunk_on(i, true);
@@ -880,8 +889,15 @@ impl World {
         } else {
             -1.0
         };
+        // The Dunk and Advanced Dunk lessons (game vt+0xb4 3, 0x15) dunk
+        // on 99 (`0x172bc8..0x172c04`).
+        let dunks = if matches!(self.lesson, Some(3 | 0x15)) {
+            99
+        } else {
+            (p.ratings.dunks * 99.0).round().clamp(0.0, 99.0) as i32
+        };
         dunk_percent(
-            (p.ratings.dunks * 99.0).round().clamp(0.0, 99.0) as i32,
+            dunks,
             // `FUN_00171de8 & 0x800`: the dunk in the slot the turbos
             // pick is advanced. Without the player's dunk set, the
             // rewrite's four-turbo advanced dunk stands in.

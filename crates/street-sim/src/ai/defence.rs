@@ -362,12 +362,18 @@ impl Defense {
     /// just let go (ball state 5) when close enough; and every `fps /
     /// 12 + 1` frames of a pass in the air to a leaping receiver, a
     /// defender in its lane (`FUN_001838f0`) with nobody of his side up
-    /// goes up at `skill(0, 5, 50, 100)` (the pass jump). The game
-    /// modes that skip it all (vt+0xb4 1..5, 9, 0xb, 0xd, 0xe, 0x12,
-    /// 0x13, 0x15; 0xc always bites) are the special games the rewrite
-    /// does not play, and the passout specials' last leg (game+0x160
+    /// goes up at `skill(0, 5, 50, 100)` (the pass jump). The School's
+    /// lessons 1..5, 9, 0xb, 0xd, 0xe, 0x12, 0x13 and 0x15 (game vt+0xb4,
+    /// `0x106ab4..0x106c5c`) skip it all at once; Pump Fake (0xc) always
+    /// bites (`0x107000`). The passout specials' last leg (game+0x160
     /// ±1), which the pass jump also takes, is not modelled.
     fn block(&mut self, ctx: &mut Ctx, b: &mut Brain, i: usize) -> bool {
+        if matches!(
+            ctx.w.lesson,
+            Some(1..=5 | 9 | 0xb | 0xd | 0xe | 0x12 | 0x13 | 0x15)
+        ) {
+            return false;
+        }
         let team = ctx.team(i);
         let h = ctx
             .w
@@ -432,7 +438,7 @@ impl Defense {
             }
             // `[0x18]`: `r % 100 < skill(100, 100, 20, 20)` (half of it
             // against a full meter).
-            self.bite = ((ctx.rand() % 100) as i32) < p2;
+            self.bite = ((ctx.rand() % 100) as i32) < p2 || ctx.w.lesson == Some(0xc);
         }
         if !self.early && !self.late {
             return false;

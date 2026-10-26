@@ -650,7 +650,36 @@ fn turbo_and_shoot_dunks_where_fun_0016c500_has_a_dunk_on() {
     }
     let gap = distance(w.players[0].position, w.players[1].position);
     assert!(gap < 4.5, "{gap}");
+    let before = w.clone();
     w.step(&[press, Input::default()]);
+    assert!(
+        matches!(w.players[0].action, Action::Shooting { .. }),
+        "{:?}",
+        w.players[0].action
+    );
+    // The Dunk lesson (game vt+0xb4 3, `0x16c6d4`) skips the cone: a dunk.
+    let mut w = before;
+    w.lesson = Some(3);
+    w.step(&[press, Input::default()]);
+    assert!(
+        matches!(w.players[0].action, Action::Dunking { .. }),
+        "{:?}",
+        w.players[0].action
+    );
+}
+
+#[test]
+fn the_block_lessons_holder_shoots_one_jump_shot() {
+    // `FUN_0016b4b8` (`0x16b514..0x16b574`): in the Block lessons the
+    // shoot press plays `0x44ed73`, even with a dunk on.
+    assert_eq!(
+        timing::SHOT_SCRIPTS[timing::BLOCK_LESSON_SHOT].script,
+        0x44ed73
+    );
+    let press = stick(-1.0, 0.0).with(button::L1 | button::SHOOT);
+    let mut w = driving(1, [-25.0, 0.0], 3);
+    w.lesson = Some(9);
+    w.step(&[press]);
     assert!(
         matches!(w.players[0].action, Action::Shooting { .. }),
         "{:?}",
@@ -5261,6 +5290,29 @@ fn a_man_off_the_ball_holding_juke_near_the_rim_posts_for_it() {
     assert!(w.players[1].posting);
     assert!(w.backdown_holds(1));
     w.step(&[Input::default(); 6]);
+    assert!(!w.players[1].posting);
+    assert_eq!(w.players[1].stand.map(|s| s.script), Some(stand::READY));
+}
+
+#[test]
+fn a_post_call_lets_go_on_defence() {
+    // `0x15ad84` runs before the update splits the actors: a posting man
+    // whose side lost the ball stands ready without the button.
+    let mut w = three_on_three(5);
+    w.phase = Phase::Live;
+    w.game_phase.phase = crate::game_phase::phase::FRONT_COURT;
+    w.ball.hold(0);
+    w.possession = 0;
+    let rim = w.rim_spot(crate::target_hoop(0));
+    w.players[1].position = [rim[0] - rim[0].signum() * 8.0, 4.0];
+    let juke = Input::default().with(button::TRICK);
+    w.post_call(1, &juke);
+    for _ in 0..4 {
+        w.stand_tick(1);
+    }
+    assert!(w.players[1].posting);
+    w.possession = 1;
+    w.post_call(1, &Input::default());
     assert!(!w.players[1].posting);
     assert_eq!(w.players[1].stand.map(|s| s.script), Some(stand::READY));
 }

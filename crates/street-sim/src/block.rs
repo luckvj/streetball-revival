@@ -996,7 +996,14 @@ impl World {
             .block_hand(i, j.record(), f32::from(s.frame), j.word)
             .unwrap_or([p.position[0], p.height + p.ratings.reach, p.position[1]]);
         let easy = self.easy_person(p.team);
-        let (v_low, v_high, v_min) = rises(p.ratings.native(5), easy);
+        // A person's jumper blocks on 99 in the Block lessons (game vt+0xb4
+        // 9, 11, `0x1764b8..0x176510`).
+        let blocks = if matches!(self.lesson, Some(9 | 11)) && self.people[i] {
+            99
+        } else {
+            p.ratings.native(5)
+        };
+        let (v_low, v_high, v_min) = rises(blocks, easy);
         let state = self.native_ball_state();
         // The holder (or an alley-oop's receiver in the air).
         let mut holder = self.block_holder();

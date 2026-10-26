@@ -217,6 +217,10 @@ pub(crate) enum Act {
     Feeder(offence::Feeder),
     /// 0x17: a trick pass (`FUN_00100c60`).
     TrickPass(offence::TrickPass),
+    /// "playbook hold" (vtable `0x43ae88`): the Dive lesson's holder.
+    LessonHold(offence::LessonHold),
+    /// 0x10 (`FUN_0010d090`): the Trick Counter lesson's holder.
+    LessonJuke(offence::LessonJuke),
 }
 
 impl Act {
@@ -234,7 +238,7 @@ impl Act {
             Act::Defense(_) => 10,
             Act::LooseBall(_) => 0xd,
             Act::FastBreak(_) => 0xc,
-            Act::Pause(_) => 0x10,
+            Act::Pause(_) | Act::LessonJuke(_) => 0x10,
             Act::Goto(_) => 0x18,
             Act::Rebound(_) => 0xb,
             Act::BoxOut(_) => 0x13,
@@ -254,6 +258,7 @@ impl Act {
             | Act::CutMove(_)
             | Act::PostCut(_)
             | Act::PostPause(_)
+            | Act::LessonHold(_)
             | Act::CarrierMove(_)
             | Act::WaitForToss
             | Act::PerimPause(_)
@@ -340,6 +345,8 @@ impl Act {
             Act::PostUp(_) => 37,
             Act::Feeder(_) => 38,
             Act::TrickPass(_) => 39,
+            Act::LessonHold(_) => 40,
+            Act::LessonJuke(_) => 41,
         }
     }
 
@@ -382,6 +389,8 @@ impl Act {
             Act::PostUp(a) => a.put(out),
             Act::Feeder(a) => a.put(out),
             Act::TrickPass(a) => a.put(out),
+            Act::LessonHold(a) => a.put(out),
+            Act::LessonJuke(a) => a.put(out),
             Act::WaitForToss | Act::Outlet | Act::WaitForHalfCourt => {}
         }
     }
@@ -428,6 +437,8 @@ impl Act {
             37 => Act::PostUp(Word::get(r)?),
             38 => Act::Feeder(Word::get(r)?),
             39 => Act::TrickPass(Word::get(r)?),
+            40 => Act::LessonHold(Word::get(r)?),
+            41 => Act::LessonJuke(Word::get(r)?),
             k => return Err(format!("bad AI behaviour {k}")),
         })
     }
@@ -497,6 +508,9 @@ impl Act {
             Act::PostUp(a) => a.done(age),
             Act::Feeder(a) => a.done(ctx, i),
             Act::TrickPass(a) => a.done(ctx, i),
+            // `0x12b7d8`: never done.
+            Act::LessonHold(_) => false,
+            Act::LessonJuke(a) => a.done(age),
         }
     }
 
@@ -565,6 +579,8 @@ impl Act {
             Act::PostUp(a) => a.update(ctx, b, i),
             Act::Feeder(a) => a.update(ctx, b, i),
             Act::TrickPass(a) => a.update(ctx, b, i),
+            Act::LessonHold(a) => a.update(ctx, b, i),
+            Act::LessonJuke(a) => a.update(ctx, b, i),
         }
     }
 }

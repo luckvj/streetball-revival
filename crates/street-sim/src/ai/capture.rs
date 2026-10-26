@@ -205,6 +205,8 @@ fn rewrite_name(act: &Act) -> &'static str {
         Act::PostUp(_) => "post up",
         Act::Feeder(_) => "feeder",
         Act::TrickPass(_) => "trick pass",
+        Act::LessonHold(_) => "playbook hold",
+        Act::LessonJuke(_) => "pause 0x10d090",
     }
 }
 

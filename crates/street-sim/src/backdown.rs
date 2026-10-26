@@ -342,20 +342,24 @@ impl World {
     /// button (+0x78 & 0x800000), in the dunking area (`FUN_0016c908`),
     /// on the floor, outside a restart and neither in a rebound jump,
     /// catching nor posting (bits 8, 9, 11), plays `post_call_for_ball_2`,
-    /// which posts (`9b 0x800`) and holds his walk (`91` 0x2); let go of
-    /// the button on its rows 728/729, he stands ready and the bit clears
-    /// (`0x15ad84..0x15adc0`).
+    /// which posts (`9b 0x800`) and holds his walk (`91` 0x2). Any actor
+    /// (with the ball or not, of either side: `0x15ad84..0x15adc0` comes
+    /// before the update splits them) posting on its rows 728/729
+    /// without the button stands ready and the bit clears.
     pub(crate) fn post_call(&mut self, i: usize, input: &Input) {
-        let p = &self.players[i];
-        if p.team != self.possession || self.ball.state == crate::BallState::Held(i) {
+        // A catch row on his channel (started this update, which ends his
+        // update at `0x15ab48`, or playing since) is no post call row.
+        if self.catch_row_playing(i).is_some() {
             return;
         }
+        let p = &self.players[i];
         let held = input.held(crate::button::TRICK);
-        if !held {
-            if p.posting && matches!(self.channel_row(i), 728 | 729) {
-                self.players[i].posting = false;
-                self.start_stand(i, crate::stand::READY);
-            }
+        if !held && p.posting && matches!(self.channel_row(i), 728 | 729) {
+            self.players[i].posting = false;
+            self.start_stand(i, crate::stand::READY);
+        }
+        let p = &self.players[i];
+        if !held || p.team != self.possession || self.ball.state == crate::BallState::Held(i) {
             return;
         }
         let rim = self.rim_spot(crate::target_hoop(self.possession));
