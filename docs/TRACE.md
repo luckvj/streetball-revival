@@ -13456,3 +13456,8 @@ shots 38.8 to 40.0 (43); the first capture's are about the same.
 **The pass jump at a board passout's leg back** (`0x106d8c..0x106dd8`): game+0x160 (`FUN_00142038`) ±1, a board passout, with the ball's waypoints (game+0x134 +8 less +0x10) at the last one, lets the pass jump go though the receiver (the passer himself) is not leaping. Ported as `board_return` (the rewrite's passout tossed, its leg back spent at the board).
 
 **The goal-tend while a gamebreaker runs** (`FUN_0012de70`, `0x12df68..0x12df9c`): game+0x434 is the gamebreaker task; while it runs (`FUN_00140ff8`) the computer's goal-tend odds are `skill(0, 0, 10, 40)` for `skill(0, 0, 50, 80)`. Ported on `World::gamebreaker_task`.
+
+## The block jumps' clip root (2026-10-26)
+
+No block script's `91` sets 0x1000 (all thirteen and the goaltend pair set 0x820002, then 0x10002 before the aim, 0x2 and 0 at the tail), so `FUN_0019a658` (raw `0x19b4bc..0x19b70c`) moves the jumper by his clip's root change on x and z every step outside a blend, times his height scale, turned by his facing. The clips travel 0.5 (the turbo block, 437) to 5 (457) over the jump. The rewrite left it out ("the rewrite's own"). Measured on the third capture: native jumpers move before they leave the floor, their velocity stopped by the script's `97`, by script length 0.016 (6 updates), 0.10 (7), ~0.7 (8: 0.40..0.76), 0.24..2.45 (10); the rewrite moved 0 there. Ported as `World::block_root`; on capture 3's rosters ours now moves 0.008, 0.18, 0.58 and 0.45.
+The glass pair (`0x442273`, `0x4422fa`) aims with `a9` (`FUN_00199e20`), which sets channel flag 0x1000 before the step (`0x199ef0`): their root stops moving them from the aim on.

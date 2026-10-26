@@ -30,9 +30,11 @@
 //! airborne updates rise by the clip's root drop (channel flag 0x10000, set
 //! just before every script's aim, [`World::block_resync`]).
 //!
-//! The rewrite's own, labelled where it is used: the clip's root moving him
-//! across (the scripts' first `91` leaves 0x1000 clear) is not modelled. The
-//! glass pair's aimed jump (`a9`, `FUN_00199e20`) is read only in outline;
+//! No block script's `91` sets 0x1000 (they set 0x820002, 0x10002, 0x2
+//! and 0), so the clip's root moves the jumper across the whole jump
+//! ([`World::block_root`]), but for the glass pair's from its `a9`, which
+//! sets it (`0x199ef0`). The rewrite's own, labelled where it is used:
+//! the glass pair's aimed jump (`a9`, `FUN_00199e20`) is read only in outline;
 //! they aim as callback 35 does.
 
 use crate::pose::{self, Body, Frame, Place, Pose, Poses};
@@ -895,6 +897,53 @@ impl World {
             self.block_aim(i);
         }
         self.block_resync(i);
+        self.block_root(i);
+    }
+
+    /// The clip's root across (`FUN_0019a658`, raw `0x19b4bc..0x19b70c`):
+    /// with 0x1000 clear the channel's step moves the jumper by his clip's
+    /// root change on x and z, times his height scale, turned by his
+    /// facing; none in the blend or on the step out of it (the clip held
+    /// is another record), nor for the glass pair from its aim on (`a9`
+    /// sets 0x1000 before the step, `0x199ef0`). The captures' jumpers move 0.02 to 0.76 before
+    /// they leave the floor, their velocity stopped (`97`), by the script.
+    /// Without the disc's animations, none.
+    fn block_root(&mut self, i: usize) {
+        let Action::Jumping { block: Some(j), .. } = self.players[i].action else {
+            return;
+        };
+        if j.tick == 0 {
+            return;
+        }
+        let before = Jump {
+            tick: j.tick - 1,
+            up: j.up && j.tick > j.aim_tick(),
+            ..j
+        };
+        if j.blend().is_some() || before.blend().is_some() {
+            return;
+        }
+        if SCRIPTS[usize::from(j.script)].glass && j.tick >= j.aim_tick() {
+            return;
+        }
+        let Some(poses) = self.poses.get() else {
+            return;
+        };
+        let root = |time: f32| {
+            poses.root(Frame {
+                record: j.record(),
+                time,
+                looping: false,
+            })
+        };
+        let (Some(now), Some(then)) = (root(j.frame()), root(before.frame())) else {
+            return;
+        };
+        let p = &mut self.players[i];
+        let step = [now[0] - then[0], 0.0, now[2] - then[2]];
+        let m = crate::trick::root_motion(step, p.body(), timing::facing_word(p.heading));
+        p.position[0] += m[0];
+        p.position[1] += m[1];
     }
 
     /// The takeoff's root (`FUN_0019a658`, raw `0x19b684..0x19b704`): every
