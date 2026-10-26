@@ -1464,6 +1464,7 @@ impl World {
             } else {
                 self.post_call(i, &input);
             }
+            self.pick_stance(i, &input);
             self.players[i].restart_walk = self.game_phase.phase == game_phase::phase::RESTART;
             // `FUN_00163d40`: a guard's mode and the gait record, before
             // the walk sets the speed from it.
@@ -1852,6 +1853,9 @@ impl World {
             // The dive for a loose ball ([`dive`]).
         } else if pressed & button::PICK != 0 && input.is_computer() && self.pick_press(i) {
             // A computer screener's pick ([`World::pick_press`]).
+        } else if pressed & button::R3 != 0 && !input.is_computer() && self.person_pick(i, input) {
+            // A person's strategy press off the ball: his own pick with
+            // both turbos ([`World::person_pick`]).
         } else if calls {
             // The call's node is pushed in his controller's update
             // ([`World::call_for_ball`]); the press starts nothing else.
@@ -1960,23 +1964,79 @@ impl World {
     /// his catch row, a block jump or a leap (+0xa4 & 0x9388), one of
     /// [`trick::PICKS`] by `r % 3` on his channel: setroughpick past its
     /// callback 16, whose clearout's arms ([`trick::CLEAROUT_ARMS`], `a6 2
-    /// 1`) knock the defender he steps into. (A person's press wants both
-    /// turbos and half the bar for the whole script; no controller makes
-    /// one.) True when it played.
+    /// 1`) knock the defender he steps into. (A person's is the strategy
+    /// press, [`World::person_pick`].) True when it played.
     pub(crate) fn pick_press(&mut self, i: usize) -> bool {
-        let p = &self.players[i];
-        let busy = block::holder_bits(&p.action) & 0x9388 != 0
-            || matches!(
-                p.action,
-                Action::ReboundJump { .. } | Action::Jumping { .. }
-            )
-            || self.catch_row_playing(i).is_some_and(|c| c.catching);
-        if busy || p.height != 0.0 || self.game_phase.phase == game_phase::phase::RESTART {
+        if self.pick_busy(i) {
             return false;
         }
         let k = (self.rng.next_u32() % 3) as usize;
         self.react(i, trick::PICKS[k]);
         true
+    }
+
+    /// `FUN_0015a060`'s strategy press off the ball for a person (pad
+    /// +0x7c & 0x2000000, raw `0x15b5f0..0x15b7d0`): with the same tests
+    /// as [`World::pick_press`] passed, two turbos held (actor+0x78 &
+    /// 0x40000) and half the bar (`FUN_00142098`) buy the whole
+    /// setroughpick script (`0x43f038[r % 3]`, [`trick::SCREENER`]);
+    /// short of the bar, the "no turbo" message (`0x3c6520`) and nothing;
+    /// without two turbos, nothing. True when the tests passed (the
+    /// press ends his buttons for the update), whatever it bought.
+    pub(crate) fn person_pick(&mut self, i: usize, input: &Input) -> bool {
+        if self.pick_busy(i) {
+            return false;
+        }
+        if input.turbos() >= 2 && self.spend_turbo(i, 0.5) {
+            let k = (self.rng.next_u32() % 3) as usize;
+            self.react(i, trick::SCREENER[k]);
+        }
+        true
+    }
+
+    /// The pick press's tests (`0x15b61c..0x15b654`): in a shot, a dunk, a
+    /// rebound jump, his catch row, a block jump or a leap (+0xa4 &
+    /// 0x9388), off the floor (+0x34) or in a restart (game+0xf4 6).
+    fn pick_busy(&self, i: usize) -> bool {
+        let p = &self.players[i];
+        block::holder_bits(&p.action) & 0x9388 != 0
+            || matches!(
+                p.action,
+                Action::ReboundJump { .. } | Action::Jumping { .. }
+            )
+            || self.catch_row_playing(i).is_some_and(|c| c.catching)
+            || p.height != 0.0
+            || self.game_phase.phase == game_phase::phase::RESTART
+    }
+
+    /// `FUN_0015a060`'s pick stance. Let go (`0x15add8..0x15ae14`, every
+    /// actor, before his ball and his presses): on record 64
+    /// (`FUN_0016eb18`, the blend's target while one runs) without the
+    /// pad's 0x400000 held, the ready stand (`0x4570bb`). Held
+    /// (`0x15b7d4..0x15b85c`, the off-ball presses' last): a computer's
+    /// actor (`FUN_00172220`) on the floor, outside a restart and neither
+    /// in a rebound jump, catching nor posting (+0xa4 & 0xb00) starts
+    /// [`stand::PICK_STANCE`] again every update.
+    pub(crate) fn pick_stance(&mut self, i: usize, input: &Input) {
+        let held = input.held(button::PICK_STANCE);
+        if !held {
+            if self.channel_row(i) == 64 {
+                self.start_stand(i, stand::READY);
+            }
+            return;
+        }
+        let p = &self.players[i];
+        if !input.is_computer()
+            || !matches!(p.action, Action::None)
+            || self.ball.state == BallState::Held(i)
+            || p.height != 0.0
+            || self.game_phase.phase == game_phase::phase::RESTART
+            || p.posting
+            || self.catch_row_playing(i).is_some()
+        {
+            return;
+        }
+        self.start_stand(i, stand::PICK_STANCE);
     }
 
     /// `FUN_0015a060` (raw `0x15b860..0x15b944`): the holder's pass press

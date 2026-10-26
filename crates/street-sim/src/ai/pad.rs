@@ -32,8 +32,9 @@ pub(super) mod bits {
     /// The post man's call for a lob ("post pause"): the hold the post
     /// call reads (actor+0x78 & 0x800000, [`crate::World::post_call`]).
     pub const POST_CALL: u32 = 0x800000;
-    /// The screener's stance at his spot ("set pick", "pick off ball";
-    /// read by the pick animations, which the sim has none of).
+    /// The screener's stance at his spot ("set pick", "pick off ball"):
+    /// the hold the actor reads (actor+0x78 & 0x400000,
+    /// [`crate::World::pick_stance`]).
     pub const PICK_STANCE: u32 = 0x400000;
     pub const STRATEGY: u32 = 0x2000000;
     /// The screener steps into the defender (the pick animations' too).
@@ -154,9 +155,13 @@ pub(super) fn to_input(ctx: &Ctx, i: usize, pad: &Pad) -> Input {
         held = (held & !button::TURBOS) | button::SELECT | button::R1;
     }
     let mut out = out.with(held);
-    // The screener's pick press, not a button ([`button::PICK`]).
+    // The screener's pick press and stance, not buttons ([`button::PICK`],
+    // [`button::PICK_STANCE`]).
     if b & bits::PICK != 0 {
         out.buttons |= button::PICK;
+    }
+    if b & bits::PICK_STANCE != 0 {
+        out.buttons |= button::PICK_STANCE;
     }
     out
 }

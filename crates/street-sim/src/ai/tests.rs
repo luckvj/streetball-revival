@@ -230,6 +230,52 @@ fn the_post_mans_lob_call_is_the_post_calls_hold() {
 }
 
 #[test]
+fn the_post_man_screens_for_the_third_man_coming_at_him() {
+    // `FUN_00114050`: the third man out of the middle, within 15 and
+    // running at the post man, with the holder across the court's length.
+    let mut w = front_court(4);
+    let rim = w.hoops[0].rim;
+    w.players[2].position = [rim[0] - 6.0, 8.0];
+    w.players[1].position = [rim[0] - 6.0, -4.0];
+    w.players[0].position = [rim[0] - 26.0, -5.0];
+    let call = |w: &World| with_ctx(w, |ctx| spots::pick_off_ball_call(ctx, 2)).0;
+    assert!(!call(&w), "standing");
+    w.players[1].course = 0.0;
+    w.players[1].speed = 10.0;
+    assert!(call(&w));
+    w.players[1].course = std::f32::consts::PI;
+    assert!(!call(&w), "running away");
+    w.players[1].course = 0.0;
+    w.players[0].position[1] = 18.0;
+    assert!(!call(&w), "the holder on his side's wing");
+    w.players[0].position[1] = 2.0;
+    assert!(with_ctx(&w, |ctx| ctx.zone(0)).0 == 2 && call(&w), "zone 2");
+    w.players[0].position[1] = -5.0;
+    w.lesson = Some(15);
+    assert!(!call(&w), "lesson 15");
+}
+
+#[test]
+fn the_post_man_sets_a_pick_once_the_window_stands_long_enough() {
+    // `FUN_00114480`: the set-pick window open `fps × 2.5` frames in, the
+    // holder within 35.75 of the rim and guarded within 15.
+    let w = front_court(4);
+    let ok = |age: u16| {
+        with_ctx(&w, |ctx| {
+            let pause = spots::PostPause::new(ctx);
+            let b = Brain {
+                age,
+                ..Default::default()
+            };
+            pause.set_pick_call(ctx, &b)
+        })
+        .0
+    };
+    assert!(!ok(149));
+    assert!(ok(150));
+}
+
+#[test]
 fn a_juke_draws_the_counter_look_once_a_second() {
     // `FUN_00107710`: a defender in front of a juking handler on the
     // floor within reach rolls `skill(-13, -17, 40, 50)` plus the

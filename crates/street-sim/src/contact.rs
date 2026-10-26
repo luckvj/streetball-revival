@@ -628,8 +628,8 @@ impl World {
         if b >= 6 || self.ball.state == BallState::Held(b) {
             return;
         }
-        // Game vt+0xb4 is never 0xf in the rewrite's games.
-        if self.handler().is_none() || !b_moving || a_down {
+        // Not in the Pick lesson (game vt+0xb4 0xf, `0x135444`).
+        if self.lesson == Some(0xf) || self.handler().is_none() || !b_moving || a_down {
             return;
         }
         if self.contacts.count[b] < SCREEN_CONTACTS {

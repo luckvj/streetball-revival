@@ -8,9 +8,11 @@
 //! Each "perim player" or "post player" makes one choice and is done; with
 //! nothing queued the player's next frame picks another (`FUN_0017e5c8`).
 
-use super::court::{angle_toward, dist, turn};
+use super::court::{angle_toward, dist, turn, units};
 use super::offball::{Pause, PerimPause};
 use super::pad::bits;
+use super::picks::{PickOffBall, SetPick};
+use super::plays::defender;
 use super::words::words;
 use super::{Act, Brain, Ctx};
 use crate::input::{native_cos_1024, native_sin_1024};
@@ -727,11 +729,12 @@ words! {
     /// [`crate::World::post_call`]) while one is on (`FUN_00113b38`). When
     /// the owner has kept to the other side's wing or corner for `fps ×
     /// 1.1` frames he moves over to that side's block (a post cut, unless
-    /// the third man is headed there). The pick calls (`FUN_00114050`,
-    /// `FUN_00114480`: "run pick play" and "set pick") need the sim's
-    /// screens, which it does not have; they are not ported. Done after
-    /// the frames, or with the third man in the paint (for a man not the
-    /// post man), the owner within 10 or gone, or in another zone than his.
+    /// the third man is headed there); short of that, he screens for the
+    /// third man coming at him ([`pick_off_ball_call`], "pick off ball")
+    /// or for the holder ([`PostPause::set_pick_call`], "set pick"). Done
+    /// after the frames, or with the third man in the paint (for a man not
+    /// the post man), the owner within 10 or gone, or in another zone than
+    /// his.
     pub(crate) struct PostPause {
         frames: i32,
         done: bool,
@@ -825,10 +828,11 @@ impl PostPause {
                 }
             }
         }
-        if 66 <= self.same
-            && let Some(o) = owner
-            && ctx.zone(o) < 5
-        {
+        if 66 <= self.same {
+            let Some(o) = owner.filter(|&o| ctx.zone(o) < 5) else {
+                self.wait_less(ctx, i);
+                return;
+            };
             let z = ctx.zone(o);
             let attack = ctx.side(ctx.team(i)) as f32;
             let block = if z < 2 || (z == 2 && attack * ctx.pos(o)[1] < 0.0) {
@@ -847,12 +851,72 @@ impl PostPause {
             self.done = true;
             return;
         }
-        // `0x113ac8`: on a person's side an open lane shortens the wait.
+        // `0x113a34..0x113abc`: the screens, each pushed behind this node,
+        // which is then done.
+        if pick_off_ball_call(ctx, i) {
+            let t = ctx.third_man(i);
+            b.push(Act::PickOffBall(PickOffBall::new(ctx, t)));
+            self.done = true;
+            return;
+        }
+        if self.set_pick_call(ctx, b) {
+            b.push(Act::SetPick(SetPick::new(ctx, true)));
+            self.done = true;
+            return;
+        }
+        self.wait_less(ctx, i);
+    }
+
+    /// `0x113ac4`: on a person's side an open lane shortens the wait.
+    fn wait_less(&mut self, ctx: &Ctx, i: usize) {
         let deep = 36.75 - ctx.pos(i)[0].abs() < 8.0;
         if !deep && ctx.human[ctx.team(i)] && super::offence::path_open(ctx, i) {
             self.frames -= 1;
         }
     }
+
+    /// `FUN_00114480`: outside lesson 15, the set-pick window still open
+    /// (`FUN_00113f38`) `fps × 2.5` frames in, the holder within 35.75 of
+    /// the rim (`FUN_0017dd10`) with his defender (`FUN_0017f238`) within
+    /// 15 of him.
+    pub(super) fn set_pick_call(&self, ctx: &Ctx, b: &Brain) -> bool {
+        if ctx.w.lesson == Some(15) || !self.early || i32::from(b.age) < 150 {
+            return false;
+        }
+        let Some(h) = ctx.w.handler() else {
+            return false;
+        };
+        ctx.hoop_dist(h) < 35.75 && defender(ctx, h).is_some_and(|d| ctx.between(h, d) <= 15.0)
+    }
+}
+
+/// `FUN_00114050`: outside lesson 15, the third man (`FUN_0013c018`) out
+/// of the box `|z| < 12, |x| < 27`, within 15 and moving (actor+0x40) no
+/// more than 216 off straight at him; then the holder (`FUN_0013bf60`) on
+/// the other side of the court's length from him, or in zone 2.
+pub(super) fn pick_off_ball_call(ctx: &Ctx, i: usize) -> bool {
+    if ctx.w.lesson == Some(15) {
+        return false;
+    }
+    let (Some(t), Some(h)) = (ctx.third_man(i), ctx.w.handler()) else {
+        return false;
+    };
+    let p = ctx.pos(t);
+    if p[1].abs() < 12.0 && p[0].abs() < 27.0 {
+        return false;
+    }
+    if 15.0 < dist(ctx.pos(i), p) {
+        return false;
+    }
+    let v = ctx.w.players[t].velocity();
+    if v[0] == 0.0 && v[1] == 0.0 {
+        return false;
+    }
+    let moving = units(crate::math::atan2(-v[0], -v[1]));
+    if 216 < turn(ctx.angle_between(t, i), moving).abs() {
+        return false;
+    }
+    (0.0 <= ctx.pos(h)[1]) != (0.0 <= ctx.pos(i)[1]) || ctx.zone(h) == 2
 }
 
 /// `FUN_00113b38`: a lob is on. While the call holds, an opponent within

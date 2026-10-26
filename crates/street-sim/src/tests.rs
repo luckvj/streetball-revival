@@ -5266,6 +5266,81 @@ fn a_man_off_the_ball_holding_juke_near_the_rim_posts_for_it() {
 }
 
 #[test]
+fn a_computer_screener_holding_the_stance_stands_on_record_64() {
+    // `0x15b7d4..0x15b85c`: held 0x400000 starts `0x44ba7b` (record 64,
+    // the walk held) every update; let go on record 64 he stands ready
+    // (`0x15add8..0x15ae14`). A person's pad never holds it.
+    let mut w = three_on_three(5);
+    w.phase = Phase::Live;
+    w.game_phase.phase = crate::game_phase::phase::FRONT_COURT;
+    w.ball.hold(0);
+    w.possession = 0;
+    let person = Input {
+        buttons: button::PICK_STANCE,
+        ..Input::default()
+    };
+    w.pick_stance(1, &person);
+    assert_eq!(w.players[1].stand.map(|s| s.script), None);
+    let held = Input {
+        buttons: button::PICK_STANCE | button::COMPUTER,
+        ..Input::default()
+    };
+    for _ in 0..4 {
+        w.pick_stance(1, &held);
+        assert_eq!(
+            w.players[1].stand.map(|s| s.script),
+            Some(stand::PICK_STANCE)
+        );
+        assert!(w.backdown_holds(1));
+        w.stand_tick(1);
+    }
+    assert_eq!(w.channel_row(1), 64);
+    w.players[1].height = 1.0;
+    w.players[1].stand = None;
+    w.pick_stance(1, &held);
+    assert_eq!(w.players[1].stand.map(|s| s.script), None, "off the floor");
+    w.players[1].height = 0.0;
+    w.pick_stance(1, &held);
+    w.stand_tick(1);
+    w.pick_stance(1, &Input::default());
+    assert_eq!(w.players[1].stand.map(|s| s.script), Some(stand::READY));
+}
+
+#[test]
+fn a_persons_strategy_press_with_both_turbos_is_his_own_pick() {
+    // `0x15b5f0..0x15b7d0`: off the ball, two turbos held and half the bar
+    // buy the whole setroughpick (`0x43f038[r % 3]`); short of the bar or
+    // of the turbos, nothing, and the press ends his buttons either way.
+    let mut w = three_on_three(5);
+    w.phase = Phase::Live;
+    w.game_phase.phase = crate::game_phase::phase::FRONT_COURT;
+    w.ball.hold(0);
+    w.possession = 0;
+    let script = |w: &World| match w.players[1].action {
+        Action::Stumbling {
+            reaction: Some(r), ..
+        } => Some(r.script),
+        _ => None,
+    };
+    let one = Input::default().with(button::R3 | button::L1);
+    let two = Input::default().with(button::R3 | button::L1 | button::R1);
+    w.set_turbo(1, 1.0);
+    assert!(w.person_pick(1, &one));
+    assert_eq!(script(&w), None);
+    w.set_turbo(1, 0.4);
+    assert!(w.person_pick(1, &two));
+    assert_eq!(script(&w), None);
+    assert!((w.turbo_of(1) - 0.4).abs() < 1e-6);
+    w.set_turbo(1, 0.8);
+    w.players[1].height = 1.0;
+    assert!(!w.person_pick(1, &two));
+    w.players[1].height = 0.0;
+    assert!(w.person_pick(1, &two));
+    assert!(trick::SCREENER.contains(&script(&w).expect("the person's pick")));
+    assert!((w.turbo_of(1) - 0.3).abs() < 1e-6);
+}
+
+#[test]
 fn a_stronger_posting_holder_bumps_his_still_defender() {
     // `0x135644..0x135740`: on the backdown's walk, after 15 contacts,
     // face to face and stronger, his defender plays the bump reaction (off

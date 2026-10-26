@@ -453,6 +453,11 @@ impl World {
         if ran.set_bits & 0x200 != 0 {
             c.catching = true;
         }
+        // `9b` replaces the state word: the post catches' (`0xa00`, rows
+        // 582..) keep him posting (bit 11), the others' end it.
+        if ran.set_bits != 0 {
+            self.players[i].posting = ran.set_bits & 0x800 != 0;
+        }
         if ran.clear_bits & 0x200 != 0 {
             c.catching = false;
         }
