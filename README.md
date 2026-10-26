@@ -36,6 +36,10 @@ a side, over the internet or a home network.
    remembers it.
 4. Press **Play**.
 
+If Windows says *"Windows protected your PC"*, click **More info**, then
+**Run anyway** (this free project's files aren't signed). `START HERE.txt` in
+the zip covers controls, settings and troubleshooting.
+
 The launcher keeps the disc's location in `Documents\Streetball Revival`,
 next to your save. Change it any time with **Change disc**.
 
