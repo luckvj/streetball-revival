@@ -102,8 +102,9 @@ use crate::{
 /// screen's reactions among the scripts; 84: the count a shot's timer
 /// started from (the updates it has flown); 85: a computer screener's
 /// three pick scripts among the reactions; 93: the "no turbo" message
-/// ([`Event::NoTurbo`]).
-const VERSION: u8 = 93;
+/// ([`Event::NoTurbo`]); 94: the take-off and the throw from the hands
+/// ([`Event::TakeOff`], [`Event::Launched`]).
+const VERSION: u8 = 94;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -3077,6 +3078,28 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(36);
             w.us(player);
         }
+        Event::TakeOff {
+            player,
+            leap,
+            finish,
+        } => {
+            w.u8(37);
+            w.us(player);
+            w.bool(leap);
+            w.u8(finish);
+        }
+        Event::Launched {
+            from,
+            to,
+            kick,
+            leaper,
+        } => {
+            w.u8(38);
+            w.us(from);
+            w.us(to);
+            w.bool(kick);
+            w.bool(leaper);
+        }
         Event::Goaltend { player, shooter } => {
             w.u8(22);
             w.us(player);
@@ -3253,6 +3276,17 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
         },
         32 => Event::PumpFakeBite { player: r.us()? },
         36 => Event::NoTurbo { player: r.us()? },
+        37 => Event::TakeOff {
+            player: r.us()?,
+            leap: r.bool()?,
+            finish: r.u8()?,
+        },
+        38 => Event::Launched {
+            from: r.us()?,
+            to: r.us()?,
+            kick: r.bool()?,
+            leaper: r.bool()?,
+        },
         k => return Err(format!("bad event {k}")),
     })
 }

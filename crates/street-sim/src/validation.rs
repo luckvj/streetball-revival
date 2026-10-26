@@ -1143,6 +1143,7 @@ impl World {
                     shooter: q,
                 }
                 | Event::Pass { from: p, to: q, .. }
+                | Event::Launched { from: p, to: q, .. }
                 | Event::Steal {
                     player: p, from: q, ..
                 }
@@ -1165,6 +1166,7 @@ impl World {
                 | Event::PumpFake { player: p }
                 | Event::PumpFakeBite { player: p }
                 | Event::NoTurbo { player: p }
+                | Event::TakeOff { player: p, .. }
                 | Event::Dive { player: p }
                 | Event::Reach { player: p, .. }
                 | Event::Jump { player: p, .. } => player(p)?,

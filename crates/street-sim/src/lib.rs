@@ -457,6 +457,27 @@ pub enum Event {
     NoTurbo {
         player: usize,
     },
+    /// A dunker or an alley-oop flier left the floor on his script's aimed
+    /// jump (`9e`, `FUN_001988b0`, `0x199840..0x199890`: on the floor, the
+    /// slot 4 message, class `0x3c64b0`). `leap`: the flier's branch of its
+    /// handler (`0x1a4a50`: state bit 15 and a dunk id other than 30);
+    /// `finish`: the dunk's finish (actor+0x24c, 0..4).
+    TakeOff {
+        player: usize,
+        leap: bool,
+        finish: u8,
+    },
+    /// The ball thrown from a holder's hands (`FUN_0014c0c0`,
+    /// `0x14c290..0x14c2d8`: ball+0xf4 set; class `0x3c65a0`, slot 18):
+    /// `from` the passer (ball+0xfc), `to` its target (ball+0x100); `kick`
+    /// the passer's actor+0x268 5 (a kick pass), `leaper` the target in an
+    /// alley-oop's leap (state bit 15, `FUN_0016e9e0`).
+    Launched {
+        from: usize,
+        to: usize,
+        kick: bool,
+        leaper: bool,
+    },
     /// A turbo block swatted a shot on its way down.
     Goaltend {
         player: usize,

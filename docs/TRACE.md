@@ -1201,14 +1201,15 @@ texts confirm Select, `overlays.txt` #54..56) and strategy on R3.
   | Slot | Code | Moment | Events |
   |---|---|---|---|
   | 2 | `0x1a61b8` | trick move | 0x4a kind 7 + level below level 3, else a music stinger; 0x47 for four signature moves |
-  | 4 | `0x1a4928` | shot leaving the hands | 0x50 every other time; 0x4a 13 for a power dunk, else 10 |
+  | 4 | `0x1a4928` | a dunker's or flier's take-off (the `9e`/`a9` jumps; corrected in "Shots, dunks, passes, blocks and steals heard as the listener plays them") | 0x50 every other time; a flier 0x4a 10; a dunk 0x4a 13 at a finish of 2 or more |
   | 9 | `0x142ff8` | a pass (class `0x3c6500`, `0x14bff8`) | nothing: an empty handler |
   | 11 | `0x1a4738` | a launch (class `0x3c6530`, the shot launcher `0x14aaf8`, the ball's kind at +0xc: 2 a jump shot, 5 a lay-up) | kind 5: 0x4a 6; kind 2: 0x3f for flights over 2 frames, player line 14; 0x47 4 |
   | 13 | `0x1a5a78` | a trick move lands (ring 10/11, +crowd 0x29 + taunt); a dunk release (`0x14bf28`, class `DAT_003c6540`) | 0x4d 4 |
   | 15 | `0x1a63e0` | held-ball steal / opponent self-flight catch (`0x14cb28` -> class `0x3c6570`) | 0x49 |
   | 16 | `0x1a4ce8` | shot contact / block (`0x14cb28` -> class `0x3c6580`) | 0x39, 0x50 |
   | 17 | `0x1a65c0` | loose-ball pickup / rebound (`0x14cb28` -> class `0x3c6590`) | (speech) |
-  | 21, 18 | `0x1a4ee0`, `0x1a5f48` | catch | 0x38 |
+  | 21 | `0x1a4ee0` | catch | 0x38 |
+  | 18 | `0x1a5f48` | a ball thrown from the hands (`FUN_0014c0c0`, class `0x3c65a0`) | 0x4a 0; 0x38 for a kick pass |
   | 22 | `0x1a5d10` | the tip-off's take: a ball in state 7, the referee's toss (`0x14cb28` -> class `0x3c65e0`) | crowd 0x25; clears the speech manager's +0x68 |
   | 24 | `0x1a4f90` | rebound | 0x3a |
   | 26 | `0x1a3b10` | basket | 0x48 (dunks, by power 100..900), 0x41/0x3d (game over), 0x4d 9/0/1, 0x3e |
@@ -13526,4 +13527,15 @@ Ported as `street_sim::look::Aim` (resolved at the pick, in the snapshot, versio
 The audio listener (vtable `0x45c3a0`, slot = the dispatcher's `lh` offset / 8) has a slot 10 (`0x1a5ed8`) the rewrite never reached. Its message is class `0x3c6520` (`[vtable, actor+0x27c, 0 or 1]`, dispatched by `0x104bc8`), the "no turbo" message, posted when a move asks more of the bar than the player has: the passout special short of 0.2 (`0x146a14`, after `FUN_00171e30(actor, 0)`), the off-ball pick press short of half (`0x15b7a4`), the juke short of 0.2 (`0x15ce04`, word 2 = 1), the turbo block short of half (`0x15d448`) and the counter stance (`0x15e0b0`). The handler posts HUD event 0x4d through `0x19e840` with its third and fourth arguments swapped from every other HUD call: the actor's side (`0x1a7530`: actor+0x27c, the actor's index, over 2) goes to the word event 0x4d ignores and 1000 to its pan, so the message is `[0x4d, 1000, 5]`. Ported as `Event::NoTurbo` (snapshot version 93) from `World::no_turbo` at the five sites; the passout's refusal now also runs the failed passout's kind 0 first, as `0x146a04` does. `street_game::sfx` plays it. Test: `the_juke_press_asks_for_and_spends_a_fifth_of_the_bar`.
 
 The message classes `0x3c6480..0x3c6990` and their slots and senders, read off the dispatchers (`lh` at the listener vtable): a class's slot is not always `(class − 0x3c6480) / 16 + 1` (`0x3c6510` is slot 41, `0x3c6520` slot 10, `0x3c6690` slot 37).
+
+## Shots, dunks, passes, blocks and steals heard as the listener plays them (2026-10-26)
+
+With the classes' slots read off their dispatchers (the section above), five of the effects the rewrite played were attached to the wrong moments or were its own:
+- Slot 4 (`0x1a4928`, class `0x3c64b0`) is not a shot leaving the hands: its only senders are the aimed jumps' opcodes (`9e`, `FUN_001988b0` at `0x199868`; `a9`, `FUN_00199e20` at `0x19a5b4`), for a dunker (bit 7) or a flier (bit 15) on the floor. It grunts every other time on the listener's count (+0x70, shared with slot 6's block take-offs). A flier whose dunk id (actor+0x1e8) is not 30 gets sweetener 0x4a 10 at the ball (in a lesson, game+0x9c 4, only when the game's vt+0xb4 answers); otherwise it sets the listener's +0x2c, ducks the music for a finish (actor+0x24c) of 2 or more (`0x1ab070`), plays 0x47 for dunk id 53 or 56 when the dunker's player record is one of two (`0x1a7800`, record field 0 145 → 0x10, 146 → 2), and else sweetener 0x4a 13 at the ball for a finish of 2 or more. In a staged gamebreaker (script manager states 3..7 and `FUN_00337af0`) both slot 4 and slot 11 first post 0x51 kind 1. The rewrite had played the grunt and sweetener 10 on every jump shot and lay-up and sweetener 13 at every dunk's press.
+- Slot 11 (`0x1a4738`, the shot's launch, `0x14bf4c`): kind 5 sweetener 6, kind 2 the whoosh 0x3f for a flight of 3 updates or more and the launch line; then 0x47 kind 4 for a shooter whose actor+0x1e4 is 11, and the listener's +0x2c cleared. No grunt.
+- Slot 18 (`0x1a5f48`, class `0x3c65a0`, posted by the launcher `FUN_0014c0c0` at `0x14c2a4` while ball+0xf4 holds someone): sweetener 0x4a 0 at the ball; the ball contact 0x38 when the passer's actor+0x268 is 5 (a kick pass); when the target is in a leap (`FUN_0016e9e0`), the music's duck and +0x2c set. The rewrite had passes silent (the press's class `0x3c6500`, slot 9, is the empty one).
+- Slot 16 (`0x1a4ce8`, the block): 0x39, then with +0x2c set sweetener 0x4a 3 at the ball (+0x2c cleared), the crowd's call, the grunt, the line. The ball contact 0x38 the rewrite played first is not there.
+- Slot 15 (`0x1a63e0`, the steal or counter): the crowd's call, the line and commentary, 0x49. The rewrite's ball contact 0x3a and grunt are not there.
+
+Ported: `Event::TakeOff` (from `Step::Aim` on the floor, with the flier's branch and the finish) and `Event::Launched` (from `World::launch` while the ball is held), snapshot version 94; `street_game::sfx` plays slots 4, 11, 15, 16 and 18 as above with the listener's +0x2c as `Effects::block_flag`. Not ported: the music's duck (`0x1aa1a0` → `0x1ab070`/`0x1ab210`), 0x47 (it needs the players' record ids in the sim), 0x51 in staged gamebreakers. Tests: `a_dunkers_aimed_jump_leaves_the_floor_once_with_its_take_off`, `passes_reach_the_teammate`.
 
