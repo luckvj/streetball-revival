@@ -66,6 +66,21 @@ Tricks: hold turbo buttons while pressing the trick button; the more turbo
 buttons held, the fancier the move. Tricks fill your **gamebreaker** meter;
 when it is full, shoot for a gamebreaker.
 
+## Made for PC
+
+What an emulator can't give you:
+
+- **Online play**: 1 vs 1 and 3 vs 3 over the internet, with join codes and
+  rollback netcode.
+- **Any screen shape**: 16:9, and ultrawide 21:9 and 32:9, where the court
+  widens to fill the screen while the menus and HUD keep their shape
+  (Options: Widescreen On; PC Settings: Wide Picture for the most court).
+- **Smooth motion**: on 120 and 144 Hz screens the court is drawn between
+  the game's 60 updates a second, without changing how it plays (PC
+  Settings, Smooth Motion).
+- **Sharp at any resolution**, in a window or full screen, with keyboard or
+  any controller, and loads in moments.
+
 ## Screenshots
 
 Every picture below is the rebuild running real matches, captured straight

@@ -47,7 +47,9 @@ The first Play takes a few seconds longer: the one-file download unpacks the gam
 
 **Tricks:** hold turbo buttons while pressing the trick button. The more turbo buttons you hold, the fancier the move. Tricks fill your gamebreaker meter; when it is full, shoot for a gamebreaker.
 
-**Settings:** Main Menu → **Options** → **Adjust Screen** opens PC Settings: full screen or window, the wide picture, vibration, Online, Watch A Game and your created teams.
+**Settings:** Main Menu → **Options** → **Adjust Screen** opens PC Settings: full screen or window, the wide picture, vibration, Smooth Motion, Online, Watch A Game and your created teams.
+
+**Ultrawide and high refresh:** set Options → Widescreen to **On**, then PC Settings → Wide Picture to **On**: on 21:9 and 32:9 screens the court widens to fill the screen while the menus and HUD keep their shape. **Smooth Motion** (on by default) draws the court between the game's 60 updates a second on 120/144 Hz screens.
 
 ## Playing online (work in progress)
 
