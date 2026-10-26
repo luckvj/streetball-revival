@@ -12,6 +12,8 @@ permissions:
 jobs:
   build:
     strategy:
+      # One platform's failure leaves the other's download standing.
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -55,6 +57,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           prerelease: true
+          name: Streetball Revival ${{ github.ref_name }} (beta)
           files: streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
           body: |
             Streetball Revival ${{ github.ref_name }} (public beta)
@@ -69,6 +72,10 @@ jobs:
             from your disc at runtime. HOW TO PLAY ONLINE.md in the zip
             covers hosting and joining. This is a beta: please report bugs as
             issues, without attaching disc images or game files.
+
+            Made with the help of AI: much of this was written with an LLM's
+            help, so features may be missing or behave differently from the
+            original.
 
             Unofficial fan project, not affiliated with or endorsed by any
             rights holder of the original game. See LEGAL.md.
