@@ -596,3 +596,41 @@ fn a_person_who_cannot_leap_calls_for_the_ball() {
     });
     assert!(!w.leap_press(1, &input, 1));
 }
+
+#[test]
+fn a_dunkers_aimed_jump_leaves_the_floor_once_with_its_take_off() {
+    // `9e` (`FUN_001988b0`, `0x199840`): a dunker on the floor at his aim
+    // posts slot 4 once ([`Event::TakeOff`]), not the flier's branch.
+    let bank = crate::pose::disc_bank();
+    if matches!(bank, crate::pose::Bank::StandIns) {
+        return;
+    }
+    let mut seen = 0;
+    for (seed, at) in (0..16).zip(
+        [[34.0, 2.0], [35.0, 4.0], [33.0, -3.0], [37.2, 5.0]]
+            .iter()
+            .cycle(),
+    ) {
+        let mut w = three(
+            [*at, [0.0, 10.0], [0.0, -10.0]],
+            [[0.0, 20.0], [0.0, -20.0], [-10.0, 0.0]],
+            seed,
+        );
+        w.poses = bank.clone();
+        w.step(&[buttons(button::SHOOT | button::R1)]);
+        if !matches!(w.players[0].action, Action::Dunking { .. }) {
+            continue;
+        }
+        let mut takeoffs = Vec::new();
+        for _ in 0..TICK_HZ * 3 {
+            w.step(&[Input::default()]);
+            takeoffs.extend(w.events.iter().filter_map(|e| match *e {
+                Event::TakeOff { player, leap, .. } => Some((player, leap)),
+                _ => None,
+            }));
+        }
+        assert_eq!(takeoffs, [(0, false)], "seed {seed}");
+        seen += 1;
+    }
+    assert!(seen > 0, "no dunk drawn");
+}

@@ -14,14 +14,15 @@
 //! | play starts | sweetener 0x4a kind 14 (slot 40) |
 //! | a dribble, a loose ball on the floor | 0x44 (slots 44, 30) |
 //! | a catch / a rebound | 0x38 (slot 21) / 0x3a (slot 24) |
-//! | a pass | nothing: the pass class `0x3c6500` dispatches to slot 9, an empty handler (`0x142ff8`) |
-//! | a jump shot / a lay-up launched (`0x14aaf8` posts slot 11 with the ball's kind 2 / 5) | the long-flight whoosh 0x3f / sweetener 0x4a 6 |
-//! | a shot or dunk leaving the hands | exertion 0x50 every other time, sweetener 0x4a 10 or 13 (slot 4) |
+//! | a pass pressed | nothing: the pass class `0x3c6500` dispatches to slot 9, an empty handler (`0x142ff8`) |
+//! | a ball thrown from the hands (`FUN_0014c0c0`, slot 18, `0x1a5f48`) | sweetener 0x4a 0 at the ball; a kick pass the ball contact 0x38; to an alley-oop flier, the block flag (+0x2c) |
+//! | a jump shot / a lay-up launched (`0x14aaf8` posts slot 11 with the ball's kind 2 / 5) | the long-flight whoosh 0x3f / sweetener 0x4a 6; the block flag cleared |
+//! | a dunker or flier leaving the floor (the `9e` jump, slot 4, `0x1a4928`) | exertion 0x50 every other time; a flier sweetener 0x4a 10 at the ball, a dunk the block flag and, finished at level 2 or more, sweetener 0x4a 13 at the ball |
 //! | the ball on the rim | 0x43 at the hoop (slot 42); a dunk's rattle 0x36 (slot 75) |
 //! | the net | 0x45 at the hoop (slot 43), 0x3e (slots 26, 37) |
 //! | a dunk's slam | 0x40 (slot 39), the crowd's 0x48 by the dunk's power (slot 26) |
-//! | a block (slot 16, `0x1a4ce8`) | 0x39 (whether the blocker holds the ball), crowd 0x27, exertion; the ball contact 0x38 is the rewrite's own |
-//! | a steal or counter (slot 15, `0x1a63e0`) | crowd 0x27, 0x49; the ball contact 0x3a and the grunt are the rewrite's own |
+//! | a block (slot 16, `0x1a4ce8`) | 0x39 (whether the blocker holds the ball), with the block flag sweetener 0x4a 3, crowd 0x27, exertion |
+//! | a steal or counter (slot 15, `0x1a63e0`) | crowd 0x27, 0x49 |
 //! | the tip-off caught from the referee's toss (slot 22, `0x1a5d10`: ball state 7) | crowd 0x25 |
 //! | a block jump's take-off | exertion every other time, counted with the shots' (slot 6); the swing, sweetener 0x4a 11 (slot 7) |
 //! | a reach for the ball: a swipe, or the counter stance | sweetener 0x4a 12, every other time an exertion (slot 8) |
@@ -582,6 +583,11 @@ pub struct Effects {
     exertions: u32,
     /// The reaches' own count (`0x4bb2d0`, slot 8 `0x1a60f0`).
     reaches: u32,
+    /// The listener's +0x2c: set at a dunker's take-off (slot 4) and by a
+    /// throw to an alley-oop flier (slot 18), cleared by a jump shot's or
+    /// lay-up's launch (slot 11); a block (slot 16) plays sweetener 3 on it
+    /// and clears it.
+    block_flag: bool,
     /// Effects level the globals were set for, and the percents they take.
     level: u8,
     percents: &'static [i32],
@@ -876,6 +882,7 @@ impl Effects {
             turns: [0; 2],
             exertions: 0,
             reaches: 0,
+            block_flag: false,
             level: settings.effects,
             percents,
             staged: None,
@@ -1456,15 +1463,13 @@ pub(crate) fn fire_events(
             }
             Event::Shot { player, .. } | Event::Layup { player } => {
                 let (a, d) = at(player_at(player));
-                if every_other(&mut fx.exertions) {
-                    let voice = fx.voices.get(player).copied().unwrap_or(0);
-                    fx.fire(&[ev::EXERTION, a, d, voice]);
-                }
-                fx.fire(&[ev::SWEETENER, a, d, 1000, 10]);
                 // Slot 11 (`0x1a4738`): the launcher posts the ball's kind,
                 // 2 for a jump shot (its flight, at least half a second, is
                 // over the handler's 2 frames: the whoosh 0x3f, and the
-                // launch line), 5 for a lay-up (sweetener 6).
+                // launch line), 5 for a lay-up (sweetener 6); either clears
+                // the block flag. A shot grunts nowhere: the grunt and
+                // sweetener 10 of slot 4 are a dunker's or flier's take-off.
+                fx.block_flag = false;
                 let (ba, bd) = at(ball);
                 if matches!(event, Event::Shot { .. }) {
                     fx.fire(&[ev::LOB, ba, bd]);
@@ -1473,13 +1478,49 @@ pub(crate) fn fire_events(
                     fx.fire(&[ev::SWEETENER, ba, bd, 1000, 6]);
                 }
             }
-            Event::Dunk { player, .. } => {
+            // A dunker or alley-oop flier leaving the floor (slot 4,
+            // `0x1a4928`, posted by the `9e` jump): a grunt every other time
+            // on the shared count; a flier sweetener 10 at the ball (in a
+            // lesson only one with an id, the game's vt+0xb4); a dunker sets
+            // the block flag and, finished at level 2 or more, sweetener 13
+            // at the ball. Not modelled: the music's duck at those levels
+            // (`0x1ab070`), dunk ids 53 and 56's 0x47 for two players'
+            // records (`0x1a7800`), and 0x51 inside a staged gamebreaker.
+            Event::TakeOff {
+                player,
+                leap,
+                finish,
+            } => {
                 let (a, d) = at(player_at(player));
                 if every_other(&mut fx.exertions) {
                     let voice = fx.voices.get(player).copied().unwrap_or(0);
                     fx.fire(&[ev::EXERTION, a, d, voice]);
                 }
-                fx.fire(&[ev::SWEETENER, a, d, 1000, 13]);
+                let (ba, bd) = at(ball);
+                if leap {
+                    if w.lesson.is_none_or(|id| id != 0) {
+                        fx.fire(&[ev::SWEETENER, ba, bd, 1000, 10]);
+                    }
+                } else {
+                    fx.block_flag = true;
+                    if finish >= 2 {
+                        fx.fire(&[ev::SWEETENER, ba, bd, 1000, 13]);
+                    }
+                }
+            }
+            // The ball thrown from a holder's hands (slot 18, `0x1a5f48`):
+            // sweetener 0 at the ball, a kick pass's ball contact, and to an
+            // alley-oop flier the block flag (and the music's duck, not
+            // modelled).
+            Event::Launched { kick, leaper, .. } => {
+                let (ba, bd) = at(ball);
+                fx.fire(&[ev::SWEETENER, ba, bd, 1000, 0]);
+                if kick {
+                    fx.fire(&[ev::HIT, ba, bd, 1000]);
+                }
+                if leaper {
+                    fx.block_flag = true;
+                }
             }
             // A block jump's take-off (slot 6): the block scripts' callback
             // 35 (`0x176080`, posting at `0x177120`) grunts every other time
@@ -1592,13 +1633,15 @@ pub(crate) fn fire_events(
                 fx.fire(&[ev::HIT, a, d, 1000]);
             }
             // A block (slot 16, `0x1a4ce8`): 0x39 with whether the blocker
-            // now holds the ball, the crowd's call, the blocker's grunt and
-            // line 9.
+            // now holds the ball, sweetener 3 on the block flag, the crowd's
+            // call, the blocker's grunt and line 9.
             Event::Block { player, .. } => {
                 let (a, d) = at(ball);
-                fx.fire(&[ev::HIT, a, d, 1000]);
                 let holds = w.ball.state == BallState::Held(player);
                 fx.fire(&[ev::BLOCK, a, d, 1000, i32::from(holds)]);
+                if std::mem::take(&mut fx.block_flag) {
+                    fx.fire(&[ev::SWEETENER, a, d, 1000, 3]);
+                }
                 fx.fire(&[ev::CROWD_CALL, i32::from(leads(w, player))]);
                 let (pa, pd) = at(player_at(player));
                 let voice = fx.voices.get(player).copied().unwrap_or(0);
@@ -1611,15 +1654,11 @@ pub(crate) fn fire_events(
             // hands a player the ball): the rewrite's reading, the stealer
             // holding the ball, as 0x39 reads the blocker's.
             Event::Steal { player, .. } | Event::Counter { player, .. } => {
-                let (a, d) = at(ball);
-                fx.fire(&[ev::REBOUND, a, d]);
                 let (pa, pd) = at(player_at(player));
                 fx.fire(&[ev::CROWD_CALL, i32::from(leads(w, player))]);
                 fx.say(speech.as_deref_mut(), player, 10, (pa, pd));
                 let holds = w.ball.state == BallState::Held(player);
                 fx.fire(&[ev::STEAL, pa, pd, 1000, i32::from(holds)]);
-                let voice = fx.voices.get(player).copied().unwrap_or(0);
-                fx.fire(&[ev::EXERTION, pa, pd, voice]);
                 // A counter that takes the ball knocks the handler back
                 // (slot 74, level 1, the collision posting at `0x134c14`):
                 // the body sound 0x4f 0 where the handler stumbles.

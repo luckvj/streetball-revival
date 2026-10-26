@@ -1111,6 +1111,21 @@ impl World {
                 // `FUN_00159190(actor, r & 1 ? 2 : 1, n)`: the face.
                 self.rng.next_u32();
                 self.face(i, i32::from(a.updates));
+                // `0x199840..0x199888`: on the floor, the take-off's message
+                // (slot 4).
+                let p = &self.players[i];
+                if p.height == 0.0 {
+                    let id = match p.action {
+                        Action::Dunking { row, .. } => timing::move_row(row).map(|r| r.id),
+                        _ => None,
+                    };
+                    let finish = crate::shooting::dunk_move_level(p.action_buttons).clamp(0, 4);
+                    self.events.push(crate::Event::TakeOff {
+                        player: i,
+                        leap: p.leaping() && id != Some(30),
+                        finish: finish as u8,
+                    });
+                }
             }
             Step::Reach(r) => {
                 let p = &self.players[i];

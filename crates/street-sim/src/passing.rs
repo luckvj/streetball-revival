@@ -1109,6 +1109,15 @@ impl World {
         // the last ball update held it ([`crate::held`]); without the
         // disc's animations from the rewrite's own point.
         let in_hand = from.is_none();
+        // `0x14c290..0x14c2d8`: a ball someone holds posts slot 18.
+        if matches!(self.ball.state, BallState::Held(_)) {
+            self.events.push(crate::Event::Launched {
+                from: i,
+                to,
+                kick: self.players[i].pass_kind == 5,
+                leaper: self.players[to].leaping(),
+            });
+        }
         let from = from.unwrap_or(
             if self.poses.get().is_some() && self.ball.state == BallState::Held(i) {
                 self.ball.position

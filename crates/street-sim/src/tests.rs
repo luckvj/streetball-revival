@@ -214,6 +214,13 @@ fn passes_reach_the_teammate() {
     assert_eq!(w.ball.state, BallState::Held(0));
     w.step(&[Input::default(), Input::default()]);
     assert_eq!(w.ball.state, BallState::Pass, "released");
+    // The launcher's slot 18 (`0x14c2a4`): thrown from the holder's hands.
+    assert!(w.events.contains(&Event::Launched {
+        from: 0,
+        to: 1,
+        kick: false,
+        leaper: false,
+    }));
     assert!(w.windup.is_none());
     assert!(matches!(w.players[0].action, Action::Passing { .. }));
     for _ in 0..TICK_HZ {
