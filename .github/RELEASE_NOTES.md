@@ -74,7 +74,7 @@ The zips hold all of this in `START HERE.txt` too.
 
 ## Feedback
 
-Found a bug, or something that plays differently from the original? Tell us on the [Discord](https://discord.com/invite/htu5pdxPQz) or [open an issue](https://github.com/luckvj/streetball-revival/issues) with what you did, what you expected and what happened. Please don't attach disc images or game files.
+Found a bug, or something that plays differently from the original? Tell us on the [Discord](https://discord.com/invite/htu5pdxPQz), find Vj on X/Twitter at [@UnLuckvj](https://x.com/UnLuckvj), or [open an issue](https://github.com/luckvj/streetball-revival/issues) with what you did, what you expected and what happened. Please don't attach disc images or game files.
 
 ## Made with the help of AI
 

@@ -138,7 +138,8 @@ against the original are the best way it gets fixed.
 ## Feedback
 
 Found a bug, or something that plays differently from the original? Tell
-us on the [Discord](https://discord.com/invite/htu5pdxPQz) or open an issue with what you did, what you
+us on the [Discord](https://discord.com/invite/htu5pdxPQz), find Vj on X/Twitter at
+[@UnLuckvj](https://x.com/UnLuckvj), or open an issue with what you did, what you
 expected and what happened. Feedback on online matches is especially
 welcome while that mode is being tested. Please don't attach disc images
 or game files.
@@ -200,4 +201,5 @@ endorsed by any rights holder of the original game. Its own code is under
 the [MIT licence](LICENSE); trademarks and the full notice are in
 [LEGAL.md](LEGAL.md).
 
-Made by **Vj** ([@luckvj](https://github.com/luckvj)).
+Made by **Vj** ([@luckvj](https://github.com/luckvj) on GitHub,
+[@UnLuckvj](https://x.com/UnLuckvj) on X/Twitter).
