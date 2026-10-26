@@ -64,6 +64,8 @@ fn name(a: &Act) -> &'static str {
         Act::PostUp(_) => "post up",
         Act::Feeder(_) => "feed",
         Act::TrickPass(_) => "trick pass",
+        Act::LessonHold(_) => "playbook hold",
+        Act::LessonJuke(_) => "lesson juke",
     }
 }
 
@@ -273,6 +275,71 @@ fn the_post_man_sets_a_pick_once_the_window_stands_long_enough() {
     };
     assert!(!ok(149));
     assert!(ok(150));
+}
+
+/// One playbook update's lesson branch for team 0 in lesson `lesson`
+/// (`0x127844..0x127f08`); whether it took the update, and the holder's
+/// front behaviour after it.
+fn lesson_step(w: &World, pb: &mut playbook::Playbook, lesson: u8) -> (bool, &'static str) {
+    let mut brains = vec![Brain::default(); w.players.len()];
+    let took = with_ctx(w, |ctx| {
+        playbook::lesson_hold(ctx, pb, &mut brains, 0, lesson)
+    })
+    .0;
+    let front = brains[0].queue.first().map_or("-", |n| name(&n.act));
+    (took, front)
+}
+
+#[test]
+fn the_school_holds_the_computers_ball_for_the_defence_lessons() {
+    // Steal (8): the holder 12..33.75 out pauses, `fps × 3.5` playbook
+    // updates at most; Trick Counter (10): he jukes facing the rim;
+    // Dive (16): with x > 0 the "playbook hold"; a lesson without a
+    // branch (Pass, 0) falls through.
+    let mut w = front_court(4);
+    w.lesson = Some(8);
+    let mut pb = playbook::Playbook::new();
+    assert_eq!(lesson_step(&w, &mut pb, 8), (true, "wait"));
+    for _ in 1..210 {
+        lesson_step(&w, &mut pb, 8);
+    }
+    assert!(!lesson_step(&w, &mut pb, 8).0, "after fps x 3.5");
+    w.lesson = Some(10);
+    assert_eq!(lesson_step(&w, &mut pb, 10), (true, "lesson juke"));
+    w.lesson = Some(0);
+    assert!(!lesson_step(&w, &mut pb, 0).0);
+    w.lesson = Some(16);
+    let x = w.players[0].position[0];
+    assert_eq!(
+        lesson_step(&w, &mut pb, 16),
+        (true, if 0.0 < x { "playbook hold" } else { "-" })
+    );
+    w.players[0].position[0] = -x;
+    let (took, _) = lesson_step(&w, &mut pb, 16);
+    assert!(took, "the Dive lesson always takes the update");
+}
+
+#[test]
+fn the_block_lessons_holder_shoots_once_the_person_stands_in_front() {
+    // Block (9): the holder pauses; the first person within 8.1 on his way
+    // to the rim for `fps × 0.75` updates (`[0x42]`) makes him shoot.
+    let mut w = front_court(4);
+    w.lesson = Some(9);
+    let rim = w.hoops[0].rim;
+    let h = w.players[0].position;
+    w.players[3].position = [h[0] + (rim[0] - h[0]).signum() * 4.0, h[1]];
+    let mut pb = playbook::Playbook::new();
+    let mut fronts = Vec::new();
+    for _ in 0..50 {
+        let mut brains = vec![Brain::default(); w.players.len()];
+        with_ctx(&w, |ctx| {
+            ctx.computer = &[true, true, true, false, true, true];
+            playbook::lesson_hold(ctx, &mut pb, &mut brains, 0, 9)
+        });
+        fronts.push(brains[0].queue.first().map_or("-", |n| name(&n.act)));
+    }
+    assert_eq!(fronts[0], "wait");
+    assert!(fronts.contains(&"shoot"), "{fronts:?}");
 }
 
 #[test]

@@ -626,7 +626,8 @@ fn should_pass(ctx: &Ctx, i: usize, careful: bool) -> bool {
     if on_baseline(ctx, i, 0.7, 85.0) && !outside(ctx, i, 0.5) {
         return true;
     }
-    if careful {
+    // Nor in the Block lessons (`0x181df8..0x181e38`).
+    if careful || matches!(ctx.w.lesson, Some(9 | 11)) {
         return false;
     }
     let Some(o) = ctx.nth_opponent(i, 0, false) else {
@@ -687,11 +688,14 @@ words! {
 
 impl Shoot {
     /// The constructor's draws: the patience (1 in 4 skip it, unless the
-    /// shooter is nearest the rim) and the care (`skill(40, 50, 50, 100)`).
+    /// shooter is nearest the rim; always in the Block lessons) and the
+    /// care (`skill(40, 50, 50, 100)`).
     pub fn new(ctx: &mut Ctx, i: usize) -> Self {
         let team = ctx.team(i);
         let nearest = ctx.nearest_to_rim() == Some(i);
-        let patient = !nearest && ctx.rand() & 3 != 0;
+        // The Block lessons (game vt+0xb4 9, 11) always wait, with no draw
+        // (`0x100e94..0x100ed0`).
+        let patient = matches!(ctx.w.lesson, Some(9 | 11)) || (!nearest && ctx.rand() & 3 != 0);
         let p = skill::percent(ctx, team, 40, 50, 50, 100);
         let careful = ((ctx.rand() % 100) as i32) < p;
         let step_back = !outside(ctx, i, 0.5) && rating(ctx.w.players[i].ratings.threes) >= 50;
@@ -726,8 +730,11 @@ impl Shoot {
             }
             return;
         }
-        // `FUN_0013abf8`: the stick's strength class, moving above 15.
-        if self.patient && b.pad.strength > 15 && quality(ctx, i) > 5 {
+        // `FUN_0013abf8`: the stick's strength class, moving above 15. In
+        // the Block lessons the wait ends at once, moving or not
+        // (`0x1010e0..0x101134`).
+        let block_lesson = matches!(ctx.w.lesson, Some(9 | 11));
+        if self.patient && ((b.pad.strength > 15 && quality(ctx, i) > 5) || block_lesson) {
             self.patient = false;
             b.stop(ctx, i);
             return;
@@ -742,8 +749,10 @@ impl Shoot {
             }
             return;
         }
-        // `FUN_001816b0`: not while dribbling (actor+0x1a0 1).
+        // `FUN_001816b0`: not while dribbling (actor+0x1a0 1); never in
+        // the Block lessons (`0x101188..0x1011c8`).
         if !self.faked
+            && !block_lesson
             && can_act(ctx, i)
             && !dribbling(ctx, i)
             && quality(ctx, i) < 5
@@ -2470,5 +2479,57 @@ mod tests {
         // The rewrite's stand-in reach (his height and standing reach)
         // stood above the ball here.
         assert!(top + 0.5 < w.players[1].ratings.reach);
+    }
+}
+
+words! {
+    /// "playbook hold" (vtable `0x43ae88`, update `FUN_0012b7e0`; never
+    /// done): the Dive lesson's holder (the playbook's
+    /// [`super::playbook`] lesson branch) jukes (`FUN_00182280`, 0x10)
+    /// every other update, unless he is juking already.
+    pub(crate) struct LessonHold {
+        /// +0x1c: toggled each update; the juke goes in while it is clear.
+        off: bool,
+    }
+}
+
+impl LessonHold {
+    pub fn update(&mut self, ctx: &mut Ctx, b: &mut Brain, i: usize) {
+        if !self.off && !juking(ctx, b, i) {
+            build(ctx, b, i, bits::JUKE);
+        }
+        self.off = !self.off;
+    }
+}
+
+words! {
+    /// The Trick Counter lesson's holder (type 0x10, `FUN_0010d090(ai,
+    /// frames)`, vtable `0x437cd0`: done at that age, `FUN_0010d118`;
+    /// update `FUN_0010d130`): facing his nearest opponent when that one
+    /// is nearer the rim, else the rim, he jukes whenever he is not
+    /// juking.
+    pub(crate) struct LessonJuke {
+        frames: i32,
+    }
+}
+
+impl LessonJuke {
+    pub fn new(frames: i32) -> Self {
+        Self { frames }
+    }
+
+    pub fn done(&self, age: u16) -> bool {
+        self.frames <= i32::from(age)
+    }
+
+    pub fn update(&mut self, ctx: &mut Ctx, b: &mut Brain, i: usize) {
+        let at = match ctx.nth_opponent(i, 0, false) {
+            Some(o) if ctx.hoop_dist(o) < ctx.hoop_dist(i) => ctx.pos(o),
+            _ => ctx.goal(ctx.team(i)),
+        };
+        if !juking(ctx, b, i) {
+            b.face_point(ctx, i, at, 1, 0);
+            build(ctx, b, i, bits::JUKE);
+        }
     }
 }

@@ -910,6 +910,10 @@ pub enum PressMove {
     Shot(usize),
 }
 
+/// The jump shot the Block lessons' holder always takes (`0x44ed73`,
+/// `FUN_0016b4b8`'s `0x16b558`).
+pub const BLOCK_LESSON_SHOT: usize = 4;
+
 /// The three hooks of `0x3d82f0` the empty draw plays three times in four.
 pub const FALLBACK_HOOKS: [usize; 3] = [8, 9, 10];
 
@@ -931,8 +935,7 @@ pub const FALLBACK_HOOKS: [usize; 3] = [8, 9, 10];
 ///   (the legends' hooks and the female set are not carried).
 ///
 /// Not carried: a created player's or a legend's own unlocks
-/// (`FUN_00139d38`'s record branches) and rows; the special games' modes
-/// (vt+0xb4 3 and 0x15: no easy rows and no need for them).
+/// (`FUN_00139d38`'s record branches) and rows.
 pub(crate) fn press_move(w: &mut World, i: usize, buttons: u16) -> PressMove {
     w.rng.next_u32();
     w.face(i, 2 * crate::TICK_HZ as i32);
@@ -953,7 +956,13 @@ pub(crate) fn press_move(w: &mut World, i: usize, buttons: u16) -> PressMove {
         }
     }
     let turbo = buttons & crate::button::TURBOS != 0;
-    let gates = MoveGates::draw(w, rating(w.players[i].ratings.dunks));
+    let mut gates = MoveGates::draw(w, rating(w.players[i].ratings.dunks));
+    // The Dunk and Advanced Dunk lessons: no easy rows, and no need for
+    // them (`0x169744..0x16979c`).
+    if matches!(w.lesson, Some(3 | 0x15)) {
+        gates.need_easy = false;
+        gates.no_easy = true;
+    }
     let rows = press_candidates(w, i, gates, turbo);
     if rows.is_empty() {
         let hook = w.rng.next_u32() % 100 < 0x4b;

@@ -13,7 +13,10 @@
 //! [`super::plays`].
 
 use super::moves::{Follower, Leaper, can_leap};
-use super::offence::{KeepAway, Pass, Shoot, busy, juking, openness, outside, path_open, quality};
+use super::offball::Pause;
+use super::offence::{
+    self, KeepAway, Pass, Shoot, busy, juking, openness, outside, path_open, quality,
+};
 use super::picks::SetPick;
 use super::plays::{Play, can_pass, holder, kind, meter_ok, suits};
 use super::spots::{PerimPlayer, PostCut};
@@ -70,6 +73,11 @@ words! {
         /// wait.
         pick: i32,
         pick_wait: i32,
+        /// `[0x41]`: the Steal lesson's holds so far; `[0x42]`: the
+        /// updates a person has stood in front of the holder in the Block
+        /// lessons ([`lesson_hold`]).
+        lesson_count: i32,
+        block_look: i32,
     }
 }
 
@@ -121,6 +129,8 @@ impl Playbook {
         self.shot_hold = 0;
         self.pick = -1;
         self.pick_wait = 0;
+        self.lesson_count = 0;
+        self.block_look = 0;
         let r = ctx.rand();
         self.pen_count = 0;
         self.shot_mark = (r & 3) as i32 + 1;
@@ -480,12 +490,16 @@ pub(super) fn update(ctx: &mut Ctx, pb: &mut Playbook, brains: &mut [Brain], tea
         oop_check(ctx, pb, brains, team, sub);
         // `0x127a38..`: with no pick under way (`FUN_0012ab38`) and the
         // wait over, the first teammate placed for one (`FUN_0012abe0`)
-        // sets a pick for the person (`FUN_0012b0c0`). Game vt+0xb4 is
-        // never 0xf in the rewrite's games.
+        // sets a pick for the person (`FUN_0012b0c0`); in the Pick lesson
+        // (game vt+0xb4 0xf, `0x128130`) the play ends instead.
         if let Some(h) = ctx.w.handler()
             && !pick_under_way(ctx, brains, team)
             && pb.human_wait == 0
         {
+            if ctx.w.lesson == Some(0xf) {
+                pb.play = Play::none();
+                return;
+            }
             let squad = ctx.squad(team);
             if let Some(&j) = squad.iter().take(3).find(|&&j| pick_placed(ctx, pb, h, j)) {
                 pick_call(ctx, pb, brains, team, j);
@@ -493,8 +507,11 @@ pub(super) fn update(ctx: &mut Ctx, pb: &mut Playbook, brains: &mut [Brain], tea
         }
         return;
     }
-    // The special games' branches (game vt+0xb4 of 8..11 and 0x10) do
-    // not apply: vt+0xb4 is -1 in every game the rewrite plays.
+    if let Some(lesson) = ctx.w.lesson
+        && lesson_hold(ctx, pb, brains, team, lesson)
+    {
+        return;
+    }
     let h = holder(ctx, team);
     if pocket_check(ctx, team) {
         if let Some(h) = h {
@@ -694,6 +711,125 @@ fn keep_away(ctx: &mut Ctx, pb: &Playbook, brains: &mut [Brain], team: usize, su
         let p = Pass::new(ctx, h, Some(b));
         brains[h].replace(ctx, h, Act::Pass(p));
     }
+    true
+}
+
+/// `0x127844..0x127f08`: a computer side's ball in the School's defence
+/// lessons (game vt+0xb4), with 5 s or more on the shot clock. The side's
+/// owner (`FUN_0018bf80`) is held for the person's move; each branch that
+/// takes the update ends the playbook's update (most ending the play),
+/// the others fall through to the side's usual calls.
+///
+/// - Dive (16): an owner holding the ball, not juking, with `x > 0`,
+///   jukes every other update for good ("playbook hold", vtable
+///   `0x43ae88`); otherwise nothing.
+/// - Steal (8): for `fps × 3.5` such updates of the playbook (`[0x41]`,
+///   cleared at its start), an owner 12..33.75 from the rim pauses `fps ×
+///   30` frames (type 0x10, unless he already is).
+/// - Trick Counter (10): an owner 12..30.75 out with the ball jukes
+///   facing the nearer of his nearest opponent and the rim for `fps × 30`
+///   frames (type 0x10, `FUN_0010d090`); the play goes on.
+/// - Block, Turbo Block (9, 11): an owner 12..30.75 out with the ball
+///   pauses (as Steal's) unless he shoots; free (no rebound jump, catch,
+///   shot or juke), he shoots (`FUN_001296b0`) once the first person
+///   has stood in front of him `fps × 0.75` updates (`[0x42]`: within
+///   8.1, his way to the rim within 71 of the owner's, on his feet; at
+///   `fps × 0.55` it posts the lesson's prompt, `0x3c6970`, which the
+///   rewrite's lesson manager shows already).
+pub(super) fn lesson_hold(
+    ctx: &mut Ctx,
+    pb: &mut Playbook,
+    brains: &mut [Brain],
+    team: usize,
+    lesson: u8,
+) -> bool {
+    let o = ctx.ball_owner().filter(|&o| ctx.team(o) == team);
+    let clock = 5 <= ctx.shot_clock();
+    let hold_on = |ctx: &mut Ctx, brains: &mut [Brain], o: usize| {
+        let p = Pause::new(30 * crate::TICK_HZ as i32);
+        brains[o].replace(ctx, o, Act::Pause(p));
+    };
+    if lesson == 16 && clock {
+        pb.play = Play::none();
+        if let Some(o) = o
+            && ctx.has_ball(o)
+            && !juking(ctx, &brains[o], o)
+            && brains[o].front_kind() != 0x14
+            && 0.0 < ctx.pos(o)[0]
+        {
+            brains[o].replace(ctx, o, Act::LessonHold(offence::LessonHold::default()));
+        }
+        return true;
+    }
+    let out = |ctx: &Ctx, o: usize, far: f32| {
+        let d = ctx.hoop_dist(o);
+        12.0 < d && d < far
+    };
+    if let Some(o) = o
+        && pb.lesson_count < 210
+        && clock
+        && lesson == 8
+        && out(ctx, o, 33.75)
+    {
+        if ctx.has_ball(o) && brains[o].front_kind() != 0x10 {
+            hold_on(ctx, brains, o);
+        }
+        pb.play = Play::none();
+        pb.lesson_count += 1;
+        return true;
+    }
+    if let Some(o) = o
+        && lesson == 10
+        && ctx.has_ball(o)
+        && clock
+        && out(ctx, o, 30.75)
+    {
+        if brains[o].front_kind() != 0x10 {
+            let j = offence::LessonJuke::new(30 * crate::TICK_HZ as i32);
+            brains[o].replace(ctx, o, Act::LessonJuke(j));
+        }
+        return true;
+    }
+    let Some(o) =
+        o.filter(|&o| matches!(lesson, 9 | 11) && ctx.has_ball(o) && clock && out(ctx, o, 30.75))
+    else {
+        return false;
+    };
+    if !ctx.rebounding(o)
+        && !ctx.catching(o)
+        && !busy_shot(ctx, brains, o)
+        && !juking(ctx, &brains[o], o)
+    {
+        let look = (60.0 * f32::from_bits(0x3f0c_cccd)) as i32;
+        match (0..ctx.w.players.len()).find(|&j| ctx.human_player(j)) {
+            None => {
+                if pb.block_look < look {
+                    pb.block_look = 0;
+                }
+            }
+            Some(p) => {
+                let near = || {
+                    let off = (f32::from_bits(0x428f_38c9)) as i32;
+                    ctx.between(o, p) < f32::from_bits(0x4101_999a)
+                        && super::court::turn(ctx.angle_to_hoop(o), ctx.angle_to_hoop(p)).abs()
+                            <= off
+                        && !ctx.fallen(p)
+                };
+                if look <= pb.block_look || near() {
+                    pb.block_look += 1;
+                    if (60.0 * 0.75) as i32 <= pb.block_look {
+                        shoot(ctx, pb, brains, team);
+                    }
+                } else {
+                    pb.block_look = 0;
+                }
+            }
+        }
+    }
+    if !busy_shot(ctx, brains, o) && brains[o].front_kind() != 0x10 {
+        hold_on(ctx, brains, o);
+    }
+    pb.play = Play::none();
     true
 }
 
@@ -1104,7 +1240,11 @@ fn oop_check(ctx: &mut Ctx, pb: &mut Playbook, brains: &mut [Brain], team: usize
         if ctx.human[team] { 2 - d } else { d }
     };
     for &p in squad.iter().take(3) {
-        let fit = can_leap(ctx, p) && path_open(ctx, p) && ctx.pos(p)[0].abs() < 33.5;
+        // `FUN_0012a568`: the open lane is not asked in the Alley-Oop
+        // lesson (game vt+0xb4 5).
+        let fit = can_leap(ctx, p)
+            && (path_open(ctx, p) || ctx.w.lesson == Some(5))
+            && ctx.pos(p)[0].abs() < 33.5;
         if !fit {
             continue;
         }
@@ -1124,6 +1264,11 @@ fn oop_check(ctx: &mut Ctx, pb: &mut Playbook, brains: &mut [Brain], team: usize
         if ctx.dunking(h) && dunks != 0 {
             odds += OOP_BONUS[level];
         }
+        // `0x12a1d0..0x12a230`: a person's holder in the Alley-Oop lesson
+        // with under 6 s on the shot clock: 100 more.
+        if ctx.human_player(h) && ctx.w.lesson == Some(5) && ctx.shot_clock() < 6 {
+            odds += 100;
+        }
         let r = ctx.rand();
         let mut called = false;
         if ((r % 100) as i32) < odds {
@@ -1136,7 +1281,8 @@ fn oop_check(ctx: &mut Ctx, pb: &mut Playbook, brains: &mut [Brain], team: usize
                 }
             } else {
                 called = true;
-                pb.oop_wait = 360;
+                // `fps × 3` in the Alley-Oop lesson (`0x12a298..0x12a2d0`).
+                pb.oop_wait = if ctx.w.lesson == Some(5) { 180 } else { 360 };
                 brains[p].replace(ctx, p, Act::Leaper(Leaper::new(false)));
             }
         } else {

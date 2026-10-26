@@ -121,7 +121,9 @@ impl World {
     /// rim. On within 15 when open, moving or `flag` 0, facing the rim
     /// within 350 units (`FUN_0018d290`, his wanted facing) and not behind
     /// the board (`FUN_0016f580(actor, 0)`); else on standing within 7.5.
-    /// The special games' modes (vt+0xb4 3, 5, 0x15) are not modelled.
+    /// The Dunk, Alley-Oop and Advanced Dunk lessons (game vt+0xb4 3, 5,
+    /// 0x15, `0x16c6d4..0x16c720`) skip the opponent's cone (their Dunks
+    /// of 99, `0x16c610..0x16c664`, only set its width).
     pub(crate) fn dunk_on(&self, i: usize, flag: bool) -> i32 {
         let p = &self.players[i];
         let rim = self.rim_spot(crate::target_hoop(p.team));
@@ -153,7 +155,8 @@ impl World {
             ((1.0 - dunks as f32 / 99.0) * 200.0 + 100.0).round() as i32
         };
         let mut open = true;
-        if let Some(o) = opponent
+        if !matches!(self.lesson, Some(3 | 5 | 0x15))
+            && let Some(o) = opponent
             && self.in_cone(i, o, width)
             && distance(self.players[o].position, p.position) <= 4.5
         {
