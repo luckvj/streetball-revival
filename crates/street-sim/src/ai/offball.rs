@@ -45,8 +45,10 @@ words! {
 }
 
 impl Goto {
-    /// Queued by the inbound strategies (`FUN_0012bc08`, `FUN_0012c4e8`),
-    /// which are not ported yet.
+    /// Only two functions build it, and the disc never runs either: the
+    /// strategy of vtable `0x43aa60` (its start `0x125460`, update
+    /// `0x1254c8`, the walks `0x1254f0`), which no constructor makes, and
+    /// `0x1847c8`, which nothing calls or points to.
     #[allow(dead_code)]
     pub fn new(spot: [f32; 2], stop: bool, level: i32, slow: bool, frames: i32) -> Self {
         Self {

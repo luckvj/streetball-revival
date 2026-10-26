@@ -27,12 +27,12 @@
 //! the counter stance's included; the stance's contact with a juking
 //! handler is the counter ([`crate::counter`]).
 //!
-//! Not ported: the scripted contacts other than the trick's fake
-//! (`actor+0x198`, handlers 1..7: post ups, strips, charges; the
-//! clearout's kind 2 is [`World::clearout_contact`]'s, the dunks' and
-//! lay-ups' kind 1 [`World::knock_contacts`]), the other reactions (the strip, the post-up
-//! engagement, the charge). The screen's reactions are the original's
-//! scripts ([`crate::trick::SCREENED_HEAVY`], [`crate::trick::SCREENER`]).
+//! The scripted contacts (`actor+0x198`, the handler table `0x3d0c30`)
+//! have four kinds, all ported: 0 the plain one above, 1 the dunks' and
+//! lay-ups' knock ([`World::knock_contacts`]), 2 the clearout
+//! ([`World::clearout_contact`]) and 3 the trick's fake
+//! ([`crate::trick`]). The screen's reactions are the original's scripts
+//! ([`crate::trick::SCREENED_HEAVY`], [`crate::trick::SCREENER`]).
 //! Each player's weight is the record's (attribute 9,
 //! [`crate::Player::weight`], [`WEIGHT`] until a roster sets it).
 
@@ -676,10 +676,12 @@ impl World {
                 defender: a,
             });
         }
-        // `0x3c6910` → `FUN_00141448`: unless the game listener's state is
-        // 3..7 (game+0x424, not modelled: taken as play), the defender's
-        // AI+0xb0 is the screener.
-        if let Some(brain) = self.ai.brains.get_mut(a) {
+        // `0x3c6910` → `FUN_00141448`: unless the script manager runs a
+        // script (game+0x424 +0x50 in 3..7), the defender's AI+0xb0 is the
+        // screener.
+        if self.sequence.is_none()
+            && let Some(brain) = self.ai.brains.get_mut(a)
+        {
             brain.screened_by = b as i32;
         }
     }

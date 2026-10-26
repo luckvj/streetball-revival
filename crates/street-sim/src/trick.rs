@@ -660,6 +660,13 @@ impl Run {
                     self.landing = self.tick + i16::from(crate::timing::airtime(rise, height));
                     true
                 }
+                // `a1 f0`, as the hop: the held moves land on their
+                // flight's own tick (`land_at`), a reaction on this.
+                Step::Toward { rise, .. } => {
+                    ran.ops.push(step);
+                    self.landing = self.tick + i16::from(crate::timing::airtime(rise, height));
+                    true
+                }
                 Step::Blend { n, start, records } => {
                     self.blend(n, start, records[usize::from(self.left)])
                 }
@@ -748,7 +755,6 @@ impl Run {
                 }
                 Step::Flags(_)
                 | Step::Rise(_)
-                | Step::Toward { .. }
                 | Step::Aim(_)
                 | Step::Reach(_)
                 | Step::Carry(_)
@@ -910,8 +916,20 @@ pub struct Reacting {
 
 impl Reacting {
     pub fn steps(&self) -> &'static [Step] {
-        REACTIONS[usize::from(self.script)].steps
+        reaction(self.script).steps
     }
+}
+
+/// The first script after [`REACTIONS`]: the call-for-it gesture's two
+/// paths ([`crate::leap::CALL_FOR_BALL`]), played as reactions.
+pub const CALL_FIRST: u8 = REACTIONS.len() as u8;
+
+/// Reaction `k`: [`REACTIONS`], then [`crate::leap::CALL_FOR_BALL`].
+pub fn reaction(k: u8) -> &'static Reaction {
+    let k = usize::from(k);
+    REACTIONS
+        .get(k)
+        .unwrap_or_else(|| &crate::leap::CALL_FOR_BALL[k - REACTIONS.len()])
 }
 
 /// A script's pose at what its channel shows, `from` held through a blend
@@ -2002,7 +2020,7 @@ impl World {
     /// [`World::begin_reaction`] on the hand side `left` (a script whose
     /// blend names a record for each hand, [`STRIPPED`]).
     pub(crate) fn begin_reaction_by(&mut self, b: usize, script: u8, left: bool) {
-        let steps = REACTIONS[usize::from(script)].steps;
+        let steps = reaction(script).steps;
         let height = self.players[b].height;
         let length = Run::length(steps, left, 0, height);
         let from = self.poses.get().map(|_| {
@@ -2174,6 +2192,28 @@ impl World {
             let p = &mut self.players[i];
             p.wanted = crate::restart::heading_radians(crate::guard::toward(p.position, at));
         }
+        // Callback 4 and `a1 f0` (the call for the ball's): the wanted
+        // facing, and a hop, to the rim turned by `turn`.
+        for step in ran.ops.iter() {
+            match step {
+                Step::Want(turn) => {
+                    let at = self.players[i].position;
+                    let w = (self.to_rim(i, at) + i32::from(turn)) & 0x3ff;
+                    self.players[i].wanted = crate::restart::heading_radians(w);
+                }
+                Step::Toward { turn, speed, rise } => {
+                    let at = self.players[i].position;
+                    let a = self.to_rim(i, at) + i32::from(turn);
+                    r.drift = [
+                        -speed * crate::input::native_sin_1024(a),
+                        -speed * crate::input::native_cos_1024(a),
+                    ];
+                    r.vy = rise;
+                    r.up = true;
+                }
+                _ => {}
+            }
+        }
         let p = &mut self.players[i];
         p.speed = 0.0;
         if ran.stop {
@@ -2209,7 +2249,7 @@ impl World {
             None if r.run.done => [0.0; 3],
             None => {
                 let moving = moving_updates(steps, r.run.left, 0, 0.0);
-                let [x, z] = REACTIONS[usize::from(r.script)].root;
+                let [x, z] = reaction(r.script).root;
                 let root = if r.run.left { [-x, z] } else { [x, z] };
                 stand_in_step(root, moving, after)
             }
@@ -2219,9 +2259,10 @@ impl World {
         p.position[0] += m[0];
         p.position[1] += m[1];
         self.players[i].clamp_to_court();
-        // `FUN_00168ea8` on a celebration or the win's reaction, and the
-        // screener's: the facing turns toward the wanted one their start
-        // (or callback 16) set, at most 46 units an update.
+        // `FUN_00168ea8` on a celebration or the win's reaction, the
+        // screener's and the call for the ball ([`CALL_FIRST`] on): the
+        // facing turns toward the wanted one their start (or callbacks 16
+        // and 4) set, at most 46 units an update.
         if CELEBRATE_FIRST <= r.script || SCREENER.contains(&r.script) {
             let p = &mut self.players[i];
             let (now, to) = (

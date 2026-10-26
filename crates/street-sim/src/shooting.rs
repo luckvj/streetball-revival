@@ -159,9 +159,8 @@ impl World {
     /// neither bit 13 nor 3) in the half his side attacks more than 1 up (a
     /// computer's only within 33 of the middle), `FUN_0016b1e8` turns it
     /// into a lay-up in the air ([`World::midair_layup`]): School's "Dunk
-    /// to Lay-up" and the tip-in. (The original's putback, two turbos and
-    /// the rebound press, is `FUN_00169c98`'s, not ported: the press plays
-    /// the rebound jump.)
+    /// to Lay-up" and the tip-in. (The putback, two turbos and the rebound
+    /// press, is `FUN_00169c98`'s, [`World::putback`].)
     pub(crate) fn busy_buttons(&mut self, i: usize, pressed: u16, input: &Input) {
         if pressed & button::SHOOT == 0 || self.ball.state != BallState::Held(i) {
             return;

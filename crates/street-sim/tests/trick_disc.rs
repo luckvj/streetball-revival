@@ -1932,3 +1932,53 @@ fn the_counter_scripts_are_the_executables() {
         same_clock(&disc, s.address, s.steps, false);
     }
 }
+
+#[test]
+fn the_call_for_the_ball_is_the_executables() {
+    // `0x44c95e` along its plain path, and the branch callback 47's `84`
+    // takes (to `0x44c9b1`): the other turn (callback 4's word -256) and
+    // record 410 for 411, joining the plain path at `0x44c9cc`.
+    let Some(disc) = Disc::load() else {
+        return;
+    };
+    let held = Paths {
+        held: true,
+        fake: false,
+        jumps: true,
+    };
+    let [plain, branch] = &street_sim::leap::CALL_FOR_BALL;
+    assert_eq!(disc.steps_on(0x44c95e, held), plain.steps);
+    assert_eq!((disc.byte(0x44c97c), disc.unaligned(0x44c97d)), (0x84, 47));
+    assert_eq!(disc.unaligned(0x44c97d + 16), 0x44c9b1);
+    assert_eq!((disc.byte(0x44c9b1), disc.unaligned(0x44c9b2)), (0x83, 4));
+    assert_eq!(disc.unaligned(0x44c9b6) as i32, -256);
+    assert_eq!(disc.byte(0x44c9c2), 0x8e);
+    assert_eq!(
+        (disc.unaligned(0x44c9a8), disc.unaligned(0x44c9c8)),
+        (411, 410)
+    );
+    assert_eq!((disc.byte(0x44c9cc), disc.byte(0x44c9ac)), (0x8d, 0x82));
+    assert_eq!(disc.unaligned(0x44c9ad), 0x44c9cc);
+    let swapped: Vec<Step> = plain
+        .steps
+        .iter()
+        .map(|s| match *s {
+            Step::Want(256) => Step::Want(-256),
+            Step::Blend {
+                n,
+                start,
+                records: [411, 411],
+            } => Step::Blend {
+                n,
+                start,
+                records: [410, 410],
+            },
+            s => s,
+        })
+        .collect();
+    assert_eq!(swapped, branch.steps);
+    for r in [plain, branch] {
+        let net = disc.net(r.steps, false);
+        assert!((net[0] - r.root[0]).abs() < 1e-4 && (net[1] - r.root[1]).abs() < 1e-4);
+    }
+}

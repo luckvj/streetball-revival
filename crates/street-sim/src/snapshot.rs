@@ -102,7 +102,7 @@ use crate::{
 /// screen's reactions among the scripts; 84: the count a shot's timer
 /// started from (the updates it has flown); 85: a computer screener's
 /// three pick scripts among the reactions.
-const VERSION: u8 = 88;
+const VERSION: u8 = 89;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -137,6 +137,7 @@ impl World {
             events,
             give_and_go,
             fresh_take,
+            dribble_armed,
             windup,
             catch,
             turbo_releases,
@@ -241,6 +242,7 @@ impl World {
             }
         }
         w.bool(*fresh_take);
+        w.bool(*dribble_armed);
         match windup {
             None => w.u8(0),
             Some(crate::passing::Windup {
@@ -599,6 +601,7 @@ impl World {
             _ => Some((r.us()?, r.us()?)),
         };
         let fresh_take = r.bool()?;
+        let dribble_armed = r.bool()?;
         let windup = match r.u8()? {
             0 => None,
             1 => Some(crate::passing::Windup {
@@ -943,6 +946,7 @@ impl World {
             events,
             give_and_go,
             fresh_take,
+            dribble_armed,
             windup,
             catch,
             turbo_releases,
@@ -2939,6 +2943,10 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(23);
             w.us(player);
         }
+        Event::Dribble { holder } => {
+            w.u8(35);
+            w.us(holder);
+        }
         Event::Pick { screener, defender } => {
             w.u8(24);
             w.us(screener);
@@ -3072,6 +3080,7 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
             shooter: r.us()?,
         },
         23 => Event::Dive { player: r.us()? },
+        35 => Event::Dribble { holder: r.us()? },
         24 => Event::Pick {
             screener: r.us()?,
             defender: r.us()?,
