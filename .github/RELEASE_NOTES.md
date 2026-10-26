@@ -4,12 +4,15 @@ A PC rebuild of a 2003 PlayStation 2 three-on-three streetball game, with the on
 
 ## Download
 
-| Your PC | File |
-|---|---|
-| Windows 10 / 11 | `streetball-revival-…-windows.zip` |
-| Linux (x86-64) | `streetball-revival-…-linux.zip` |
+Open **Assets** at the bottom of this page and pick your file:
 
-Find the files under **Assets** at the bottom of this page.
+| Your PC | Download | |
+|---|---|---|
+| **Windows 10 / 11** | **`StreetballRevival-…-windows.exe`** | **The whole game in one file.** Download it, open it, play. |
+| Windows, as a folder | `streetball-revival-…-windows.zip` | The same game unzipped into a folder, if you prefer. |
+| Linux (x86-64) | `streetball-revival-…-linux.zip` | |
+
+> Ignore the two **Source code** files GitHub adds at the end of the list: they are for developers and hold no game to play.
 
 ## What you need
 
@@ -19,13 +22,13 @@ Find the files under **Assets** at the bottom of this page.
 
 ## Install and play
 
-1. **Unzip** the download. You get a `Streetball Revival` folder; put it anywhere (don't run the game from inside the zip).
-2. Open **`StreetballRevival.exe`** (Linux: `./StreetballRevival`).
+1. **Open `StreetballRevival-…-windows.exe`** (put it on your desktop or anywhere you like first).
    - If Windows says *"Windows protected your PC"*, click **More info**, then **Run anyway**. This free project's files aren't signed, so Windows doesn't know them yet.
-3. Press **Browse** and pick your `.iso`, or drag it onto the window. The launcher checks it is the right release and remembers it.
-4. Press **Play**.
+   - Using a zip instead? Unzip it and open **`StreetballRevival.exe`** at the top of the `Streetball Revival` folder (Linux: `./StreetballRevival`).
+2. Press **Browse** and pick your `.iso`, or drag it onto the window. The launcher checks it is the right release and remembers it.
+3. Press **Play**.
 
-The first launch can show only sky for a few seconds while your PC prepares the graphics; later launches start faster.
+The first Play takes a few seconds longer: the one-file download unpacks the game into `%LOCALAPPDATA%\Streetball Revival`, and the first launch can show only sky while your PC prepares the graphics. Later launches start faster.
 
 ## Controls
 
@@ -54,7 +57,7 @@ On the Main Menu press **Select** (**P** on the keyboard) for **Online**.
 2. Friends on the same network see **Join *name***; anyone else picks **Join With Code**.
 3. Everyone needs their own disc image of the same USA release.
 
-If Windows asks to let `street-game.exe` use the network, tick **Private** and **Public** and press **Allow**. If friends can't connect, **HOW TO PLAY ONLINE.md** in the zip covers routers, UDP port 7375 and the VPN fallback.
+If Windows asks to let `street-game.exe` use the network, tick **Private** and **Public** and press **Allow**. If friends can't connect, [HOW TO PLAY ONLINE](https://github.com/luckvj/streetball-revival/blob/main/docs/PLAYING.md) covers routers, UDP port 7375 and the VPN fallback.
 
 ## Your save
 
@@ -63,11 +66,11 @@ Progress and the launcher's settings are kept in **`Documents\Streetball Revival
 ## Troubleshooting
 
 - **"This disc isn't the USA PlayStation 2 release"** or **"That file isn't a disc image"**: the image must be the USA release, SLUS-20651, saved as a whole-disc `.iso` (not a folder of files, not a compressed `.chd` or `.cso`).
-- **"The game didn't start"**: keep every file from the zip together in one folder; the launcher looks for `street-game.exe` beside it.
+- **"The game's files weren't found or couldn't be unpacked"**: download the release again. From a zip, keep the whole `Streetball Revival` folder together (the launcher starts the game from its `bin` folder).
 - **Controller not working**: unplug it, plug it back in and press a button on it while a menu is showing.
-- **Linux**: if the files won't start, run `chmod +x StreetballRevival street-game street-server street-export` in the folder. The game needs ALSA, udev, Wayland or X11 and a Vulkan driver, which most desktops already have.
+- **Linux**: if the files won't start, run `chmod +x StreetballRevival bin/*` in the folder. The game needs ALSA, udev, Wayland or X11 and a Vulkan driver, which most desktops already have.
 
-`START HERE.txt` in the zip has all of this too.
+The zips hold all of this in `START HERE.txt` too.
 
 ## Feedback
 

@@ -7,12 +7,13 @@
 
 Everyone needs two things:
 
-1. **The game.** Download the zip from the repository's Releases page and
-   unzip it into a folder of its own. (Or build it: see the README.)
+1. **The game.** Download `StreetballRevival-…-windows.exe` (the whole
+   game in one file) from the repository's Releases page, or a zip of it.
+   (Or build it: see the README.)
 2. **A disc image of their own copy** of the original game: the USA
    PlayStation 2 release, serial SLUS-20651, as a `.iso` file.
 
-Then run `StreetballRevival.exe`, press **Browse**, pick the `.iso` and press
+Then open it, press **Browse**, pick the `.iso` and press
 **Play**. The launcher remembers the disc from then on.
 
 ## Starting a match

@@ -11,7 +11,8 @@ courts, music, movies) from a disc image of YOUR OWN copy of the original.
 
 WHAT YOU NEED
 -------------
-- This folder, unzipped (don't run the game from inside the zip).
+- This folder, unzipped (don't run the game from inside the zip). Or, on
+  Windows, the one-file download StreetballRevival-...-windows.exe.
 - A disc image (.iso) of the original game, USA PlayStation 2 release,
   serial SLUS-20651. Other regions won't work.
   To make one: put your disc in a PC DVD drive and save it as an .iso with
@@ -24,7 +25,9 @@ WHAT YOU NEED
 
 FIRST RUN
 ---------
-1. Open StreetballRevival.exe (on Linux: ./StreetballRevival).
+1. Open StreetballRevival.exe, the one program at the top of this folder
+   (on Linux: ./StreetballRevival). The game's other programs are in bin;
+   you never need to open them.
 2. Windows may show "Windows protected your PC", because this free
    project's files aren't signed. Click "More info", then "Run anyway".
 3. Press Browse and pick your .iso (or drag the .iso onto the window).
@@ -72,7 +75,7 @@ On the Main Menu press Select (P on the keyboard) for Online.
 - Everyone needs their own disc image of the same USA release.
 - If Windows asks to let street-game.exe use the network, tick Private and
   Public and press Allow.
-"HOW TO PLAY ONLINE.md" in this folder covers routers, port 7375 and the
+"HOW TO PLAY ONLINE.md" in the docs folder covers routers, port 7375 and the
 VPN fallback.
 
 
@@ -89,12 +92,12 @@ TROUBLESHOOTING
 - "This disc isn't the USA PlayStation 2 release" or "That file isn't a
   disc image": the image must be the USA release, SLUS-20651, saved as a
   whole-disc .iso (not a folder of files, not a compressed .chd or .cso).
-- "The game didn't start": keep every file from the zip together in one
-  folder (StreetballRevival.exe looks for street-game.exe beside it).
+- "The game's files weren't found": keep the whole folder together;
+  StreetballRevival.exe starts the game from its bin folder.
 - Controller not working: unplug it, plug it back in and press a button
   on it while a menu is showing.
 - Linux: if the files won't start, make them runnable with
-  chmod +x StreetballRevival street-game street-server street-export
+  chmod +x StreetballRevival bin/*
   The game needs ALSA, udev, Wayland or X11 and a Vulkan driver, which
   most desktops already have.
 
@@ -119,4 +122,4 @@ LEGAL
 -----
 An unofficial fan project, not affiliated with or endorsed by any rights
 holder of the original game. Its own code is under the MIT licence
-(LICENSE). See LEGAL.md for the full notice.
+(docs/LICENSE). See docs/LEGAL.md for the full notice.
