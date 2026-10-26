@@ -770,6 +770,8 @@ impl World {
         let script = if turbos >= 2 {
             // `actor+0x78 & 0x40000`: the turbo block for half the bar.
             if self.turbo_of(i) < TURBO_COST {
+                // `0x15d43c`: the "no turbo" message, and no jump.
+                self.no_turbo(i);
                 return None;
             }
             if !self.rules.unlimited_turbo {

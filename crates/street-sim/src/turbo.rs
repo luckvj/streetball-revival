@@ -61,6 +61,12 @@ impl World {
         base + before.min(2)
     }
 
+    /// The "no turbo" message (`0x3c6520`): a move asked more of `i`'s
+    /// bar than he has ([`Event::NoTurbo`]).
+    pub(crate) fn no_turbo(&mut self, i: usize) {
+        self.events.push(crate::Event::NoTurbo { player: i });
+    }
+
     /// `i`'s bar.
     pub fn turbo_of(&self, i: usize) -> f32 {
         self.turbo[self.turbo_slot(i)]

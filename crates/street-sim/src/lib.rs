@@ -449,6 +449,14 @@ pub enum Event {
     PumpFakeBite {
         player: usize,
     },
+    /// A move asked more of `player`'s bar than he has: the "no turbo"
+    /// message (`0x3c6520`, his actor index), posted by the passout special
+    /// (`0x146a14`), the pick press (`0x15b7a4`), the juke (`0x15ce04`),
+    /// the turbo block (`0x15d448`) and the counter stance (`0x15e0b0`).
+    /// The audio's slot 10 (`0x1a5ed8`) plays its HUD buzz.
+    NoTurbo {
+        player: usize,
+    },
     /// A turbo block swatted a shot on its way down.
     Goaltend {
         player: usize,
@@ -1921,6 +1929,8 @@ impl World {
                         player: i,
                         counter: true,
                     });
+                } else {
+                    self.no_turbo(i);
                 }
                 return;
             }
@@ -2026,9 +2036,13 @@ impl World {
         if self.pick_busy(i) {
             return false;
         }
-        if input.turbos() >= 2 && self.spend_turbo(i, 0.5) {
-            let k = (self.rng.next_u32() % 3) as usize;
-            self.react(i, trick::SCREENER[k]);
+        if input.turbos() >= 2 {
+            if self.spend_turbo(i, 0.5) {
+                let k = (self.rng.next_u32() % 3) as usize;
+                self.react(i, trick::SCREENER[k]);
+            } else {
+                self.no_turbo(i);
+            }
         }
         true
     }

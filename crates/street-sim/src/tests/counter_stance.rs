@@ -196,15 +196,17 @@ fn the_counter_press_buys_its_stance_with_a_fifth_of_the_bar() {
 
 #[test]
 fn the_juke_press_asks_for_and_spends_a_fifth_of_the_bar() {
-    // `FUN_0015c8e8`: 0.2 of the bar or nothing ("no turbo"); every trick
-    // costs the same 0.2.
+    // `FUN_0015c8e8`: 0.2 of the bar or nothing but the "no turbo" message
+    // (`0x15ce04`); every trick costs the same 0.2.
     let mut w = face_to_face(6.0, 2);
     w.set_turbo(0, 0.19);
     w.step(&[Input::default().with(button::TRICK), Input::default()]);
     assert_eq!(w.players[0].action, Action::None);
+    assert!(w.events.contains(&Event::NoTurbo { player: 0 }));
     let mut w = face_to_face(6.0, 2);
     w.step(&[Input::default().with(button::TRICK), Input::default()]);
     assert!(matches!(w.players[0].action, Action::Trick { .. }));
+    assert!(!w.events.iter().any(|e| matches!(e, Event::NoTurbo { .. })));
     let refilled = (1.0 + tuning::TURBO_REFILL).min(1.0);
     assert_eq!(w.turbo_of(0), refilled - crate::turbo::MOVE);
 }

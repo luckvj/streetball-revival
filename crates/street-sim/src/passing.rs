@@ -854,7 +854,8 @@ impl World {
     /// pushed `intensity` (0 at rest), `leaper` the target the alley-oop
     /// rule gave.
     ///
-    /// Short of 0.2 of his bar ([`World::turbo_of`]) no pass goes, and
+    /// Short of 0.2 of his bar ([`World::turbo_of`]) no pass goes: the
+    /// failed passout's kind 0 (`FUN_00171e30(actor, 0)`, `0x146a04`), then
     /// the "no turbo" message (`0x3c6520`). With the stick at rest (under
     /// 16) it is Off the Heezay: his defender (`FUN_0016e8f8`) within 12
     /// (else no pass, `FUN_00171e30(actor, 0)`), the ball off his head
@@ -876,6 +877,8 @@ impl World {
         leaper: Option<usize>,
     ) -> PassChoice {
         if self.turbo_of(i) < tuning::TRICK_PASS_TURBO {
+            self.passout_failed(i, false);
+            self.no_turbo(i);
             return PassChoice::Refused;
         }
         let p = &self.players[i];
