@@ -3333,7 +3333,15 @@ impl World {
         };
         let p = &self.players[player];
         let from = self.ball.position;
-        let target = self_toss::target_for_player(p.position, p.heading, p.height, script);
+        // Callback 53's target: the hand his clip holds out at the cue's
+        // frame, moved by the root's change to it ([`World::toss_hand`];
+        // the played capture's script 69 within 0.02); without the disc's
+        // animations the fitted displacement.
+        let target = if self.poses.get().is_some() {
+            self.toss_hand(player, cue.sample_frame.clamp(0, 255) as u8)
+        } else {
+            self_toss::target_for_player(p.position, p.heading, p.height, script)
+        };
         let flight_updates = cue.flight_updates(TICK_HZ as i32);
         let duration = flight_updates as f32 * TICK_SECONDS;
         if cue.bounce {

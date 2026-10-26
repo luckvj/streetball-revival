@@ -341,69 +341,30 @@ impl World {
     /// word, the hand the frame holds out (8 the right, else the left) with
     /// the ball's radius off the palm (`FUN_0014da20`). Without the disc's
     /// animations the rewrite's own: 4 above his place.
-    fn toss_hand(&self, i: usize, frame: u8) -> [f32; 3] {
+    pub(crate) fn toss_hand(&self, i: usize, frame: u8) -> [f32; 3] {
         let p = &self.players[i];
         let own = [p.position[0], p.height + 4.0, p.position[1]];
-        let (Some(poses), Some(record)) = (
-            self.poses.get(),
-            self.channel(i).and_then(|c| c.shown.record),
-        ) else {
+        let (Some(poses), Some(shown)) = (self.poses.get(), self.channel(i).map(|c| c.shown))
+        else {
             return own;
         };
-        let at = Frame {
-            record,
-            time: f32::from(frame),
-            looping: false,
+        let Some(record) = shown.record else {
+            return own;
         };
+        let now = shown.blend.is_none().then_some(shown.frame);
+        let at = [p.position[0], p.height, p.position[1]];
         let word = crate::timing::facing_word(p.heading);
-        let body = p.body();
-        let shown = self.channel(i).map(|c| c.shown);
-        let now = shown
-            .and_then(|s| {
-                s.blend.is_none().then(|| {
-                    poses.root(Frame {
-                        record,
-                        time: s.frame,
-                        looping: false,
-                    })
-                })
-            })
-            .flatten();
-        let root = match now {
-            Some(now) => {
-                let f = poses.root(at).unwrap_or(now);
-                [f[0] - now[0], 0.0, f[2] - now[2]]
-            }
-            None => [0.0; 3],
-        };
-        let theta = word as f32 * std::f32::consts::TAU / 1024.0;
-        let yaw = [
-            0.0,
-            crate::math::sin(theta * 0.5),
-            0.0,
-            crate::math::cos(theta * 0.5),
-        ];
-        let off = pose::rotate(yaw, [root[0] * body.height, 0.0, root[2] * body.height]);
-        let place = pose::Place {
-            position: [p.position[0] + off[0], p.height, p.position[1] + off[2]],
+        hand_at(
+            poses,
+            record,
+            now,
+            frame,
+            at,
             word,
-        };
-        let Some(posed) = poses.pose(at, body, place) else {
-            return own;
-        };
-        let hand = if poses.state(record, i32::from(frame)) & 8 != 0 {
-            1
-        } else {
-            2
-        };
-        pose::hand_point(
-            &posed,
-            i32::from(record),
-            i32::from(frame),
-            hand,
-            body,
-            Some(self.ball.radius),
+            p.body(),
+            self.ball.radius,
         )
+        .unwrap_or(own)
     }
 
     /// Callback 53 with a passout to oneself (`FUN_001741a8`,
@@ -677,6 +638,62 @@ impl World {
     }
 }
 
+/// [`World::toss_hand`]'s pose: `record` posed at `frame` for a player at
+/// `at` (his height in `at[1]`) facing `word`, moved by the clip's root
+/// change from the frame shown (`now`; none while the channel blends),
+/// the hand the frame holds out with the ball's radius off the palm.
+#[allow(clippy::too_many_arguments)]
+fn hand_at(
+    poses: &crate::pose::Poses,
+    record: u16,
+    now: Option<f32>,
+    frame: u8,
+    at: [f32; 3],
+    word: i32,
+    body: crate::pose::Body,
+    radius: f32,
+) -> Option<[f32; 3]> {
+    let clip = |time: f32| Frame {
+        record,
+        time,
+        looping: false,
+    };
+    let to = clip(f32::from(frame));
+    let root = match now.and_then(|t| poses.root(clip(t))) {
+        Some(n) => {
+            let f = poses.root(to).unwrap_or(n);
+            [f[0] - n[0], 0.0, f[2] - n[2]]
+        }
+        None => [0.0; 3],
+    };
+    let theta = word as f32 * std::f32::consts::TAU / 1024.0;
+    let yaw = [
+        0.0,
+        crate::math::sin(theta * 0.5),
+        0.0,
+        crate::math::cos(theta * 0.5),
+    ];
+    let off = pose::rotate(yaw, [root[0] * body.height, 0.0, root[2] * body.height]);
+    let place = pose::Place {
+        position: [at[0] + off[0], at[1], at[2] + off[2]],
+        word,
+    };
+    let posed = poses.pose(to, body, place)?;
+    let hand = if poses.state(record, i32::from(frame)) & 8 != 0 {
+        1
+    } else {
+        2
+    };
+    Some(pose::hand_point(
+        &posed,
+        i32::from(record),
+        i32::from(frame),
+        hand,
+        body,
+        Some(radius),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -781,5 +798,49 @@ mod tests {
         assert_eq!(w.ball.state, BallState::Loose);
         assert!(w.ball.position[0] > 37.0, "{:?}", w.ball.position);
         assert!(w.passout.is_some_and(|po| po.back.is_none()));
+    }
+
+    #[test]
+    fn callback_53_aims_at_the_hand_the_played_capture_tossed_to() {
+        // The second pads capture's script 69 (frame 8009): actor 3 at
+        // (-31.13, -10.13) facing 340 on record 296 at frame 7.5; the cue's
+        // frame 21. The ball flew to (-34.346, 3.864, -13.297); the posed
+        // hand with the root's change meets it for a body of 1.25.
+        let crate::pose::Bank::Disc(poses) = crate::pose::disc_bank() else {
+            return;
+        };
+        let body = crate::pose::Body {
+            height: 1.25,
+            width: 1.25,
+            head: 1.0,
+        };
+        let at = [-31.130_367, 0.0, -10.132_094];
+        let hand = super::hand_at(
+            &poses,
+            296,
+            Some(7.5),
+            21,
+            at,
+            340,
+            body,
+            crate::ball::RADIUS,
+        )
+        .unwrap();
+        let native = [-34.346_18, 3.864_014, -13.296_863];
+        let off = crate::math::len3(
+            hand[0] - native[0],
+            hand[1] - native[1],
+            hand[2] - native[2],
+        );
+        assert!(off < 0.05, "{hand:?} against {native:?}");
+        // With no root offset (as in a blend) it lands over 2 away.
+        let still =
+            super::hand_at(&poses, 296, None, 21, at, 340, body, crate::ball::RADIUS).unwrap();
+        let off = crate::math::len3(
+            still[0] - native[0],
+            still[1] - native[1],
+            still[2] - native[2],
+        );
+        assert!(off > 1.0);
     }
 }
