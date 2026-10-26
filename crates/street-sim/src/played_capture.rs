@@ -5874,3 +5874,109 @@ fn the_persons_presses_choose_the_originals_moves() {
 }
 
 mod school;
+
+#[test]
+fn the_persons_dives_follow_the_originals_in_play() {
+    // The Dive lesson's two dives in the fourth School capture (the
+    // person's actor 3 at updates 7200 and 8316, both on the far script
+    // 0x4576d1): the world of the update before the press (the six where
+    // they stand and face, the loose ball's place and velocity; the second
+    // dive's fumbler barred, as the original bars him), the dive pressed,
+    // then World::step with the disc's animations against the captured
+    // actor: his hop leaves the floor and lands on the original's updates,
+    // his height within 0.01 of the original's every update (the hop's
+    // velocity, the clip root's rise), his place within 0.45 (the others
+    // run on the sim's own AI and push him where theirs did not).
+    let Some(captures) = load() else {
+        return;
+    };
+    let Some(cap) = captures.iter().find(|c| c.name.contains("school-3")) else {
+        return;
+    };
+    if crate::pose::disc_bank().get().is_none() {
+        return;
+    }
+    let mut checked = 0;
+    for (press, k, fumbler) in [(7200i64, 3usize, None), (8316, 3, Some(2usize))] {
+        let Some(u) = cap.get(press - 1) else {
+            continue;
+        };
+        let players = (0..6)
+            .map(|j| {
+                Player::new(
+                    cap.records[j].team.min(1),
+                    u.floor(j),
+                    heading(u.word(j, "heading") as i32),
+                )
+                .with_ratings(cap.records[j].ratings())
+            })
+            .collect();
+        let mut w = dressed(
+            World::new(Hoop::native(), players, Rules::default(), 1),
+            cap,
+        );
+        w.phase = Phase::Live;
+        w.people = u.controllers().iter().map(|&c| c != 4).collect();
+        w.ball.drop_loose();
+        let b = u.ball();
+        let read = |key: &str, q: usize| b[key][q].as_f64().unwrap_or(0.0) as f32;
+        w.ball.position = [0, 1, 2].map(|q| read("position", q));
+        w.ball.velocity = [0, 1, 2].map(|q| read("velocity", q) * crate::TICK_HZ as f32);
+        w.ball.airborne = true;
+        w.game_phase.phase = crate::game_phase::phase::LOOSE;
+        if let Some(f) = fumbler {
+            w.players[f].barred = 40;
+        }
+        let (mut ours_up, mut ours_down, mut orig_up, mut orig_down) = (None, None, None, None);
+        for t in 0..90 {
+            let mut inputs: Vec<Input> = (0..6)
+                .map(|j| {
+                    if w.people[j] {
+                        Input::default()
+                    } else {
+                        Input::computer()
+                    }
+                })
+                .collect();
+            if t == 0 {
+                inputs[k] = Input::default().with(crate::button::DIVE);
+            }
+            w.step(&inputs);
+            let f = press + t;
+            assert!(
+                matches!(w.players[k].action, crate::Action::Dive { .. }),
+                "{f}: not diving"
+            );
+            let Some(c) = cap.get(f) else {
+                continue;
+            };
+            let cp = &c.actor(k)["position"];
+            let at = |q: usize| cp[q].as_f64().unwrap_or(0.0) as f32;
+            let p = &w.players[k];
+            if p.height > 0.0 && ours_up.is_none() {
+                ours_up = Some(f);
+            }
+            if ours_up.is_some() && p.height == 0.0 && ours_down.is_none() {
+                ours_down = Some(f);
+            }
+            if at(1) > 0.0 && orig_up.is_none() {
+                orig_up = Some(f);
+            }
+            if orig_up.is_some() && at(1) == 0.0 && orig_down.is_none() {
+                orig_down = Some(f);
+            }
+            assert!(
+                (p.height - at(1)).abs() < 0.01,
+                "{f}: height {} against {}",
+                p.height,
+                at(1)
+            );
+            let off = ((p.position[0] - at(0)).powi(2) + (p.position[1] - at(2)).powi(2)).sqrt();
+            assert!(off < 0.45, "{f}: {off} off the original's place");
+            checked += 1;
+        }
+        assert_eq!(ours_up, orig_up, "{press}: the hop");
+        assert_eq!(ours_down, orig_down, "{press}: the landing");
+    }
+    assert!(checked > 100, "{checked} updates compared");
+}
