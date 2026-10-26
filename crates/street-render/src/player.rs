@@ -266,7 +266,49 @@ impl PlayerAssets {
     }
 
     fn shows(&self, group: &str) -> bool {
-        player::default_groups(group) || self.extra_groups.iter().any(|g| g == group)
+        player::default_groups(group)
+            || self.extra_groups.iter().any(|g| g == group)
+            || hand_pose(group).is_some()
+    }
+}
+
+/// The body models' hand groups in the original's pose order (actor+0xb8
+/// right 0..5, +0xbc left 6..11, `street_sim::hands`).
+pub const HAND_GROUPS: [&str; 12] = [
+    "ARfist", "ARfthru", "ARpoint", "ARrelax", "ARrhang", "ARstress", "ALfist", "ALfthru",
+    "ALpoint", "ALrelax", "ALrhang", "ALstress",
+];
+
+/// A hand pose mesh: which of [`HAND_GROUPS`] it draws. Only the relaxed
+/// pair shows until the game picks others ([`show_hands`]).
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HandPose(pub u8);
+
+/// The pose index of a hand group.
+pub fn hand_pose(group: &str) -> Option<u8> {
+    HAND_GROUPS
+        .iter()
+        .position(|g| *g == group)
+        .map(|k| k as u8)
+}
+
+/// Show the right and left poses `(right, left)` among a player's hand
+/// meshes, hiding the others. A model without those groups keeps what it
+/// has.
+pub fn show_hands(
+    children: &Children,
+    poses: (u8, u8),
+    hands: &mut Query<(&HandPose, &mut Visibility)>,
+) {
+    for child in children.iter() {
+        if let Ok((pose, mut visibility)) = hands.get_mut(child) {
+            let shown = pose.0 == poses.0 || pose.0 == poses.1;
+            visibility.set_if_neq(if shown {
+                Visibility::Inherited
+            } else {
+                Visibility::Hidden
+            });
+        }
     }
 }
 
@@ -413,6 +455,17 @@ pub fn spawn(
                 Mesh3d(meshes.add(convert::mesh(mesh, skinned))),
                 MeshMaterial3d(material),
             ));
+            if let Some(pose) = mesh.group.as_deref().and_then(hand_pose) {
+                let relaxed = pose == 3 || pose == 9;
+                child.insert((
+                    HandPose(pose),
+                    if relaxed {
+                        Visibility::Inherited
+                    } else {
+                        Visibility::Hidden
+                    },
+                ));
+            }
             if skinned {
                 // The bounds Bevy culls with come from the rest pose, which the
                 // animated mesh leaves (feet 4 ft below an origin on the floor).

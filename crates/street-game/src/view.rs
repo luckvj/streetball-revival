@@ -4268,6 +4268,26 @@ pub fn native_held_attachment(
     hand_translation + hand_rotation * local
 }
 
+/// The hands' poses (`street_sim::hands`, `FUN_001719f0`): each player's
+/// right and left pose from the world on screen (a replay's recorded one
+/// while it plays).
+pub fn sync_hands(
+    sim: Res<Sim>,
+    tape: Option<Res<crate::tape::Tape>>,
+    players: Query<(&SimPlayer, &Children)>,
+    mut hands: Query<(&street_render::player::HandPose, &mut Visibility)>,
+) {
+    let world = tape
+        .as_deref()
+        .and_then(|t| t.shown())
+        .map_or(&sim.world, |(a, _, _)| &a.world);
+    for (p, children) in &players {
+        if p.0 < world.players.len() {
+            street_render::player::show_hands(children, world.hand_shapes(p.0), &mut hands);
+        }
+    }
+}
+
 /// Put the ball where the simulation has it. While it is held the renderer
 /// decides where exactly: in the hand during a shot or dunk, otherwise
 /// dribbled from the active hand, bouncing once per stride cycle.

@@ -725,6 +725,32 @@ fn a_tricks_fumble_comes_its_wait_after_the_press() {
 }
 
 #[test]
+fn the_hands_take_the_originals_poses() {
+    // `FUN_001719f0`: relaxed by default; posting stresses both; the
+    // locomotion's rows clench both, the ball's hand relaxing for a holder.
+    use crate::hands::*;
+    let mut w = live(vec![
+        Player::new(0, [0.0, 0.0], 0.0),
+        Player::new(1, [10.0, 0.0], 0.0),
+    ]);
+    w.players[1].gait_channel.row = 65;
+    w.players[1].gait_channel.record = None;
+    assert_eq!(w.hand_shapes(1), (RELAX, RELAX + LEFT));
+    w.players[1].posting = true;
+    assert_eq!(w.hand_shapes(1), (STRESS, STRESS + LEFT));
+    w.players[1].posting = false;
+    w.players[1].gait_channel.row = 1;
+    assert_eq!(w.hand_shapes(1), (FIST, FIST + LEFT));
+    w.ball.hold(1);
+    w.players[1].gait_channel.hand = 1;
+    assert_eq!(w.hand_shapes(1), (FIST, RELAX + LEFT));
+    w.players[1].gait_channel.hand = 2;
+    assert_eq!(w.hand_shapes(1), (RELAX, FIST + LEFT));
+    assert_eq!(GROUPS[usize::from(RELAX)], "ARrelax");
+    assert_eq!(GROUPS[usize::from(FIST + LEFT)], "ALfist");
+}
+
+#[test]
 fn holding_the_ball_too_long_is_a_shot_clock_violation() {
     let mut w = live(vec![
         Player::new(0, [0.0, 0.0], 0.0),
