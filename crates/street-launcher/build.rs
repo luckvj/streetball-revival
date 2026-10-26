@@ -1,7 +1,7 @@
 //! The launcher's build: the Windows icon resource (`assets/icon.ico`,
 //! linked as a `.res`), and, when the release build names it in
 //! `STREET_GAME_EMBED`, the game program carried inside the launcher for the
-//! one-file download.
+//! one-file download, deflated (about a third of its size).
 
 use std::{env, fs, path::PathBuf};
 
@@ -18,8 +18,10 @@ fn main() {
         let hash = bytes.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &b| {
             (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3)
         });
-        fs::write(out.join("street-game"), bytes).unwrap();
+        let packed = miniz_oxide::deflate::compress_to_vec(&bytes, 9);
+        fs::write(out.join("street-game.deflate"), packed).unwrap();
         println!("cargo:rustc-env=STREET_GAME_HASH={hash:016x}");
+        println!("cargo:rustc-env=STREET_GAME_LEN={}", bytes.len());
         println!("cargo:rustc-cfg=embedded_game");
     }
     let target = |k: &str| env::var(k).unwrap_or_default();
