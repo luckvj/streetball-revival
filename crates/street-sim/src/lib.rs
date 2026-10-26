@@ -1364,7 +1364,22 @@ impl World {
                 }
             }
             let calls = !calls.is_empty();
-            if self.phase == Phase::Live {
+            // The Dive lesson takes the dive from the computer's pads while
+            // the ball is loose (`0x157188..0x1571f4`).
+            let pressed = if self.lesson == Some(16)
+                && !self.people[i]
+                && self.native_ball_state() == game_phase::ball::LOOSE
+            {
+                pressed & !button::DIVE
+            } else {
+                pressed
+            };
+            // `FUN_00156f48` counts the fumble's wait down before the
+            // dispatch (`0x157168`).
+            self.players[i].fumble_timer = self.players[i].fumble_timer.saturating_sub(1);
+            if self.phase == Phase::Live && self.fumble_tick(i) {
+                // The fumble ends his update (`0x15a3ec`).
+            } else if self.phase == Phase::Live {
                 self.buttons(i, &input, pressed, &before, calls, &start);
             } else if restarting
                 && pressed & button::PASS != 0

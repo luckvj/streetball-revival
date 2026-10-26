@@ -497,6 +497,11 @@ pub struct Player {
     /// Actor+0x1a8: updates he may not touch the ball (a block's knock bars
     /// the jumper and the ball's owner), counted down each update.
     pub barred: u16,
+    /// Actor+0x1d4 and +0x1b8: a trick press rolled a fumble
+    /// ([`World::fumble_tick`]), and the updates until it comes (counted
+    /// down each update, `0x157168`).
+    pub fumble: bool,
+    pub fumble_timer: u16,
     /// Actor+0x1cc: updates his body keeps sweeping the ball whatever its
     /// state, from a knock off it ([`crate::touch::COOLDOWN`]), counted
     /// down each update.
@@ -575,6 +580,8 @@ impl Player {
             body: None,
             rise: 0.0,
             barred: 0,
+            fumble: false,
+            fumble_timer: 0,
             cooldown: 0,
             celebrate: false,
             stand: None,

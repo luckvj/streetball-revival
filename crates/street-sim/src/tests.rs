@@ -688,6 +688,43 @@ fn the_block_lessons_holder_shoots_one_jump_shot() {
 }
 
 #[test]
+fn a_tricks_fumble_comes_its_wait_after_the_press() {
+    // `0x15f630..0x15f7f0`: the chance by Handles' tier less the class.
+    assert_eq!(trick::fumble_chance(0, 2), 100);
+    assert_eq!(trick::fumble_chance(99, 2), 0);
+    assert_eq!(trick::fumble_chance(50, 3), 15);
+    assert_eq!(trick::fumble_chance(20, 3), 60);
+    assert_eq!(trick::fumble_chance(85, 6), 45);
+    assert_eq!(trick::fumble_chance(10, 6), 100);
+    // `0x15a1c8..0x15a3f0`: the wait run out, the holder falls, the ball
+    // comes loose and he and his nearest opponent are barred `fps`.
+    let mut w = live(vec![
+        Player::new(0, [0.0, 0.0], 0.0),
+        Player::new(1, [3.0, 0.0], 0.0),
+    ]);
+    w.ball.hold(0);
+    w.players[0].fumble = true;
+    w.players[0].fumble_timer = 2;
+    assert!(!w.fumble_tick(0));
+    w.players[0].fumble_timer = 0;
+    assert!(w.fumble_tick(0));
+    assert_eq!(w.ball.state, BallState::Loose);
+    assert!(!w.players[0].fumble);
+    assert_eq!((w.players[0].barred, w.players[1].barred), (60, 60));
+    let fell = match w.players[0].action {
+        Action::Stumbling {
+            reaction: Some(r), ..
+        } => trick::FUMBLES.contains(&r.script),
+        _ => false,
+    };
+    assert!(fell, "{:?}", w.players[0].action);
+    // The defence's update clears a pending fumble.
+    w.players[1].fumble = true;
+    assert!(!w.fumble_tick(1));
+    assert!(!w.players[1].fumble);
+}
+
+#[test]
 fn holding_the_ball_too_long_is_a_shot_clock_violation() {
     let mut w = live(vec![
         Player::new(0, [0.0, 0.0], 0.0),
