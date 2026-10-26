@@ -2,15 +2,15 @@
   "whole_game_accuracy_percent": null,
   "scope": "Version 1 selected obligations; inventory completeness is not certified.",
   "active_counts": {
-    "matched": 168,
-    "mismatched": 24,
-    "untested": 19
+    "matched": 90,
+    "mismatched": 10,
+    "untested": 111
   },
   "active_total": 211,
   "matched_acceptance": {
-    "exact": 23,
-    "numerical": 19,
-    "structural": 126
+    "exact": 9,
+    "numerical": 5,
+    "structural": 76
   },
   "deferred": 1,
   "out_of_scope": 0,
@@ -373,9 +373,11 @@
           "next_probe": "Capture original event/tick chronology and speech gain during intro exit.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "audio.floor_contact_mapping",
@@ -401,9 +403,11 @@
           "next_probe": "Compare original joint Y values, posted impact strength and the 0x4f/0x29/0x50 sequence with the crowd's gasp.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "audio.music_rotation_callbacks",
@@ -429,9 +433,11 @@
           "next_probe": "Compare original and production music commands at 119/120/121s and 239/240/241s.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "audio.trax_experience",
@@ -469,9 +475,11 @@
           "next_probe": "Capture DAT_003ea23c over a PCSX2 session with a known rand() state and compare the song sequence; then the enabled masks against the save.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "audio.ordinary_prefix_selection",
@@ -573,9 +581,11 @@
           "next_probe": "Play one save state's match in both games and compare the lines' starts update by update.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "audio.global_rng_interleaving",
@@ -963,9 +973,11 @@
           "next_probe": "Pair native launch/catch authority with production World, retaining state transitions and native RNG/animation inputs.",
           "match_type": "numerical",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.gameplay_shot_duration",
@@ -1003,9 +1015,11 @@
           "next_probe": "Capture ordinary releases below/above height 14 and compare chosen angle, duration and per-tick flight.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.trick_base_values",
@@ -1037,9 +1051,11 @@
           "next_probe": "Capture class and clip id across four recent moves and compare live production awards.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.combo_pattern_weights",
@@ -1083,9 +1099,12 @@
           "next_probe": "Run tools/pine_ai_capture.py (schema 2, which records the ring every update) on an attract match and compare every captured match (+0x148, +0x14c, +0x150) and every span step.",
           "match_type": "exact",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.meter_blend",
@@ -1123,9 +1142,11 @@
           "next_probe": "Capture both crews' meter before/after identical events at Easy/Medium/Hard and story weights.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.turbo_rate_constants",
@@ -1169,9 +1190,11 @@
           "next_probe": "Capture the turbo bar with turbo held and the stick still, in live and dead-ball phases, and around special actions.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.equipped_script_slots",
@@ -1203,9 +1226,11 @@
           "next_probe": "Trace input mask, selected native slot/script/channel and production selection for each equipped category.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.native_mirror",
@@ -1724,9 +1749,12 @@
             "assessment": "Idle dribble reads a phase that stops while standing; complete physics/display authority and native attachment transitions remain unimplemented."
           },
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.complete_fractional_pose",
@@ -2141,9 +2169,23 @@
             "assessment": "Production AI was a custom stateless heuristic with hashed dice, fixed spacing and slot marking; replaced 2026-10-15 by a partial static port, still unverified at runtime."
           },
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.input_interpretation",
@@ -2237,9 +2279,13 @@
             "assessment": "The native helper is called but its Jog history is collapsed to Gait::Walk before the next input; full native input/motion adapter is not equivalent."
           },
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.control_hand_off",
@@ -2293,9 +2339,11 @@
           "limitations": "Measured 2026-10-18: every update agrees; the switch's pick is exact in 152 of 167, 13 more are what FUN_00171920's 20 for a teammate off the screen gives (the active camera's projection, which the simulation has no camera for, so it never adds it), 2 are not explained (frames 973 and 12423 of the defence capture: the computed pick in a swipe and in a rebound jump). The call for the ball throws at once (the original pushes a pass node on the holder's AI) and its trick-pass and shoot nodes (FUN_00100c60, FUN_00100e38) are not ported; a receiver posting up keeps no juke held (bit 11 not modelled); the per-pad direction pick (options word 3 bit 12 + pad, 0 by default) is not ported; with several people on a side the original's slots by the front end's picks are the clients' order. 2026-10-19 (Street School as a capture suite, docs/TRACE.md \"Street School as a capture suite\"): through a staged Level 2 only the game's update moves the pad (its pass is no row's callback 38, its catch no take), the update after the catch: `World::step`'s staged branch runs the game's hand-off, and the played check counts the staged updates apart; none of the 22 captures' updates off. 2026-10-20 (online on the disc): World::step refuses a world without the disc's data (gameplay.online_rules_equal_local); the update unchanged. 2026-10-21 (item 8 pass): the switch's pick adds FUN_00171920's 20 from the person's camera (gameplay.switch_off_screen); the played check holds the switches the rule decides alone exact, the story capture (street-played-legend-1) among the 23. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A capture with a teammate off the screen at a switch, or the camera's projection in the capture, would settle the 13; the two unexplained want the frames' channel records.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.contact_rebound_collision",
@@ -2387,9 +2435,12 @@
             "assessment": "Geometry is only added to shot fly, passes/loose balls bypass it, and timer expiry returns a stored make flag despite deflection away from the basket."
           },
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.core_shot_finish_defense",
@@ -2849,9 +2900,25 @@
             "assessment": "Native action callbacks remain replaced by timers; contacts cannot reconcile the stored make result with the ball trajectory, and new odds lack native authority."
           },
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.pass_interception_catch",
@@ -3099,9 +3166,18 @@
             "assessment": "The four synthesized value sets are not the original93-row28-byte table; original row1 kind contradicts the comment, and generic release/catch behavior remains."
           },
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.drain_combo_event_context",
@@ -3154,9 +3230,11 @@
             "assessment": "Substituting team meter/pocket/trick-point values does not prove original actor/handler event roles and native manager context."
           },
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.level2_gamebreaker_sequence",
@@ -3258,7 +3336,9 @@
           "disposition": "active",
           "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.native_rng_algorithm",
@@ -3571,9 +3651,12 @@
             "assessment": "Added an explicit production runtime obligation missing from the previous inventory."
           },
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.native_formation_lifecycle",
@@ -3670,9 +3753,12 @@
             "assessment": "Added an explicit production runtime obligation missing from the previous inventory."
           },
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.meter_hold_decay",
@@ -3722,9 +3808,11 @@
           "next_probe": "Capture team meter+0xc/+0x18/+0x1c and game+0x4a4 through a full meter's 30 seconds and a gamebreaker.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.match_statistics",
@@ -3780,9 +3868,11 @@
           "next_probe": "Capture the stats object after a scripted game and compare every stat.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.pass_flights",
@@ -3847,9 +3937,11 @@
           "limitations": "369 of 386 captured ordinary flights are exact (attract 140/150, 50/52; played 179/184). The rest need what the captures do not hold: a running receiver's destination (his front behaviour's, the spot of a pass that does not lead him) or the back-court cut's 5 more updates (25 for a 20-update pass, once). The comparison throws each pass for a standing receiver where the capture had him as the release update began, so the production aim of a moving receiver (FUN_0015f930's spot and the re-evaluation) is exercised by the unit tests, not against the captures. Not carried: an airborne receiver's landing spot, the \"fast break\" and \"post cut\" destinations (their targets stand in), the 0x43f870 passer list and the +0xa4 bit-11 gates; the lob to a leaper (FUN_00162aa8) and the trick passes keep the rewrite's own flights; the point's height is the rewrite's; the catch takes the ball as it arrives (gameplay.pass_interception_catch). Notes dated 2026-10-16 to 2026-10-19 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): World::step refuses a world without the disc's data (gameplay.online_rules_equal_local); the update unchanged. 2026-10-22 continuation: teammate board passes now use the original floor-route timing and 3D queued-leg split. This does not expand the existing bounded plain-flight match into a native teammate-board runtime claim. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture the receiver's front behaviour's destination (or DAT_003d70c0/c4 and DAT_003d75c4 at the press) so the spot passes to running receivers can be compared too.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.game_phase_machine",
@@ -3927,9 +4019,13 @@
           "limitations": "Runtime, the machine fed with the captures' ball events: what the rewrite's own ball and players feed it is compared only through the turnovers and phase counts of its computer games (every turnover out of phase 5 to phase 4, as the original's six; time in phase 4 and back-court passing not matched, the AI's bring-up and pass flights). Fed from the capture: new holders (the tip's take and pass inside one update from the ball's previous holder), launches, the six ready flags (a restart when any falls), the hold game+0x104 and the tip's start. Stood in for, not captured: the script manager's state (the staged gamebreaker's camera, the one camera seen only in phases 5 and 6), the score (a match reaching phase 9 is won by its last basket) and a basket's moment (the ball down through a ring). The rewrite's own: World::sync_game_phase for a World phase set from outside the transitions; its timed dead ball and formation restart end phase 6 when they hand over the ball; the script manager's states are a staged sequence; the won test is score_basket's goal check; the settled test reads the holder's shot, dunk and lay-up actions. Not ported: the shot clock's waits (game+0x198, +0x19c, +0x1a4), phase 0 (the game crate's intro), the end's steps after phase 9's countdown, the classes' own tip starts (0x1860d0, 0x18f468) and the formation restart (slot 54). Evidence pins are stamped on the branch's files after its last edit. Notes dated 2026-10-16 to 2026-10-19 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): World::step refuses a world without the disc's data (gameplay.online_rules_equal_local); the update unchanged. 2026-10-22 evening: World::take_ball reads passout identity for special catch classification; phase transition policy is unchanged. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Replay the played captures too (they record the phase, possession, ball and score; tools/pine_played_capture.py would need the ready flags and game+0x104), and capture a shot-clock violation to check FUN_0013f1f0's waits and its restart.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.dunk_launch_path",
@@ -4007,9 +4103,12 @@
           "limitations": "The rewrite's own: its dunker carries the ball at the waist (no hand bones), so its pace is the top one, as in 33 of the 36 captured made dunks (the other three at their hands' 0.465 to 0.475, through the ring the next update all the same); the +0x1e8 0x15 branch is neither captured nor modelled; a missed dunk's tries are the launcher's port, the one captured miss not compared aim by aim; the rewrite's block at the rim and its alley-oop odds are its own. Notes dated 2026-10-16 to 2026-10-17 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. Without the disc's bones (online until 2026-10-20; since then a test build's alone) the held ball is carried at the waist and the pace stays the top one: the waist note above holds only there. The test took a make as the ring the next update and allowed one miss; the third capture's gamebreaker dunk went through two updates on at its hand's 0.296, and the release odds (at most 98%, 100% for a gamebreaker) leave any number of misses, so a make is now the ring at its flight's update and a miss the hoop's touch first. Re-pinned 2026-10-18 after the computer's shooters, drives and trick passes pass: TRACE.md gained the section \"The computer's shooters, drives and trick passes\" at its end; ai/capture.rs gained the star's and the play choice's checks on the third capture and its comparison's bounds were set again; the comparison's bounds were set again by the rule. Re-pinned 2026-10-18 after the presentation pass: TRACE.md gained the section \"The presentation's rest: the referee's run-off, the camera's row and source, the replays' kind and roll, the game's end (2026-10-18)\" at its end; lib.rs gained World::actor_motion, World::actor_state_bits, World::replays and Event::ReplayRoll, and the alley-oop basket carries its move's 0x800; tests.rs names the alley-oop basket's new field; the cited World::slam's alley-oop basket now carries its move's 0x800 (Basket::AlleyOop { advanced }). Re-pinned 2026-10-18 after the presses pass: TRACE.md gained the section \"The person's presses: the pass target, the passout specials and the shoot press (2026-10-18)\" at its end; shooting.rs's `World::shoot_button` is FUN_0016b4b8's (`press_dunk`, `behind_board_shot`, `on_rim_line`), `World::busy_buttons` takes FUN_0016b1e8's mid-air lay-up (`midair_layup`) and `World::check_pump_fake` ends the fake at its script's fall-through; lib.rs dropped the tuning stand-ins LAYUP_RANGE, LAYUP_RELEASE, PUMP_WINDOW, PUMP_TIME, DUNK_TURBO, ADVANCED_DUNK_TURBO, HEEZAY_RANGE, GLASS_NEAR, GLASS_FAR, PUTBACK_RANGE and PUTBACK_CLOCK and gained `World::fresh_take` (set in `World::take_ball`, cleared at the opening toss) and `World::shoots`; `World::buttons` and `World::step` call the new pass and mid-air presses; ai/capture.rs takes the first capture's actor 5 for Portland's 113 (`captured_rosters`) and sets `FIRST_BOUNDS` again by the rule; tests.rs's dunk, lay-up and putback tests follow the press (`a_drive_without_turbo_draws_a_plain_dunk_or_a_layup`, `turbo_and_shoot_near_the_rim_draws_a_turbo_dunk_or_a_layup` and `a_rebound_caught_in_the_air_is_tipped_in_on_a_midair_script` in place of `driving_in_without_turbo_is_a_layup`, `turbo_and_shoot_near_the_rim_dunks` and the putback; the dunks through World::step on a two-turbo slot) and it registers tests/presses.rs. The cited test dunks through World::step on a two-turbo slot (one turbo draws among the dunk and lay-up rows); the launch path is unchanged. Re-pinned 2026-10-18 after the loose ball: TRACE.md gained the section \"The loose ball (2026-10-18)\" at its end and correction notes at the end of \"The ball on the bones\" and in \"The jumps on their scripts\"; lib.rs's `World::step` starts a parked catch row before the actor's tests and steps it after them (`World::catching_start`, `World::catching_tick`), holds a receiver's stick from the update his row starts, runs the swipe's test and stand (`World::swipe_due`, `World::swipe_tick`) and passes the update's start places to the contacts, and `World::actor_state_bits`' bit 9 waits for a parked row; ai/capture.rs's comparison tallies the loose ball per game (`Touches`, `Tally::touches`, `ball_before`) and checks it (`Bounds::loose`); tests.rs gained `contacts_go_by_the_distance_table_built_before_the_actors_move` and `a_change_of_gait_row_blends_the_pose_from_the_old_row`, and the screens' test rests on the distance table; the attract comparison also checks the loose-ball figures, its first capture's counter presses within 8.5 and its third's ran-out trick length within 2.0. 2026-10-20 (online on the disc): online matches play the disc's animations too; the stand-ins named here run only in test builds (gameplay.online_rules_equal_local). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture actor+0x1e8 at a dunk's release to confirm the second top-pace branch, and compare the rewrite's hand at the slam with the played captures' bones.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.block_jump_script",
@@ -4083,9 +4182,11 @@
           "limitations": "Notes dated 2026-10-16 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): the pose bank read through Bank::arc (gameplay.online_rules_equal_local); the rules unchanged. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Pose the shot, dunk and lay-up clips so callback 35's holder targets read the original's head bone; trace the facing's turn and the a9 aim; model FUN_00156f48's planted-foot correction and compare the jumpers' heights update by update.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.block_test_knock",
@@ -4135,9 +4236,11 @@
           "limitations": "The hands are posed without the channel blends; a held ball in a shot, dunk, lay-up, trick or pass is the rewrite's carried point, so the original's blocks of a shooter's or dunker's ball in the hands (most of the played captures' knocks) have no counterpart in the rewrite's games; the shooter's bar takes no airtime; the face clips (FUN_00159190) are only their draws; the contacts' knocks are not ported. Eight-seed means at the first attract capture's length, all-50 before/after: blocked shots 5.5/3.25 (original 3), other knocks 0.25/0.5 (2 blocked passes); disc pairs 4.75/4.53 and 0.78/2.44. Notes dated 2026-10-16 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): the pose bank read through Bank::arc (gameplay.online_rules_equal_local); the rules unchanged. 2026-10-23: the dunks' and lay-ups' kind-1 contact ported (FUN_001366d8 with FUN_001371d8, the window a6 1 2 n in the held tables): a weaker man on the floor knocked (0x3d0f58's lists) by a descending dunker with the ball; in the air a duel by weight, twice the power and the dunks against the blocks, its bands drawing each side's knock (0x44bd94 or 0x44bb65), a beaten dunker letting the ball go (FUN_0014c408 along his facing turned by r % 200 - 100, 0.35 back and 0.125 up). About 4.8 floor knocks and 12.6 duels a game in the first capture's comparison; its block jumps at a dunker fell to 21.1 against 30 (bound reset by the rule, 13.5). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Pose the held clips (shots, dunks, lay-ups) and the channel blends, then re-run the played-capture knock check; port the contacts' strips and charges.",
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.dribble_flight",
@@ -4187,9 +4290,11 @@
           "limitations": "The hands are posed without the channel blends (the clips whose hand is off in the hand too: 86, 87, 47, 154); the blend branch (flag 0x200000) and the cached ends (ball+0xc0, +0xe0) are not modelled, nor the bounce's sound event (0x3c6670) and the ball's spin; a held ball in any other move than the gait is the carried point; the drawn ball is the renderer's own bounce (view.rs::sync_ball). Re-pinned 2026-10-18 after the pass captures' five checks: TRACE.md gained the section \"The pass captures' five checks (2026-10-18)\" at its end and a sentence pointing to it at the end of the person's presses' section; played_capture.rs takes save state 1's actors 0 and 4 as the disc's players 55 and 95 for every test (`SAVE_STATE_1`, `resolve_records`: the capture tool had skipped their record fields, and the harness had posed them on a plain 1.2 body at ratings 50); its catch check ends a hold where another script replaces the row, its swipe check poses the update before's clip, place and ball and leaves out the shot clock's violation, its trick check follows a cut trick to the cut, takes a late read as the next update's step and moves its open bin to 5.5, its lob check leaves the passout specials out and reads the leaper in save state 1's registry order (`SAVE_STATE_1_ORDER`, `updates_before`), and its jump check pins the rise after the takeoff's blend in place of the runners' share within 0.1; the held-ball checks' code is unchanged; with the roster's bodies the shots' release points are within 0.1 for 63 of 69 (44 before). 2026-10-20 (online on the disc): the pose bank read through Bank::arc (gameplay.online_rules_equal_local); the rules unchanged. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Draw the held ball from the simulation's dribble point; model the channel blends and the 0x200000 branch.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.ball_on_the_bones",
@@ -4311,9 +4416,13 @@
           "limitations": "The running catch rows' clip plays on a channel over the run that the captures do not keep: the rewrite poses it whole-body (the posed check covers standing catches only). The scoop of a low, slow ball (0x45748a, callback 0 thirteen updates on) takes it at once; the dive's catch (FUN_0015c598), the leaper's and dunker's hands (bits 0x8280) and a rebound jumper's body knock stay the rewrite's (their clips are not posed); phases 6 and 9's knocks, state bit 14 and the channel's 0x40 bar are not read (a reaction stands in for the bar). The court's bound applies only with the disc's animations. The passes lost at their end (2.75 a game) are spot passes to receivers the computer moves off the spot. Online matches carried no animations until 2026-10-20: the arrival catch, the stand-in interception and the pickup after the ball's update stood in there. Before (7792b6f): every catch on arrival, 23 passes a game lost at arrival. Update 2026-10-16 (branch held-ball): the scoop of a low, slow ball is ported (0x45748a, callback 0's take 13 updates on; the sides' roles wait for the take, state bit 2 is not kept); a catching receiver keeps callback 5's facing. Running catches are traced (the row's script on channel 2, bones 9..21, over the run 0x4446f4 or 0x443dc0, aimed at that overlay with the run's clip carried on by the flight) and Poses::overlay holds the channels' bone ranges, but the rows still pose whole-body: the overlay alone, against the whole-body aim, put 22% of the catches after the pass's end. The rows with their own count (4r/4l, 20) still start at the release. Inbound lobs from behind the baseline now leave from the inbounder's hand as the original's do, and the high one-hand rows meet them 5..7 updates early against the original's 2..4 (attract 1 over four games: 5 or more left in 6% against 1%; knocks off a body 15 against 5 before): the receivers' facing (+0xb0) on rows without callback 5 is the lead. The dive's and the leaper's catches stay the rewrite's own (their clips are not on the channel). Re-pinned 2026-10-16 after the held-ball pass: TRACE.md gained the section \"The held ball on the holder's clip\" at its end; touch.rs gained the scoop (`SCOOP_STEPS`, `Scooping`, `scoops`, `start_scoop`, `scoop_tick`), callback 5's facing (`Catching::facing`, `catching_turn`), the catch row's live hand in `start_catching` and `UPPER_BODY`; played_capture.rs gained the held ball's checks (`the_held_ball_lies_on_the_holders_clip_in_play`, `the_persons_shots_and_passes_hold_the_ball_on_their_clips_in_play`, `the_live_hand_follows_the_held_clip_in_play`) and `replay_world_for`; ai/capture.rs's `disc_gait` is crate-visible, `Rated` carries the roster's handedness, and the second capture's away-from-tricks bound is 0.12; tests/touch.rs's floor take uses a ball above the scoop's 2.5; trick_disc.rs reads the held scripts too (`steps_on`, `Paths`, `the_held_moves_scripts_are_the_executables`), the trick and catch scripts as before; World::start_catching sets the receiver's live hand from the row's 0x400/0x200 and records the script's start; World::touch_ball scoops a low, slow floor ball (World::start_scoop); World::catching_tick keeps callback 5's facing for World::catching_turn. Updated 2026-10-17 (branch jump-scripts): the running catch traced further (channel 0 carries on the gait in all 71 played moving receivers, FUN_00163d40(actor, 0, 1) with game+0x70b0 set; callback 30 is channel 0's flag 2, which bars the locomotion; the pose step 0x157618..0x157714 writes channels 0..2 as parent-local rotations, 1 and 2 only with flag 4, channel 2 bones 9..21; the aim copies bones 0..8 with lq/sq) and ported with its aim: 82 balls off an upper arm in four all-50 games against 5 whole-body, 65 of 76 straight-from-behind balls on catch_run_6r/6l, where the original catches 14 of 14; not kept. Inbound lobs: catch_stand_1 4..7 updates early against 3..5, the flight left following the throw's speed in both (the hand meets the ball 1.80 from the aimed point against 1.52; the receivers 7.2 from the ball against 8.5); the high rows mostly at 2 as the original. Re-pinned 2026-10-17 after the jumps pass: ai/capture.rs's comparison bounds the short capture's within-4 share at 0.11 and its disc pairs' shots at a quarter (twenty and ten seed bases: 0.277 on main and 0.272 after, 19.0 and 19.85 shots; one short game's draws, not a shift); played_capture.rs gained `the_jumps_follow_their_scripts_in_play` at its end; tests/trick_disc.rs reads the jump opcodes along the held moves' paths (`Paths::jumps`; the trick, catch and scoop scripts as before); TRACE.md gained the section \"The jumps on their scripts\" at its end and a pointer to it in \"The held ball on the holder's clip\"'s last paragraph; the cited regions are unchanged but for those bounds. Re-pinned 2026-10-17 after the alley-oop's leap and the dive: TRACE.md gained the section \"The alley-oop's leap and the dive on their scripts\" at its end; touch.rs's `World::touch_ball` tests a leaper in the air, `shown_state` reads a scripted move's clip, `bone_catch` takes a lob to a leaper and `World::release_bars` reads `Player::leaping`; played_capture.rs gained `the_lobs_to_leapers_are_timed_and_aimed_as_fun_00162aa8`; ai/capture.rs's `our_tally` reads a leap from `leap::leaping`, and the short capture's bounds away from tricks (0.14), within 4 (0.12) and through the blend (0.25) are widened with twenty seed bases noted; tests/trick_disc.rs reads `a0`'s float and `a1 85` and checks the leaps' and the dives' steps against the disc; `World::touch_ball` tests a leaper in the air and `World::release_bars` reads `Player::leaping`. 2026-10-17 (the alley-oop's leap and the dive): the dive's catch (FUN_0015c598: the ball's last move against his limbs each update of a dive before the touch tests; both bones under 9 knock a free ball and leave a held one; else a free ball is his, a held one while he is up on rand() % 100 < 11, else barred fps / 2; World::dive_catch) and the leaper's (the side with the ball's bone rules on his leap's clip; shown_state had read the gait clip for a scripted move, fixed) are ported. Dives take the ball 0.1 / 0.55 a game (all-50 / disc pairs) against the original's 1 and 1; no played capture holds a dive to compare update by update. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: TRACE.md gained the section \"The combo ring, the meter's listeners, the statistics and the shot clock\" at its end and pointers to it in section 7 (the pushers' list, the meter section's ported list) and section 8 (the window's bound); touch.rs's pickups post their messages through the take; dive.rs's catch posts its messages through the take; `World::dive_catch`'s take posts its messages itself; a loose ball's pickup posts its messages through the take. Updated 2026-10-17 (branch drive-counter; docs/TRACE.md \"The drive, the dunk's window and the counter's blend\"): the passer of a trick pass to himself (off a defender's head or the board) leaves its first leg alone. The bone rules' \"the passer of a pass not to himself leaves it\" had let the pickup take it back the update it left, so the computer's trick passes never flew; the original keeps it in his hands about 20 updates in state 4 and throws it up past his bones (the windup is not ported: the rewrite's throw is its own stand-in). Re-pinned 2026-10-18 after the loose ball: TRACE.md gained the section \"The loose ball (2026-10-18)\" at its end and correction notes at the end of \"The ball on the bones\" and in \"The jumps on their scripts\"; touch.rs's tail takes a free ball near the bones of an actor in a dunk, his catch row or a leap (`NEAR`, `World::near_ball`, `World::near_take`, `CATCH_BAR`) and stops before the sweep while such an actor's pass flies; the catch row is parked until its count (`Catching::parked`, `World::catching_start`), may play over the run (`Catching::floor`, `Catching::lower`, `World::running_catch`, `World::lower_at`) and steps after the tests; played_capture.rs's catch check tests the near take on the last update's model; ai/capture.rs's comparison tallies the loose ball per game (`Touches`, `Tally::touches`, `ball_before`) and checks it (`Bounds::loose`); tests/touch.rs gained the near take's, the flight's, the parked row's and the running catch's tests in place of the in-flight knock; pose.rs's `World::actor_pose` blends the gait's change of row (`GAIT_BLEND`) and its docs name the pose step; tests.rs gained `contacts_go_by_the_distance_table_built_before_the_actors_move` and `a_change_of_gait_row_blends_the_pose_from_the_old_row`, and the screens' test rests on the distance table; the tail's near take and the flight's exclusion, the parked start, the overlay (`Catching::lower`) and the step after the tests changed these as above; `Poses::overlay` is now used by the running catches; the catch check now tests the near take on the last update's model: 229 of 231 standing catches on the update, one early; `Touches::ours` counts the rewrite's knocks as the original's tally does (the ball loose after, above 0.6, below 20, not about the rims). Updated 2026-10-18 (branch loose-ball, docs/TRACE.md \"The loose ball\"): the leaper's and dunker's hands of the earlier limitations were the near take of the offence's tail, whose 0x8280 includes the catch row's bit 9; it is ported (`touch::NEAR`, `World::near_ball`, `World::near_take`, `CATCH_BAR`) with the flight's exclusion, the tail on the last update's model (the catch row steps after the tests), the parked row and +0x1b0 of -1 (`Catching::parked`; `catch_stand_5`, drawn for 8.5% of the rewrite's passes and never in the first attract match, put 151 of 216 knocks in eight games), and the running catches on channel 2 over the run with their aim (`Catching::lower`, `Poses::overlay`; `DAT_003d70b0` is 1 on the disc). Knocks off a body went from 9.9, 2.1, 6.7 to 0.63, 0.19, 0.88 and passes knocked loose from 10.4, 2.2, 7.1 to 0.75, 0.25, 1.06. Left: the passes lost at their timer are the computer's trick passes off the glass (the passout legs, FUN_00148378, not ported: 24 of 25 lost in eight games of the first capture's length) and running receivers carried into the court's bound on long passes (none of the original's 107 moving receivers ends at the bound, 64 of the rewrite's 558 running-row passes do, half lost); the late catches are the inbound lobs, caught 5..7 updates early against the original's 2..5 (the inbounder releases about 8 from the receiver against 8.8); the dive's catch is FUN_0015c598 as before; the dunker outside the near take, phases 6 and 9's knocks, state bit 14 and the channel's 0x40 bar stay as they were. Re-pinned 2026-10-18 after the computer's offence: TRACE.md gained the section \"The computer's offence (2026-10-18)\" at its end; touch.rs sets the catch's hand apart (`World::catch_hand`), `World::catch_target` faces the ball for the spot run's stand, and the near take's bits count a passout's passer in its flight; ai/capture.rs's tally counts a counter press new that update (`our_tally`) and its bounds were set again by the rule (`FIRST_BOUNDS`, `RECORDED_BOUNDS`, `ALL_50_SHORT_BOUNDS`); tests/touch.rs's running receiver throws a led pass, and it gained `a_spot_pass_stops_its_receiver_at_the_spot_on_catch_stand_1`; tests.rs's trick-pass tests pass the board's point, `a_trick_pass_leaves_the_passer_on_the_bones` waits for the passout's toss, and `back_2_papa_comes_off_the_glass_for_an_alley_oop` became `back_2_papa_to_himself_comes_back_to_his_hands_on_the_floor`; the cited `World::start_catching`, `World::catch_target`, `tests::touch` and `a_trick_pass_leaves_the_passer_on_the_bones` changed as said; the near take and the sweep are as cited. 2026-10-20 (online on the disc): online matches play the disc's animations too; the stand-ins named here run only in test builds (gameplay.online_rules_equal_local). 2026-10-20 (online on the disc): the pose bank read through Bank::arc (gameplay.online_rules_equal_local); the rules unchanged. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "The computer's trick passes off the glass (FUN_00148378's passout legs) and its receivers' runs toward the court's bound; the inbound lobs' distance at the release; the dive's catch on its clip.",
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.alley_oop_lob",
@@ -4362,9 +4471,11 @@
           "limitations": "Four lobs, all the computer's; the attract captures' lobs are not checked lob by lob. The leap before the lob is replayed from its press on the captured stick and row; the leaper is read an update later when his index is above the passer's (the original updates the actors from the highest index down, the sim in ascending order). A person's choice of leaper (FUN_00146278's lead) is read only in part; the leap rows' contact window (a6 kind 1) is not ported. Re-pinned 2026-10-17 after the turbo bars, the juke press and the counter stance: passing.rs's trick passes ask the shared bar for the original's 0.2; TRACE.md gained the section \"The turbo bars, the juke press and the counter stance\" at its end; the trick passes ask the shared bar for 0.2. Re-pinned 2026-10-18 after the presses pass: passing.rs gained `PassChoice`, `World::pass_press`, `World::lined_up` and the passout specials (`World::passout`, `glass_mate`, `glass_point`, `passout_failed`); `World::pass_target` is gone and `World::carry_pass`'s head and glass legs go to the press's receiver; played_capture.rs parses the captures once for every test (`load`), gained `the_persons_presses_choose_the_originals_moves`, its release test leaves the trick rows and re-pressed passes and its reseed test counts the pass captures; TRACE.md gained the section \"The person's presses: the pass target, the passout specials and the shoot press (2026-10-18)\" at its end. The cited region changed: `World::pass_target` gave way to `World::pass_press`, whose leaper rule is FUN_00146278's (0x14674c..0x146934: the leaper the target unless 6 short and below 6.5; of two, the most risen on time, else the latest meet), 8 of 8 of the person's passes with a teammate leaping going to him; the lob (`World::launch`, `World::lob_to_leaper`) is unchanged. The two pass captures (not in the gate's twelve) hold the person's lobs this case's next probe asked for: the computer's lobs are 7 of 7 exact over all fourteen, the person's plain lobs 5 of 9 (the other four one update off, both ways: 48 against 47, 35 against 34, 56 against 55, 37 against 38), and three Back 2 Papa passes to a leaper go off the board (the passout legs, not this rule). So the person's lob is a known difference. Re-decided 2026-10-18 after the pass captures' five checks (the gate's played run on all fourteen captures; docs/TRACE.md \"The pass captures' five checks\"): the person's four lobs one update off read the leaper in the rewrite's order: save state 1's process registry updates team 0's actors 0, 1, 2 (`FUN_0033ce00`, the order `FUN_0033cf98` drew for that match), where the rewrite and the old check took 2, 1, 0. Read so, all four are exact; the two that agreed either way had their flight set by the distance table. The three Back 2 Papa passes to a leaper are passout specials (game+0x160 1 or 2; -2 on every plain lob), which the check now leaves out. played_capture.rs gained `SAVE_STATE_1_ORDER` and `updates_before` (`replay_leap_to_lob` reads the leaper by them) and `captured_lobs` skips a passout; save state 1's actors 0 and 4 are now the roster's players 55 and 95 for every test (`resolve_records`); TRACE.md gained the section at its end. `World::launch` and `World::lob_to_leaper` are unchanged. In play the rewrite's own actor order still reads the leaper one update off for team 0's lobs whose flight his span sets (gameplay.actor_update_order, a known difference). Re-pinned 2026-10-18 after the loose ball: passing.rs passes the flight to `World::catch_target`; played_capture.rs's catch check tests the near take on the last update's model; TRACE.md gained the section \"The loose ball (2026-10-18)\" at its end and correction notes at the end of \"The ball on the bones\" and in \"The jumps on their scripts\"; `World::launch` passes the flight to `World::catch_target` (the running catch's aim). Re-pinned 2026-10-18 after who the person controls and the stick: passing.rs's release hands the person's word to the receiver (`World::launch`), the right stick's pass starts the give 'n go (`World::pass_button`) and `World::call_for_ball` waits for the original's gate; played_capture.rs gained the control hand-off's, the switch's and the D-pad words' checks, and its pass harness reads the stick's strength against 16; TRACE.md gained the section \"Who the person controls, and the stick (2026-10-18)\" at its end and pointers to it in the console variables' list and the person's presses' section; the cited release, pass press or call changed as above. Re-pinned 2026-10-18 after the computer's offence: passing.rs's press keeps the spot run (`World::wind_up`, `World::spot_at_press`), aims at the receiver's front behaviour's pass target (`World::pass_aim`), releases at the spot run's point (`World::launch`, `World::release_point`), tosses a passout to oneself at its callback 53 and flies its legs (`World::step_windup`, `World::carry_pass`), and sends the person's Back 2 Papa to himself and the computer's trick pass off the board through `World::passout_press`; TRACE.md gained the section \"The computer's offence (2026-10-18)\" at its end; the cited `World::launch` changed only for a pass to the spot (the spot run's row); the lob to a leaper is unchanged. 2026-10-22 continuation: a board route uses its original distance/speed timing and bypasses the ordinary lob span extension; paired native special-lob equivalence remains unproven. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Port the passout legs (FUN_00148378) for the Back 2 Papa to a leaper; the match's own update order with gameplay.actor_update_order.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.dive_for_loose_ball",
@@ -4438,9 +4549,12 @@
           "limitations": "The rule is ported from the executable. The counts are within the seed spread of the original's matches (2026-10-17, branch steady-timing; docs/TRACE.md \"The block jumps' spread, the dives and the actors' order\"): 2.6 / 4.3 dives a game at the first capture's length (all-50 / disc pairs, eight bases, single games' sd 2.2 / 2.4) against its match's 4, and 1.4 / 1.6 at the second's (sixteen bases, sd 1.5 / 1.65; 6% of games reach 5) against 5. The original's dives all come in balls loose 54..187 updates, past the computer's wait (fps x skill(1.6, 1.0, 1.0, 0.6)); the rewrite's games hold as many loose balls and as many held 60 updates or more (18 a game at the first length against 18; 7.2..8.4 at the second against 7) and dive 0.22..0.24 times per such ball, the first match's 0.22. The second match drew 3 dive episodes from its 7 (5 dives, two episodes with both sides diving): pooled, 6 episodes in 25 against 3.5 expected (p about 0.13). Dives taking the ball 0.38 / 0.44 and 0.25 / 0.20 a game against 1 and 1. Untested now rather than a known difference: no played capture holds a dive, so the hop, the slide and the catch are not compared update by update, and the counts' remaining gap is within the matches' own spread. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: dive.rs's catch posts its messages through the take; TRACE.md gained the section \"The combo ring, the meter's listeners, the statistics and the shot clock\" at its end and pointers to it in section 7 (the pushers' list, the meter section's ported list) and section 8 (the window's bound); `World::dive_catch`'s take posts its messages itself. Re-pinned 2026-10-18 after the presses pass: tests/trick_disc.rs checks the extra rows' steps and prints the held steps (ignored); TRACE.md gained the section \"The person's presses: the pass target, the passout specials and the shoot press (2026-10-18)\" at its end. The cited test also checks the eleven extra rows' steps; the dive's part is unchanged. 2026-10-20 (online on the disc): the pose bank read through Bank::arc (gameplay.online_rules_equal_local); the rules unchanged. 2026-10-21 (item 8 pass): the dive's court bounds are the ball's, at speed level 3 (FUN_0010e0a0, gameplay.restart_pickup_and_loose_ball). 2026-10-26: compared against a played capture at last: the School's Dive lesson (street-played-school-3, two far dives by the person) replayed through World::step: blend, hop, landing and slide on the original's updates, the height exact to 0.01, the place within 0.05 at the end of the second dive and within 0.4 of the first (the computer's take of the ball before the hop in the sim, and the others' pushes during the blend, which the sim's AI places differently). No near dive (0x45776a) is captured. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture a near dive (0x45776a, the ball within reach 40 updates on) and a dive that catches the ball (FUN_0015c598).",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.actor_update_order",
@@ -4490,9 +4604,12 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.shot_pass_out",
@@ -4548,9 +4665,12 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.combo_ring_lifecycle",
@@ -4594,9 +4714,11 @@
           "limitations": "The spans are checked on one captured pair and the save states' values, not update by update (no capture records the ring per update yet). The pusher's staged gate takes FUN_00337af0 as 1. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Compare every span step and clear in a schema-2 AI capture.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.meter_listener_values",
@@ -4634,9 +4756,11 @@
           "limitations": "The payouts are matched by first-fit rings, not by the captured events; the pump fake's and the pick's 500 do not appear in the captures (their triggers are traced statically). 2026-10-22 evening: A teammate board catch is now a passout special. Its meter fill is the original flat3000; head5000 is a separate repeat-discounted trick/combo value. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Pair each jump with the schema-2 capture's ring push of the same update.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.shot_clock_machine",
@@ -4674,9 +4798,11 @@
           "limitations": "The attract captures' 56 restarts all choose the full clock's rows (consistent), but no capture records the clock's time. The singleton's +0x74 and slot 48's per-second post are not modelled. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture game+0x190's time and the waits (+0x198, +0x19c, +0x1a4) through violations and rim shots.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.penetration_now",
@@ -4714,9 +4840,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.dunk_window",
@@ -4772,9 +4900,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.trick_counter_decision",
@@ -4818,9 +4948,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.turbo_bars",
@@ -4864,9 +4996,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.counter_stance",
@@ -4910,9 +5044,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.juke_press",
@@ -4944,9 +5080,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.playbook_star",
@@ -5008,9 +5146,12 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.pass_target",
@@ -5084,9 +5225,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.shoot_press",
@@ -5178,9 +5321,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.passout_to_oneself",
@@ -5224,9 +5369,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.receiver_spot_run",
@@ -5264,9 +5411,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.online_rules_equal_local",
@@ -5440,9 +5589,11 @@
           "limitations": "Static: no capture of a trick-point or Gamebreaker Wins game. The side object's kind 0x2c the points and trick-point checks test is not identified (read as never). 2026-10-21 (item 8 pass): the side object's kind 0x2c is the side's team, Team Whitewater (gameplay.pocket_team_whitewater). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A capture of a Trick Point Challenge and a Gamebreaker Wins game (My Rules), the person idle.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.basket_points_table",
@@ -5486,9 +5637,11 @@
           "limitations": "Runtime-checked on one staged Level 2 (the other side at 0, so its take unseen); the rest is the executable's table. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A Level 2 in a points game with both sides scoring.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.trick_point_game_end",
@@ -5526,9 +5679,11 @@
           "limitations": "Static; no capture of a Trick Point Challenge. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A Trick Point Challenge captured to its end.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.ai_story_weight",
@@ -5560,9 +5715,11 @@
           "limitations": "The story game captured has weight 0 (the star's tier 0, level 0), which no difficulty's own weight would tell apart at Got Game. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A tournament game later in a career (weight above 0) with the computer deciding.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.pocket_team_whitewater",
@@ -5606,9 +5763,11 @@
           "limitations": "No capture of a game against Team Whitewater (event 5). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A tournament game against Whitewater with a full meter on each side.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.switch_off_screen",
@@ -5658,9 +5817,11 @@
           "limitations": "The played captures keep no camera, so the camera's share is not compared switch by switch. The rewrite's camera stands for the original's (its played pose matched). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A played capture with the active camera's view words, the person switching.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.restart_replay_snap",
@@ -5698,9 +5859,11 @@
           "limitations": "How many restarts have one is each game's replay draws (the rewrite's games 0..27%, the original's 18..29%). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "The replay rolls side by side on a replayed match.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.restart_pickup_and_loose_ball",
@@ -5744,9 +5907,11 @@
           "limitations": "Without a replay the original's inbounder is not driven for about 20 updates (speed level 0), so its take comes at 41..44 against the rewrite's about 30, those restarts 111..120 at the shortest against 130..135. Not ported: the ten-second free-ball failsafe. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Trace what holds the inbounder's first updates (FUN_00181938, the strategy's start).",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.tip_jumper_hands",
@@ -5784,9 +5949,11 @@
           "limitations": "The second capture's players are not known (stand-in bodies); the first capture's loser rises 0.23 high. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "The first capture's jumpers' records (its rosters inferred).",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.restart_control_latch",
@@ -5824,9 +5991,11 @@
           "next_probe": "Retain a paired original/rewrite School replay capture with controller handoffs and all six ready flags.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "gameplay.rebound_presentation_event",
@@ -5876,9 +6045,11 @@
           "next_probe": "Pair a turbo caught block, a made-shot pickup and a real rebound against original HUD and audio output.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         }
       ],
       "measurements": [
@@ -7220,9 +7391,11 @@
           "next_probe": "Capture native visible/open flags at every point threshold and cleared-event boundary.",
           "match_type": "exact",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.story_development_charts",
@@ -7260,9 +7433,11 @@
           "next_probe": "Capture the career block's +0xce4 lines and +0x30 after story games with known stats.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.non_story_win_loss_grant",
@@ -7294,9 +7469,11 @@
           "next_probe": "Capture final RP/DP balances after wins/losses in native modes 2/3/4/5.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.pickup_threshold_cards",
@@ -7322,9 +7499,11 @@
           "next_probe": "Compare counter, ownership bits, RP and queued notices at every threshold.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.shop_row_availability",
@@ -7384,9 +7563,11 @@
           "next_probe": "Compare native reputation and pending bytes for every tier boundary, loss clamp and tier 5 terminal transition.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.league_regions",
@@ -7418,9 +7599,11 @@
           "next_probe": "Compare original/production bitsets and team/court notices through one complete region including a loss.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.league_reward_points",
@@ -7452,9 +7635,11 @@
           "next_probe": "Compare original/production RP totals on three difficulties and repeat final matches.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.recruit_roster",
@@ -7486,9 +7671,11 @@
           "next_probe": "Replay duplicate/new recruits, full/partial rosters and championship cases.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.original_ps2_save_envelope",
@@ -7520,9 +7707,11 @@
           "next_probe": "Compare a native save before/after one known change.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.equipped_move_save_slots",
@@ -7554,9 +7743,11 @@
           "next_probe": "Compare equipped slot arrays before/after one exact-slot replacement in the original.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.nickname_pending_save",
@@ -7588,9 +7779,11 @@
           "next_probe": "Compare raw byte 1 and NKPN across assignment, career switch and consumption.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.bracket_shapes",
@@ -7616,9 +7809,11 @@
           "next_probe": "Compare every bracket row after a controlled win/loss series for all five native formats.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.bracket_random_sequence",
@@ -7644,9 +7839,11 @@
           "limitations": "Matches native C-library LCG rand and FUN_001ea528 winner selection logic. Full-tournament global initial randseed state sharing with C runtime remains separate. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Capture native whole-tournament computer simulation outcomes with synchronized global C randseed and compare final brackets.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.school_completion_predicates",
@@ -7748,9 +7945,12 @@
           "limitations": "Ported 2026-10-18 (branch audio-modes): created ballers keep the original's wardrobe (outfit rows, rows by colour and shoe rows, the career's +0x670..+0x678): shoes cost their row until owned and are never refunded; creating, an outfit costs nothing when owned in its colour, 50 for a free row, else its row; editing, the row's difference against the worn one (refunding a cheaper one); the Gym (Story::upgrade, rating_cost) is gone and the map's Edit Baller opens the star's editor as the original's does; older saves' Gym bumps stay applied. No known difference is left (2026-10-24): the original's buy (FUN_001e4af8 for an outfit: the price by FUN_001e4580, refused when the career's points, obj+0x30, fall short, else FUN_001e70a8(career, 3, -price) and the row owned) takes the points at each Yes, the rewrite with the edit at Save Baller; Edit Baller's only way out is its Exit, which saves (FUN_0028c0b8, CabAsk::Exit then ballers::commit), the read-out counts each Yes at once (ballers::points_left) and a buy the points do not cover asks the poor question instead (menu.rs), and Create Baller's Leave drops the new baller, whose points the next wizard sets to 1,500 again (FUN_002740b8), so the two end with the same points and wardrobe. (The build and size were listed here too; 2026-10-24 they were read raw: FUN_001e6080's rows 0 and 1 (FUN_001e2470, FUN_001e28c8) price the build by the gender's table at 0x4602a0 (men 0, 200, 300, 400; women 0, 200) and the size by the current build's table (0, 200, 300, 400 in every build), each the new entry less the current one, so the rewrite's difference against what was paid, which keeps the size's index across a build, charges the same.) Re-pinned 2026-10-18 after the front end pass: menu.rs: the Choose Baller, intro, map and city pages and their controls; the Choose Team and Choose Players order; street-sim story.rs: overall_total (500); Edit Baller is now the map's Circle (edit_star); the map has no row 1. 2026-10-19 (fifth pass): a new baller spends from 1,500 (ballers::START_POINTS, FUN_002740b8); the editor's buy question (editplyr.txt 3) owns an outfit or shoes on Yes, its price going with the edit's when the baller is saved (ballers::edit_buy); Edit Moves' question (editplyr.txt 4) owns a move on Yes, its points taken when the baller is saved (edit_moves::buy, presentation.ui_edit_moves). 2026-10-23 (the special outfits): the outfit list is FUN_001e4720's: the Street Champ jersey (code 81) first once the baller's career has cleared the Legendary Challenge, the build's nine, each owned jersey card's code (0x460330 by the card's index), then Jordan's (71) while record 167 is unlocked; the specials are free and no row of the wardrobe (FUN_001e43c0, FUN_001e44e0), named by 0x3f94c8; the team uniform (80, a player who joined a league team) is not listed, the model having no team to dress it in. 2026-10-23: a career started from a premade (Choose Baller's YES) holds its 1,500 less the premade's charges (FUN_001e6ac8, FUN_001e6518: build, size, the look's free row, each skill's steps to its bar, its outfit bought in creation's terms; ballers::preset_charges). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None open: the rows 0..10 (FUN_001e6080) are read raw, the looks price 0; a played Edit Baller capture would confirm the read-out step by step.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.story_calendar_counter",
@@ -7782,9 +7982,11 @@
           "next_probe": "Capture story+0x24 at every event transition in a full Be A Legend run.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.results_notice_visuals",
@@ -7834,9 +8036,12 @@
           "next_probe": "Grab the original's results pages after a street challenge cleared (a jersey and a boss move), the fourth trophy and Rucker Park '78, and compare them with the rewrite's.",
           "match_type": "structural",
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.semantic_save_completeness",
@@ -7876,9 +8081,12 @@
             "assessment": "Overflow original careers alias existing six baller records; ten progress entries do not restore ten distinct original characters and their bought/equipped state."
           },
           "disposition": "active",
-          "effective_status": "mismatched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.my_baller_deferred",
@@ -7965,9 +8173,11 @@
           "next_probe": "Cut a profile with careers, bought cards and records from a longer played boot and run the same round trip.",
           "match_type": "exact",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.default_options",
@@ -8017,9 +8227,11 @@
           "limitations": "Static: the reset's code and the ELF's zero globals, not a memory read of a booted console. Word 1 bits 0..1 (3) and 16..19 (10) and the per-pad bit 12 flag have no modelled reader. (The song left off is corrected below.) The language field (bits 9..11) is not kept; it is always 0 on this executable. The Adjust Screen offsets map to the rewrite's full-screen toggle. Re-pinned 2026-10-18 after the computer's shooters, drives and trick passes pass: TRACE.md gained the section \"The computer's shooters, drives and trick passes\" at its end; the cited region is unchanged. Corrected 2026-10-18 (branch audio-modes): the one song the reset leaves off is track 20, the Rucker Classic's (in-game song 12), not Nelly's: DAT_003e9ca8 is audio_rucker_classic_track, registered with 20, and every save state's Trax word is 0xff7fffff. The Rucker Classic's switch-on (FUN_001e0420, FUN_002f2d58) is not ported. 2026-10-19 (sixth pass): records.rs's tables place rows as the original's (Records::offer, offer_win, legend) and keep two new tagged blocks after SCHU; the options' defaults are unchanged. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Read config+0x12c..+0x143 from a fresh PCSX2 boot without a memory card and compare the 24 bytes; port the the Rucker Classic's song switch and find the readers of the unmodelled fields.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.computer_lineups",
@@ -8121,9 +8333,11 @@
           "limitations": "Runtime-read for a pick-up only; the street challenges and tournaments rest on the trace and the disc test. Gamebreaker Wins' meter spots (My Rules) are not in the rules (modes.gamebreaker_wins_meter_spots). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Read the setup in a street challenge's game (a career past Soul in the Hole).",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.gamebreaker_wins_meter_spots",
@@ -8161,9 +8375,11 @@
           "limitations": "Static: no capture of a Gamebreaker Wins game. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A Gamebreaker Wins game from My Rules with a spot, captured.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.story_crew_after_a_game",
@@ -8201,9 +8417,11 @@
           "limitations": "Read from the save states and their backups; the recruit itself is the trace's. Item 7 had read state 4 as earlier than state 3 (corrected 2026-10-21). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "modes.story_person_side",
@@ -8247,9 +8465,11 @@
           "limitations": "No save state of an League Challenge game; its slot 0 is the trace's (FUN_0026f958, FUN_001dbb20). Choose Players keeps the person's team on the left panel (slot 0). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A save state inside an League Challenge game.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         }
       ],
       "measurements": [
@@ -8952,7 +9172,9 @@
           "disposition": "active",
           "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.skinning_vertex_output",
@@ -9520,7 +9742,9 @@
           "disposition": "active",
           "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.gui_viewport_composition",
@@ -9605,7 +9829,9 @@
           "disposition": "active",
           "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.crowd_vertex_decode",
@@ -9643,9 +9869,11 @@
           "limitations": "Static agreement with the decompiled and raw decode loops, the colour path (0x30a450, the 0x3090d0 unpack, the parts' VU programs, TEX0 TFX from FUN_00368ed8) and disc invariants; no captured original vertex buffer or frame was compared. The GS modulate is mimicked by an sRGB base-colour factor on a linear-light renderer, the rewrite's own approximation; alpha (0x7f) is not applied. Re-pinned 2026-10-18 after the presentation pass: TRACE.md gained the section \"The presentation's rest: the referee's run-off, the camera's row and source, the replays' kind and roll, the game's end (2026-10-18)\" at its end; crowd_disc.rs asserts no plan names head kind 3; crowd.rs applies the colour's alpha byte; the cited tint_colour now carries the plan's alpha byte (0x7f) into the texel's alpha, which its test expects (127/128). Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Dump one model's animated vertex buffer (model +0x40 frame buffers) from the original at a known group frame and compare with Animation::pose.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.net_runtime",
@@ -9861,9 +10089,12 @@
           "limitations": "Two more captured openings (2026-10-15, per update): the launch is 118 updates after the opening in both (the referee's count runs out at update 62, then 8 + 50), the production flight stays within 7.3e-5 of the captured ball every update to the tip, the contest is decided in the same update by the same two draws and the loser's script draw (timings 18/13 and 2/12; winners team 0 and team 1). The tip follows the winner's hands (FUN_0014cb08): 81 and 80 updates after the launch. 2026-10-16: the jumpers now play their scripts (toss::TIP_SCRIPTS) and jump at each script's a1 ef, which aims the hand posed at clip frame 15 (10, 11 for the loser) at the ball 25 updates on; with the rewrite's hand (the jumper's reach above his feet, no bones) the winner tips at 80 in both (one update early in the first) and the jumps peak at 3.38 against the captured 3.75 to 4.23; the tip pass flies 40 as the original's (ball+0x64, all five captured openings) and is caught 39 after the tip against the original's 38 (the receiver's bone spheres). toss::TIP_HEIGHT is gone. The spin axis (three draws) is traced statically; the capture's spin fields were not compared. Re-pinned 2026-10-16 after the court's frame pass: CAMERA_RECOVERY.md's side map (\"Focus motion vector and state gates\") and \"Side\" paragraph record the frame change; tests.rs's fixtures (`hoops()` +x first, the three-a-side builder by `restart::side`) and the scenes of the tests that name a side are mirrored into the original's frame; ai/capture.rs reads positions and the ball as captured (no mirroring); TRACE.md gained the section \"The court's frame\" and notes pointing to it (7b's restart spots, \"Runtime captures\", \"The chooser's facing angle in the original's frame\" and its tests, \"The sector in the original's frame\"); lib.rs's module docs, `Hoop::native` (the rims by the team that attacks them, +36.75 first) and the `World::hoops`/`target_hoop` docs; the cited tests `the_opening_toss_waits_at_the_tip_off_spots_then_goes_up_like_fun_0014c858` pass on their scenes mirrored into the original's frame. Re-pinned 2026-10-16 after the defenders' gait pass: tests.rs's side-fade and shot-chooser tests set the shooter's heading through `Player::set_heading` (the chooser reads +0xb0); ai/capture.rs's spacing check holds within 4 and in tricks within 0.05, away within 0.06, the standing share within 0.05, the trick length within 3 updates and the defender backing off through the blend; TRACE.md gained the section \"The defenders' gait on the original's locomotion\" at its end, and two leads of \"Trick moves on their scripts\" say they are ported or fixed; lib.rs declares `guard`, decides each player's guarding mode and gait record before his walk, writes the placements' facing through `Player::set_heading`, and its tuning notes name the stand-in walk; the placements write the facing through `Player::set_heading` (the wanted facing and the course with it); the rest of the cited region is unchanged. Re-pinned 2026-10-17 after the jumps pass: ai/capture.rs's comparison bounds the short capture's within-4 share at 0.11 and its disc pairs' shots at a quarter (twenty and ten seed bases: 0.277 on main and 0.272 after, 19.0 and 19.85 shots; one short game's draws, not a shift); lib.rs declares `jump`, runs each actor's flight after his update in `World::step` and lost the jump curves' tuning (`SHOT_RISE`, `DUNK_RISE`, `LAYUP_RISE`, `SHOT_JUMP`, `LAYUP_HEIGHT`, `FADE_DRIFT`; `PUTBACK_RISE` and `LANDING_LIMIT` added); TRACE.md gained the section \"The jumps on their scripts\" at its end and a pointer to it in \"The held ball on the holder's clip\"'s last paragraph; the cited regions are unchanged but for those bounds. 2026-10-21 (item 8 pass): the jumpers aim and tip with the clip's posed hands (gameplay.tip_jumper_hands); the toss's flight is compared until the original's tip. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Pose the jumper's hand bones (0x13, 0xf) at the script's clip frame for the aim and the 1.25 reach, so the tip lands on the captured update for either side and the jumps rise as the original's.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.opening_referee",
@@ -9918,9 +10149,12 @@
           "limitations": "Runtime (2026-10-15, second capture): his task has all six ready flags up from the opening and counts 60 to update 62, record 949 shows from update 70 and reaches frame 6 at the launch (update 120), then a frame each 1.5 updates to frame 16 (update 134): as the rewrite times it (toss::WAIT_UPDATES). Fixed from that capture (2026-10-15): a script's 8-frame blend holds its clip at frame 0 (the cradle shows frame 0 eight updates after he is placed, the toss's clip eight updates after its script, which now starts 58 updates before the launch), and after 0x44cb78's record 947 shows for one update FUN_0017cdd0 starts script 0x44cb61 (pointer 0x3d9a38, record 948 ref01_regcourt_runon, guarded by the record list 0x3d9a30) and moves him a third of a unit an update along his task's stick. Still the rewrite's own: the stick is taken as straight toward -z (the captures' direction; his task is not traced) and the clip's root travel is left out while he runs. Not compared update by update against the capture. The 8-frame blends are the renderer's crossfades; no shadow model (0x3ac); the camera still reads his upper body from the capture. Re-pinned 2026-10-16 after the pass flight pass: TRACE.md gained the section \"Pass flights and the tip-off\" and two notes pointing to it (the tip in 7b and in \"Runtime captures\", where `toss::TIP_HEIGHT` was described); the cited TRACE region \"Runtime captures\" changed only in its opening paragraph's tip sentence. Re-pinned 2026-10-17 after the combo ring, the meters' listeners and the shot clock: TRACE.md gained the section \"The combo ring, the meter's listeners, the statistics and the shot clock\" at its end and pointers to it in section 7 (the pushers' list, the meter section's ported list) and section 8 (the window's bound); tools/pine_ai_capture.py also records the scoring state (schema 2); the tool also records the scoring state (schema 2). Re-pinned 2026-10-17 after the turbo bars, the juke press and the counter stance: TRACE.md gained the section \"The turbo bars, the juke press and the counter stance\" at its end; pine_ai_capture.py (schema 3) also records the rosters, the turbo bars and owners and the playbook's star; `discover`, `first_layout` and `second_layout` read the rosters, the bars and the star too (schema 3). Re-pinned 2026-10-18 after the presentation pass: CAMERA_RECOVERY.md gained the section \"The row's selection, the source adapter's inputs and the shared roll (2026-10-18)\" and dated notes pointing to it in \"Camera manager events and helper selection\", \"Instant replays, the replay director and the task order\", \"The row in a played match\" and \"Native camera source motion adapter\"; referee.rs runs him off on the goto task's stick (kept within 6 units, FUN_0013af58) with FUN_00154560's turn and the run clip's root travel; TRACE.md gained the section \"The presentation's rest: the referee's run-off, the camera's row and source, the replays' kind and roll, the game's end (2026-10-18)\" at its end; the cited referee now runs off as captures 2 and 3 show (this case's own note). Ported 2026-10-18 (docs/TRACE.md \"The presentation's rest: the referee's run-off, the camera's row and source, the replays' kind and roll, the game's end (2026-10-18)\"): his plan (0x1847c0) queues a goto toward (0, -51.5) (FUN_0010f278, speed 3, fps*30 updates) whose stick word (FUN_0013ac80, the native heading of where he stands as the update begins) FUN_0013af58 keeps while a new one is under 6 units from it (1022, then 1016 and 1009 as he nears the spot), ending within 0.75 of it (FUN_0010f318); FUN_0017cdd0 moves him a third of a unit an update along it from the update after 948's script starts (every script's 97 zeroes +0x40); 91's operand ORs 0x800000 into 947's and 948's flags, so their blends match the heading (FUN_00196698: 276 from the toss's world root 278); his update ends with FUN_00154560, which turns +0xa8 48 units an update toward +0xb0 and builds the quaternion from the halved word (an odd word a unit short); a script's blend holds its frame from its start through the seventh update after and the 8c rest of the toss runs from the launch's own update; the run clip's root travel is the sampled root less the last, turned by that quaternion. The rewrite follows captures 2 and 3's referee within 0.0003 at all 155 updates from the launch until the goto is over, with the stick's re-aims on the same updates (referee::tests::the_referee_runs_off_like_the_captured_original, with STREET_AI_CAPTURE; capture 1 starts after the opening). Not traced: the steer's far-path vtable calls (+0x34, +0x3c), which return the word unchanged in every capture. Still the rewrite's own: the 8-frame blends are the renderer's crossfades (with the outgoing pose turned by the heading's change), no shadow model (0x3ac), and the camera reads his upper body from the attract capture. 2026-10-23: online, where one fixed update may step several ticks, the toss script starts on the first update past its start that an unplaced referee sees (it underflowed when the exact update was skipped); played alone every update is seen, unchanged. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "Compare the cradle before the launch (his placement precedes capture 2's first referee sample) and the blends' poses against a rig capture; trace his shadow model 0x3ac.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md",
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.ui_difficulty_screen",
@@ -10470,9 +10704,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.ui_pause_screen",
@@ -10558,9 +10794,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.ui_dialog_widget",
@@ -10628,9 +10866,11 @@
             }
           ],
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.ui_choose_baller_screen",
@@ -15370,9 +15610,11 @@
           "limitations": "No played match of the original's has had its staged rerun grabbed: the School's lesson run is the runtime evidence (its frames were not grabbed), the cameras are the scripts' own records at the script manager's replay frame. Only one of the sixteen plans has run in the original (GamLR2); the others' commands are read from the disc. The replay command's count (word 12 + 1) is one on all sixteen; more is not modelled. 2026-10-21 (item 7): the rerun's camera takes the staged helper's lens and roll, measured on the School's Level 2 rerun (presentation.staged_camera_lens_roll_follow). 2026-10-23: the match also holds a staged Level 2's 31 updates after its press for GB2's burst (Match::burst_hold, street_net::game::LEVEL2_BURST_HOLD, checked against the banner's 32 updates), as the game played alone holds them; the disc test asserts it holds. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A played match's staged Level 2 in the original with the rerun's frames grabbed.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.online_rundown_names",
@@ -15403,7 +15645,7 @@
               "path": "crates/street-game/src/online.rs",
               "locator": "the creator's looks (city, nickname)",
               "note": "The creator sends its records' names.",
-              "sha256": "e314ac47dadf1aac3451bb80d0a8b7f34167a943456d71f6aeb3e62aa17a6e84"
+              "sha256": "d7c153edddca5d8184c6574df3695b2078fba7e4b56161f5da45e2ef8289a9bd"
             },
             {
               "path": "crates/street-game/src/boards.rs",
@@ -15443,12 +15685,14 @@
             }
           ],
           "tolerance": "The same city and nickname elements on every machine, as a match alone draws them.",
-          "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-26 after the lobby's join code line (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         },
         {
           "id": "presentation.staged_camera_lens_roll_follow",
@@ -15574,9 +15818,11 @@
           "limitations": "Compared on one plan (GamLR1) frame by frame; the fifteen others carry the same two effect records and run the same code. The usual copy (0x7f, 0x7f), the 16-bit shown buffer and its dither are drawn since 2026-10-24 (docs/TRACE.md, The shown buffer: 16-bit and dithered). Online matches hold the 31 updates after the press for the burst too (street_net::game::LEVEL2_BURST_HOLD, tested against the banner's own wipe in a_staged_level_2_waits_for_the_bursts_first_wedge_to_go). The Level 1 tint and the basket flash follow the code, not a grab. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A Level 1 gamebreaker and a game-winning basket grabbed side by side.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "docs/TRACE.md"
+          ]
         }
       ],
       "measurements": [
