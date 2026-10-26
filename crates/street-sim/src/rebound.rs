@@ -608,6 +608,25 @@ impl World {
         })
     }
 
+    /// Rebound jumper `i`'s channel 0 ([`World::rebound_clock`]): the
+    /// script's clip and frame, the clip held through its blend.
+    pub(crate) fn rebound_channel(&self, i: usize) -> Option<crate::held::Channel> {
+        let c = self.rebound_clock(i)?;
+        let Action::ReboundJump { tick, .. } = self.players[i].action else {
+            return None;
+        };
+        Some(crate::held::Channel {
+            shown: crate::trick::Shown {
+                record: Some(c.record),
+                frame: c.frame,
+                blend: c.blend.map(|(_, w)| w),
+            },
+            from: c.blend.and_then(|(from, _)| from),
+            counter: c.blend.map(|_| (tick + 1, BLEND)),
+            gait: false,
+        })
+    }
+
     /// Callback 36's hand (`FUN_00175858`, raw `0x175858..0x175b64`): the
     /// path's clip posed at the script's frame where he stands, facing his
     /// wanted facing (+0xb0), and `FUN_0014da20`'s point (flag 0, out by

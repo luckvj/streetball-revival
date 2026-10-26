@@ -336,7 +336,7 @@ impl Jump {
         self.script().records[usize::from(self.branch)]
     }
 
-    fn blend_len(&self) -> u16 {
+    pub(crate) fn blend_len(&self) -> u16 {
         u16::from(self.script().blend[usize::from(self.branch)])
     }
 
