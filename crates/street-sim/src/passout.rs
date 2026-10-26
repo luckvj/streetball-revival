@@ -334,10 +334,13 @@ impl World {
     }
 
     /// The passer's hand as his clip shows it at the toss's frame
-    /// (`FUN_001741a8`'s `DAT_003d6590`): posed at his place moved by the
-    /// clip's root there, facing his facing word, the hand the frame holds
-    /// out (8 the right, else the left). Without the disc's animations
-    /// the rewrite's own: 4 above his place.
+    /// (`FUN_001741a8`'s `DAT_003d6590`, raw `0x174490..0x174644`): posed
+    /// at that frame where he stands, moved by the clip's root change from
+    /// the frame shown to it (root(F) less the model's root now, +0xe0;
+    /// none while the channel blends, flag 0x200000), facing his facing
+    /// word, the hand the frame holds out (8 the right, else the left) with
+    /// the ball's radius off the palm (`FUN_0014da20`). Without the disc's
+    /// animations the rewrite's own: 4 above his place.
     fn toss_hand(&self, i: usize, frame: u8) -> [f32; 3] {
         let p = &self.players[i];
         let own = [p.position[0], p.height + 4.0, p.position[1]];
@@ -354,7 +357,25 @@ impl World {
         };
         let word = crate::timing::facing_word(p.heading);
         let body = p.body();
-        let root = poses.root(at).unwrap_or([0.0; 3]);
+        let shown = self.channel(i).map(|c| c.shown);
+        let now = shown
+            .and_then(|s| {
+                s.blend.is_none().then(|| {
+                    poses.root(Frame {
+                        record,
+                        time: s.frame,
+                        looping: false,
+                    })
+                })
+            })
+            .flatten();
+        let root = match now {
+            Some(now) => {
+                let f = poses.root(at).unwrap_or(now);
+                [f[0] - now[0], 0.0, f[2] - now[2]]
+            }
+            None => [0.0; 3],
+        };
         let theta = word as f32 * std::f32::consts::TAU / 1024.0;
         let yaw = [
             0.0,
@@ -370,11 +391,19 @@ impl World {
         let Some(posed) = poses.pose(at, body, place) else {
             return own;
         };
-        if poses.state(record, i32::from(frame)) & 8 != 0 {
-            posed.joints[pose::RIGHT_HAND].position
+        let hand = if poses.state(record, i32::from(frame)) & 8 != 0 {
+            1
         } else {
-            posed.joints[pose::LEFT_HAND].position
-        }
+            2
+        };
+        pose::hand_point(
+            &posed,
+            i32::from(record),
+            i32::from(frame),
+            hand,
+            body,
+            Some(self.ball.radius),
+        )
     }
 
     /// Callback 53 with a passout to oneself (`FUN_001741a8`,
