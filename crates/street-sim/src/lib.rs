@@ -1850,6 +1850,8 @@ impl World {
             // alley-oop's leap (`FUN_0015a060`, [`leap`]).
         } else if pressed & button::DIVE != 0 && self.dive_press(i) {
             // The dive for a loose ball ([`dive`]).
+        } else if pressed & button::PICK != 0 && input.is_computer() && self.pick_press(i) {
+            // A computer screener's pick ([`World::pick_press`]).
         } else if calls {
             // The call's node is pushed in his controller's update
             // ([`World::call_for_ball`]); the press starts nothing else.
@@ -1949,6 +1951,32 @@ impl World {
                 block: !rebound,
             });
         }
+    }
+
+    /// `FUN_0015a060`'s pick press off the ball (pad +0x7c & 0x4000000,
+    /// raw `0x15b5c4..0x15b6e8`): for a computer's actor (`FUN_00172220`:
+    /// its controller type 4) on the floor (+0x34 0), outside a restart
+    /// (game+0xf4 not 6) and in none of a shot, a dunk, a rebound jump,
+    /// his catch row, a block jump or a leap (+0xa4 & 0x9388), one of
+    /// [`trick::PICKS`] by `r % 3` on his channel: setroughpick past its
+    /// callback 16, whose clearout's arms ([`trick::CLEAROUT_ARMS`], `a6 2
+    /// 1`) knock the defender he steps into. (A person's press wants both
+    /// turbos and half the bar for the whole script; no controller makes
+    /// one.) True when it played.
+    pub(crate) fn pick_press(&mut self, i: usize) -> bool {
+        let p = &self.players[i];
+        let busy = block::holder_bits(&p.action) & 0x9388 != 0
+            || matches!(
+                p.action,
+                Action::ReboundJump { .. } | Action::Jumping { .. }
+            )
+            || self.catch_row_playing(i).is_some_and(|c| c.catching);
+        if busy || p.height != 0.0 || self.game_phase.phase == game_phase::phase::RESTART {
+            return false;
+        }
+        let k = (self.rng.next_u32() % 3) as usize;
+        self.react(i, trick::PICKS[k]);
+        true
     }
 
     /// `FUN_0015a060` (raw `0x15b860..0x15b944`): the holder's pass press

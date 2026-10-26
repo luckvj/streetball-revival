@@ -30,6 +30,11 @@ pub mod button {
 
     pub const TURBOS: u16 = L1 | R1 | L2 | R2;
     pub const ALL: u16 = (1 << 12) - 1;
+    /// Not a button: a computer screener's pick (the pad's 0x4000000,
+    /// [`crate::ai`]'s "set pick" as he steps into the defender), which
+    /// [`crate::World`] plays as [`crate::trick::PICKS`]. No controller
+    /// sets it.
+    pub const PICK: u16 = 1 << 12;
     /// Not a button: the computer drives this player this tick. The
     /// world replaces such an input with the pad its AI builds
     /// ([`crate::ai`]), as the original's computer players fill the same
@@ -189,7 +194,8 @@ impl Input {
         Self {
             stick: [b[0] as i8, b[1] as i8],
             aim: [b[2] as i8, b[3] as i8],
-            buttons: u16::from_le_bytes([b[4], b[5]]) & (button::ALL | button::COMPUTER),
+            buttons: u16::from_le_bytes([b[4], b[5]])
+                & (button::ALL | button::PICK | button::COMPUTER),
             view: u16::from_le_bytes([b[6], b[7]]) & 0x3ff,
             off_screen: b[7] >> 2,
         }

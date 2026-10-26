@@ -147,7 +147,12 @@ pub(super) fn to_input(ctx: &Ctx, i: usize, pad: &Pad) -> Input {
         // The sim cancels with Select and exactly one turbo.
         held = (held & !button::TURBOS) | button::SELECT | button::R1;
     }
-    out.with(held)
+    let mut out = out.with(held);
+    // The screener's pick press, not a button ([`button::PICK`]).
+    if b & bits::PICK != 0 {
+        out.buttons |= button::PICK;
+    }
+    out
 }
 
 impl Brain {

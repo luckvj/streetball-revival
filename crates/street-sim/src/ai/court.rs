@@ -314,6 +314,24 @@ impl Ctx<'_> {
         )
     }
 
+    /// `FUN_001817e0` → `FUN_0016eb80`: channel 0 plays a pick's clip,
+    /// records 650..652 (the record a blend goes to, flag 0x200000, else
+    /// the one it plays): the screener's pick ([`crate::trick::PICKS`],
+    /// [`crate::trick::SCREENER`]).
+    pub fn picking(&self, i: usize) -> bool {
+        let Action::Stumbling {
+            reaction: Some(r), ..
+        } = self.w.players[i].action
+        else {
+            return false;
+        };
+        let record = match r.run.span {
+            Some(s) if s.blend => s.to_record,
+            _ => r.run.record,
+        };
+        record.is_some_and(|k| (650..=652).contains(&k))
+    }
+
     /// Bit 15 (`FUN_0016e9e0`, the AI's `FUN_00181770`): an alley-oop's
     /// leap, to the finish.
     pub fn leaping(&self, i: usize) -> bool {

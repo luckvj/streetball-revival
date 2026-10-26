@@ -1426,10 +1426,11 @@ pub const SCRIPTS: [Script; 76] = [
 /// head passout's hit ([`HEAD_HIT`]) and catch ([`HEAD_CATCH`]); then
 /// the screen's: the screened defender's ([`SCREENED_HEAVY`],
 /// [`SCREENED_LIGHT`]) and the screener's ([`SCREENER`]); then the
-/// stripped holder's ([`STRIPPED`]); then the celebrations ([`CELEBRATE_ROWS`]) and the
+/// stripped holder's ([`STRIPPED`]); then a computer screener's pick
+/// presses ([`PICKS`]); then the celebrations ([`CELEBRATE_ROWS`]) and the
 /// loser's reactions at the win ([`DEJECT_ROWS`]), each its row on the
 /// shared script.
-pub const REACTIONS: [Reaction; 82] = [
+pub const REACTIONS: [Reaction; 85] = [
     // standdunkfallforward
     Reaction {
         address: 0x44bcb8,
@@ -2312,6 +2313,51 @@ pub const REACTIONS: [Reaction; 82] = [
             End,
         ],
     },
+    // setroughpick02_low, entered past callback 16: a computer screener's pick press
+    Reaction {
+        address: 0x44c222,
+        root: [f32::from_bits(0xbf640744), f32::from_bits(0x3f52949a)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [650, 650] },
+            Shove { row: 1, n: 30 },
+            PlayOut { per_frame: f32::from_bits(0x3fa00000), to: 24, n: 30 },
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+    // setroughpick03_low2, entered past callback 16: a computer screener's pick press
+    Reaction {
+        address: 0x44c27b,
+        root: [f32::from_bits(0x3f88b0a4), f32::from_bits(0x3f36e520)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [651, 651] },
+            Shove { row: 1, n: 30 },
+            PlayOut { per_frame: f32::from_bits(0x3fa00000), to: 24, n: 30 },
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+    // setroughpick01, entered past callback 16: a computer screener's pick press
+    Reaction {
+        address: 0x44c2d4,
+        root: [f32::from_bits(0x3f77de5e), f32::from_bits(0xc01597f8)],
+        steps: &[
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [652, 652] },
+            Shove { row: 1, n: 38 },
+            PlayOut { per_frame: f32::from_bits(0x3f800000), to: 30, n: 30 },
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
     // celeb01_FINAL
     Reaction {
         address: 0x44cbbf,
@@ -2677,6 +2723,13 @@ pub const SCREENER: [u8; 3] = [57, 58, 59];
 /// channel by his dribble hand (`steal_reaction_l_1`, record 397 or 396).
 pub const STRIPPED: u8 = 60;
 
+/// A computer screener's pick press (`FUN_0015a060`, raw `0x15b5c4..
+/// 0x15b6e8`): `0x43f028[r % 3]`, the setroughpick scripts entered past
+/// their callback 16 (`0x44c222`, `0x44c27b`, `0x44c2d4`; a person's
+/// press, with both turbos and half a bar, plays the whole of
+/// [`SCREENER`]'s from `0x43f038`).
+pub const PICKS: [u8; 3] = [61, 62, 63];
+
 /// The celebrations (`FUN_00170e70`'s `r % 17` of `0x3d9078`, which the
 /// boot's constructor fills at `0x17bcd0..0x17c1a8`): each row and the
 /// updates its clip shows a frame for (fps / 60 times the constant there).
@@ -2701,7 +2754,7 @@ pub const CELEBRATE_ROWS: [(u16, f32); 17] = [
     (945, f32::from_bits(0x4019_999a)),
     (946, f32::from_bits(0x4019_999a)),
 ];
-pub const CELEBRATE_FIRST: u8 = 61;
+pub const CELEBRATE_FIRST: u8 = 64;
 
 /// The loser's reactions at the win (`FUN_00171160`'s `0x3d9138`, filled
 /// at `0x17c3e8..0x17c4a0`): each row, the facings it is barred from (1
@@ -2714,7 +2767,7 @@ pub const DEJECT_ROWS: [(u16, u8, f32); 4] = [
     (960, 2, 2.0),
     (961, 2, f32::from_bits(0x4019_999a)),
 ];
-pub const DEJECT_FIRST: u8 = 78;
+pub const DEJECT_FIRST: u8 = 81;
 
 /// The knock window's body, `0x3d0d90` row 2 (`0x3d0cd0`, the only row the
 /// dunk and lay-up scripts' `a6 1` name): bones `a` to `b` pushed `reach`
