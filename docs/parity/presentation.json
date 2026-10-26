@@ -6772,7 +6772,7 @@
           "path": "crates/street-game/src/online.rs",
           "locator": "the creator's looks (city, nickname)",
           "note": "The creator sends its records' names.",
-          "sha256": "e314ac47dadf1aac3451bb80d0a8b7f34167a943456d71f6aeb3e62aa17a6e84"
+          "sha256": "d7c153edddca5d8184c6574df3695b2078fba7e4b56161f5da45e2ef8289a9bd"
         },
         {
           "path": "crates/street-game/src/boards.rs",
@@ -6812,7 +6812,7 @@
         }
       ],
       "tolerance": "The same city and nickname elements on every machine, as a match alone draws them.",
-      "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-26 after the signature sounds (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-26 after the lobby's join code line (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
