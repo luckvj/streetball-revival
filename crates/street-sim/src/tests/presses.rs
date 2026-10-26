@@ -534,3 +534,65 @@ fn a_teammate_board_pass_releases_on_its_row_and_keeps_the_planned_catch() {
         }
     }
 }
+
+#[test]
+fn a_person_who_cannot_leap_calls_for_the_ball() {
+    // Shoot with a turbo off the ball, too far out to leap: a person in
+    // live play plays the call-for-it gesture (`0x44c95e`), a hop toward
+    // the rim with his facing turned a quarter off it; a computer, or a
+    // man a pass is on its way to, does nothing.
+    let ours = [[10.0, 0.0], [5.0, 12.0], [20.0, -10.0]];
+    let theirs = [[0.0, 20.0], [0.0, -20.0], [-10.0, 0.0]];
+    let mut w = three(ours, theirs, 1);
+    w.game_phase.phase = crate::game_phase::phase::FRONT_COURT;
+    assert!(!w.can_leap(1));
+    let input = Input::default().with(button::SHOOT | button::L1);
+    assert!(w.leap_press(1, &input, 1));
+    let Action::Stumbling {
+        reaction: Some(r), ..
+    } = w.players[1].action
+    else {
+        panic!("no gesture: {:?}", w.players[1].action);
+    };
+    assert!(r.script == trick::CALL_FIRST || r.script == trick::CALL_FIRST + 1);
+    let turn = if r.script == trick::CALL_FIRST {
+        256
+    } else {
+        -256
+    };
+    let at = w.players[1].position;
+    let wanted = (w.to_rim(1, at) + turn) & 0x3ff;
+    assert_eq!(timing::facing_word(w.players[1].wanted), wanted);
+    let mut top: f32 = 0.0;
+    let mut updates = 1;
+    while matches!(w.players[1].action, Action::Stumbling { .. }) {
+        w.reaction_tick(1);
+        top = top.max(w.players[1].height);
+        updates += 1;
+        assert!(updates < 100);
+    }
+    assert!(top > 0.1, "the hop: {top}");
+    assert_eq!(w.players[1].height, 0.0);
+    // The blend's 8 and the wait's 11, the hop's airtime, the tail's 6
+    // and 4.
+    let air = i32::from(timing::airtime(f32::from_bits(0x3e4ccccd), 0.0));
+    let expected = 8 + 11 + air + 6 + 4;
+    assert!((updates - expected).abs() <= 3, "{updates} vs {expected}");
+    assert_eq!(timing::facing_word(w.players[1].heading), wanted);
+
+    let mut w = three(ours, theirs, 1);
+    w.game_phase.phase = crate::game_phase::phase::FRONT_COURT;
+    assert!(!w.leap_press(1, &Input::computer().with(button::SHOOT | button::L1), 1));
+    assert!(matches!(w.players[1].action, Action::None));
+    w.ball.drop_loose();
+    w.ball.state = BallState::Pass;
+    w.ball.pass = Some(crate::ball::Pass {
+        from: 0,
+        to: 1,
+        tried: 0,
+        via: crate::ball::Via::Direct,
+        catch: crate::ball::NO_CATCH,
+        since: 0,
+    });
+    assert!(!w.leap_press(1, &input, 1));
+}

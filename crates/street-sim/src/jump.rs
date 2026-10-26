@@ -528,7 +528,7 @@ impl World {
     /// `FUN_0016f260`: the angle from `i` toward the rim his team attacks
     /// (the game's table at +0x35c, built before the actors update, turned
     /// half round), from where he stood.
-    fn to_rim(&self, i: usize, at: [f32; 2]) -> i32 {
+    pub(crate) fn to_rim(&self, i: usize, at: [f32; 2]) -> i32 {
         let rim = self.rim_spot(crate::target_hoop(self.players[i].team));
         timing::angle_units(crate::math::atan2(at[0] - rim[0], at[1] - rim[1]))
     }

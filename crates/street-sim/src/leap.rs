@@ -11,7 +11,7 @@
 //! row's script is the whole leap: `9b 0x8000` (state bit 15, the leap),
 //! callback 4 (the wanted facing to the rim), a blend of eight updates,
 //! `9e` (the aimed jump, 80 updates on), the contact window of kind 1
-//! (`a6 01 02 50`, not ported), the long wait the lob is timed to, then a
+//! (`a6 01 02 50`, [`World::knock_contacts`]), the long wait the lob is timed to, then a
 //! dunk's tail: callback 21 (the slam, when he holds the ball), callback
 //! 27, `9b 0x80` (bit 15 gone) and the landing. So the leap plays as a
 //! [`Action::Dunking`] on its row ([`crate::jump`] flies it), bit 15 while
@@ -22,9 +22,94 @@
 //! at his hand as his clip will show it then; he catches it on the bone
 //! rules of the side with the ball ([`crate::touch`]) and slams it at his
 //! callback 21 as an alley-oop finish (the launcher's kind 3).
+//!
+//! A person who cannot leap calls for the ball instead
+//! ([`World::call_gesture`]): the gesture `0x44c95e`, a little hop to
+//! one side ([`CALL_FOR_BALL`]).
 
 use crate::timing::{self, LEAP_ROWS, MOVE_ROWS};
+use crate::trick::{Reaction, Step::*};
 use crate::{Action, BallState, World, distance};
+
+/// The call-for-it gesture (`0x44c95e`), played as a reaction
+/// ([`crate::trick::CALL_FIRST`]): his wanted facing to the rim
+/// (callback 4), then callback 47's branch (`84 2f`,
+/// [`crate::rebound::branch_47`] on that facing): its plain path turns
+/// the wanted facing 256 one way and blends record 411, the branch (at
+/// `0x44c9b1`) turns it 256 the other way and blends 410, the mirror;
+/// both go on at `0x44c9cc` to a hop toward the rim (`a1 f0`), the
+/// landing and the tail. Its first `91` (0x820042) sets the channel's
+/// "down" (0x40) until the last clears it, as a reaction's does.
+pub const CALL_FOR_BALL: [Reaction; 2] = [
+    Reaction {
+        address: 0x44c95e,
+        root: [f32::from_bits(0x3fee0fa7), f32::from_bits(0xbf878d5d)],
+        steps: &[
+            Stop,
+            Unplant,
+            Flags(0x820042),
+            Bits(0x0),
+            Want(0),
+            Test(47),
+            Want(256),
+            Blend {
+                n: 8,
+                start: 0,
+                records: [411, 411],
+            },
+            Wait { to: 7, n: 11 },
+            Flags(0x10042),
+            Toward {
+                turn: 0,
+                speed: f32::from_bits(0x3e19999a),
+                rise: f32::from_bits(0x3e4ccccd),
+            },
+            Land { to: 27 },
+            Stop,
+            Flags(0x42),
+            Wait { to: 31, n: 6 },
+            Wait { to: 33, n: 4 },
+            Flags(0x0),
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+    Reaction {
+        address: 0x44c95e,
+        root: [f32::from_bits(0xbfee0fa7), f32::from_bits(0xbf878d5d)],
+        steps: &[
+            Stop,
+            Unplant,
+            Flags(0x820042),
+            Bits(0x0),
+            Want(0),
+            Test(47),
+            Want(-256),
+            Blend {
+                n: 8,
+                start: 0,
+                records: [410, 410],
+            },
+            Wait { to: 7, n: 11 },
+            Flags(0x10042),
+            Toward {
+                turn: 0,
+                speed: f32::from_bits(0x3e19999a),
+                rise: f32::from_bits(0x3e4ccccd),
+            },
+            Land { to: 27 },
+            Stop,
+            Flags(0x42),
+            Wait { to: 31, n: 6 },
+            Wait { to: 33, n: 4 },
+            Flags(0x0),
+            Call(7),
+            Call(1),
+            End,
+        ],
+    },
+];
 
 /// Whether `row` of [`crate::Action::Dunking`] is a leap's: an alley-oop
 /// row of the dunk table (mask 0x100000, rows 94..98) or a two-turbo leap
@@ -206,8 +291,8 @@ impl World {
     /// When he can leap ([`World::can_leap`]) he does: with two turbos held
     /// one of the two scripts at `0x3d70d0` (`rand() & 1`; dunk id 24, move
     /// kind 1), else an alley-oop row ([`World::leap_row_draw`]). True when
-    /// the press went to a leap. (When he cannot, a person on the floor in
-    /// live play plays the call-for-it gesture `0x44c95e`, not ported.)
+    /// the press went to a leap, or (when he cannot) to the call for the
+    /// ball ([`World::call_gesture`]).
     pub(crate) fn leap_press(&mut self, i: usize, input: &crate::Input, turbos: u32) -> bool {
         if turbos == 0 {
             return false;
@@ -224,7 +309,7 @@ impl World {
             return false;
         }
         if !self.can_leap(i) {
-            return false;
+            return self.call_gesture(i, input);
         }
         let row = if turbos >= 2 {
             let k = (self.rng.next_u32() & 1) as usize;
@@ -233,6 +318,29 @@ impl World {
             self.leap_row_draw(i)
         };
         self.start_leap(i, row);
+        true
+    }
+
+    /// The press when he cannot leap (raw `0x15b300..0x15b384`): a person
+    /// (`FUN_00172220`) on the floor (actor+0x34 0) in live play
+    /// (`FUN_00140558`), no pass on its way to him (ball state 4 with
+    /// ball+0x100 him), plays the call-for-it gesture `0x44c95e`
+    /// (`FUN_0019c2f8`, flags 0xc10), which ends his update. Callback 47
+    /// reads the ball `fps / 2` updates on against the wanted facing the
+    /// script's callback 4 has just turned to the rim.
+    pub(crate) fn call_gesture(&mut self, i: usize, input: &crate::Input) -> bool {
+        if input.is_computer()
+            || self.pass_receiver() == Some(i)
+            || self.players[i].height != 0.0
+            || !self.game_phase.live()
+        {
+            return false;
+        }
+        let at = self.players[i].position;
+        let word = self.to_rim(i, at);
+        let path = crate::rebound::ball_path(self, crate::rebound::AHEAD[1]);
+        let branch = crate::rebound::branch_47(at, word, &path);
+        self.react(i, crate::trick::CALL_FIRST + u8::from(branch));
         true
     }
 

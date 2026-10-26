@@ -157,8 +157,8 @@ pub mod tuning {
     pub const SHOT_RELEASE: f32 = 0.9;
     pub const SHOT_LANDING: f32 = 1.3;
     /// The shooters', dunkers' and lay-up jumpers' flights are their
-    /// scripts' ([`crate::jump`]). A dunk with no row (the putback, which
-    /// nothing starts while `FUN_00169c98` is not ported) rises
+    /// scripts' ([`crate::jump`]), the putbacks' too ([`crate::putback`]).
+    /// A dunk with no row (the rewrite's guard: none starts one) rises
     /// `PUTBACK_RISE` updates straight up to the rim.
     pub const PUTBACK_RISE: f32 = 12.0;
     /// A scripted move past its last opcode still in the air comes down by
@@ -455,6 +455,12 @@ pub enum Event {
     Dive {
         player: usize,
     },
+    /// The dribbled ball meets the floor (`0x3c6670` from the held ball's
+    /// update, [`World::dribble_bounce`]): the sound listener's slot 44
+    /// plays the floor sound at the holder.
+    Dribble {
+        holder: usize,
+    },
     /// A screen on the holder's own defender by the arc (`0x3c6910`'s
     /// kind 3, [`World::post_contact`]'s 500): `defender` was screened.
     Pick {
@@ -636,6 +642,9 @@ pub struct World {
     /// `0x1569c0`). While it is set a person's shot needs the button
     /// pressed; otherwise holding it is enough ([`World::shoots`]).
     pub fresh_take: bool,
+    /// `DAT_003d5600`: the dribble's bounce sound is armed
+    /// ([`World::dribble_bounce`]).
+    pub dribble_armed: bool,
     /// A pass pressed and still in the passer's hands until its animation
     /// lets go ([`passing::Windup`]).
     pub windup: Option<passing::Windup>,
@@ -1072,6 +1081,7 @@ impl World {
             events: Vec::new(),
             give_and_go: None,
             fresh_take: false,
+            dribble_armed: false,
             windup: None,
             catch: None,
             turbo_releases: vec![[u64::MAX; 4]; n],

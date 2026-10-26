@@ -619,10 +619,15 @@ impl World {
         let Some(record) = c.shown.record else {
             return false;
         };
+        let mut dribbled = None;
         let (point, hand) = match c.shown.blend {
             None => {
                 let at =
-                    crate::dribble::ball_point(&poses, record, c.shown.frame, body, place, radius);
+                    crate::dribble::ball_place(&poses, record, c.shown.frame, body, place, radius)
+                        .map(|(at, d)| {
+                            dribbled = d;
+                            at
+                        });
                 let hand =
                     crate::dribble::live_hand(&poses, record, c.shown.frame, p.gait_channel.hand);
                 (at, hand)
@@ -675,11 +680,36 @@ impl World {
                 self.held_anchor = Some(a);
             }
         }
+        if let Some(d) = dribbled {
+            self.dribble_bounce(h, d, at[1]);
+        }
         let p = &mut self.players[h];
         p.gait_channel.hand = hand;
         let [vx, vz] = p.velocity();
         self.ball.position = at;
         self.ball.velocity = [vx, p.rise / crate::TICK_SECONDS, vz];
         true
+    }
+
+    /// The dribble's bounce (`FUN_0014e060`, raw `0x14f410..0x14f5b8`):
+    /// one flag for every holder (`DAT_003d5600`, [`World::dribble_armed`])
+    /// is armed while the ball falls (in flight before the floor's share
+    /// of its way, or lower than the update before, ball+0x84), and once
+    /// armed the first other update on a dribbling clip with the ball
+    /// under 2 (now or the update before) posts the floor event
+    /// (`0x3c6670`, [`Event::Dribble`]) and disarms it. A clip that carries
+    /// the ball on the floor or hand to hand leaves the flag be.
+    pub(crate) fn dribble_bounce(&mut self, h: usize, d: crate::dribble::Dribbled, y: f32) {
+        let before = self.ball.position[1];
+        let falling = match d {
+            crate::dribble::Dribbled::Flight { t, fall } => t <= fall || y < before,
+            crate::dribble::Dribbled::Hand => false,
+        };
+        if falling {
+            self.dribble_armed = true;
+        } else if self.dribble_armed && (y < 2.0 || before < 2.0) {
+            self.dribble_armed = false;
+            self.events.push(crate::Event::Dribble { holder: h });
+        }
     }
 }

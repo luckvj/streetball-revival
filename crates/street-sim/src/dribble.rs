@@ -26,8 +26,8 @@
 //! hand on it). The rewrite's own: the hands are posed as [`crate::pose`]
 //! poses a clip; the channel blends (flag 0x200000, `DAT_004b8380`) and the
 //! cached ends (ball+0xc0, +0xe0, reused while the clip and both frames
-//! stay) are not modelled, nor the bounce's sound (event 0x3c6670) and the
-//! ball's spin.
+//! stay) are not modelled, nor the ball's spin. The bounce's sound (event
+//! 0x3c6670) is [`World::dribble_bounce`]'s.
 
 use crate::pose::{self, Body, Frame, Place, Pose, Poses};
 
@@ -149,6 +149,32 @@ pub fn ball_point(
     place: Place,
     radius: f32,
 ) -> Option<[f32; 3]> {
+    ball_place(poses, record, time, body, place, radius).map(|(at, _)| at)
+}
+
+/// Where a dribbling clip has the ball for the bounce's sound
+/// (`0x14f410..0x14f4a4`: actor+0x388 set, the clip lets the ball go and
+/// neither carries it on the floor nor hand to hand).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Dribbled {
+    /// In the hand.
+    Hand,
+    /// In flight: the clip's way `t` from the release to the catch, and
+    /// the share of it the fall to the floor takes (`0x14f0e0`).
+    Flight { t: f32, fall: f32 },
+}
+
+/// [`ball_point`] with where the dribble has the ball ([`Dribbled`]), none
+/// off a dribbling clip or on one that carries it on the floor or hand to
+/// hand.
+pub fn ball_place(
+    poses: &Poses,
+    record: u16,
+    time: f32,
+    body: Body,
+    place: Place,
+    radius: f32,
+) -> Option<([f32; 3], Option<Dribbled>)> {
     let n = poses.frames(record)? as i32;
     if n == 0 {
         return None;
@@ -179,7 +205,11 @@ pub fn ball_point(
             body,
             place,
         )?;
-        return Some(in_hand(&pose, record, int, state(int), body, radius));
+        let dribbled = dribbles(poses, record).then_some(Dribbled::Hand);
+        return Some((
+            in_hand(&pose, record, int, state(int), body, radius),
+            dribbled,
+        ));
     }
     let (release, catch, t) = ends(poses, record, cur)?;
     let c = catch as f32;
@@ -220,6 +250,7 @@ pub fn ball_point(
     let on_floor = matches!(record, 222 | 223 | 300 | 301)
         || (matches!(record, 270 | 271) && c <= 23.0)
         || (matches!(record, 252 | 253) && c <= 44.0);
+    let mut dribbled = None;
     if matches!(record, 302 | 303) {
         // Hand to hand.
     } else if on_floor {
@@ -235,9 +266,10 @@ pub fn ball_point(
             } else {
                 radius + ((t - fall) / (1.0 - fall)) * db
             };
+            dribbled = Some(Dribbled::Flight { t, fall });
         }
     }
-    Some(at)
+    Some((at, dribbled))
 }
 
 /// Whether `record` dribbles: a frame of its clip lets the ball go (0x10).

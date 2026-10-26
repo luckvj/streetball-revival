@@ -557,7 +557,6 @@ pub struct Effects {
     /// The intro normally separates its start and release; a skipped intro
     /// can reach both callbacks in one frame.
     court_start_pending: bool,
-    dribble: f32,
     ball_vy: f32,
     shot_clock: i32,
     /// Each player's grunt and shoe voice (`0x1a8288`).
@@ -866,7 +865,6 @@ impl Effects {
             replaying: false,
             started: false,
             court_start_pending: false,
-            dribble: 0.0,
             ball_vy: 0.0,
             shot_clock: i32::MAX,
             voices: Vec::new(),
@@ -1677,6 +1675,12 @@ pub(crate) fn fire_events(
                 let voice = fx.voices.get(player).copied().unwrap_or(0);
                 fx.fire(&[ev::EXERTION, a, d, voice]);
             }
+            // Slot 44 (`0x1a50b8`): the floor sound at the holder, always
+            // at 1000.
+            Event::Dribble { holder } => {
+                let (a, d) = at(player_at(holder));
+                fx.fire(&[ev::FLOOR, a, d, 1000]);
+            }
             Event::Pick { screener, defender } => {
                 let (a, d) = at(player_at(screener));
                 let voice = fx.voices.get(screener).copied().unwrap_or(0);
@@ -1774,24 +1778,8 @@ pub(crate) fn fire_events(
         fx.shot_clock = left;
     }
 
-    // The ball on the floor: a dribble each bounce (slot 44), and a loose
-    // ball's fall turning into a rise (slot 30).
-    if let BallState::Held(holder) = w.ball.state {
-        let p = &w.players[holder];
-        if matches!(
-            p.action,
-            street_sim::Action::None | street_sim::Action::Trick { .. }
-        ) && p.height <= 0.01
-        {
-            let period = if p.speed > 8.0 { 0.32 } else { 0.48 };
-            fx.dribble += 1.0 / street_sim::TICK_HZ as f32;
-            if fx.dribble >= period {
-                fx.dribble = 0.0;
-                let (a, d) = at(player_at(holder));
-                fx.fire(&[ev::FLOOR, a, d, 1000]);
-            }
-        }
-    }
+    // A loose ball's fall turning into a rise (slot 30); the dribble's
+    // bounce is the simulation's event (slot 44, `Event::Dribble`).
     let vy = w.ball.velocity[1];
     if w.ball.state == BallState::Loose && fx.ball_vy < -2.0 && vy > 0.0 {
         let (a, d) = at(ball);

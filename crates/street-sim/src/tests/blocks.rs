@@ -396,6 +396,61 @@ fn the_dribble_falls_from_the_release_hand_to_the_floor_and_rises_to_the_catch()
 }
 
 #[test]
+fn the_dribble_sounds_once_a_bounce_as_the_ball_rises_off_the_floor() {
+    // `FUN_0014e060`'s floor event (`0x3c6670`): the fall arms it, and the
+    // first update after with the ball under 2 posts it; on the clip of the
+    // test above (release frame 3, catch frame 7, looping over 10 frames)
+    // that is once a cycle, the update after the floor.
+    let mut skeleton = vec![
+        SkeletonBone {
+            parent: Some(0),
+            translation: [0.0; 3],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+        };
+        crate::pose::BONES
+    ];
+    skeleton[0].parent = None;
+    skeleton[19].translation = [-0.3, 1.0, -1.5];
+    skeleton[15].translation = [0.3, 1.0, -1.5];
+    let states = vec![8, 8, 8, 8 | 0x10, 0, 0, 0, 8 | 0x20, 8, 8];
+    let clip = ClipData {
+        raw_pose: false,
+        bones: Vec::new(),
+        rotations: vec![Vec::new(); states.len()],
+        root: vec![[0.0, 2.5, 0.0]; states.len()],
+        states,
+    };
+    let poses = Poses::new(&skeleton, vec![clip], vec![Some((0, false)); 1144]).unwrap();
+    let body = crate::pose::Body::uniform(1.0);
+    let place = crate::pose::Place {
+        position: [0.0, 0.0, 0.0],
+        word: 0,
+    };
+    let r = ball::RADIUS;
+    let fall = 1.0 / (1.0 + 1.0 / ball::FLOOR_RESTITUTION);
+    let floor_frame = 3.0 + 4.0 * fall;
+    let mut w = world(1, 10.0);
+    let mut bounces = Vec::new();
+    for k in 0..120 {
+        let time = k as f32 * 0.25;
+        let (at, dribbled) = crate::dribble::ball_place(&poses, 9, time, body, place, r).unwrap();
+        w.events.clear();
+        if let Some(d) = dribbled {
+            w.dribble_bounce(0, d, at[1]);
+        }
+        w.ball.position = at;
+        if w.events.contains(&Event::Dribble { holder: 0 }) {
+            bounces.push(time);
+        }
+    }
+    assert_eq!(bounces.len(), 3, "{bounces:?}");
+    for (n, t) in bounces.into_iter().enumerate() {
+        let floor = floor_frame + 10.0 * n as f32;
+        assert!(t > floor && t <= floor + 0.25, "{t} after {floor}");
+    }
+}
+
+#[test]
 fn the_takeoff_rises_by_the_clips_root_drop_until_a_whole_frame() {
     // Every block script sets channel flag 0x10000 just before its aim
     // (`91 02 00 01 00`): the channel's steps lower the jumper by the

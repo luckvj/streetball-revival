@@ -66,6 +66,7 @@ impl World {
             events,
             give_and_go,
             fresh_take: _,
+            dribble_armed: _,
             windup,
             catch,
             turbo_releases,
@@ -803,7 +804,8 @@ impl World {
                     require(duration >= 0.0, "stumble duration range")?;
                     if let Some(r) = reaction {
                         require(
-                            usize::from(r.script) < crate::trick::REACTIONS.len(),
+                            usize::from(r.script)
+                                < crate::trick::REACTIONS.len() + crate::leap::CALL_FOR_BALL.len(),
                             "reaction script",
                         )?;
                         script_clock(&r.run, r.steps().len())?;
@@ -1123,6 +1125,7 @@ impl World {
                 }
                 Event::Catch { player: p }
                 | Event::Pickup { player: p }
+                | Event::Dribble { holder: p }
                 | Event::Rebound { player: p }
                 | Event::Inbound { player: p }
                 | Event::Fumble { player: p }
