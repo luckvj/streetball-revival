@@ -28,6 +28,31 @@ const GAPS: [[f32; 3]; 7] = [
 /// distance the current level holds out to before a higher one may start.
 const LEVELS: [[f32; 2]; 4] = [[0.8, 1.6], [1.2, 1.9], [1.7, 2.5], [200.0, 200.0]];
 
+/// `DAT_004b3904`: `(int)(fps × 0.666667)` updates (`0x10939c..0x1093d8`),
+/// the window of the man's x [`Ring`] keeps.
+const RING: usize = 40;
+
+/// The man's x each update he has held the ball, round a window of
+/// [`RING`] (node+0x6c, a vector the constructor allocates zeroed,
+/// `0x106364..0x1063b8`; written at `0x106960..0x106994`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Ring([f32; RING]);
+
+impl Default for Ring {
+    fn default() -> Self {
+        Self([0.0; RING])
+    }
+}
+
+impl super::words::Word for Ring {
+    fn put(&self, out: &mut Vec<u32>) {
+        self.0.put(out);
+    }
+    fn get(r: &mut super::words::Reader) -> Result<Self, String> {
+        Ok(Self(<[f32; RING]>::get(r)?))
+    }
+}
+
 words! {
     pub(crate) struct Defense {
         /// The man (-1 none) and the player to help on.
@@ -50,8 +75,11 @@ words! {
         late: bool,
         delay: i32,
         shooter: i32,
-        /// Frames the man has stood still.
+        /// Frames the man has stood still (node+0x68), the updates he has
+        /// held the ball (+0x64) and his x over them ([`Ring`]).
         still: i32,
+        samples: i32,
+        ring: Ring,
         gamble_timer: i32,
         /// `[0x18]`: the block's bite on a pump fake (the spot stands 4
         /// off a shooter instead of 2.5).
@@ -140,9 +168,17 @@ impl Defense {
             return;
         }
         let man = self.man as usize;
-        if ctx.has_ball(man) && !ctx.w.players[man].moving() {
-            self.still += 1;
+        if ctx.has_ball(man) {
+            let k = self.samples.rem_euclid(RING as i32) as usize;
+            self.ring.0[k] = ctx.pos(man)[0];
+            if ctx.w.players[man].moving() {
+                self.still = 0;
+            } else {
+                self.still += 1;
+            }
+            self.samples += 1;
         } else {
+            self.samples = 0;
             self.still = 0;
         }
         // `0x1069f4..0x106a20`: nothing more while in the counter stance
@@ -259,12 +295,26 @@ impl Defense {
         false
     }
 
-    /// `FUN_001089d8`: the man has stood still `fps × skill(1.5, 0.8,
-    /// 0.3, 0.2)` frames. (The original also counts a handler who has not
-    /// moved 40 frames' worth; not modelled.)
+    /// `FUN_001089d8` (raw `0x1089d8..0x108b40`): with a holder
+    /// ([`ball_holder`]), the man has stood still `fps × skill(1.5, 0.8,
+    /// 0.3, 0.2)` frames; or, the window full ([`RING`] updates held), the
+    /// holder short of 3 into the half he attacks (his x against his
+    /// side's sign) has come less than 0.1 an update of the window that
+    /// way since the ring's sample two on from the newest.
     fn standing(&self, ctx: &Ctx, i: usize) -> bool {
+        let Some(h) = ball_holder(ctx) else {
+            return false;
+        };
         let n = (60.0 * skill::value(ctx, ctx.team(i), 1.5, 0.8, 0.3, 0.2)) as i32;
-        self.still >= n
+        if self.still >= n {
+            return true;
+        }
+        crawled(
+            self.samples,
+            &self.ring,
+            ctx.side(ctx.team(h)) as f32,
+            ctx.pos(h)[0],
+        )
     }
 
     /// `FUN_00107710` (raw `0x107710..0x107adc`): every `fps × 0.125`
@@ -365,8 +415,8 @@ impl Defense {
     /// goes up at `skill(0, 5, 50, 100)` (the pass jump). The School's
     /// lessons 1..5, 9, 0xb, 0xd, 0xe, 0x12, 0x13 and 0x15 (game vt+0xb4,
     /// `0x106ab4..0x106c5c`) skip it all at once; Pump Fake (0xc) always
-    /// bites (`0x107000`). The passout specials' last leg (game+0x160
-    /// ±1), which the pass jump also takes, is not modelled.
+    /// bites (`0x107000`). The pass jump also goes at a board passout's
+    /// leg back ([`board_return`]).
     fn block(&mut self, ctx: &mut Ctx, b: &mut Brain, i: usize) -> bool {
         if matches!(
             ctx.w.lesson,
@@ -470,8 +520,9 @@ impl Defense {
 
     /// `0x106d6c..0x106e7c`: the pass jump, tried every `DAT_004b3900 + 1`
     /// frames (`fps × 0.0833334`, 5) while a pass is in the air: its
-    /// receiver leaping (bit 15, `FUN_00181770`), none of the side up
-    /// or asking to go up within 12 of the ball (`FUN_0018af90`), the
+    /// receiver leaping (bit 15, `FUN_00181770`) or the ball on a board
+    /// passout's leg back ([`board_return`]), none of the side up or
+    /// asking to go up within 12 of the ball (`FUN_0018af90`), the
     /// defender in the pass's lane ([`in_lane`]), then `r % 100 <
     /// skill(0, 5, 50, 100)` through the pad builder.
     fn pass_jump(&mut self, ctx: &mut Ctx, b: &mut Brain, i: usize) -> bool {
@@ -484,7 +535,10 @@ impl Defense {
         let Some(owner) = ctx.ball_owner() else {
             return false;
         };
-        if !ctx.leaping(owner) || up_near_ball(ctx, team) != 0 || !in_lane(ctx, i) {
+        if !(ctx.leaping(owner) || board_return(ctx))
+            || up_near_ball(ctx, team) != 0
+            || !in_lane(ctx, i)
+        {
             return false;
         }
         let r = ctx.rand();
@@ -1025,6 +1079,27 @@ fn trick_pass(ctx: &Ctx) -> Option<Option<usize>> {
     ctx.w.passout.filter(|po| !po.tossed).map(|po| po.defender)
 }
 
+/// [`Defense::standing`]'s window (`0x108a70..0x108b20`): full ([`RING`]
+/// updates held), the holder at `x` short of 3 into the half his side
+/// (`sign`) attacks, and less than 0.1 an update of the window that way
+/// since the ring's sample two on from the newest.
+fn crawled(samples: i32, ring: &Ring, sign: f32, x: f32) -> bool {
+    if samples < RING as i32 || sign * x >= 3.0 {
+        return false;
+    }
+    let old = ring.0[(samples + 1).rem_euclid(RING as i32) as usize];
+    sign * (x - old) < RING as f32 * f32::from_bits(0x3dcc_cccd)
+}
+
+/// `0x106d8c..0x106dd8`: game+0x160 (`FUN_00142038`) ±1, a board
+/// passout, with the ball (game+0x134) on its last waypoint (+8 less +0x10
+/// is 1): the leg back from the board to the passer.
+fn board_return(ctx: &Ctx) -> bool {
+    ctx.w
+        .passout
+        .is_some_and(|po| po.kind == crate::passout::Kind::Board && po.tossed && po.back.is_none())
+}
+
 /// Channel 0's flag 0x200000 (`FUN_0019c2e0(actor + 0xc4, 0)` +0x48): a
 /// blend under way, as the sim keeps them (a trick's, a reaction's, a
 /// script's; the gait's own blends are not modelled).
@@ -1286,5 +1361,43 @@ mod tests {
         assert!((interpolate(24.5, 1) - 9.0).abs() < 1e-5);
         // Within 2 the gap closes with the zero row.
         assert!((interpolate(1.0, 1) - 1.75).abs() < 1e-5);
+    }
+
+    #[test]
+    fn a_handler_crawling_up_his_back_court_counts_as_standing() {
+        // `FUN_001089d8`'s second test: the window of 40 updates held, the
+        // holder short of 3 into the half he attacks, under 4 forward since
+        // the sample 38 updates back.
+        let mut ring = Ring::default();
+        let mut samples = 0;
+        let mut feed = |x: f32, ring: &mut Ring| {
+            ring.0[(samples as usize) % RING] = x;
+            samples += 1;
+            samples
+        };
+        let mut n = 0;
+        for k in 0..39 {
+            n = feed(-20.0 + 0.05 * k as f32, &mut ring);
+        }
+        assert!(!crawled(n, &ring, 1.0, -18.0), "not a full window");
+        n = feed(-18.0, &mut ring);
+        assert!(crawled(n, &ring, 1.0, -18.0));
+        // Past 3 into his half, never.
+        assert!(!crawled(n, &ring, 1.0, 3.5));
+        // Brought up quickly: 0.2 an update.
+        let mut ring = Ring::default();
+        let mut m = 0;
+        for k in 0..40 {
+            ring.0[k] = -30.0 + 0.2 * k as f32;
+            m = k as i32 + 1;
+        }
+        assert!(!crawled(m, &ring, 1.0, -30.0 + 0.2 * 39.0));
+        // The side attacking -x, crawling from +20.
+        let mut ring = Ring::default();
+        for k in 0..40 {
+            ring.0[k] = 20.0 - 0.05 * k as f32;
+        }
+        assert!(crawled(40, &ring, -1.0, 18.0));
+        assert!(!crawled(40, &ring, -1.0, -4.0));
     }
 }

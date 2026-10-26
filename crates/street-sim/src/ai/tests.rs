@@ -1275,8 +1275,13 @@ fn a_set_pick_goes_round_the_defender_waits_and_steps_in() {
             Act::SetPick(picks::SetPick::new(ctx, false))
         });
         let mut waited_at = None;
+        let top = w.players[0].position;
         for _ in 0..240 {
             w.set_turbo(0, 0.0);
+            // The handler stays at the top: drifting back to half court he
+            // would count as standing (`FUN_001089d8`'s window) and draw
+            // the press.
+            w.players[0].position = top;
             quiet_playbook(&mut w);
             // The defender's pick sag (`[0x20]`: he goes over the screen,
             // 5 nearer than the handler) is held off: this test is the
