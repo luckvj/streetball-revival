@@ -218,7 +218,7 @@ impl ReboundCoach {
     /// nearest the rim (the third too with a full meter); then, off a
     /// person's side and unless a gamebreaker shot meets a full meter, a
     /// goal-tend at `skill(0, 0, 50, 80)` (`skill(0, 0, 10, 40)` while the
-    /// game's +0x434 object is set, not modelled) for the nearest of the
+    /// gamebreaker task runs, game+0x434's `FUN_00140ff8`) for the nearest of the
     /// three who is up.
     fn update_d(&mut self, ctx: &mut Ctx, brains: &mut [Brain], team: usize, timer: i32) {
         if 0 < self.wait {
@@ -242,7 +242,12 @@ impl ReboundCoach {
         let gamebreaker = ctx.w.ball.shot.is_some_and(|s| s.gamebreaker > 0);
         // Never in a lesson (game+0x9c 4, `0x12df58`).
         if !ctx.human[team] && (!full || gamebreaker) && ctx.w.lesson.is_none() {
-            let p = skill::percent(ctx, team, 0, 0, 0x32, 0x50);
+            // `0x12df68..0x12df9c`.
+            let p = if ctx.w.gamebreaker_task.is_some() {
+                skill::percent(ctx, team, 0, 0, 10, 40)
+            } else {
+                skill::percent(ctx, team, 0, 0, 0x32, 0x50)
+            };
             if ((ctx.rand() % 100) as i32) < p {
                 for k in 0..3 {
                     let Some(j) = ctx.nth_of_team_to_rim(team, k) else {
