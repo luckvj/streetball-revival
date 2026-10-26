@@ -76,6 +76,9 @@ jobs:
             streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
             StreetballRevival-${{ github.ref_name }}-windows.exe
           if-no-files-found: ignore
+      - name: The release page's text (this version's changes, then the guide)
+        shell: bash
+        run: python tools/release_body.py "${{ github.ref_name }}" > release_body.md
       - uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -83,4 +86,4 @@ jobs:
           files: |
             StreetballRevival-${{ github.ref_name }}-windows.exe
             streetball-revival-${{ github.ref_name }}-${{ matrix.platform }}.zip
-          body_path: .github/RELEASE_NOTES.md
+          body_path: release_body.md
