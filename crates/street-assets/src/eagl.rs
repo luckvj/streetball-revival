@@ -231,15 +231,21 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
 /// The skeleton bones the render method after the CALL tag at `call` uploads
 /// for skinning, in VU slot order. The method holds the words `0x0e000000,
 /// 0x090000nn, EAGLAnimationBuffer, <pointer>, count, <pointer to count u32
-/// bone indices>` somewhere before the next CALL at `next`.
+/// bone indices>` (the players') or `0x0e000000, 0x0b0000nn,
+/// EAGLAnimationBuffer, count, <pointer to the indices>` (the hoops')
+/// somewhere before the next CALL at `next`.
 fn bone_list(obj: &Object, call: u32, next: u32) -> Option<Vec<u16>> {
     let word = |off: u32| bytes::u32_le(obj.data, off as usize).ok();
     let end = next.min(call.saturating_add(0x200));
-    let at = (call + 16..end)
-        .step_by(4)
-        .find(|&o| word(o) == Some(0x0e00_0000) && word(o + 4).is_some_and(|w| w >> 24 == 0x09))?;
-    let count = word(at + 16)?;
-    let list = *obj.pointers.get(&(at + 20))?;
+    let (at, form) = (call + 16..end).step_by(4).find_map(|o| {
+        let form = word(o + 4)? >> 24;
+        (word(o) == Some(0x0e00_0000) && (form == 0x09 || form == 0x0b)).then_some((o, form))
+    })?;
+    let (count, list) = if form == 0x09 {
+        (word(at + 16)?, *obj.pointers.get(&(at + 20))?)
+    } else {
+        (word(at + 12)?, *obj.pointers.get(&(at + 16))?)
+    };
     if count > 64 {
         return None;
     }

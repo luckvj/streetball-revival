@@ -3290,6 +3290,10 @@ const FIRST_BOUNDS: Bounds = Bounds {
 /// The loose-ball phase's updates set again by the rule on 2026-10-23 with
 /// the dunks' and lay-ups' knocks ported (`FUN_001366d8`): 654 (se 54)
 /// against 915 (694 before), 425; the seed sets +500 and +777 768 and 756.
+/// The passes loose at their timer set again by the rule on 2026-10-26
+/// with the rims' give (`crate::rim`: the hanging dunker's hands follow
+/// the rim): 2.31 (1.40, se 0.35) against 0, 3.5 (+500 and +777 within
+/// the old 2.25).
 const RECORDED_BOUNDS: Bounds = Bounds {
     standing: 0.045,
     away: 0.02,
@@ -3301,7 +3305,7 @@ const RECORDED_BOUNDS: Bounds = Bounds {
     counters: 4.5,
     shots: 5.5,
     jumps: [10.5, 8.0, 5.5],
-    loose: [1.75, 1.0, 2.25, 2.0, 0.11, 425.0],
+    loose: [1.75, 1.0, 3.5, 2.0, 0.11, 425.0],
 };
 
 /// The second capture's (no rosters: every player at 50, and the disc's

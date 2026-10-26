@@ -72,6 +72,18 @@ pub struct Court {
     pub textures: BTreeMap<String, ssh::Texture>,
     /// Images in formats the decoder skips: (sheet image name, pixel block type).
     pub skipped_textures: Vec<(String, u8)>,
+    /// The hoops' skeletons by file stem (`<court>bs`, `<court>ds`): the
+    /// pole, its top, the board and the rim (bones 1..4) whose give the
+    /// game animates (`street_sim::rim`).
+    pub skeletons: BTreeMap<String, eagl::Skeleton>,
+}
+
+impl Court {
+    /// The skeleton of hoop model `model` (`<court>b` or `<court>d`).
+    pub fn hoop_skeleton(&self, model: &str) -> Option<&eagl::Skeleton> {
+        self.skeletons
+            .get(&format!("{}s", model.to_ascii_lowercase()))
+    }
 }
 
 impl Court {
@@ -131,6 +143,7 @@ pub fn load<R: Read + Seek>(iso: &mut Iso<R>, id: &str) -> Result<Court> {
         skipped_models: Vec::new(),
         textures: BTreeMap::new(),
         skipped_textures: Vec::new(),
+        skeletons: BTreeMap::new(),
     };
     for entry in big.entries() {
         let name = entry.name.to_ascii_lowercase();
@@ -141,7 +154,12 @@ pub fn load<R: Read + Seek>(iso: &mut Iso<R>, id: &str) -> Result<Court> {
             let model =
                 eagl::parse(data).map_err(|e| Error::format(format!("{}: {e}", entry.name)))?;
             if model.name.is_empty() {
-                continue; // a skeleton (`__Skeleton`, `__Bone` symbols), not a model
+                // A skeleton (`__Skeleton`, `__Bone` symbols), not a model.
+                if let Ok(skeleton) = eagl::parse_skeleton(data) {
+                    let stem = name.trim_end_matches(".o").to_owned();
+                    court.skeletons.insert(stem, skeleton);
+                }
+                continue;
             }
             if model
                 .microcode

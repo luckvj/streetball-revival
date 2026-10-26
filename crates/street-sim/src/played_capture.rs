@@ -770,6 +770,11 @@ fn replay_world_for(
     if order_known(cap) {
         w.update_order = SAVE_STATE_1_ORDER.map(|i| i as u8);
     }
+    // Save state 1's court (its matches and their rematches): Forest's
+    // hoops, whose give a hanging dunker's hands follow.
+    if save_state_1_teams(cap) {
+        w.rim_rigs = [crate::rim::Rig::forest(); 2];
+    }
     w.phase = Phase::Live;
     w.ball.hold(k);
     // The holder's side has the ball (the School's person plays team 1).
@@ -4556,6 +4561,15 @@ const SAVE_STATE_1_ORDER: [usize; 6] = [5, 0, 4, 3, 1, 2];
 /// state's RAM gives ([`SAVE_STATE_1_ORDER`]). Every other match draws its
 /// own (the fresh games, the School's, a story game's: save state 4's
 /// first NYC Rec Center game ran 3, 4, 0, 5, 2, 1), which no capture keeps.
+/// Save state 1's six players: its own match, and the rematches chosen
+/// after it, on the same court.
+fn save_state_1_teams(cap: &Capture) -> bool {
+    cap.records
+        .iter()
+        .zip(SAVE_STATE_1)
+        .all(|(r, id)| r.player == Some(id))
+}
+
 fn order_known(cap: &Capture) -> bool {
     cap.updates.first().is_some_and(|u| u.frame() >= 196)
         && cap
@@ -5250,9 +5264,8 @@ fn replay_jump(cap: &Capture, run: &JumpRun) -> Option<JumpReplay> {
         let dc = [f[0] - start_cap[0], f[1] - start_cap[1]];
         let travel = libm::sqrtf((ds[0] - dc[0]).powi(2) + (ds[1] - dc[1]).powi(2));
         // A dunk's hang on the rim (callback 28): the hands planted with no
-        // gravity. From there the rim's own give (the hoop model's bones,
-        // `FUN_00149150`, not ported) moves the original's hands, so the
-        // hang is measured apart.
+        // gravity, held as the rim gives (`crate::rim`, `FUN_00149150`);
+        // the hang is measured apart.
         if out.hung.is_none() && p.flight.flags & crate::jump::NO_GRAVITY != 0 {
             out.hung = Some(n);
         }
@@ -5431,6 +5444,16 @@ fn the_jumps_follow_their_scripts_in_play() {
     // 71% on the plain body) is not pinned;
     // after the blend every kind with a flight rises as the original
     // (97% of the runners' updates within 0.01).
+    // The hang (2026-10-26, the rims' give, `crate::rim`): the hands held
+    // where the aim put them as Forest's frame gives (save state 1's
+    // court), the dunks' hang travel median 0.72 -> 0.015 and height 0.19
+    // -> 0.02; the alley-oop dunks' 0.73 -> 0.37 and 0.59 -> 0.22, what is
+    // left there whole runs on another path.
+    let dunk = &summary["dunk"];
+    for key in ["hang_height_median", "hang_travel_median"] {
+        let v = dunk[key].as_f64().unwrap_or(f64::NAN);
+        assert!(v <= 0.05, "dunk {key} {v}");
+    }
     for (kind, s) in summary.as_object().unwrap() {
         let f = |key: &str| s[key].as_f64().unwrap_or(f64::NAN);
         let pair = |key: &str| [0, 1].map(|j| s[key][j].as_f64().unwrap_or(f64::NAN));

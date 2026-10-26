@@ -102,7 +102,7 @@ use crate::{
 /// screen's reactions among the scripts; 84: the count a shot's timer
 /// started from (the updates it has flown); 85: a computer screener's
 /// three pick scripts among the reactions.
-const VERSION: u8 = 90;
+const VERSION: u8 = 91;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -138,6 +138,8 @@ impl World {
             give_and_go,
             fresh_take,
             dribble_armed,
+            rims,
+            rim_rigs,
             windup,
             catch,
             turbo_releases,
@@ -243,6 +245,14 @@ impl World {
         }
         w.bool(*fresh_take);
         w.bool(*dribble_armed);
+        for rim in rims {
+            rim_out(&mut w, rim);
+        }
+        for rig in rim_rigs {
+            for v in rig.t.iter().flatten().chain(rig.r.iter().flatten()) {
+                w.f(*v);
+            }
+        }
         match windup {
             None => w.u8(0),
             Some(crate::passing::Windup {
@@ -602,6 +612,16 @@ impl World {
         };
         let fresh_take = r.bool()?;
         let dribble_armed = r.bool()?;
+        let rims = [rim_in(&mut r)?, rim_in(&mut r)?];
+        let mut rim_rigs = [crate::rim::Rig::default(); 2];
+        for rig in &mut rim_rigs {
+            for v in rig.t.iter_mut().flatten() {
+                *v = r.f()?;
+            }
+            for v in rig.r.iter_mut().flatten() {
+                *v = r.f()?;
+            }
+        }
         let windup = match r.u8()? {
             0 => None,
             1 => Some(crate::passing::Windup {
@@ -947,6 +967,8 @@ impl World {
             give_and_go,
             fresh_take,
             dribble_armed,
+            rims,
+            rim_rigs,
             windup,
             catch,
             turbo_releases,
@@ -1037,6 +1059,8 @@ fn player(w: &mut Writer, p: &Player) {
         dribble,
         channel_start,
         flight,
+        on_rim,
+        aim_point,
     } = p;
     w.us(*team);
     let Ratings {
@@ -1169,6 +1193,75 @@ fn player(w: &mut Writer, p: &Player) {
         w.iv(i64::from(v));
     }
     flight_out(w, flight);
+    w.bool(*on_rim);
+    for v in aim_point {
+        w.f(*v);
+    }
+}
+
+/// A hoop's give ([`crate::rim::Rim`]).
+fn rim_out(w: &mut Writer, rim: &crate::rim::Rim) {
+    for b in [
+        rim.bend,
+        rim.sway,
+        rim.held,
+        rim.torn,
+        rim.swaying,
+        rim.dangles,
+        rim.bending,
+        rim.returning,
+        rim.dropped,
+    ] {
+        w.bool(b);
+    }
+    for v in [
+        rim.bend_phase,
+        rim.bend_angle,
+        rim.sway_phase,
+        rim.sway_angle,
+        rim.dangle_step,
+        rim.sway_step,
+        rim.amplitude,
+        rim.dangle_amplitude,
+        rim.kick,
+        rim.decay,
+        rim.dangle,
+    ] {
+        w.f(v);
+    }
+}
+
+fn rim_in(r: &mut Reader) -> Result<crate::rim::Rim, String> {
+    let mut b = [false; 9];
+    for v in &mut b {
+        *v = r.bool()?;
+    }
+    let mut f = [0.0f32; 11];
+    for v in &mut f {
+        *v = r.f()?;
+    }
+    Ok(crate::rim::Rim {
+        bend: b[0],
+        sway: b[1],
+        held: b[2],
+        torn: b[3],
+        swaying: b[4],
+        dangles: b[5],
+        bending: b[6],
+        returning: b[7],
+        dropped: b[8],
+        bend_phase: f[0],
+        bend_angle: f[1],
+        sway_phase: f[2],
+        sway_angle: f[3],
+        dangle_step: f[4],
+        sway_step: f[5],
+        amplitude: f[6],
+        dangle_amplitude: f[7],
+        kick: f[8],
+        decay: f[9],
+        dangle: f[10],
+    })
 }
 
 /// A move's flight ([`crate::jump::Flight`]).
@@ -1196,6 +1289,7 @@ fn flight_out(w: &mut Writer, f: &crate::jump::Flight) {
     w.u8(f.beat);
     w.uv(u64::from(f.air));
     w.uv(u64::from(f.aloft));
+    w.bool(f.hung);
 }
 
 fn flight_in(r: &mut Reader) -> Result<crate::jump::Flight, String> {
@@ -1217,6 +1311,7 @@ fn flight_in(r: &mut Reader) -> Result<crate::jump::Flight, String> {
         beat: r.u8()?,
         air: u16::try_from(r.uv()?).map_err(|_| "invalid flight airtime")?,
         aloft: u16::try_from(r.uv()?).map_err(|_| "invalid flight updates aloft")?,
+        hung: r.bool()?,
     })
 }
 
@@ -1560,6 +1655,8 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
             g
         },
         flight: flight_in(r)?,
+        on_rim: r.bool()?,
+        aim_point: [r.f()?, r.f()?, r.f()?],
     })
 }
 
@@ -3360,8 +3457,9 @@ mod tests {
         // (version 69); each player's knock and shove windows, met, beat,
         // airtime and updates aloft six (version 73); each player's stand,
         // its count and the box-out three, the C library's word five
-        // (version 74); each look a dozen (version 76).
-        assert!(bytes.len() < 1980, "{} bytes", bytes.len());
+        // (version 74); each look a dozen (version 76); the two rims, their
+        // rigs and each player's hold on the rim about 420 (version 91).
+        assert!(bytes.len() < 2400, "{} bytes", bytes.len());
         assert!(World::from_snapshot(&bytes[..bytes.len() - 1]).is_err());
         let mut longer = bytes.clone();
         longer.push(0);

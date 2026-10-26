@@ -404,6 +404,23 @@ fn overall(p: &db::Player, shots: i16, dunks: i16) -> i16 {
 /// the court places. The
 /// meshes' middle sits 0.2 ft toward the board (their bounds take in the
 /// collar) and 0.16 ft lower than the ring's plane.
+/// The court's two hoop rigs for the rims' give (`street_sim::rim`): the
+/// -x hoop's (`<court>d`) and the +x one's (`<court>b`), Rucker's where a
+/// skeleton does not chain bones 1..4 from its root.
+pub(crate) fn rim_rigs(court: &court::Court) -> [street_sim::rim::Rig; 2] {
+    let id = court.id.to_ascii_lowercase();
+    ['d', 'b'].map(|letter| {
+        court
+            .hoop_skeleton(&format!("{id}{letter}"))
+            .filter(|s| s.bones.len() >= 5 && (1..5).all(|k| s.bones[k].parent == Some(k - 1)))
+            .map(|s| street_sim::rim::Rig {
+                t: std::array::from_fn(|k| s.bones[k + 1].translation),
+                r: std::array::from_fn(|k| s.bones[k + 1].rotation),
+            })
+            .unwrap_or_default()
+    })
+}
+
 pub(crate) fn hoops(court: &court::Court) -> Result<[Hoop; 2], String> {
     let mut rims: Vec<Vec3> = court
         .placements
@@ -539,6 +556,7 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     disc.ball = court::ball(&mut disc.iso, ball_suffix)?;
     let court = court::load(&mut disc.iso, &setup.court)?;
     let hoops = hoops(&court)?;
+    let rim_rigs = rim_rigs(&court);
     // A court without an effects script gets the game's defaults.
     let fx = courtfx::CourtFx::read(&mut disc.iso, &setup.court).unwrap_or_default();
     let ambience = crate::ambience::AmbientAssets::load(&mut disc.iso, &fx);
@@ -679,6 +697,7 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     }
     let generator = world.resource::<crate::session::Session>().generator();
     let mut sim = street_sim::World::from_generator(hoops, sim_players, rules, generator);
+    sim.rim_rigs = rim_rigs;
     if let Some(tricks) = native_tricks {
         for (state, tricks) in sim.players.iter_mut().zip(tricks) {
             state.native_tricks = Some(tricks);

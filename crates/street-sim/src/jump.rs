@@ -172,6 +172,9 @@ pub struct Flight {
     /// update counts +0x60 up, `0x15713c`).
     pub air: u16,
     pub aloft: u16,
+    /// State bit 14 (`FUN_0016ea50`): his hands planted on the rim, set by
+    /// the hang's `9b 0x4080` and cleared by its `9c 0x4000`.
+    pub hung: bool,
 }
 
 impl Flight {
@@ -329,7 +332,7 @@ pub fn aim(
     rim_x: f32,
     bits: u32,
     ball_radius: f32,
-) -> ([f32; 3], i32) {
+) -> ([f32; 3], i32, [f32; 3]) {
     let r_base = f32::from_bits(0x3f64_aa65);
     let current = |r: u16| if r == CURRENT { record } else { r };
     let (first, second_record) = (current(aim.records[0]), current(aim.records[1]));
@@ -461,6 +464,7 @@ pub fn aim(
             (point[2] - hand[2]) / n,
         ],
         word,
+        point,
     )
 }
 
@@ -592,6 +596,19 @@ impl World {
         }
     }
 
+    /// His hands on the rim (state bit 14) as the rim's listeners last
+    /// heard (actor+0x2b0): on, slot 42 (`0x15734c`), off, slot 43
+    /// (`0x1573a8`), at the hoop on his side ([`crate::rim::Rim::hang`]).
+    pub(crate) fn rim_hands(&mut self, i: usize, hung: bool) {
+        let p = &mut self.players[i];
+        if hung == p.on_rim {
+            return;
+        }
+        p.on_rim = hung;
+        let side = crate::rim::post_side(p.position[0]);
+        self.rims[side].hang(hung);
+    }
+
     /// One update of `i`'s flight on his move's script, after his step (the
     /// release and the fadeaway's switch done): the steps his channel ran
     /// (their velocities and flags), the clip's root, the motion with
@@ -600,11 +617,13 @@ impl World {
         let action = self.players[i].action;
         if !scripted(&action) {
             self.players[i].flight = Flight::default();
+            self.rim_hands(i, false);
             return;
         }
         let mut f = self.players[i].flight;
         let Some(mut m) = self.move_steps(i, f.landing) else {
             self.players[i].flight = Flight::default();
+            self.rim_hands(i, false);
             return;
         };
         if m.ran.hang_test {
@@ -723,7 +742,23 @@ impl World {
             if m.ran.mid.is_some() {
                 self.flight_root(i, &mut f, Some(mid), m.after, m.from);
             }
+            if m.ran.set_bits & 0x4000 != 0 {
+                f.hung = true;
+            }
+            if m.ran.clear_bits & 0x4000 != 0 {
+                f.hung = false;
+            }
+            // Callback 27 (`FUN_001720a8`, slot 44, `FUN_00141e98`): after
+            // the slam the pole sways by 3 on his side when he is the
+            // ball's last shooter.
+            if m.ran.slam_shake && self.ball.shooter == Some(i as u8) {
+                let side = crate::rim::post_side(self.players[i].position[0]);
+                self.rims[side].sway(3.0);
+            }
         }
+        // His hands on the rim or off it, told to the rim's listeners
+        // (`0x15730c..0x1573cc`).
+        self.rim_hands(i, f.hung);
         // The motion step (`0x1573d8..0x157530`).
         let g = gravity();
         if f.flags & UNPLANT != 0 && f.flags & (NO_GRAVITY | PLANTED) != 0 {
@@ -770,6 +805,15 @@ impl World {
         let word = crate::guard::turn_toward(now, want, rate);
         if word != now {
             p.heading = crate::restart::heading_radians(word);
+        }
+        // A hang holds his hands where the aim put them, moved as the rim
+        // gives (`0x1577a0..0x1577f8`, `FUN_00157f20`: the hoop on his side,
+        // `FUN_00149150`).
+        if f.hung && p.on_rim {
+            let side = crate::rim::side(p.position[0]);
+            f.point = self.rims[side]
+                .rim_move(&self.rim_rigs[side], side)
+                .apply(p.aim_point);
         }
         p.flight = f;
         // The model posed, the planted points held (`0x157800..0x157954`).
@@ -1046,7 +1090,7 @@ impl World {
                     i,
                     root: self.root_height(shown.record, shown.frame),
                 };
-                let (v, word) = aim(
+                let (v, word, point) = aim(
                     &hands,
                     a,
                     record,
@@ -1057,6 +1101,7 @@ impl World {
                     self.ball.radius,
                 );
                 f.velocity = v;
+                self.players[i].aim_point = point;
                 self.players[i].wanted = crate::restart::heading_radians(word);
                 // `FUN_00159190(actor, r & 1 ? 2 : 1, n)`: the face.
                 self.rng.next_u32();

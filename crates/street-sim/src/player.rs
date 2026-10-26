@@ -553,6 +553,12 @@ pub struct Player {
     /// His motion on a shot's, dunk's or lay-up's script ([`crate::jump`]):
     /// actor+0x40 and channel 0's flags.
     pub flight: crate::jump::Flight,
+    /// Actor+0x2b0: his hands are on the rim, as the rim's listeners were
+    /// told ([`World::rim_hands`](crate::World)).
+    pub on_rim: bool,
+    /// Actor+0x1f0: where a dunk's or leap's `9e` aimed his hands
+    /// (`0x199810`), which a hang holds them to as the rim gives.
+    pub aim_point: [f32; 3],
 }
 
 impl Player {
@@ -598,6 +604,8 @@ impl Player {
             dribble: 0,
             channel_start: None,
             flight: crate::jump::Flight::new([0.0; 3]),
+            on_rim: false,
+            aim_point: [0.0; 3],
         }
     }
 

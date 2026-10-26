@@ -42,11 +42,22 @@ pub struct NetCollider {
 
 #[derive(Component)]
 pub struct Net {
+    /// The rim's move as it gives (`street_sim::rim`), which carries the
+    /// top ring (`FUN_0031a5f8` puts it on the rim's matrix).
+    pub rim: crate::court::BoneMove,
     points: Vec<Vec3>,
     previous: Vec<Vec3>,
     rest: Vec<Vec3>,
     links: Vec<(usize, usize, f32)>,
     mesh: Handle<Mesh>,
+}
+
+impl Net {
+    /// The rim it hangs from: 0 the -x hoop's, 1 the +x one's
+    /// (`street_sim::rim`).
+    pub fn side(&self) -> usize {
+        usize::from(self.rest[0].x >= 0.0)
+    }
 }
 
 fn index(ring: usize, i: usize) -> usize {
@@ -126,6 +137,7 @@ pub fn spawn(
             Transform::default(),
             NoFrustumCulling,
             Net {
+                rim: crate::court::BoneMove::STILL,
                 points: rest.clone(),
                 previous: rest.clone(),
                 rest,
@@ -212,7 +224,7 @@ pub fn plugin(app: &mut App) {
 }
 
 /// One step of every net.
-fn step(
+pub fn step(
     mut nets: Query<&mut Net>,
     colliders: Query<(&GlobalTransform, &NetCollider)>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -224,7 +236,9 @@ fn step(
     for mut net in &mut nets {
         let net = &mut *net;
         // `FUN_0031a5f8`: the top ring on the rim.
-        net.points[..AROUND].copy_from_slice(&net.rest[..AROUND]);
+        for k in 0..AROUND {
+            net.points[k] = net.rim.apply(net.rest[k]);
+        }
         step_net(&mut net.points, &mut net.previous, &net.links, &balls);
         if let Some(mut mesh) = meshes.get_mut(&net.mesh) {
             mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices(&net.points));

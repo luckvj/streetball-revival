@@ -363,6 +363,13 @@ impl Plugin for GamePlugin {
                 FixedUpdate,
                 camera_step(view::step_camera.after(crate::referee::step)),
             )
+            .add_systems(
+                FixedUpdate,
+                show_rims
+                    .after(SimStep)
+                    .before(street_render::net::step)
+                    .run_if(in_state(Screen::Playing)),
+            )
             // The HUD's update (the Overlays task after the game's), through
             // the intro and replays too.
             .add_systems(
@@ -952,6 +959,32 @@ fn spawn_scene(
     }
     view::spawn_indicator(&mut commands, &mut meshes, &mut materials);
     view::spawn_camera(&mut commands);
+}
+
+/// The hoops' give on screen ([`street_sim::rim`]): each hoop's meshes
+/// ride its bones, each net's top ring its rim.
+fn show_rims(
+    sim: Res<Sim>,
+    mut skins: Query<&mut street_render::court::HoopSkin>,
+    mut nets: Query<&mut street_render::net::Net>,
+    mut meshes: ResMut<Assets<Mesh>>,
+) {
+    use street_render::court::BoneMove;
+    let shown = |m: street_sim::rim::Move| BoneMove {
+        rot: Quat::from_array(m.rot),
+        from: Vec3::from_array(m.from),
+        to: Vec3::from_array(m.to),
+    };
+    let w = &sim.world;
+    let moves = [0, 1].map(|s| w.rims[s].moves(&w.rim_rigs[s]));
+    for mut skin in &mut skins {
+        let side = skin.side;
+        skin.pose(moves[side].map(shown), &mut meshes);
+    }
+    for mut net in &mut nets {
+        let side = net.side();
+        net.rim = shown(moves[side][4].to_court(side));
+    }
 }
 
 fn spawn_overlays(mut commands: Commands) {

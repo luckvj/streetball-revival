@@ -5630,7 +5630,7 @@
       "unit": "hangs landing in both within the replay",
       "tolerance": "within 5 updates",
       "evidence_path": "$EVIDENCE/street-played-pads-1.jsonl",
-      "limitations": "played_capture::the_jumps_follow_their_scripts_in_play over the twelve played captures, 2026-10-17 (branch block-dunk): 27 hangs (17 dunks, 10 alley-oop dunks), 16 landing in both within the replay, 5 early to 4 late (about 50 early before the hang); while hanging the original follows the rim's give (FUN_00157f20), not ported: 0.73 travel, 0.19 height.",
+      "limitations": "played_capture::the_jumps_follow_their_scripts_in_play over the twelve played captures, 2026-10-17 (branch block-dunk): 27 hangs (17 dunks, 10 alley-oop dunks), 16 landing in both within the replay, 5 early to 4 late (about 50 early before the hang); while hanging the original follows the rim's give (FUN_00157f20). 2026-10-26: the give ported (street_sim::rim, the hands held at the aim's point as bone 4 turns); with Forest's hoops (save state 1's court) the dunks' hang travel median 0.015 and height 0.02 (0.72 and 0.19 before), the alley-oop dunks' 0.37 and 0.22 (0.73 and 0.59; what is left there whole runs on another path); the test pins the dunks' within 0.05.",
       "production_comparison": true,
       "evidence_sha256": "092e45fd4970118d997d4119139d7a1d2f444cabcaaf9b3dae4275d53fa7f049"
     },
