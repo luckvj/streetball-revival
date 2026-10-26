@@ -257,10 +257,9 @@ impl World {
     /// screen adds 20 (`FUN_00171920`, the active camera's projection:
     /// [`Input::off_screen`], the person's client's camera, in
     /// [`World::switch_target_seen`]; none here). The least under 200
-    /// wins, the first of equals. The side's nearest is the
-    /// exact least distance; the original's ranks by `(int)(a - b)` in its
-    /// quicksort (`FUN_003b3868`, `LAB_0013f728`), so distances within a
-    /// unit fall in the sort's order, which is not ported.
+    /// wins, the first of equals. The side's nearest ranks by `(int)(a -
+    /// b)` in the C library's sort (`FUN_003b3868`, `LAB_0013f728`), so
+    /// distances within a unit keep actor order.
     pub fn switch_target(&self, current: usize) -> Option<usize> {
         self.switch_target_seen(current, 0)
     }
@@ -291,11 +290,12 @@ impl World {
         }
         let squad: Vec<usize> = (0..n).filter(|&j| self.side_of(j) == side).collect();
         let to_ball = |j: usize| crate::distance(places[j], [at[0], at[2]]);
-        // Game+0x3a4: the side's slots by their distance to the ball.
-        let nearest = squad
-            .iter()
-            .copied()
-            .min_by(|&a, &b| to_ball(a).total_cmp(&to_ball(b)));
+        // Game+0x3a4: every player by his distance to the ball, sorted as
+        // the game's tables are ([`crate::ai::native_sort`]), the side's
+        // first.
+        let mut all: Vec<usize> = (0..n).collect();
+        crate::ai::native_sort(&mut all, to_ball);
+        let nearest = all.into_iter().find(|&j| self.side_of(j) == side);
         let rim = self.rim_spot(target_hoop(self.possession.min(1)));
         let score = |j: usize| {
             let mut s = match receiver {

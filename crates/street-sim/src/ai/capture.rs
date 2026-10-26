@@ -3259,7 +3259,11 @@ struct Bounds {
 /// 14.6, +777 15.4). The defenders' standing share set again by the rule
 /// on 2026-10-24 with the stop on the stands' planted feet (the stand path
 /// zeroes the velocity): 0.414 (0.020, se 0.0049) against 0.376, 0.055
-/// (+500 within 0.035, +777 0.412).
+/// (+500 within 0.035, +777 0.412). The loose-ball phase's updates set
+/// again by the rule on 2026-10-26 with the game's distance tables sorted
+/// as the original's (`ai::native_sort`): 1176 (240, se 60) against 762
+/// (1115 before), 600 (+500 1093, +777 895; the second and third captures
+/// within 50 of their matches).
 const FIRST_BOUNDS: Bounds = Bounds {
     standing: 0.055,
     away: 0.025,
@@ -3271,7 +3275,7 @@ const FIRST_BOUNDS: Bounds = Bounds {
     counters: 6.5,
     shots: 8.0,
     jumps: [8.0, 3.5, 13.5],
-    loose: [1.0, 2.0, 2.0, 1.5, 0.095, 400.0],
+    loose: [1.0, 2.0, 2.0, 1.5, 0.095, 600.0],
 };
 
 /// The third capture's, on its rosters (and any recorded capture's). The

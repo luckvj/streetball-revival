@@ -2338,3 +2338,19 @@ fn a_computers_board_pass_to_a_teammate_keeps_its_special_route() {
     }
     panic!("the queued computer board pass never threw");
 }
+
+#[test]
+fn the_tables_sort_keeps_actor_order_within_a_unit() {
+    // `FUN_003b3868` (the C library's `qsort`) with `(int)(a - b)`: under
+    // seven entries an insertion sort, so 10.9 and 10.3 compare equal and
+    // keep their order while 5 moves to the front.
+    let d = [10.9, 10.3, 5.0];
+    let mut items = vec![0, 1, 2];
+    super::native_sort(&mut items, |j| d[j]);
+    assert_eq!(items, vec![2, 0, 1]);
+    // A whole unit apart they swap.
+    let d = [11.4, 10.3, 5.0];
+    let mut items = vec![0, 1, 2];
+    super::native_sort(&mut items, |j| d[j]);
+    assert_eq!(items, vec![2, 1, 0]);
+}

@@ -31,6 +31,7 @@
 //! modules and in `docs/TRACE.md`.
 
 mod court;
+pub(crate) use court::native_sort;
 mod defence;
 mod fastbreak;
 mod inbound;
@@ -929,25 +930,36 @@ impl Ctx<'_> {
         self.inputs.get(i).copied().unwrap_or_default()
     }
 
-    /// game+0x3ec: the player nearest the offence's rim.
+    /// game+0x3ec: every player in actor order sorted by his distance to
+    /// the offence's rim ([`court::native_sort`], `0x13f7c8..0x13f838`).
+    pub fn by_rim(&self) -> Vec<usize> {
+        let mut all: Vec<usize> = (0..self.w.players.len()).collect();
+        court::native_sort(&mut all, |j| self.hoop_dist(j));
+        all
+    }
+
+    /// game+0x3ec's first: the player nearest the offence's rim.
     pub fn nearest_to_rim(&self) -> Option<usize> {
-        (0..self.w.players.len()).min_by(|&a, &b| self.hoop_dist(a).total_cmp(&self.hoop_dist(b)))
+        self.by_rim().first().copied()
     }
 
     /// `FUN_0013f8a8(team, k)`: the side's k-th nearest the offence's rim
-    /// (game+0x3ec).
+    /// (game+0x3ec walked for the side).
     pub fn nth_of_team_to_rim(&self, team: usize, k: usize) -> Option<usize> {
-        let mut squad = self.squad(team);
-        squad.sort_by(|&a, &b| self.hoop_dist(a).total_cmp(&self.hoop_dist(b)));
-        squad.get(k).copied()
+        self.by_rim()
+            .into_iter()
+            .filter(|&j| self.team(j) == team)
+            .nth(k)
     }
 
     /// `FUN_0018ab78(team, k)`: the side's players by distance to the
-    /// ball, nearest first (game+0x3a4).
+    /// ball, nearest first (game+0x3a4: every player in actor order sorted
+    /// by [`court::native_sort`], `0x13fdb8..0x13fe0c`, walked for the side).
     pub fn by_ball(&self, team: usize) -> Vec<usize> {
-        let mut squad = self.squad(team);
-        squad.sort_by(|&a, &b| self.ball_dist(a).total_cmp(&self.ball_dist(b)));
-        squad
+        let mut all: Vec<usize> = (0..self.w.players.len()).collect();
+        court::native_sort(&mut all, |j| self.ball_dist(j));
+        all.retain(|&j| self.team(j) == team);
+        all
     }
 
     /// `FUN_0017f498(ai, k)`: the defense strategy's matchup for a
@@ -1004,8 +1016,8 @@ impl Ctx<'_> {
         const BASE: i32 = 28;
         const STEP: i32 = (512 - BASE * 2) / 6;
         let mut sectors = [-1i32; 6];
-        let mut order: Vec<usize> = (0..self.w.players.len()).collect();
-        order.sort_by(|&a, &b| self.hoop_dist(a).total_cmp(&self.hoop_dist(b)));
+        // Game+0x3ec's order.
+        let order = self.by_rim();
         for &p in order.iter().take(6) {
             let a = self.hoop_angle(p);
             let a = if 0 <= side { a } else { 0x400 - a };
