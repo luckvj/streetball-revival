@@ -102,7 +102,7 @@ use crate::{
 /// screen's reactions among the scripts; 84: the count a shot's timer
 /// started from (the updates it has flown); 85: a computer screener's
 /// three pick scripts among the reactions.
-const VERSION: u8 = 91;
+const VERSION: u8 = 92;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1172,6 +1172,8 @@ fn player(w: &mut Writer, p: &Player) {
     w.iv(i64::from(look.last_state));
     w.u8(look.last_holder.unwrap_or(u8::MAX));
     w.uv(u64::from(look.last_bits));
+    look_aim_out(w, look.aim);
+    w.uv(u64::from(look.picks));
     w.bool(*left_handed);
     w.u8(*dribble as u8);
     match channel_start {
@@ -1197,6 +1199,43 @@ fn player(w: &mut Writer, p: &Player) {
     for v in aim_point {
         w.f(*v);
     }
+}
+
+/// A look's aim ([`crate::look::Aim`]).
+fn look_aim_out(w: &mut Writer, aim: crate::look::Aim) {
+    use crate::look::Aim;
+    match aim {
+        Aim::Clear => w.u8(0),
+        Aim::Actor(j) => {
+            w.u8(1);
+            w.u8(j);
+        }
+        Aim::Ball { holder } => {
+            w.u8(2);
+            w.bool(holder);
+        }
+        Aim::Point(p) => {
+            w.u8(3);
+            for v in p {
+                w.f(v);
+            }
+        }
+        Aim::Guard => w.u8(4),
+        Aim::Camera => w.u8(5),
+    }
+}
+
+fn look_aim_in(r: &mut Reader) -> Result<crate::look::Aim, String> {
+    use crate::look::Aim;
+    Ok(match r.u8()? {
+        0 => Aim::Clear,
+        1 => Aim::Actor(r.u8()?),
+        2 => Aim::Ball { holder: r.bool()? },
+        3 => Aim::Point([r.f()?, r.f()?, r.f()?]),
+        4 => Aim::Guard,
+        5 => Aim::Camera,
+        k => return Err(format!("bad look aim {k}")),
+    })
 }
 
 /// A hoop's give ([`crate::rim::Rim`]).
@@ -1626,6 +1665,8 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                 h => Some(h),
             },
             last_bits: u32::try_from(r.uv()?).map_err(|_| "invalid look bits")?,
+            aim: look_aim_in(r)?,
+            picks: u16::try_from(r.uv()?).map_err(|_| "invalid look picks")?,
         },
         left_handed: r.bool()?,
         dribble: r.u8()? as i8,
@@ -3458,8 +3499,9 @@ mod tests {
         // airtime and updates aloft six (version 73); each player's stand,
         // its count and the box-out three, the C library's word five
         // (version 74); each look a dozen (version 76); the two rims, their
-        // rigs and each player's hold on the rim about 420 (version 91).
-        assert!(bytes.len() < 2400, "{} bytes", bytes.len());
+        // rigs and each player's hold on the rim about 420 (version 91);
+        // each look's aim and its picks' count two or more (version 92).
+        assert!(bytes.len() < 2450, "{} bytes", bytes.len());
         assert!(World::from_snapshot(&bytes[..bytes.len() - 1]).is_err());
         let mut longer = bytes.clone();
         longer.push(0);

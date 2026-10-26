@@ -339,6 +339,14 @@ impl Plugin for GamePlugin {
                     .after(street_render::animation::pose_skeletons)
                     .before(TransformSystems::Propagate),
             )
+            // The heads turned to their looks, over the clips' pose.
+            .add_systems(
+                PostUpdate,
+                crate::head_turn::turn_heads
+                    .after(crate::tape::pose_bones)
+                    .before(TransformSystems::Propagate)
+                    .run_if(in_state(Screen::Playing)),
+            )
             .add_systems(
                 FixedUpdate,
                 (
