@@ -5,8 +5,11 @@
 //! ring is fixed to the rim. The texture is the court's `<court>n.ssh`
 //! (`net1`), else the shared `net.ssh`.
 //!
-//! The points move as a Verlet cloth held to their rest distances, and a
-//! [`NetCollider`] (the ball) pushes them out of its way, so a basket swishes.
+//! Each frame ([`step_net`], `FUN_0031a230` at 1/60) the top ring is put on
+//! the rim, the other points take a Verlet step under gravity, one pass
+//! over the 120 links pulls them back to their rest lengths, and the ball
+//! ([`NetCollider`], attached by the hoop at `0x317190` and moved every
+//! update at `0x317508`) pushes them out to 1.2 times its radius.
 
 use bevy::{
     asset::RenderAssetUsages, camera::visibility::NoFrustumCulling, mesh::Indices, prelude::*,
@@ -22,9 +25,14 @@ pub const DROPS: [f32; 7] = [-0.1, -0.55, -0.83, -0.965, -1.1, -1.2, -1.3];
 const AROUND: usize = 10;
 const RINGS: usize = 7;
 
-const GRAVITY: f32 = -38.0;
-const DAMPING: f32 = 0.96;
-const ITERATIONS: usize = 6;
+/// `FUN_0031a3e8`: the free points' acceleration (`0xc1f00000`).
+const GRAVITY: f32 = -30.0;
+/// `FUN_0031a230`'s step (`0x3c888889`), the same every frame.
+const DT: f32 = 1.0 / 60.0;
+/// `FUN_0031a340`: `new = P × 1.97 − prev × 0.97 + a·dt²`.
+const KEEP: f32 = 0.97;
+/// `FUN_0031a1d8`: the ball's sphere is its radius × 1.2 (`0x3f99999a`).
+const BALL_SCALE: f32 = 1.2;
 
 /// Puts its entity's position in the nets' way (give it to the ball).
 #[derive(Component, Clone, Copy)]
@@ -67,19 +75,7 @@ pub fn spawn(
     images: &mut Assets<Image>,
 ) -> Entity {
     let rest = rest_points(rim);
-    let mut links = Vec::new();
-    let link = |a: usize, b: usize, links: &mut Vec<(usize, usize, f32)>| {
-        links.push((a, b, rest[a].distance(rest[b])));
-    };
-    for r in 0..RINGS {
-        for i in 0..AROUND {
-            link(index(r, i), index(r, i + 1), &mut links);
-            if r + 1 < RINGS {
-                link(index(r, i), index(r + 1, i), &mut links);
-                link(index(r, i), index(r + 1, i + 1), &mut links);
-            }
-        }
-    }
+    let links = links(&rest);
     // Vertices: one more column than points, so the texture can wrap.
     let mut uvs = Vec::new();
     for r in 0..RINGS {
@@ -140,6 +136,66 @@ pub fn spawn(
         .id()
 }
 
+/// `FUN_0031a900`'s 120 links in their slots, each with its pinned point
+/// first (`0x31aaa0`) and its length at setup: slots 0..10 hang ring 1 from
+/// the top ring, 10..70 go round rings 1 to 6, 70..120 hang rings 2 to 6
+/// from the ring above.
+fn links(rest: &[Vec3]) -> Vec<(usize, usize, f32)> {
+    let mut pinned = Vec::new();
+    let mut free = Vec::new();
+    let mut add = |a: usize, b: usize| {
+        let to = if a < AROUND { &mut pinned } else { &mut free };
+        to.push((a, b, rest[a].distance(rest[b])));
+    };
+    for r in 1..RINGS {
+        for i in 0..AROUND {
+            add(index(r, i), index(r, i + 1));
+        }
+    }
+    for r in 0..RINGS - 1 {
+        for i in 0..AROUND {
+            add(index(r, i), index(r + 1, i));
+        }
+    }
+    pinned.extend(free);
+    pinned
+}
+
+/// One frame of a net (`FUN_0031a230`), the top ring already on the rim.
+fn step_net(
+    points: &mut [Vec3],
+    previous: &mut [Vec3],
+    links: &[(usize, usize, f32)],
+    balls: &[(Vec3, f32)],
+) {
+    for k in AROUND..points.len() {
+        let p = points[k];
+        points[k] = p * (1.0 + KEEP) - previous[k] * KEEP + Vec3::Y * (GRAVITY * DT * DT);
+        previous[k] = p;
+    }
+    for &(a, b, rest) in links {
+        let d = points[b] - points[a];
+        let len = d.length();
+        let d = d * ((len - rest) / len * 0.5);
+        if a < AROUND {
+            points[b] -= d * 2.0;
+        } else {
+            points[a] += d;
+            points[b] -= d;
+        }
+    }
+    for &(centre, radius) in balls {
+        let reach = radius * BALL_SCALE;
+        for p in points.iter_mut().skip(AROUND) {
+            let v = *p - centre;
+            let len = v.length();
+            if len < reach {
+                *p = centre + v * (reach / len);
+            }
+        }
+    }
+}
+
 /// The mesh's vertices: the points, with the seam column repeated.
 fn vertices(points: &[Vec3]) -> Vec<[f32; 3]> {
     let mut out = Vec::with_capacity(RINGS * (AROUND + 1));
@@ -157,73 +213,19 @@ pub fn plugin(app: &mut App) {
 
 /// One step of every net.
 fn step(
-    time: Res<Time<Fixed>>,
     mut nets: Query<&mut Net>,
     colliders: Query<(&GlobalTransform, &NetCollider)>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let dt = time.delta_secs().max(1.0 / 240.0);
     let balls: Vec<(Vec3, f32)> = colliders
         .iter()
         .map(|(g, c)| (g.translation(), c.radius))
         .collect();
     for mut net in &mut nets {
         let net = &mut *net;
-        // Only nets the ball is near need the work; the rest hang still.
-        let busy = net
-            .points
-            .iter()
-            .zip(&net.rest)
-            .any(|(p, r)| p.distance_squared(*r) > 1e-6)
-            || balls
-                .iter()
-                .any(|(b, rad)| b.distance(net.rest[0]) < 2.5 + rad);
-        if !busy {
-            continue;
-        }
-        for k in AROUND..net.points.len() {
-            let p = net.points[k];
-            let v = (p - net.previous[k]) * DAMPING;
-            net.previous[k] = p;
-            net.points[k] = p + v + Vec3::Y * GRAVITY * dt * dt;
-        }
-        for _ in 0..ITERATIONS {
-            for &(a, b, len) in &net.links {
-                let (pa, pb) = (net.points[a], net.points[b]);
-                let d = pb - pa;
-                let dist = d.length().max(1e-5);
-                let fix = d * ((dist - len) / dist * 0.5);
-                if a >= AROUND {
-                    net.points[a] += fix;
-                }
-                if b >= AROUND {
-                    net.points[b] -= fix;
-                }
-            }
-            for &(centre, radius) in &balls {
-                for p in net.points.iter_mut().skip(AROUND) {
-                    let d = *p - centre;
-                    let reach = radius + 0.04;
-                    if d.length_squared() < reach * reach {
-                        *p = centre + d.normalize_or(Vec3::NEG_Y) * reach;
-                    }
-                }
-            }
-            // The top ring stays on the rim.
-            for k in 0..AROUND {
-                net.points[k] = net.rest[k];
-            }
-        }
-        // Settled: snap to rest so the net can go quiet.
-        let moving = net
-            .points
-            .iter()
-            .zip(&net.previous)
-            .any(|(p, q)| p.distance_squared(*q) > 1e-7);
-        if !moving {
-            net.points = net.rest.clone();
-            net.previous = net.rest.clone();
-        }
+        // `FUN_0031a5f8`: the top ring on the rim.
+        net.points[..AROUND].copy_from_slice(&net.rest[..AROUND]);
+        step_net(&mut net.points, &mut net.previous, &net.links, &balls);
         if let Some(mut mesh) = meshes.get_mut(&net.mesh) {
             mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices(&net.points));
         }
@@ -244,5 +246,51 @@ mod tests {
         let bottom = &p[60..];
         assert!(bottom.iter().all(|q| (q.y - 8.7).abs() < 1e-5));
         assert!(bottom.iter().all(|q| (q.x * q.x + q.z * q.z).sqrt() < 0.34));
+    }
+
+    #[test]
+    fn the_links_sit_in_the_originals_slots() {
+        let l = links(&rest_points(Vec3::ZERO));
+        assert_eq!(l.len(), 120);
+        assert!(l[..10].iter().all(|&(a, b, _)| a < 10 && b == a + 10));
+        assert_eq!((l[10].0, l[10].1), (10, 11));
+        assert_eq!((l[19].0, l[19].1), (19, 10));
+        assert_eq!((l[70].0, l[70].1), (10, 20));
+        assert_eq!((l[119].0, l[119].1), (59, 69));
+    }
+
+    #[test]
+    fn the_net_hangs_still_and_a_ball_through_it_swishes() {
+        let rest = rest_points(Vec3::new(0.0, 3.0, 0.0));
+        let l = links(&rest);
+        let (mut p, mut q) = (rest.clone(), rest.clone());
+        for _ in 0..600 {
+            step_net(&mut p, &mut q, &l, &[]);
+        }
+        // Gravity against one pass of links: it sags a little and settles.
+        let sag = p
+            .iter()
+            .zip(&rest)
+            .map(|(a, b)| a.distance(*b))
+            .fold(0.0, f32::max);
+        assert!(sag < 0.2, "{sag}");
+        let moving = p
+            .iter()
+            .zip(&q)
+            .map(|(a, b)| a.distance(*b))
+            .fold(0.0, f32::max);
+        assert!(moving < 1e-3, "{moving}");
+        let hung = p.clone();
+        // A ball dropping down the middle pushes the bottom ring out.
+        for k in 0..40 {
+            let ball = (Vec3::new(0.0, 3.2 - k as f32 * 0.05, 0.0), 0.35);
+            step_net(&mut p, &mut q, &l, &[ball]);
+        }
+        let out = p[60..]
+            .iter()
+            .zip(&hung[60..])
+            .map(|(a, b)| a.distance(*b))
+            .fold(0.0, f32::max);
+        assert!(out > 0.05, "{out}");
     }
 }
