@@ -13398,3 +13398,11 @@ channel 0's record, or the blend's, minus 650 under 3, at `0x1187a4` and
 updates at a shot quality of 6 or 7 (12..29.75 out) go from 117 to 144 a
 game (the original's 203), block jumps at a shooter from 8.4 to 9.9 (10),
 shots 38.8 to 40.0 (43); the first capture's are about the same.
+
+## The post man's call and state bit 11 (2026-10-26)
+
+- "post pause" (`FUN_00113768`) presses 0x800000 while a lob is on (`0x113800`); the actor reads it as the held post call (`FUN_0015a060` `0x15b544`: actor+0x78 & 0x800000, plays `post_call_for_ball_2` `0x456d96`, whose `9b` sets state bit 11). The rewrite's pad never mapped the bit, so the computer's post man never posted. It is now the held trick button off the ball (`World::post_call`).
+- The defence's three bit-11 reads (`FUN_001816f0` at `0x107ee4`, `0x108264`, `0x108684`: the post defender's stand, the spot's post branch, the sag's hold-off) called `Ctx::posting_up`, a never-true stand-in for `FUN_00181710` (the post-up's clips). They now read bit 11 (`Ctx::posting`); `posting_up` and `post_defending` (`FUN_0016ec80`, `FUN_0016ebe8`: records 704..707/712/713 and 716..719/398/399) read the channel, as the switches (`0x123c34`) want.
+- The post pause's call holds `fps` frames while he is not posting and runs down once he is (`0x113808..0x113830`); the lob test also refuses with a teammate other than the holder posting (`0x113c10`).
+- Capture 3: post-pause men carry bit 11 in 355 of 2,192 updates (16%); the rewrite now 10.9% (0 before). Drives per 1000 half-court updates 3.35 -> 3.11 (original 2.58).
+- Checked and faithful on the way (no change): shot quality and its contest, iso3pt/RunPick thresholds, open three (game+0x3ec = players by distance to the offence's rim), penetration check, play interrupt flags (all true but pull up/rotate/iso/oop), zone (16 of 36.75), back down's start. LIVE PINE: channel flag 0x40 ("down") is set exactly on reaction scripts.

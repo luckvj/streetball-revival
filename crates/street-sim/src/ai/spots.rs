@@ -10,6 +10,7 @@
 
 use super::court::{angle_toward, dist, turn};
 use super::offball::{Pause, PerimPause};
+use super::pad::bits;
 use super::words::words;
 use super::{Act, Brain, Ctx};
 use crate::input::{native_cos_1024, native_sin_1024};
@@ -722,8 +723,8 @@ impl PostCut {
 words! {
     /// "post pause" (`FUN_001135a8`, update `FUN_00113768`, done
     /// `FUN_00113688`): stand on the block facing the ball for `r % (fps ×
-    /// 2.2) + fps × 3.7` frames, asking for a lob (0x800000, a hold the
-    /// rewrite's pad does not map) while one is on (`FUN_00113b38`). When
+    /// 2.2) + fps × 3.7` frames, asking for a lob (0x800000, the post call
+    /// [`crate::World::post_call`]) while one is on (`FUN_00113b38`). When
     /// the owner has kept to the other side's wing or corner for `fps ×
     /// 1.1` frames he moves over to that side's block (a post cut, unless
     /// the third man is headed there). The pick calls (`FUN_00114050`,
@@ -782,9 +783,14 @@ impl PostPause {
         if !b.face(ctx, i, facing, 1, 0x80) {
             b.stop(ctx, i);
             if lob_ready(ctx, i, self.hold) {
-                b.press(0x80_0000);
-                // `FUN_001816f0` (actor bit 11) is taken as clear.
-                self.hold = 60;
+                b.press(bits::POST_CALL);
+                // Not posting yet (`FUN_001816f0`, actor bit 11) the call
+                // holds `DAT_004b4920` (fps) frames; posting, it runs down.
+                if !ctx.posting(i) {
+                    self.hold = 60;
+                } else if 0 < self.hold {
+                    self.hold -= 1;
+                }
             } else {
                 self.hold = 0;
             }
@@ -852,7 +858,7 @@ impl PostPause {
 /// `FUN_00113b38`: a lob is on. While the call holds, an opponent within
 /// 6.5 (no more than 1 farther from the rim) keeps it on, as does a call
 /// under `fps × 0.8` frames old. Else: no teammate within 12 (nor one
-/// with actor bit 11 set, taken as clear), the holder 18.75..35.75 out
+/// but the holder posting, actor bit 11), the holder 18.75..35.75 out
 /// and on the same side or within 3 of the middle, the post man facing
 /// him (within 0x72) with no lane to the rim and a defender within 5.5 no
 /// farther from the rim; off the baseline the holder within 27.75 of
@@ -869,7 +875,7 @@ fn lob_ready(ctx: &Ctx, i: usize, hold: i32) -> bool {
     if ctx
         .squad(team)
         .into_iter()
-        .any(|j| j != i && ctx.between(i, j) < 12.0)
+        .any(|j| j != i && (ctx.between(i, j) < 12.0 || (j != h && ctx.posting(j))))
     {
         return false;
     }

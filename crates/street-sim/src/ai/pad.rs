@@ -29,6 +29,9 @@ pub(super) mod bits {
     pub const REBOUND: u32 = 0x100000;
     /// The dive for a loose ball (`0x10e780`, [`crate::dive`]).
     pub const DIVE: u32 = 0x1000000;
+    /// The post man's call for a lob ("post pause"): the hold the post
+    /// call reads (actor+0x78 & 0x800000, [`crate::World::post_call`]).
+    pub const POST_CALL: u32 = 0x800000;
     /// The screener's stance at his spot ("set pick", "pick off ball";
     /// read by the pick animations, which the sim has none of).
     pub const PICK_STANCE: u32 = 0x400000;
@@ -136,6 +139,9 @@ pub(super) fn to_input(ctx: &Ctx, i: usize, pad: &Pad) -> Input {
     }
     if b & bits::DIVE != 0 {
         held |= button::DIVE;
+    }
+    if b & bits::POST_CALL != 0 {
+        held |= button::TRICK;
     }
     if b & bits::STRATEGY != 0 {
         held |= button::R3;
