@@ -1164,6 +1164,7 @@ impl World {
                 | Event::Layup { player: p }
                 | Event::PumpFake { player: p }
                 | Event::PumpFakeBite { player: p }
+                | Event::NoTurbo { player: p }
                 | Event::Dive { player: p }
                 | Event::Reach { player: p, .. }
                 | Event::Jump { player: p, .. } => player(p)?,

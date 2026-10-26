@@ -101,8 +101,9 @@ use crate::{
 /// the rewrite's own pick gone, a reaction's `a6 2` window and the
 /// screen's reactions among the scripts; 84: the count a shot's timer
 /// started from (the updates it has flown); 85: a computer screener's
-/// three pick scripts among the reactions.
-const VERSION: u8 = 92;
+/// three pick scripts among the reactions; 93: the "no turbo" message
+/// ([`Event::NoTurbo`]).
+const VERSION: u8 = 93;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -3072,6 +3073,10 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(32);
             w.us(player);
         }
+        Event::NoTurbo { player } => {
+            w.u8(36);
+            w.us(player);
+        }
         Event::Goaltend { player, shooter } => {
             w.u8(22);
             w.us(player);
@@ -3247,6 +3252,7 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
             camera: r.u8()?,
         },
         32 => Event::PumpFakeBite { player: r.us()? },
+        36 => Event::NoTurbo { player: r.us()? },
         k => return Err(format!("bad event {k}")),
     })
 }

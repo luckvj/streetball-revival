@@ -1351,6 +1351,7 @@ impl World {
             return;
         }
         if !self.spend_turbo(i, crate::turbo::MOVE) {
+            self.no_turbo(i);
             return;
         }
         if !self.freestyle(i, input, turbos) {

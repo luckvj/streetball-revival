@@ -34,6 +34,7 @@
 //! | a gamebreaker goes up | transition 0x4c, the loop 0x21 (slot 64) |
 //! | a meter is pocketed / cancelled | HUD 0x4d kind 16 / crowd 0x3d; the loop 0x22 stops (slots 70, 71) |
 //! | a big trick bonus | HUD 0x4d kind 6 (over 5,000) or 7 (over 12,000) (slot 68) |
+//! | a move asks more of the bar than its player has (the "no turbo" message `0x3c6520`) | HUD 0x4d kind 5 (slot 10) |
 //! | the shot clock's last seconds | HUD 0x4d kind 10 (slot 48), the violation kind 11 (slot 52) |
 //! | a basket | HUD 0x4d kind 9 (slot 26) |
 //! | an instant replay | transition 0x4c, the loop 0x23 (slots 58, 59) |
@@ -1495,6 +1496,14 @@ pub(crate) fn fire_events(
                     fx.fire(&[ev::EXERTION, a, d, voice]);
                 }
                 fx.fire(&[ev::SWEETENER, a, d, 1000, 11]);
+            }
+            // The "no turbo" message (slot 10, `0x1a5ed8`): HUD kind 5. Its
+            // handler passes the actor's side (`0x1a7530`) and 1000 in the
+            // other order from the rest of the HUD's calls, so the event's
+            // pan word is 1000 and the side goes unread (0x4d takes the
+            // second and third words).
+            Event::NoTurbo { .. } => {
+                fx.fire(&[ev::HUD, 1000, 5]);
             }
             // A reach for the ball (slot 8, posted at `0x15e390` as the
             // swipe or the counter stance starts): sweetener 12, and every
