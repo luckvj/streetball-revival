@@ -15101,7 +15101,7 @@
               "path": "README.md",
               "locator": "Playing online; Watch A Game",
               "note": "Where a player finds them.",
-              "sha256": "7ffbe896516549972b15d64622645f97ab62c167504a566da2dc3eac2f332624"
+              "sha256": "88604afd977acca136f49abc05cdc53b721ae5d82e5233ac9a1eec512107c115"
             },
             {
               "path": "$EVIDENCE/street-select/pcs.png",
@@ -15123,7 +15123,7 @@
             }
           ],
           "tolerance": "Nothing of the rewrite's on the original's screens; the notice word for word.",
-          "limitations": "The rewrite's own page (behind the one accepted difference, presentation.ui_adjust_screen_pc_settings), not a parity with the original: the obligation is that the original's screens stay the original's. The notice's words as d3af7d9^:crates/street-game/src/menu.rs's Page::Credits had them. 2026-10-20 (online on the disc): README's Playing online now says a match online plays the rules of a match alone, its replays too, everyone needing the same release's disc (gameplay.online_rules_equal_local); the rows are unchanged. 2026-10-21: Vj asked for Online one press from the Main Menu: Select there opens it, and the Main Menu's legend shows SELECT Online beside the original's Help (look::with_online_pair), an accepted change to the original's Main screen. Last re-pinned 2026-10-25 after unneeded docs removed (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "The rewrite's own page (behind the one accepted difference, presentation.ui_adjust_screen_pc_settings), not a parity with the original: the obligation is that the original's screens stay the original's. The notice's words as d3af7d9^:crates/street-game/src/menu.rs's Page::Credits had them. 2026-10-20 (online on the disc): README's Playing online now says a match online plays the rules of a match alone, its replays too, everyone needing the same release's disc (gameplay.online_rules_equal_local); the rows are unchanged. 2026-10-21: Vj asked for Online one press from the Main Menu: Select there opens it, and the Main Menu's legend shows SELECT Online beside the original's Help (look::with_online_pair), an accepted change to the original's Main screen. Last re-pinned 2026-10-25 after README online note (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None.",
           "disposition": "active",
           "effective_status": "matched",
