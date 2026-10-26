@@ -35,6 +35,10 @@ pub mod button {
     /// [`crate::World`] plays as [`crate::trick::PICKS`]. No controller
     /// sets it.
     pub const PICK: u16 = 1 << 12;
+    /// Not a button: a computer screener's stance (the pad's 0x400000,
+    /// held while he waits at his spot), which [`crate::World`] plays as
+    /// [`crate::stand::PICK_STANCE`]. No controller sets it.
+    pub const PICK_STANCE: u16 = 1 << 13;
     /// Not a button: the computer drives this player this tick. The
     /// world replaces such an input with the pad its AI builds
     /// ([`crate::ai`]), as the original's computer players fill the same
@@ -195,7 +199,7 @@ impl Input {
             stick: [b[0] as i8, b[1] as i8],
             aim: [b[2] as i8, b[3] as i8],
             buttons: u16::from_le_bytes([b[4], b[5]])
-                & (button::ALL | button::PICK | button::COMPUTER),
+                & (button::ALL | button::PICK | button::PICK_STANCE | button::COMPUTER),
             view: u16::from_le_bytes([b[6], b[7]]) & 0x3ff,
             off_screen: b[7] >> 2,
         }

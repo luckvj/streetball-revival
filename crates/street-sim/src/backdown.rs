@@ -216,12 +216,14 @@ impl World {
     /// Whether `i`'s channel plays a backdown move that holds the
     /// locomotion off (its `91` sets 0x2 without 0x10, `0x15ab58`,
     /// `0x15b084`): any but `into_backdown` once it runs into the side
-    /// dribble (`0x443bad`, whose `91` clears it: [`INTO_DRIBBLE`]).
+    /// dribble (`0x443bad`, whose `91` clears it: [`INTO_DRIBBLE`]); the
+    /// post call; the pick stance until its `91 0` (step 7).
     pub(crate) fn backdown_holds(&self, i: usize) -> bool {
         self.players[i].stand.is_some_and(|s| {
             (crate::stand::BACKDOWN_MOVES.contains(&s.script)
                 && !(s.script == BACKDOWN_IN && INTO_DRIBBLE.contains(&s.run.pc)))
                 || s.script == POST_CALL
+                || (s.script == crate::stand::PICK_STANCE && s.run.pc < 7)
                 || self.bumped(i)
         })
     }

@@ -102,7 +102,7 @@ use crate::{
 /// screen's reactions among the scripts; 84: the count a shot's timer
 /// started from (the updates it has flown); 85: a computer screener's
 /// three pick scripts among the reactions.
-const VERSION: u8 = 85;
+const VERSION: u8 = 86;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).

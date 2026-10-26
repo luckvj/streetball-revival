@@ -1122,6 +1122,9 @@ fn the_stand_scripts_are_the_executables() {
         (0x1686e4, 0x1686ec, stand::CRADLE),
         (0x16876c, 0x168774, stand::PROTECT),
         (0x168908, 0x168910, stand::BACKDOWN),
+        // The actor's pick stance and its let go (`FUN_0015a060`).
+        (0x15b83c, 0x15b844, stand::PICK_STANCE),
+        (0x15adf8, 0x15ae00, stand::READY),
     ] {
         assert_eq!(address(hi, lo), STAND_ADDRESSES[usize::from(k)], "{hi:#x}");
     }
@@ -1379,6 +1382,12 @@ fn the_reaction_scripts_and_lists_are_the_executables() {
             .collect()
     };
     assert_eq!(screener, named(&trick::SCREENER));
+    // A person's pick (`FUN_0015a060`, `0x15b68c`: `0x43f038`, the same
+    // three scripts) and a computer's (`0x43f028`, `trick::PICKS`).
+    let person: Vec<u32> = (0..3).map(|k| disc.word(0x43f038 + 4 * k)).collect();
+    assert_eq!(person, named(&trick::SCREENER));
+    let computer: Vec<u32> = (0..3).map(|k| disc.word(0x43f028 + 4 * k)).collect();
+    assert_eq!(computer, named(&trick::PICKS));
     for (table, ours) in [
         (0x3d0f28, &trick::SCREENED_HEAVY),
         (0x3d0f38, &trick::SCREENED_LIGHT),
