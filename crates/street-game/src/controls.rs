@@ -330,7 +330,7 @@ pub fn read(
     // The active camera's yaw (+0x94): `atan2` of its look's x and z; and
     // the actors off its screen, as the frame shown left it.
     let (yaw, hidden) = match cameras.single() {
-        Ok((cam, camera, eye)) => (
+        Ok((cam, camera, _)) => (
             native_angles(cam.forward().to_array()).1,
             camera.logical_viewport_size().map_or(0, |size| {
                 // The screen the original shows is 16:9 at most: an
@@ -340,8 +340,10 @@ pub fn read(
                 off_screen(
                     &sim.world,
                     |at| {
+                        // The camera the game set, not the frame drawn
+                        // between updates (`crate::smooth`).
                         camera
-                            .world_to_viewport(eye, at)
+                            .world_to_viewport(&GlobalTransform::from(*cam), at)
                             .ok()
                             .map(|s| Vec2::new(s.x - left, s.y))
                     },

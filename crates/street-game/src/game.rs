@@ -347,6 +347,23 @@ impl Plugin for GamePlugin {
                     .before(TransformSystems::Propagate)
                     .run_if(in_state(Screen::Playing)),
             )
+            // Smooth Motion: the drawn frame between the last two updates,
+            // the game's own transforms back before anything reads them.
+            .init_resource::<crate::smooth::SmoothClock>()
+            .add_systems(
+                PreUpdate,
+                (crate::smooth::restore, crate::smooth::track)
+                    .chain()
+                    .run_if(in_state(Screen::Playing)),
+            )
+            .add_systems(
+                PostUpdate,
+                (crate::smooth::clock, crate::smooth::blend)
+                    .chain()
+                    .after(crate::head_turn::turn_heads)
+                    .before(TransformSystems::Propagate)
+                    .run_if(in_state(Screen::Playing)),
+            )
             .add_systems(
                 FixedUpdate,
                 (

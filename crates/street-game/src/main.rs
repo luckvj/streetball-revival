@@ -87,6 +87,7 @@ mod screen_fx;
 pub mod session;
 pub mod setup;
 pub mod sfx;
+mod smooth;
 pub mod song;
 pub mod squeak;
 pub mod staged;

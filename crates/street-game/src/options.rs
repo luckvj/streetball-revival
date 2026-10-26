@@ -306,13 +306,15 @@ pub mod pc {
     pub const WIDE: usize = 1;
     /// The controllers' rumble.
     pub const VIBRATION: usize = 2;
+    /// The court drawn between updates on faster screens (`crate::smooth`).
+    pub const SMOOTH: usize = 3;
     /// Host or join a match over the network (`Page::Online`).
-    pub const ONLINE: usize = 3;
+    pub const ONLINE: usize = 4;
     /// The computer on both sides.
-    pub const WATCH: usize = 4;
+    pub const WATCH: usize = 5;
     /// The created teams, to edit or delete one (`Page::Teams`).
-    pub const TEAMS: usize = 5;
-    pub const BACK: usize = 6;
+    pub const TEAMS: usize = 6;
+    pub const BACK: usize = 7;
 }
 
 /// The project's own notice, under PC Settings' rows: what this game is
@@ -340,6 +342,7 @@ pub fn pc_items(o: &Settings, pads: &PadSettings) -> Vec<String> {
         ),
         format!("Wide Picture  < {} >", on(o.wide)),
         format!("Vibration  < {} >", on(pads.vibration)),
+        format!("Smooth Motion  < {} >", on(o.smooth)),
         "Online".into(),
         "Watch A Game".into(),
         "Created Teams".into(),
@@ -353,6 +356,7 @@ pub fn pc_help(at: usize) -> &'static str {
         pc::DISPLAY => "Play in a window or full screen.",
         pc::WIDE => "With Widescreen on, show the whole 4:3 picture and more at the sides.",
         pc::VIBRATION => "Turn controller vibration on or off.",
+        pc::SMOOTH => "On screens over 60 Hz, draw the court between the game's updates.",
         pc::ONLINE => "Host or join a match over the network.",
         pc::WATCH => "Watch the computer play both sides.",
         pc::TEAMS => "Edit or delete a created team.",
@@ -364,8 +368,12 @@ pub fn pc_help(at: usize) -> &'static str {
 /// Adjust Screen's place): leaving Options saves them as it saves the
 /// original's.
 pub fn pc_changed(before: &Settings, now: &Settings) -> bool {
-    (before.full_screen, before.wide, before.vibration)
-        != (now.full_screen, now.wide, now.vibration)
+    (
+        before.full_screen,
+        before.wide,
+        before.vibration,
+        before.smooth,
+    ) != (now.full_screen, now.wide, now.vibration, now.smooth)
 }
 
 /// Left, right or a press on the rewrite's settings page.
@@ -374,6 +382,7 @@ pub fn pc_step(at: usize, o: &mut Settings, pads: &mut PadSettings) {
         pc::DISPLAY => o.full_screen = !o.full_screen,
         pc::WIDE => o.wide = !o.wide,
         pc::VIBRATION => pads.vibration = !pads.vibration,
+        pc::SMOOTH => o.smooth = !o.smooth,
         _ => {}
     }
 }
