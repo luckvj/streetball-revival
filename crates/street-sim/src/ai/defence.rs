@@ -1165,8 +1165,7 @@ impl Defense {
         let posting =
             ctx.posting(man) || (!ctx.human_player(man) && ctx.fronts.get(man) == Some(&7));
         // The two nearest the rim (game+0x3ec, +0x3f0).
-        let mut by_rim: Vec<usize> = (0..ctx.w.players.len()).collect();
-        by_rim.sort_by(|&a, &b| ctx.hoop_dist(a).total_cmp(&ctx.hoop_dist(b)));
+        let by_rim = ctx.by_rim();
         let nearest_two =
             |a: usize, b: usize| by_rim.len() >= 2 && by_rim[0] == a && by_rim[1] == b;
         let mut post_defence = false;

@@ -108,10 +108,11 @@ impl Ctx<'_> {
         units(self.w.players[i].heading + std::f32::consts::PI)
     }
 
-    /// The other players by distance, nearest first (game+0x23c).
+    /// The other players by distance, nearest first (game+0x23c: the five
+    /// others in actor order sorted by [`native_sort`], `0x13fd00..0x13fd60`).
     pub fn by_distance(&self, i: usize) -> Vec<usize> {
         let mut others: Vec<usize> = (0..self.w.players.len()).filter(|&j| j != i).collect();
-        others.sort_by(|&a, &b| self.between(i, a).total_cmp(&self.between(i, b)));
+        native_sort(&mut others, |j| self.between(i, j));
         others
     }
 
@@ -562,6 +563,23 @@ impl Ctx<'_> {
             return false;
         }
         b.pad.buttons & super::pad::bits::PASS != 0 || matches!(b.front_kind(), 8 | 0x17)
+    }
+}
+
+/// The game's tables' sort (`FUN_003b3868`, the C library's `qsort`, with
+/// `LAB_0013f728`'s comparator `(int)(a - b)` on the distances): under
+/// seven entries it is an insertion sort (`0x3b38cc`), moving an entry
+/// back past each one the comparator puts after it. Distances within a
+/// unit of each other compare equal, so they keep the order the table was
+/// built in.
+pub(crate) fn native_sort(items: &mut [usize], key: impl Fn(usize) -> f32) {
+    debug_assert!(items.len() < 7);
+    for m in 1..items.len() {
+        let mut l = m;
+        while l > 0 && (key(items[l - 1]) - key(items[l])) as i32 > 0 {
+            items.swap(l - 1, l);
+            l -= 1;
+        }
     }
 }
 
