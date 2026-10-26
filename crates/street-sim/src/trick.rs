@@ -1412,7 +1412,7 @@ impl World {
     /// `FUN_0015c778`, the clearout, which the juke press tries first: the
     /// holder standing exactly still (velocity +0x40 zero), on the floor,
     /// outside a restart (game+0xf4 not 6), not dribbling (+0x1a0 not 1),
-    /// not posting up (the sim never does), with [`turbo::MOVE`] of his
+    /// not posting (bit 11, `FUN_0016ea20`), with [`turbo::MOVE`] of his
     /// bar, plays `clearout01` on his channel ([`CLEAROUT`], its kind-2
     /// window of 40 updates) and spends it. True when it did.
     fn clearout(&mut self, i: usize) -> bool {
@@ -1421,6 +1421,7 @@ impl World {
             || p.height != 0.0
             || self.game_phase.phase == crate::game_phase::phase::RESTART
             || p.dribble == 1
+            || p.posting
             || self.turbo_of(i) + 1e-6 < crate::turbo::MOVE
         {
             return false;
