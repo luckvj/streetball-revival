@@ -9019,7 +9019,7 @@ mod tests {
             options::pc_items(&Default::default(), &Default::default())[options::pc::ONLINE],
             "Online"
         );
-        assert_eq!(options::NOTICE.len(), 6);
+        assert_eq!(options::NOTICE.len(), 4);
         assert!(options::NOTICE[0].starts_with("Streetball Revival: an unofficial fan"));
     }
 

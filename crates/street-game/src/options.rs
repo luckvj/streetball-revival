@@ -320,13 +320,11 @@ pub mod pc {
 /// The project's own notice, under PC Settings' rows: what this game is
 /// and whose the original is (the rewrite's credits page before it built
 /// the original's credits screen).
-pub const NOTICE: [&str; 6] = [
+pub const NOTICE: [&str; 4] = [
     "Streetball Revival: an unofficial fan",
-    "project, written from scratch.",
-    "Every model, texture, animation and",
-    "number is read from your own disc.",
-    "",
-    "Not affiliated with the original's makers.",
+    "project, written from scratch, reads",
+    "everything from your own disc. Not",
+    "affiliated with the original's makers.",
 ];
 
 /// The rewrite's settings page's rows.
@@ -543,15 +541,16 @@ pub fn scene_box(w: u32, h: u32, picture: Picture) -> Option<(u32, u32)> {
 }
 
 /// The 2D layer's area (the menus, the HUD, the loading pictures): the
-/// court's 4:3 with Widescreen off; On and Wide, the window up to 16:9 and
-/// the middle 16:9 of a wider one, so an ultrawide window widens the court
-/// but keeps the 2D art at its PS2 widescreen shape instead of stretching
-/// it.
+/// court's 4:3 with Widescreen off; On and Wide, the whole window up to
+/// 2:1, and the middle 16:9 of an ultrawide one (21:9, 32:9), so those
+/// widen the court but keep the 2D art at its PS2 widescreen shape instead
+/// of stretching it. A window just past 16:9 (a maximized one, 16:10's
+/// cousins) keeps the 2D across it rather than thin bars at its sides.
 pub fn ui_box(w: u32, h: u32, picture: Picture) -> Option<(u32, u32)> {
     if picture == Picture::Standard {
         return scene_box(w, h, picture);
     }
-    (w * 9 > h * 16).then(|| {
+    (w > h * 2).then(|| {
         let width = h * 16 / 9;
         ((w - width) / 2, width)
     })
@@ -639,8 +638,9 @@ mod picture_tests {
         assert_eq!(scene_box(2520, 1080, Picture::Wide), None);
         assert_eq!(ui_box(2520, 1080, Picture::Wide), Some((300, 1920)));
         assert_eq!(ui_box(5120, 1440, Picture::Anamorphic), Some((1280, 2560)));
-        // 16:9 and narrower: everything across the window.
+        // 16:9 and narrower, and a maximized window: across the window.
         assert_eq!(ui_box(1920, 1080, Picture::Wide), None);
+        assert_eq!(ui_box(1920, 1009, Picture::Anamorphic), None);
         assert_eq!(ui_box(1600, 1200, Picture::Anamorphic), None);
         // Widescreen off: both in the middle 4:3.
         assert_eq!(scene_box(1920, 1080, Picture::Standard), Some((240, 1440)));
