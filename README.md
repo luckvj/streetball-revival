@@ -15,6 +15,10 @@ a side, over the internet or a home network.
 > **Unofficial fan project.** Not affiliated with or endorsed by the original
 > game's makers or its league. It contains no game data: it plays from **your
 > own disc image**. See [LEGAL.md](LEGAL.md).
+>
+> **Made with the help of AI.** Much of this rebuild was written with the help
+> of a large language model (LLM), so **features may be missing** or behave
+> differently from the original. See [AI disclosure](#ai-disclosure).
 
 <p align="center">
   <img src="docs/screenshots/gamebreaker.webp" alt="A Level 2 gamebreaker: the GB2 burst, then the staged play down the court" width="720">
@@ -109,6 +113,22 @@ selected list, not a whole-game percentage. The biggest open areas:
   guard the rim), which is close but not yet identical;
 - pixel-exact rendering (lighting, shadows, the crowd, the nets);
 - the gamebreaker and celebration cameras, and some results-screen details.
+
+## AI disclosure
+
+This project was built with the help of a large language model (LLM):
+Anthropic's Claude wrote and tested much of the code and the research notes,
+working from the original game's program and recorded matches, with a person
+directing the work and playing every build. That makes it possible to rebuild
+a whole game in detail, but it also means:
+
+- **some features may be missing**, unfinished or work differently from the
+  original, even where the docs describe them;
+- bugs can hide in code no person has read line by line.
+
+If something is missing or feels wrong, please say so on the
+[Discord](https://discord.com/invite/htu5pdxPQz) or in an issue: reports
+against the original are the best way it gets fixed.
 
 ## Feedback
 
