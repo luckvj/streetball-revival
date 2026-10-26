@@ -505,6 +505,8 @@ impl World {
                 body,
                 rise,
                 barred: _,
+                fumble: _,
+                fumble_timer: _,
                 cooldown: _,
                 celebrate: _,
                 stand,

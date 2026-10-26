@@ -102,7 +102,7 @@ use crate::{
 /// screen's reactions among the scripts; 84: the count a shot's timer
 /// started from (the updates it has flown); 85: a computer screener's
 /// three pick scripts among the reactions.
-const VERSION: u8 = 87;
+const VERSION: u8 = 88;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1015,6 +1015,8 @@ fn player(w: &mut Writer, p: &Player) {
         body,
         rise,
         barred,
+        fumble,
+        fumble_timer,
         cooldown,
         celebrate,
         stand,
@@ -1105,6 +1107,8 @@ fn player(w: &mut Writer, p: &Player) {
     }
     w.f(*rise);
     w.uv(u64::from(*barred));
+    w.bool(*fumble);
+    w.uv(u64::from(*fumble_timer));
     w.uv(u64::from(*cooldown));
     w.bool(*celebrate);
     match stand {
@@ -1481,6 +1485,8 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
         },
         rise: r.f()?,
         barred: u16::try_from(r.uv()?).map_err(|_| "invalid bar")?,
+        fumble: r.bool()?,
+        fumble_timer: u16::try_from(r.uv()?).map_err(|_| "invalid fumble")?,
         cooldown: u16::try_from(r.uv()?).map_err(|_| "invalid cooldown")?,
         celebrate: r.bool()?,
         stand: match r.u8()? {

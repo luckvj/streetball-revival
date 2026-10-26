@@ -1177,6 +1177,66 @@ impl World {
         }
     }
 
+    /// `FUN_0015a060`'s fumble (raw `0x15a1c8..0x15a3f0`), each update of
+    /// an actor of the side with the ball (the defence's update clears the
+    /// flag, `0x15da70`): once its wait has run out the flag clears, and
+    /// a holder (+0x70) fumbles. Off the clips of rows 188, 189 and
+    /// 262..265 he falls by `r % 100` (75 and over `0x44bdf7`, 50..74
+    /// `0x44be13`, 25..49 `0x44be4a`, else `0x44be66`); the ball leaves
+    /// at 0.35 an update along his facing turned by `(r & 0xff) − 128`,
+    /// rising 0.125, spinning about the up axis (`0x4c98b0`) at `0.075 +
+    /// u × 0.075` (`FUN_0014c408`), and he and his nearest opponent are
+    /// barred `fps` updates. True when it came (his update ends,
+    /// `0x15a3ec`).
+    pub(crate) fn fumble_tick(&mut self, i: usize) -> bool {
+        let p = &mut self.players[i];
+        if p.team != self.possession {
+            p.fumble = false;
+            return false;
+        }
+        if !p.fumble || p.fumble_timer != 0 {
+            return false;
+        }
+        p.fumble = false;
+        if self.ball.state != BallState::Held(i) {
+            return false;
+        }
+        let row = self.channel(i).and_then(|c| c.shown.record);
+        if !row.is_some_and(|r| matches!(r, 188 | 189 | 262..=265)) {
+            let r = self.rng.next_u32() % 100;
+            let script = match r {
+                75.. => FUMBLES[0],
+                50..=74 => FUMBLES[1],
+                25..=49 => FUMBLES[2],
+                _ => FUMBLES[3],
+            };
+            self.react(i, script);
+        }
+        let turn = (self.rng.next_u32() & 0xff) as i32 - 128;
+        let facing =
+            ((self.players[i].heading + std::f32::consts::PI) * 162.974_66 + 0.5) as i32 & 0x3ff;
+        let a = (facing - turn) & 0x3ff;
+        let along = f32::from_bits(0xbeb3_3333);
+        let u = (self.rng.next_u32() & 0x7fff_ffff) as f32 * f32::from_bits(0x3000_0000);
+        self.ball.drop_loose();
+        self.ball.velocity = [
+            crate::input::native_sin_1024(a) * along * crate::TICK_HZ as f32,
+            0.125 * crate::TICK_HZ as f32,
+            crate::input::native_cos_1024(a) * along * crate::TICK_HZ as f32,
+        ];
+        self.ball.spin_axis = [0.0, 1.0, 0.0];
+        self.ball.spin = u * 0.075 + 0.075;
+        self.ball.airborne = true;
+        self.ball.flight_left = 0.0;
+        self.ball.flight_time = 0.0;
+        self.ball.flight_start = 0.0;
+        if let Some(o) = self.nearest_opponent(i) {
+            self.players[o].barred = crate::TICK_HZ as u16;
+        }
+        self.players[i].barred = crate::TICK_HZ as u16;
+        true
+    }
+
     /// The trick press (`FUN_0015f0f0`, raw `0x15f0f0..0x15f860`) of `i`,
     /// who holds the ball: the turbo buttons' direct slot, or the draw
     /// among the scripts ([`World::draw_trick`]); the facing toward the
@@ -1184,15 +1244,20 @@ impl World {
     /// script started.
     ///
     /// The original's draws are kept: the face (`FUN_00159190(actor, 2,
-    /// fps × 2)`), the draw, and for a value class of 2 or more the
-    /// fumble's (`r % 100` against a chance from Handles and the class,
-    /// actor+0x1d4: the timed knock-loose `FUN_0015a060` plays is not
-    /// modelled). The turbo is the juke press's ([`World::juke_press`]).
+    /// fps × 2)`) and the draw. A value class of 2 or more rolls the
+    /// fumble (`r % 100` under [`fumble_chance`] of his Handles and the
+    /// class, `0x15f620..0x15f828`), which comes `fps × 0.5` updates on
+    /// ([`World::fumble_tick`]); the Dive lesson (game vt+0xb4 16,
+    /// `0x15f1f0..0x15f22c`) always fumbles. The turbo is the juke press's
+    /// ([`World::juke_press`]).
     pub(crate) fn start_trick(&mut self, i: usize, input: &Input, turbos: u32) {
         // The press clears game+0x94 (`0x15f1c8`, [`World::fresh_take`]).
         self.fresh_take = false;
         // The face (`FUN_00159190(actor, 2, fps × 2)`, `0x15f1e8`).
         self.face(i, 2 * crate::TICK_HZ as i32);
+        let dive = self.lesson == Some(16);
+        self.players[i].fumble = dive;
+        self.players[i].fumble_timer = if dive { FUMBLE_WAIT } else { 0 };
         let defender = self.nearest_opponent(i);
         let wanted = self.wanted_facing(i, input);
         let (position, heading) = (self.players[i].position, self.players[i].heading);
@@ -1225,8 +1290,11 @@ impl World {
             _ => timing::facing_word(heading),
         };
         if id.level >= 2 {
-            // The fumble's draw (`0x15f7f4`).
-            self.rng.next_u32();
+            let chance = fumble_chance(self.players[i].ratings.native(7), i32::from(id.level));
+            if self.rng.next_u32() % 100 < chance {
+                self.players[i].fumble = true;
+                self.players[i].fumble_timer = FUMBLE_WAIT;
+            }
         }
         let from = self.poses.get().map(|_| {
             let f = self.gait_frame(i);
@@ -2208,3 +2276,46 @@ impl World {
 }
 
 include!("trick_tables.rs");
+
+/// The fumble's wait (`DAT_004c99b4`, `fps × 0.5`, set at `0x178b70`).
+pub const FUMBLE_WAIT: u16 = 30;
+
+/// The fumble's falls (`0x15a248..0x15a2d8`): `standfallright_r`, its
+/// mirror, and the two with the ball ([`REACTIONS`] 48, 51, 49, 52).
+pub const FUMBLES: [u8; 4] = [48, 51, 49, 52];
+
+/// The fumble's chance at a trick press (`0x15f630..0x15f7f0`): Handles
+/// in tiers of 20 (an exact multiple the tier below with `f = 1`; 81..90
+/// tier 5 and 91..99 tier 6 by tens; 0 no tier), less the move's value
+/// class; three or more short 100, then `(1 − f) a + f b` truncated with
+/// `(a, b)` = (100, 90), (90, 60), (60, 30) and (30, 0) for 3, 2, 1 and 0
+/// short, else 0. No tier at all is 100.
+pub fn fumble_chance(handles: i32, class: i32) -> u32 {
+    let (tier, f) = if handles == 0 {
+        (0, 0.0)
+    } else if handles < 81 {
+        let (q, r) = (handles / 20, handles % 20);
+        if r == 0 {
+            (q, 1.0)
+        } else {
+            (q + 1, r as f32 / 20.0)
+        }
+    } else if handles < 91 {
+        (5, (handles - 80) as f32 / 10.0)
+    } else {
+        (6, (handles - 90) as f32 / 10.0)
+    };
+    let f: f32 = f32::clamp(f, 0.0, 1.0);
+    if tier <= 0 {
+        return 100;
+    }
+    let lerp = |a: f32, b: f32| ((1.0 - f) * a + f * b) as u32;
+    match tier - class {
+        ..-3 => 100,
+        -3 => lerp(100.0, 90.0),
+        -2 => lerp(90.0, 60.0),
+        -1 => lerp(60.0, 30.0),
+        0 => ((1.0 - f) * 30.0) as u32,
+        _ => 0,
+    }
+}
