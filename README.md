@@ -6,6 +6,11 @@ a side, over the internet or a home network.
 
 > **Public beta.** Most of the game plays like the original; some things are
 > still being matched, and you may hit bugs. See [Beta status](#beta-status).
+> **Online play is a work in progress and needs testing**: please try it
+> with friends and tell us how it goes.
+>
+> **Feedback welcome.** Join the [Discord](https://discord.com/invite/htu5pdxPQz) to report bugs, share
+> what feels different from the original, or find people to play online.
 >
 > **Unofficial fan project.** Not affiliated with or endorsed by the original
 > game's makers or its league. It contains no game data: it plays from **your
@@ -70,6 +75,11 @@ from the game.
 
 ## Playing online
 
+> **Work in progress.** Online play is new and still needs testing. Expect
+> rough edges: dropped connections, desyncs or lobby trouble. If you hit
+> one, tell us on the [Discord](https://discord.com/invite/htu5pdxPQz) or in an issue, with what you were
+> doing and whether you hosted or joined.
+
 On the Main Menu press **Select** (**P** on the keyboard) for **Online**.
 
 - **Host 1 vs 1** or **Host 3 vs 3**. The lobby shows a **join code** like
@@ -100,8 +110,13 @@ selected list, not a whole-game percentage. The biggest open areas:
 - pixel-exact rendering (lighting, shadows, the crowd, the nets);
 - the gamebreaker and celebration cameras, and some results-screen details.
 
-Found a bug? Open an issue with what you did, what you expected and what
-happened. Please don't attach disc images or game files.
+## Feedback
+
+Found a bug, or something that plays differently from the original? Tell
+us on the [Discord](https://discord.com/invite/htu5pdxPQz) or open an issue with what you did, what you
+expected and what happened. Feedback on online matches is especially
+welcome while that mode is being tested. Please don't attach disc images
+or game files.
 
 ## Build from source
 

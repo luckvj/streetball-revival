@@ -1,5 +1,10 @@
 # Playing with friends
 
+> **Work in progress.** Online play is new and still needs testing. If
+> something goes wrong (a dropped connection, a desync, a lobby that never
+> fills), please report it on the [Discord](https://discord.com/invite/htu5pdxPQz) or in an issue, saying
+> whether you hosted or joined.
+
 Everyone needs two things:
 
 1. **The game.** Download the zip from the repository's Releases page and
