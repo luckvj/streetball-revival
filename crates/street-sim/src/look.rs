@@ -6,9 +6,9 @@
 //! situation may look at, the events it answers and the situation each
 //! leads to), a look target (+0x210) drawn among the situation's by their
 //! weights and its time (+0x214, drawn between the target's bounds, −1
-//! for good). The rewrite poses no head from it: what it keeps is the
-//! look's place in the shared generator, two draws a new look (three for a
-//! teammate's, whose slot is drawn).
+//! for good), two draws a new look (three for a teammate's, whose slot is
+//! drawn). What the target is, resolved as it is picked ([`Aim`]), turns
+//! the head ([`crate::head`]).
 
 use crate::{BallState, World};
 
@@ -187,6 +187,33 @@ pub const TEAMMATE: u8 = 6;
 const MOVES: u32 = 0x8 | 0x2000 | 0x80 | 0x8000;
 const REACHES: u32 = 0x40 | 0x10000 | 0x1000;
 
+/// What a look aims at, resolved as it is picked (the switch at
+/// `0x1599c4`, `0x43f000`, into `FUN_00155d90`'s record: `FUN_00305220`
+/// a point, `FUN_00305258` an actor, `FUN_00305280` the ball).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum Aim {
+    /// Kind 0 (`FUN_00155dd8`): nothing; the head plays its clip.
+    #[default]
+    Clear,
+    /// Kinds 1, 2, 3 and 6: a player, looked at in his head (his floor
+    /// place plus his head's height over it, `FUN_00305488`); kind 1 the
+    /// pass's receiver (ball+0x100; on a pass of kind 2, actor+0x268, the
+    /// third teammate), 2 the nearest opponent (`FUN_00170dc0`), 3 his
+    /// defender on offence (`FUN_0016e8f8`) else his man (`FUN_0016e8c0`),
+    /// 6 a teammate whose slot is drawn.
+    Actor(u8),
+    /// Kinds 4 and 5: the ball (`FUN_003052a0`'s kind 3); with `holder`
+    /// (kind 4) its holder's head while one holds it.
+    Ball { holder: bool },
+    /// Kind 7: the rim the offence attacks, at 11.957 (`0x159b48`).
+    Point([f32; 3]),
+    /// Kind 8: between the ball and the head of his defender or man,
+    /// moved every update at that head's height (`0x159bdc..0x159ca4`).
+    Guard,
+    /// Kind 9: the camera (`0x402020`'s place, every update).
+    Camera,
+}
+
 /// An actor's look (actor+0x200..+0x214).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Look {
@@ -202,6 +229,11 @@ pub struct Look {
     pub last_holder: Option<u8>,
     /// +0x208: the state bits as his last update left them.
     pub last_bits: u32,
+    /// What the target is (actor+0x130's record).
+    pub aim: Aim,
+    /// The targets picked so far (each a `FUN_00155d90` or, for
+    /// [`Aim::Clear`], a `FUN_00155dd8`), wrapping: the head blends at each.
+    pub picks: u16,
 }
 
 impl Default for Look {
@@ -214,6 +246,8 @@ impl Default for Look {
             last_state: 1,
             last_holder: None,
             last_bits: 0,
+            aim: Aim::Clear,
+            picks: 0,
         }
     }
 }
@@ -260,8 +294,10 @@ impl World {
             self.game_phase.phase,
             phase::PREGAME | phase::OVER | phase::WON
         ) {
+            let picks = self.players[i].look.picks;
             self.players[i].look = Look {
                 last_bits: bits,
+                picks,
                 ..Look::default()
             };
             return;
@@ -347,12 +383,71 @@ impl World {
             let [lo, hi] = TARGETS[usize::from(l.target)].span;
             let u = unit(self.rng.next_u32());
             l.timer = lo + (u * (hi - lo) as f32) as i32;
-            if TARGETS[usize::from(l.target)].kind == TEAMMATE {
-                self.rng.next_u32();
-            }
+            let kind = TARGETS[usize::from(l.target)].kind;
+            let drawn = (kind == TEAMMATE).then(|| self.rng.next_u32());
+            l.aim = self.aim(i, kind, drawn);
+            l.picks = l.picks.wrapping_add(1);
         }
         l.last_bits = bits;
         self.players[i].look = l;
+    }
+}
+
+impl World {
+    /// The aim of a look of `kind` picked by `i` (`0x1599c4..0x159ba4`),
+    /// `drawn` the teammate's draw.
+    fn aim(&self, i: usize, kind: u8, drawn: Option<u32>) -> Aim {
+        use crate::school::Court;
+        let actor = |j: Option<usize>| j.map_or(Aim::Clear, |j| Aim::Actor(j as u8));
+        let team = self.team_of(i);
+        match kind {
+            1 => {
+                let to = self.ball.pass.map(|p| p.to);
+                if self.players[i].pass_kind == 2 {
+                    actor(to.and_then(|r| {
+                        let slot = 3 - Court::slot(self, r) as i32 - Court::slot(self, i) as i32;
+                        usize::try_from(slot)
+                            .ok()
+                            .and_then(|k| Court::in_slot(self, team, k))
+                    }))
+                } else {
+                    actor(to)
+                }
+            }
+            2 => actor(self.nearest_opponent(i)),
+            3 => actor(self.guard_of(i)),
+            4 => Aim::Ball { holder: true },
+            5 => Aim::Ball { holder: false },
+            TEAMMATE => {
+                // `0x159af0`: his slot ± 1 by `r & 2`, wrapping.
+                let r = drawn.unwrap_or(0);
+                let mut k = Court::slot(self, i) as i32 + (r & 2) as i32 - 1;
+                if k >= 3 {
+                    k = 0;
+                } else if k < 0 {
+                    k = 2;
+                }
+                actor(Court::in_slot(self, team, k as usize))
+            }
+            7 => Aim::Point([
+                crate::restart::side(self.possession.min(1)) * 36.75,
+                f32::from_bits(0x413f_4ef3),
+                0.0,
+            ]),
+            8 => Aim::Guard,
+            9 => Aim::Camera,
+            _ => Aim::Clear,
+        }
+    }
+
+    /// Kinds 3 and 8's man: with the ball his side's, the defender on him
+    /// (`FUN_0016e8f8`), else the man he guards (`FUN_0016e8c0`).
+    pub fn guard_of(&self, i: usize) -> Option<usize> {
+        if self.possession == self.players[i].team {
+            self.holder_defender(i)
+        } else {
+            self.man_of(i)
+        }
     }
 }
 

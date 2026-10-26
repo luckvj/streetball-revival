@@ -41,6 +41,7 @@ pub mod game_phase;
 pub mod gamebreaker;
 pub mod guard;
 pub mod hands;
+pub mod head;
 pub mod held;
 pub mod input;
 pub mod jump;
