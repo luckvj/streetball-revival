@@ -546,12 +546,17 @@ impl World {
     /// the rim) or when the ball has touched the hoop (state 6) and is not
     /// his; then by the ball's last shooter (+0xf8, else its holder): his
     /// own, `r > 1` after a made roll (`0x3d6580`) and `r > 49` after a
-    /// missed one; nobody's, `r > 89`; another's, no. Not modelled, the
+    /// missed one; nobody's, `r > 89`; another's, no. Never on a torn rim
+    /// nobody holds (the hoop on his side's +0x80 set with +0x78 clear,
+    /// `0x172490..0x1724cc`; [`crate::rim::Rim`]). Not modelled, the
     /// rewrite's reading: the Script Manager's replay states (3..7 always
-    /// hang), the hoop object's state words (+0x80 set with +0x78 clear
-    /// bars it).
+    /// hang).
     pub(crate) fn hangs(&mut self, i: usize) -> bool {
         if matches!(self.phase, crate::Phase::Over { .. }) {
+            return false;
+        }
+        let rim = &self.rims[crate::rim::post_side(self.players[i].position[0])];
+        if rim.torn && !rim.held {
             return false;
         }
         let team = self.players[i].team;

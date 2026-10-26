@@ -1102,7 +1102,7 @@ fn board_return(ctx: &Ctx) -> bool {
 
 /// Channel 0's flag 0x200000 (`FUN_0019c2e0(actor + 0xc4, 0)` +0x48): a
 /// blend under way, as the sim keeps them (a trick's, a reaction's, a
-/// script's; the gait's own blends are not modelled).
+/// script's, a change of gait row's, [`crate::World::channel`]).
 fn blending(ctx: &Ctx, h: usize) -> bool {
     match ctx.w.players[h].action {
         crate::Action::Trick { play, .. } => play.run.blend_counter().is_some(),
