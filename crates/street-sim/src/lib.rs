@@ -519,6 +519,12 @@ pub enum Event {
         holder: usize,
         speed: f32,
     },
+    /// A hand took the ball: every take (`FUN_0014cb28`'s tail, class
+    /// `0x3c6600` at `0x14d160`, whatever else it posted), the sound
+    /// listener's slot 24.
+    Take {
+        player: usize,
+    },
     /// Callback 27 after a slam (`FUN_001720a8`, class `0x3c6730`): the
     /// sound listener's slot 44 at the dunker; the pole's sway when he is
     /// the ball's last shooter.
@@ -2594,6 +2600,8 @@ impl World {
         if blocked && let Some(shooter) = shooter {
             self.events.push(Event::Block { player: i, shooter });
         }
+        // `0x14d158..0x14d178`: every take ends posting slot 24.
+        self.events.push(Event::Take { player: i });
     }
 
     fn score_basket(&mut self, player: usize, basket: Basket) {
