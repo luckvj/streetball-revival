@@ -5,6 +5,14 @@ its version's part.
 
 ## Unreleased
 
+- **Rucker Classic song:** once you own the court, switching its song
+  off in Trax plays the next song instead, as in the original.
+- **Replays after a rim hang** film from the baseline, as in the
+  original.
+- **Passes to a player in the air or posting up** are aimed where the
+  original aims them.
+- **Box-outs** hold the boxed player where the original's animation puts
+  him.
 - **Per-player dunks:** a legend's turbo-combo dunk is his own signature
   dunk and a created player's are the ones he equipped, as in the
   original (everyone used to dunk the same set).

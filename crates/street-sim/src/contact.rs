@@ -524,8 +524,10 @@ impl World {
     /// is drawn toward his place by the boxer: his model's scale (+0x40)
     /// along the boxer's wanted facing, turned by the clips they play (the
     /// boxer's 60/61: 320 either way at 2.5 scales; else behind him, the
-    /// boxed man's 58/59 64 either way of it at 1.5, else 2.15), at most
-    /// 0.4 an update. The clips' root offsets (+0xe0) are not carried.
+    /// boxed man's 58/59 64 either way of it at 1.5, else 2.15), plus his
+    /// model's root now (+0xe0, `0x133d74..0x133d80`: his clip's root at
+    /// the frame shown, turned and scaled into the world), at most 0.4 an
+    /// update.
     fn pin_box_outs(&mut self) {
         for i in 0..self.players.len() {
             let p = &self.players[i];
@@ -574,9 +576,10 @@ impl World {
             }
             let word = word & 0x3ff;
             let at = self.players[b].position;
+            let root = self.model_root(i);
             let to = [
-                at[0] - scale * crate::input::native_sin_1024(word),
-                at[1] - scale * crate::input::native_cos_1024(word),
+                at[0] - scale * crate::input::native_sin_1024(word) + root[0],
+                at[1] - scale * crate::input::native_cos_1024(word) + root[1],
             ];
             let me = self.players[i].position;
             let mut d = [to[0] - me[0], to[1] - me[1]];
@@ -587,6 +590,32 @@ impl World {
             }
             self.players[i].position = [me[0] + d[0], me[1] + d[1]];
         }
+    }
+
+    /// Actor+0xe0, the model's root now: the clip channel 0 shows, its
+    /// root at the frame shown turned by his facing word and scaled by his
+    /// body (x, z); nothing without the disc's animations or in a blend.
+    pub(crate) fn model_root(&self, i: usize) -> [f32; 2] {
+        let (Some(poses), Some(shown)) = (self.poses.get(), self.channel(i).map(|c| c.shown))
+        else {
+            return [0.0; 2];
+        };
+        let (Some(record), None) = (shown.record, shown.blend) else {
+            return [0.0; 2];
+        };
+        let Some(root) = poses.root(crate::pose::Frame {
+            record,
+            time: shown.frame,
+            looping: false,
+        }) else {
+            return [0.0; 2];
+        };
+        let p = &self.players[i];
+        let theta = crate::timing::facing_word(p.heading) as f32 * std::f32::consts::TAU / 1024.0;
+        let yaw = [0.0, math::sin(theta * 0.5), 0.0, math::cos(theta * 0.5)];
+        let h = p.body().height;
+        let off = crate::pose::rotate(yaw, [root[0] * h, 0.0, root[2] * h]);
+        [off[0], off[2]]
     }
 
     /// `FUN_001343e8(p, q)`: push the two apart. `a` (the original's

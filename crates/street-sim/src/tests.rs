@@ -2354,6 +2354,19 @@ fn the_shot_chooser_knows_the_shooter() {
 }
 
 #[test]
+fn the_state_bits_show_the_post_up_the_rim_and_the_box_out() {
+    // Bits 11 (`FUN_0016ea20`), 14 (`FUN_0016ea50`), 17 (`FUN_0016e970`)
+    // and 18 (`FUN_0016e980`), all inside the camera's mask `0x7ffdc`.
+    let mut w = driver([20.0, 0.0], 0.0, 1);
+    assert_eq!(w.actor_state_bits(0), 0);
+    w.players[0].posting = true;
+    w.players[0].on_rim = true;
+    w.players[0].boxing = true;
+    w.players[0].boxed = true;
+    assert_eq!(w.actor_state_bits(0), 1 << 11 | 1 << 14 | 1 << 17 | 1 << 18);
+}
+
+#[test]
 fn the_contest_skips_the_fallen_and_the_counter_stance() {
     // `0x172c8c..0x172d04`: opponents within 7 are near and those in a
     // block jump contest, but one down (flag 0x40) or in the counter

@@ -1066,11 +1066,13 @@ impl World {
     }
 
     /// Actor `i`'s state bits (actor+0xa4) as the simulation's actions show
-    /// them, the bits the computer players read (`ai/court.rs`): 3 a jump
-    /// shot or a lay-up, 4 a pass's throw, 7 a dunk, 8 a rebound jump, 9 a
-    /// pass's catch, 10 a trick, 12 a block jump, 13 a lay-up, 15 an
-    /// alley-oop's leap, 16 the counter stance. Bits 2, 6, 11, 14, 17 and
-    /// 18 (all inside the camera's mask `0x7ffdc`) are not modelled.
+    /// them: 3 a jump shot or a lay-up, 4 a pass's throw, 6 a swipe or the
+    /// take after a counter (`FUN_0016e9a0`), 7 a dunk, 8 a rebound jump, 9
+    /// a pass's catch, 10 a trick, 11 posting up (`FUN_0016ea20`), 12 a
+    /// block jump, 13 a lay-up, 14 hands on the rim (`FUN_0016ea50`), 15 an
+    /// alley-oop's leap, 16 the counter stance, 17 boxing out
+    /// (`FUN_0016e970`), 18 boxed out (`FUN_0016e980`). Bit 2 (inside the
+    /// camera's mask `0x7ffdc`) is not identified.
     pub fn actor_state_bits(&self, i: usize) -> u32 {
         let Some(p) = self.players.get(i) else {
             return 0;
@@ -1091,6 +1093,16 @@ impl World {
             ),
         );
         set(4, matches!(p.action, Action::Passing { .. }));
+        set(
+            6,
+            match p.action {
+                Action::Stealing { counter: false, .. } => true,
+                Action::Stealing {
+                    stance: Some(s), ..
+                } => s.take(),
+                _ => false,
+            },
+        );
         set(7, matches!(p.action, Action::Dunking { layup: false, .. }));
         set(8, matches!(p.action, Action::ReboundJump { .. }));
         set(
@@ -1106,6 +1118,7 @@ impl World {
             },
         );
         set(10, p.action.juking());
+        set(11, p.posting);
         set(12, matches!(p.action, Action::Jumping { .. }));
         set(
             13,
@@ -1114,11 +1127,14 @@ impl World {
                 Action::Layup { .. } | Action::Dunking { layup: true, .. }
             ),
         );
+        set(14, p.on_rim);
         set(15, p.leaping());
         set(
             16,
             matches!(p.action, Action::Stealing { counter: true, .. }),
         );
+        set(17, p.boxing);
+        set(18, p.boxed);
         bits
     }
 

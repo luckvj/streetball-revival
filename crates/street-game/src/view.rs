@@ -2490,7 +2490,8 @@ pub struct CameraManager {
     /// Listener `+0x8`: the winning basket went in.
     won: bool,
     /// Listener `+0xc`: the side of the ball at the last replay request,
-    /// 2 or 3 by `z > 0.793225` (1 from slot `+0x154`, not ported).
+    /// 2 or 3 by `z > 0.793225`, or 1 once a dunker lets go of the rim
+    /// (slot `+0x154`, message slot 43, `FUN_00302470`).
     replay_side: u8,
     /// Listener `+0x10`: the scorer of the last basket it noted.
     shooter: Option<usize>,
@@ -3010,6 +3011,9 @@ impl CameraManager {
                         }
                     }
                     street_sim::Event::Cancel { .. } => self.shake_row(ROW_SHAKE.0),
+                    // Slot 0x154 (FUN_00302470): a dunker let go of the
+                    // rim; the next replay request films from the baseline.
+                    street_sim::Event::RimHold { on: false, .. } => self.replay_side = 1,
                     // Slot 0x1a4 (FUN_0013f1f0's violation post, FUN_00302488):
                     // a courtside camera on the team's last ball carrier.
                     street_sim::Event::ShotClockViolation { team } => {

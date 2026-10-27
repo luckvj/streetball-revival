@@ -351,12 +351,22 @@ impl Sounds {
     }
 
     /// A match's song (`0x1a0a38`): the session's current one, or when it
-    /// is switched off the next one on; the Rucker Classic court (record
-    /// 10) plays song 12 (`FUN_001a0c48` through `FUN_001aa828`; its
-    /// unlock checks are not ported).
-    fn match_song(&mut self, court: Option<usize>) -> Option<(music::Song, u32)> {
+    /// is switched off the next one on. The Rucker Classic court (record
+    /// 10, `FUN_001a0c48`) makes song 12 current (`FUN_001aa828`) and plays
+    /// it, unless the court is the save's (`FUN_001d37b0`, `rucker_owned`)
+    /// and song 12 is switched off: then the next one on, or none. (Its
+    /// gate on the music manager's +0x1790, set while a song waits to
+    /// resume, is clear at a match's start.)
+    fn match_song(
+        &mut self,
+        court: Option<usize>,
+        rucker_owned: bool,
+    ) -> Option<(music::Song, u32)> {
         if court == Some(10) {
             self.path_song = 12;
+            if rucker_owned && !self.path_song_on(12) {
+                self.path_song = self.first_path_song_on();
+            }
         } else if !self.path_song_on(self.path_song) {
             self.path_song = self.first_path_song_on();
         }
@@ -766,7 +776,7 @@ fn start_song(
     sounds: &mut Sounds,
     (streams, path_songs): (&mut Assets<Streamed>, &mut Assets<crate::song::PathSong>),
     settings: &AudioSettings,
-    court: Option<usize>,
+    (court, rucker_owned): (Option<usize>, bool),
 ) {
     if !sounds.interactive {
         commands.remove_resource::<crate::song::MusicLink>();
@@ -807,7 +817,7 @@ fn start_song(
         ));
         return;
     }
-    let Some((song, seed)) = sounds.match_song(court) else {
+    let Some((song, seed)) = sounds.match_song(court, rucker_owned) else {
         return;
     };
     if let Some((path_song, link)) = crate::song::load(&mut disc.iso, &song, seed) {
@@ -939,6 +949,7 @@ fn playlist_music(
     mut path_songs: ResMut<Assets<crate::song::PathSong>>,
     settings: Res<AudioSettings>,
     setup: Res<MatchSetup>,
+    save: Option<Res<crate::story::Save>>,
     playing: Query<(Entity, Option<&AudioSink>, Has<PlaylistSong>), With<MatchSong>>,
 ) {
     let swap = playing.is_empty()
@@ -952,7 +963,7 @@ fn playlist_music(
         commands.entity(entity).despawn();
     }
     commands.remove_resource::<crate::song::MusicLink>();
-    let court = court_of(&disc, &setup);
+    let court = court_of(&disc, &setup, save.as_deref());
     start_song(
         &mut commands,
         &mut disc,
@@ -963,11 +974,19 @@ fn playlist_music(
     );
 }
 
-/// The match's court as its `XDBCOURT` record (profile +0xcc).
-fn court_of(disc: &Disc, setup: &MatchSetup) -> Option<usize> {
-    disc.courts
+/// The match's court as its `XDBCOURT` record (profile +0xcc), and
+/// whether the Rucker Classic court is the save's (`FUN_001d37b0`).
+fn court_of(
+    disc: &Disc,
+    setup: &MatchSetup,
+    save: Option<&crate::story::Save>,
+) -> (Option<usize>, bool) {
+    let court = disc
+        .courts
         .iter()
-        .position(|c| c.id.eq_ignore_ascii_case(&setup.court))
+        .position(|c| c.id.eq_ignore_ascii_case(&setup.court));
+    let owned = save.is_some_and(|s| crate::rewards::court_unlocked(&s.story, disc, 10));
+    (court, owned)
 }
 
 fn match_audio(
@@ -981,11 +1000,12 @@ fn match_audio(
     ),
     settings: Res<AudioSettings>,
     setup: Res<MatchSetup>,
+    save: Option<Res<crate::story::Save>>,
 ) {
     manager.init(&mut disc.iso, sounds.commentary.as_mut());
 
     commands.remove_resource::<crate::song::MusicLink>();
-    let court = court_of(&disc, &setup);
+    let court = court_of(&disc, &setup, save.as_deref());
     start_song(
         &mut commands,
         &mut disc,
@@ -2341,10 +2361,10 @@ mod rotation_tests {
         };
         sounds.path_song = 5;
         let folder = |s: Option<(music::Song, u32)>| s.map(|(s, _)| s.folder);
-        assert_eq!(folder(sounds.match_song(None)), Some("S5".into()));
+        assert_eq!(folder(sounds.match_song(None, false)), Some("S5".into()));
         // Songs 5..9 off: the first on from 5 is 10.
         sounds.trax(0b1_1111 << 4, false, false);
-        assert_eq!(folder(sounds.match_song(None)), Some("S10".into()));
+        assert_eq!(folder(sounds.match_song(None, false)), Some("S10".into()));
         assert_eq!(sounds.path_song, 10);
         // From 14 with 14 and 15 off the search wraps to 1; 16 and up are
         // never searched.
@@ -2353,13 +2373,28 @@ mod rotation_tests {
         assert_eq!(sounds.first_path_song_on(), 1);
         // Every song off: -1 and nothing plays.
         sounds.trax(u32::MAX, false, false);
-        assert_eq!(sounds.match_song(None), None);
+        assert_eq!(sounds.match_song(None, false), None);
         assert_eq!(sounds.path_song, -1);
-        // The Rucker Classic plays song 12 whatever the session's song.
+        // The Rucker Classic plays song 12 whatever the session's song;
+        // switched off, it still does until the court is the save's, then
+        // the next one on (`FUN_001a0c48`).
         sounds.trax(0, false, false);
         sounds.path_song = 3;
-        assert_eq!(folder(sounds.match_song(Some(10))), Some("S12".into()));
+        assert_eq!(
+            folder(sounds.match_song(Some(10), false)),
+            Some("S12".into())
+        );
         assert_eq!(sounds.path_song, 12);
+        sounds.trax(1 << 11, false, false);
+        assert_eq!(
+            folder(sounds.match_song(Some(10), false)),
+            Some("S12".into())
+        );
+        assert_eq!(
+            folder(sounds.match_song(Some(10), true)),
+            Some("S13".into())
+        );
+        assert_eq!(sounds.path_song, 13);
     }
 
     /// `FUN_001aabc8` in turn: the next song, or the next one on; past the
