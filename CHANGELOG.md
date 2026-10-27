@@ -32,6 +32,9 @@ its version's part.
 - **Steam on the Philly court** rises and fades the way the original's
   does, and leans with the court's wind; one vent's steam no longer shoots
   sideways ten times too fast.
+- **Breath on the Foster court** comes out the way the original's does:
+  every two to five seconds each player breathes out a small cloud from
+  his mouth that follows his head, then drifts off on the wind.
 
 ## v0.1.3-beta
 

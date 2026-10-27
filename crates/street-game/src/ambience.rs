@@ -11,9 +11,8 @@
 //! resting heights, sizes and spread (0x1f4248) and its motion (0x1f4950,
 //! [`crate::drift`]), the vents' places and the way they blow, 40 particles
 //! to a vent (0x20a4d0), six breathers (0x2f3b30) and the particle image
-//! (`smoke.ssh` in `/XF/XF000003`), and the steam's (0x20a5c8,
-//! [`crate::steam`]). The breath's motion is not: the speeds, lifetimes and
-//! sizes here are chosen to look the part.
+//! (`smoke.ssh` in `/XF/XF000003`), the steam's (0x20a5c8,
+//! [`crate::steam`]) and the breath's (0x1f07c0, [`crate::breath`]).
 
 use std::{collections::BTreeMap, f32::consts::PI};
 
@@ -30,7 +29,7 @@ use street_render::animation::Rig;
 use crate::{
     Screen,
     game::Paused,
-    setup::{MouthJoint, Scene},
+    setup::Scene,
     view::{SidelineCamera, SimPlayer},
 };
 
@@ -133,7 +132,7 @@ impl Plugin for AmbiencePlugin {
             FixedUpdate,
             (
                 light_hoop,
-                (blow_litter, vent_steam).run_if(|p: Res<Paused>| !p.on),
+                (blow_litter, vent_steam, breathe).run_if(|p: Res<Paused>| !p.on),
             )
                 .after(crate::game::SimStep)
                 .run_if(in_state(Screen::Playing))
@@ -141,7 +140,7 @@ impl Plugin for AmbiencePlugin {
         )
         .add_systems(
             Update,
-            (breathe, burn, fade_puffs)
+            (burn, fade_puffs)
                 .chain()
                 .run_if(in_state(Screen::Playing))
                 .run_if(|p: Res<Paused>| !p.on)
@@ -176,6 +175,10 @@ struct Vent(crate::steam::Vent);
 #[derive(Component)]
 struct SteamPuff(Entity, usize);
 
+/// One of a player's breath puffs on screen: the player and index.
+#[derive(Component)]
+struct BreathPuff(usize, usize);
+
 /// The shared look of every puff, and the breathers' timers.
 #[derive(Resource)]
 struct Puffs {
@@ -188,8 +191,8 @@ struct Puffs {
     burst: Option<Vec3>,
     /// The court's wind in feet a frame, as the steam reads it.
     court_wind: [f32; 3],
-    cold: bool,
-    breath: [f32; 6],
+    /// A breather a player (`0x2f45ec..0x2f462c`), in the cold.
+    breathers: Vec<crate::breath::Breather>,
     rng: u32,
 }
 
@@ -228,12 +231,32 @@ fn spawn_ambience(
         court_wind: a.wind.map_or([0.0; 3], |w| {
             crate::steam::court_wind(w.speed, w.direction[0], w.direction[1])
         }),
-        cold: a.cold,
-        breath: [0.0; 6],
+        breathers: Vec::new(),
         rng: 0x002f_3b30 ^ scene.court.id.len() as u32,
     };
-    for b in 0..6 {
-        puffs.breath[b] = puffs.roll() * 3.0;
+    if a.cold {
+        for k in 0..6 {
+            let seed = puffs.rng ^ (k as u32 + 7).wrapping_mul(0x85eb_ca6b);
+            puffs.breathers.push(crate::breath::Breather::new(seed));
+            for i in 0..crate::breath::PUFFS {
+                let material = materials.add(StandardMaterial {
+                    base_color: Color::linear_rgba(1.0, 1.0, 1.0, 0.0),
+                    base_color_texture: puffs.image.clone(),
+                    alpha_mode: AlphaMode::Blend,
+                    unlit: true,
+                    cull_mode: None,
+                    ..default()
+                });
+                commands.spawn((
+                    Mesh3d(puffs.quad.clone()),
+                    MeshMaterial3d(material),
+                    Transform::from_scale(Vec3::splat(crate::breath::SIZE)),
+                    Visibility::Hidden,
+                    BreathPuff(k, i),
+                    scoped.clone(),
+                ));
+            }
+        }
     }
     let count = |second: bool| {
         a.litter
@@ -332,23 +355,6 @@ fn blow_litter(
     }
 }
 
-fn puff(
-    commands: &mut Commands,
-    puffs: &Puffs,
-    materials: &mut Assets<StandardMaterial>,
-    at: Vec3,
-    p: Puff,
-) {
-    puff_with(
-        commands,
-        puffs.quad.clone(),
-        puffs.image.clone(),
-        materials,
-        at,
-        p,
-    );
-}
-
 fn puff_with(
     commands: &mut Commands,
     quad: Handle<Mesh>,
@@ -415,54 +421,56 @@ fn vent_steam(
     }
 }
 
-/// In the cold every player breathes out now and then, a small cloud from
-/// the mouth, the way they face.
+/// In the cold each player's breather (`FUN_001f07c0`) steps once a frame
+/// from his head bone (21): its place and its up axis turned. Its puffs are
+/// drawn where it puts them, white, the engine's alpha (128 is 1), turned
+/// to the camera.
 fn breathe(
-    mut commands: Commands,
-    time: Res<Time>,
     puffs: Option<ResMut<Puffs>>,
-    mouth: Option<Res<MouthJoint>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    players: Query<(&SimPlayer, &Rig, &GlobalTransform)>,
+    players: Query<(&SimPlayer, &Rig)>,
     joints: Query<&GlobalTransform>,
+    camera: Query<&GlobalTransform, With<SidelineCamera>>,
+    mut sprites: Query<(
+        &BreathPuff,
+        &mut Transform,
+        &mut Visibility,
+        &MeshMaterial3d<StandardMaterial>,
+    )>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let (Some(mut puffs), Some(mouth)) = (puffs, mouth) else {
-        return;
-    };
-    if !puffs.cold {
+    let Some(mut puffs) = puffs else { return };
+    if puffs.breathers.is_empty() {
         return;
     }
-    let dt = time.delta_secs();
-    for (player, rig, body) in &players {
-        let Some(b) = puffs.breath.get(player.0).copied() else {
-            continue;
-        };
-        let left = b - dt;
-        if left > 0.0 {
-            puffs.breath[player.0] = left;
-            continue;
-        }
-        puffs.breath[player.0] = 1.5 + puffs.roll() * 2.5;
-        let Some(at) = rig
+    let wind = puffs.court_wind;
+    for (player, rig) in &players {
+        let Some(head) = rig
             .joints
-            .get(mouth.0)
+            .get(crate::breath::HEAD)
             .and_then(|&j| joints.get(j).ok())
-            .map(|g| g.translation())
         else {
             continue;
         };
-        let facing = body.rotation() * Vec3::NEG_Z;
-        for _ in 0..5 {
-            let spread =
-                Vec3::new(puffs.roll() - 0.5, puffs.roll() - 0.5, puffs.roll() - 0.5) * 0.4;
-            let p = Puff {
-                age: 0.0,
-                life: 0.7 + 0.4 * puffs.roll(),
-                velocity: facing * 1.4 + Vec3::Y * 0.3 + spread,
-                size: (0.5, 1.8),
-                opacity: 0.85,
-            };
-            puff(&mut commands, &puffs, &mut materials, at + facing * 0.25, p);
+        let at = head.translation().to_array();
+        let up = (head.rotation() * Vec3::Y).to_array();
+        if let Some(b) = puffs.breathers.get_mut(player.0) {
+            b.step(at, up, wind);
+        }
+    }
+    let facing = camera.single().map(|c| c.rotation()).unwrap_or_default();
+    for (sprite, mut t, mut shown, material) in &mut sprites {
+        let Some(p) = puffs.breathers.get(sprite.0).map(|b| b.puffs[sprite.1]) else {
+            continue;
+        };
+        if p.life == 0 {
+            *shown = Visibility::Hidden;
+            continue;
+        }
+        *shown = Visibility::Inherited;
+        t.translation = Vec3::from_array(p.position);
+        t.rotation = facing;
+        if let Some(mut m) = materials.get_mut(&material.0) {
+            m.base_color.set_alpha((p.alpha / 128.0).min(1.0));
         }
     }
 }
