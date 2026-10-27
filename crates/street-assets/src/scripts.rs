@@ -454,6 +454,15 @@ impl MoveScripts {
         .copied()
     }
 
+    /// The generic team's fixed row for slot `slot` of `category` (0
+    /// shots, 1 dunks, 2 tricks; `FUN_001d9e60`), if it has one.
+    pub fn generic_row(&self, category: usize, slot: usize) -> Option<usize> {
+        self.generic_rows[category]
+            .get(slot)
+            .filter(|&&row| row != u16::MAX)
+            .map(|&row| usize::from(row))
+    }
+
     pub fn default_script(&self, kind: Kind, slot: usize) -> Option<&MoveScript> {
         let ids = match kind {
             Kind::Shot => &self.default_shots,

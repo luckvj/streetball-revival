@@ -2317,11 +2317,7 @@ fn the_shot_chooser_knows_the_shooter() {
             ref other => panic!("{other:?}"),
         }
     };
-    let who = |record: u16, female: bool| crate::Shooter {
-        record,
-        female,
-        slots: [4, 7, 5, 6, 3, 1],
-    };
+    let who = crate::Shooter::shared;
     let unit = std::f32::consts::TAU / 1024.0;
     let half_pi = std::f32::consts::FRAC_PI_2;
     let away = -half_pi;
@@ -2355,6 +2351,72 @@ fn the_shot_chooser_knows_the_shooter() {
     let mut own = who(3, false);
     own.slots[0] = 21;
     assert_eq!(pick(own, [10.0, 0.0], away, 1, button::L1 | button::R1), 21);
+}
+
+#[test]
+fn the_contest_skips_the_fallen_and_the_counter_stance() {
+    // `0x172c8c..0x172d04`: opponents within 7 are near and those in a
+    // block jump contest, but one down (flag 0x40) or in the counter
+    // stance (bit 16) is not counted at all.
+    let mut w = World::new(
+        hoops(),
+        vec![
+            Player::new(0, [20.0, 0.0], 0.0),
+            Player::new(1, [22.0, 0.0], 0.0),
+            Player::new(1, [20.0, 3.0], 0.0),
+            Player::new(1, [20.0, -3.0], 0.0),
+        ],
+        Rules::default(),
+        1,
+    );
+    assert_eq!(w.contest(0), (3, 0));
+    w.players[1].action = Action::Jumping {
+        elapsed: 0.0,
+        high: false,
+        block: None,
+    };
+    assert_eq!(w.contest(0), (3, 1));
+    w.players[2].action = Action::Stealing {
+        elapsed: 0.0,
+        counter: true,
+        swipe: None,
+        stance: None,
+    };
+    w.players[3].action = Action::Stumbling {
+        elapsed: 0.0,
+        duration: 1.0,
+        reaction: None,
+    };
+    assert_eq!(w.contest(0), (1, 1));
+}
+
+#[test]
+fn a_shooters_own_dunk_slots_and_unlocks() {
+    // `FUN_00139d38`: a slot the record answers for unlocks its dunk by
+    // the row's level; otherwise the shared table.
+    let shared = crate::Shooter::shared(3, false);
+    assert_eq!(shared.dunk_unlock(3), 1);
+    assert_eq!(shared.dunk_unlock(48), 16);
+    let mut own = shared;
+    own.dunks[5] = 3;
+    own.dunk_unlocks[5] = 4;
+    assert_eq!(own.dunk_unlock(3), 4);
+    assert_eq!(own.dunk_unlock(4), 2);
+    // A two-turbo press plays the slot's own dunk.
+    let mut w = driver([30.0, 0.0], 0.0, 1);
+    w.players[0].shooter = Some(own);
+    let row = timing::MOVE_ROWS
+        .iter()
+        .position(|r| r.family == 0 && r.id == 3)
+        .unwrap();
+    let slot5 = button::L1 | button::R1;
+    assert_eq!(
+        timing::press_move(&mut w, 0, slot5),
+        timing::PressMove::Row {
+            row: row as u8,
+            advanced: false
+        }
+    );
 }
 
 #[test]

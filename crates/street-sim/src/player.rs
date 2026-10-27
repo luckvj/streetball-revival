@@ -104,17 +104,51 @@ impl NativeTricks {
     }
 }
 
-/// Who shoots, as the shot pick (`FUN_0016b4b8`) asks it: the record
-/// (actor+0x288's vt+0x10) for its legends and Bird, the record's field 12
-/// (`FUN_001da4e0(record, 12) > 0`) for the female set, and the six
-/// two-turbo slots' shots (`FUN_0013a1f8(record, 2, +0x258, slot)`: a
-/// created player's equipped rows, the generic team's fixed rows, else the
-/// shared set), ids in [`crate::timing::SHOT_SCRIPTS`].
+/// Who shoots, as the shoot press (`FUN_001693b8`, `FUN_0016b4b8`) asks
+/// it: the record (actor+0x288's vt+0x10) for its legends and Bird, the
+/// record's field 12 (`FUN_001da4e0(record, 12) > 0`) for the female set,
+/// and the two-turbo slots' moves through `FUN_0013a1f8` (a created
+/// player's equipped rows, the generic team's fixed rows, a legend's own
+/// slot-1 dunk, else the shared set).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Shooter {
     pub record: u16,
     pub female: bool,
+    /// The six shot slots (`FUN_0013a1f8(record, 2, +0x258, slot)`), ids
+    /// in [`crate::timing::SHOT_SCRIPTS`].
     pub slots: [u8; 6],
+    /// The eleven dunk slots (`FUN_0013a1f8(record, 0, +0x254, slot)`),
+    /// dunk ids of [`crate::timing::MOVE_ROWS`]' family 0.
+    pub dunks: [u8; 11],
+    /// Each dunk slot's unlock mask where the record answers for it
+    /// (`FUN_00139d38`'s record branches: `1 << level` of a created
+    /// player's equipped or the generic team's fixed row, 8 for a legend's
+    /// own dunk), 0 where the shared table does
+    /// ([`crate::timing::dunk_unlock`]).
+    pub dunk_unlocks: [u8; 11],
+}
+
+impl Shooter {
+    /// A record that plays the shared set.
+    pub fn shared(record: u16, female: bool) -> Self {
+        Self {
+            record,
+            female,
+            slots: crate::timing::SHOT_SLOTS.map(|id| id as u8),
+            dunks: crate::timing::DUNK_SLOTS,
+            dunk_unlocks: [0; 11],
+        }
+    }
+
+    /// `FUN_00139d38(table, 0, +0x254, id)`: the first slot holding dunk
+    /// `id` that the record answers for, else the shared table.
+    pub fn dunk_unlock(&self, id: u8) -> u32 {
+        self.dunks
+            .iter()
+            .zip(self.dunk_unlocks)
+            .find(|&(&d, mask)| d == id && mask != 0)
+            .map_or(crate::timing::dunk_unlock(id), |(_, mask)| u32::from(mask))
+    }
 }
 
 /// How long a trick runs: its script's updates ([`crate::trick::length`],

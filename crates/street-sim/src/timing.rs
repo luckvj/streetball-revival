@@ -972,8 +972,8 @@ pub const FALLBACK_HOOKS: [usize; 3] = [8, 9, 10];
 ///   hook of [`FALLBACK_HOOKS`] (`rand() % 3`), else a woman's
 ///   [`FEMALE_SHOT`] after one draw, or one of the default three.
 ///
-/// Not carried: a created player's or a legend's own unlocks
-/// (`FUN_00139d38`'s record branches) and rows.
+/// The slot's dunk and the unlocks are the player's own
+/// ([`crate::Shooter`]) when the match knows his record.
 pub(crate) fn press_move(w: &mut World, i: usize, buttons: u16) -> PressMove {
     w.rng.next_u32();
     w.face(i, 2 * crate::TICK_HZ as i32);
@@ -982,7 +982,7 @@ pub(crate) fn press_move(w: &mut World, i: usize, buttons: u16) -> PressMove {
     let d = distance(p.position, rim);
     let mut advanced = false;
     if let Some(slot) = NativeTricks::slot(buttons) {
-        let id = DUNK_SLOTS[slot];
+        let id = p.shooter.map_or(DUNK_SLOTS[slot], |s| s.dunks[slot]);
         if let Some(k) = MOVE_ROWS.iter().position(|r| r.family == 0 && r.id == id) {
             if !ADVANCED_DUNKS.contains(&id) {
                 return PressMove::Row {
@@ -1078,7 +1078,10 @@ pub(crate) fn press_candidates(w: &World, i: usize, gates: MoveGates, turbo: boo
         if m & 0x100000 != 0 {
             continue;
         }
-        if row.family == 0 && dunk_unlock(row.id) & unlock == 0 {
+        let mask = p
+            .shooter
+            .map_or_else(|| dunk_unlock(row.id), |s| s.dunk_unlock(row.id));
+        if row.family == 0 && mask & unlock == 0 {
             continue;
         }
         if m & (1 << sector) == 0 {

@@ -265,9 +265,10 @@ python tools/re_workspace.py "$STREET_ISO" <workspace> --ghidra <ghidra install>
     yellow, orange, deep orange, red from 5) at a quarter alpha; slot 15
     (a passout special) turns them blue (100, 169, 220). Off in replays and
     with the visual effects option off. `trails.rs`.
-  - 0xf (`0x1f6fc8`, listener `0x461e28`): the hoop on fire after a
-    gamebreaker basket (slot 26 sets the hoop's flags), put out when the
-    gamebreaker ends (slot 53); 120 particles. `ambience.rs`.
+  - 0xf (`0x1f6fc8`, listener `0x461e28`): the hoop's fireworks after a
+    basket that wins the game, or any with Explosive Rims (slot 26), put
+    out by the game's reset (slot 53) and a replay (slot 58); 120
+    particles. `fire.rs`, `ambience.rs` ("The hoop's fireworks").
   - 0xc (`0x1ef2d0`, update `0x1ef3e8`, constants set by `0x1efaa8` from
     the frame rate at `0x4da218`+0x24): the gamebreaker ball's sparks,
     30 of the shared particle texture 5 (`spark.ssh`, names at
@@ -11827,7 +11828,7 @@ tables, `0x124d90`, `0x141c38`, `0x196b58`). The rest are the front end,
 the cameras' director (`0x303c80`), the crowd's construction (`0x30b9b8`:
 its animation picks run on their own generator) and the court's ambient
 effects, which draw their particles: the drift `0x1f4950` (17 calls), the
-gamebreaker fire `0x1f717c` (14), steam and breath (`0x20xxxx`). Those
+hoop's fireworks `0x1f717c` (14), steam and breath (`0x20xxxx`). Those
 effects dominate the generator: in the second and third attract captures
 every live update draws 50 to 90 times; in the first (a court without
 them in play) 8 or 9, with bursts of 20 to 40 lasting about 260 updates
@@ -13651,3 +13652,27 @@ A court's `DRIFT` line builds a manager (`FUN_001f4248`): its pieces, 0x60 bytes
   else a woman `jumpshot_1` (one draw), else the default three.
 - The parity captures build players without a record, so they pick as
   before (the shared set's man).
+
+## Two-turbo dunks and unlocks by record; the shot's contest (2026-10-27)
+
+- The shoot press (`FUN_001693b8`) takes a two-turbo slot's dunk from
+  `FUN_0013a1f8(table, 0, +0x254, slot)` (`0x169584`): a created player's
+  equipped row, the generic team's fixed row, a legend's own slot-1 dunk
+  (the switch on record − 145), else `0x43d5d0`. It filters family-0 rows
+  by `FUN_00139d38(table, 0, +0x254, id)` (`0x169838`): for a created
+  player (field 3 = 0x25) or the generic team (0x24) the first of the
+  eleven slots whose row plays `id` gives `1 << level` (the move's field
+  3; past 4 none), for a legend 8 when `id` is his dunk, and otherwise
+  the shared table's row (`FUN_00139850`). `street_sim::Shooter` now
+  carries the eleven dunk ids and the masks the record answers for
+  (snapshot version 105); `timing::press_move` and `press_candidates`
+  read them. Dunk levels are 2..4, so the change to the draw is that a
+  created or generic player's equipped plain or one-turbo dunk (masks 1,
+  2 in the table) leaves the press's draw.
+- The shot's contest (`0x172c8c..0x172d04`) walks the three opponents
+  (`FUN_00140920`): one down (channel 0's flag 0x40, `FUN_0016ea70`) or in
+  the counter stance (bit 16, `FUN_0016e9b0`, +0xa6 bit 0) is skipped; the
+  rest within 7 (the distance table, `FUN_0018d0c0`) are near, and those
+  in a block jump (bit 12) contest, 5 off the percentage each; any near
+  takes away the open shot's bonus (`shot_percent`). The sim
+  had counted them all; `World::contest` now skips both.

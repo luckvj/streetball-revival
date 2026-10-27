@@ -1067,6 +1067,29 @@ impl World {
     /// either side's meter is full no miss is an airball. The angle is the
     /// aim routine's `π/4 + max((20 − d)/20, 0) · π/8`, or 3π/8 for a lay-up
     /// let go below 12 (or behind the board's plane).
+    /// `0x172c8c..0x172d04`: of the shooter's opponents, those down
+    /// (channel 0's animation flag 0x40, `FUN_0016ea70`) or in the counter
+    /// stance (bit 16, `FUN_0016e9b0`) are skipped; the rest within 7 (the
+    /// distance table, `FUN_0018d0c0`) are near, and those of them in a
+    /// block jump (bit 12, `FUN_0016e9c0`) contest.
+    pub(crate) fn contest(&self, shooter: usize) -> (u32, u32) {
+        let p = &self.players[shooter];
+        let (mut near, mut contesting) = (0, 0);
+        for (j, q) in self.players.iter().enumerate() {
+            if q.team == p.team
+                || self.down(j)
+                || matches!(q.action, Action::Stealing { counter: true, .. })
+            {
+                continue;
+            }
+            if distance_to(q.position, p.position) <= 7.0 {
+                near += 1;
+                contesting += u32::from(matches!(q.action, Action::Jumping { .. }));
+            }
+        }
+        (near, contesting)
+    }
+
     pub(crate) fn shot_call(
         &mut self,
         player: usize,
@@ -1097,17 +1120,7 @@ impl World {
         };
         let rating = (rating * 99.0).round().clamp(0.0, 99.0) as i32;
         let distance = distance(p.position, rim);
-        // `FUN_0018d0c0` reads the game's player-to-player distances; the
-        // original skips opponents with animation flag 0x40 or state bit 16
-        // (meaning not traced) and counts as contesting those with state
-        // bit 12, which the sim takes to be a block jump (an inference).
-        let (mut near, mut contesting) = (0, 0);
-        for q in self.players.iter().filter(|q| q.team != p.team) {
-            if distance_to(q.position, p.position) <= 7.0 {
-                near += 1;
-                contesting += u32::from(matches!(q.action, Action::Jumping { .. }));
-            }
-        }
+        let (near, contesting) = self.contest(player);
         let odds = ShotOdds {
             distance,
             long,
