@@ -120,6 +120,23 @@ impl Move {
         std::array::from_fn(|k| self.to[k] + d[k])
     }
 
+    /// Between this move and `next` by `t` (the turn slerped, the places
+    /// lerped), as a replay shows the hoop between two recorded frames.
+    pub fn blend(&self, next: &Move, t: f32) -> Move {
+        let lerp = |a: [f32; 3], b: [f32; 3]| std::array::from_fn(|k| a[k] + (b[k] - a[k]) * t);
+        Move {
+            rot: crate::head::slerp(self.rot, next.rot, t),
+            from: lerp(self.from, next.from),
+            to: lerp(self.to, next.to),
+        }
+    }
+
+    /// [`Move::apply`] backwards: where a point now at `p` sat at rest.
+    pub fn undo(&self, p: [f32; 3]) -> [f32; 3] {
+        let d = rotate(conj(self.rot), std::array::from_fn(|k| p[k] - self.to[k]));
+        std::array::from_fn(|k| self.from[k] + d[k])
+    }
+
     /// The same move in the court's frame for hoop `side`, which the court
     /// places at [`PLACES`].
     pub fn to_court(&self, side: usize) -> Move {
@@ -422,10 +439,15 @@ fn sin_poly(r: f32, r2: f32) -> f32 {
         + r
 }
 
-/// `FUN_002f6fb0(0, 0, degrees)`: the quaternion of a turn about z, its
-/// half angle's sine of the EE's polynomial (`π / 360`) and the cosine
-/// `√(1 − s²)`, by quadrant.
+/// `FUN_002f6fb0(0, 0, degrees)`: the quaternion of a turn about z.
 fn quat_z(degrees: f32) -> [f32; 4] {
+    quat_axis(2, degrees)
+}
+
+/// The quaternion of a turn about axis `axis` (x 0, y 1, z 2) as
+/// `FUN_002f6fb0` and `FUN_002f6a28` build one: its half angle's sine of
+/// the EE's polynomial (`π / 360`) and the cosine `√(1 − s²)`, by quadrant.
+fn quat_axis(axis: usize, degrees: f32) -> [f32; 4] {
     let x = degrees * f32::from_bits(0x3c0e_fa35);
     let k = x * f32::from_bits(0x3f22_f983);
     let k = if x < 0.0 { k - 0.5 } else { k + 0.5 };
@@ -439,7 +461,147 @@ fn quat_z(degrees: f32) -> [f32; 4] {
         2 => (-s, -c),
         _ => (-c, s),
     };
-    [0.0, 0.0, s, c]
+    let mut q = [0.0, 0.0, 0.0, c];
+    q[axis] = s;
+    q
+}
+
+/// `FUN_00157fe0` for a hanging dunker (state bit 14, `0x157e78..0x157eb0`):
+/// each hand posed on the rim ([`crate::hands::RIM_HANG`]) turns to grip
+/// the rim of the side his team attacks, where it gives: actor+0xb8's pose
+/// (4, [`crate::World::hand_shapes`]' first) turns bone 15 (`LHand`, under
+/// 14), +0xbc's (10) bone 19 (`RHand`, under 18).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Grip {
+    /// The rim's give ([`Rim::rim_move`], `FUN_00157f20`'s
+    /// `FUN_00149150`; back the other way `FUN_00157f80`'s `FUN_00149410`).
+    pub rim: Move,
+    /// The centre's x (`FUN_001404e0`: side × 36.75).
+    pub centre: f32,
+    /// Which of [`GRIP_BONES`] grip.
+    pub hands: [bool; 2],
+}
+
+/// The hand bones the grip turns and their parents, by actor+0xb8 then
+/// +0xbc.
+pub const GRIP_BONES: [(usize, usize); 2] = [(15, 14), (19, 18)];
+
+impl crate::World {
+    /// Player `i`'s grip on the rim this update, if he hangs with a hand
+    /// posed on it (actor+0xb8 = 4, +0xbc = 10).
+    pub fn rim_grip(&self, i: usize) -> Option<Grip> {
+        let p = self.players.get(i)?;
+        if !p.flight.hung {
+            return None;
+        }
+        let (first, second) = self.hand_shapes(i);
+        let hands = [
+            first == crate::hands::RIM_HANG,
+            second == crate::hands::RIM_HANG + crate::hands::LEFT,
+        ];
+        if hands == [false; 2] {
+            return None;
+        }
+        let side = side(p.position[0]);
+        Some(Grip {
+            rim: self.rims[side].rim_move(&self.rim_rigs[side], side),
+            centre: self.rim_spot(crate::target_hoop(p.team))[0],
+            hands,
+        })
+    }
+}
+
+impl Grip {
+    /// `0x1580a0..0x158798`: the hand at `hand` (its world position) under
+    /// a parent whose world rotation is `parent`: its local rotation, facing
+    /// round the rim from its centre and tipped toward the nearest point of
+    /// its ring.
+    ///
+    /// The turn about y is the hand's angle about the centre (`x` from it,
+    /// `z` from the court's line), in 1024ths of a turn (`× 162.97`, the
+    /// `cvt.w.s` truncating `+ 0.5`). The tip about x is the angle of the
+    /// ring's nearest point (0.7932 out from the centre at height 12, moved
+    /// with the give) from the hand: across, the flat distance, negative
+    /// with the hand outside the ring; down, the height it sits above the
+    /// hand (at least 0), held to ±128. Bone 19 (`second`) turns half round
+    /// more and tips the other way, both words masked to 0x3ff. Then the
+    /// hand's world rotation is y · x · z(90°) and its local that over the
+    /// parent's (`FUN_002f6a28`'s quaternions, `FUN_002f74b0`'s products).
+    pub fn hand(&self, hand: [f32; 3], parent: [f32; 4], second: bool) -> [f32; 4] {
+        let centre = self.rim.apply([self.centre, 12.0, 0.0]);
+        let yaw = turn_word(grip_angle(hand[0] - centre[0], hand[2]));
+        let local = self.rim.undo(hand);
+        let (dx, dz) = (local[0] - self.centre, local[2]);
+        let inv = 1.0 / libm::sqrtf((dx * dx + dz * dz).max(f32::MIN_POSITIVE));
+        let radius = f32::from_bits(0x3f4b_10cb);
+        let ring = self
+            .rim
+            .apply([dx * inv * radius + self.centre, 12.0, dz * inv * radius]);
+        let flat = |p: [f32; 3], x: f32, z: f32| (p[0] - x) * (p[0] - x) + (p[2] - z) * (p[2] - z);
+        let mut across = libm::sqrtf(flat(ring, hand[0], hand[2]));
+        if flat(ring, centre[0], 0.0) < flat(hand, centre[0], 0.0) {
+            across = -across;
+        }
+        let down = (ring[1] - hand[1]).max(0.0);
+        let tip = turn_word(grip_angle(across, down)).clamp(-128, 128);
+        let (yaw, tip) = if second {
+            ((yaw + 512) & 0x3ff, -tip & 0x3ff)
+        } else {
+            (yaw, tip)
+        };
+        let degrees = |w: i32| w as f32 * 360.0 * f32::from_bits(0x3a80_0000);
+        let world = qmul(
+            quat_axis(1, degrees(yaw)),
+            qmul(quat_axis(0, degrees(tip)), quat_axis(2, 90.0)),
+        );
+        qmul(conj(parent), world)
+    }
+}
+
+/// An angle in 1024ths of a turn, rounded half up and truncated.
+fn turn_word(angle: f32) -> i32 {
+    (angle * f32::from_bits(0x4322_f983) + 0.5) as i32
+}
+
+/// The grip's angle of `n` across `d` (`0x1580a8..0x1582b0`): `atan2(n,
+/// d)` by the arcsine's series in `1 / (1 + r²)` (`|r| > 1`) or `r² / (1 +
+/// r²)` (`0x4b3120..0x4b312c`); `d` 0 gives ±π/2 by `n`'s sign.
+fn grip_angle(n: f32, d: f32) -> f32 {
+    let half = f32::from_bits(0x3fc9_0fdb);
+    if d == 0.0 {
+        return if n == 0.0 {
+            0.0
+        } else if n >= 0.0 {
+            half
+        } else {
+            -half
+        };
+    }
+    let series = |u: f32| {
+        libm::sqrtf(u)
+            * ((((u * f32::from_bits(0x3d61_37ab) + f32::from_bits(0x3d55_033a)) * u
+                + f32::from_bits(0x3d8a_908b))
+                * u
+                + f32::from_bits(0x3e2b_ba25))
+                * u
+                + 1.0)
+    };
+    let r = n / d;
+    let a = if r < -1.0 {
+        series(1.0 / (r * r + 1.0)) - half
+    } else if 1.0 < r {
+        half - series(1.0 / (r * r + 1.0))
+    } else {
+        let r2 = r * r;
+        let v = series(r2 / (r2 + 1.0));
+        if r < 0.0 { -v } else { v }
+    };
+    if d < 0.0 {
+        let pi = f32::from_bits(0x4049_0fdb);
+        if 0.0 < n { a + pi } else { a - pi }
+    } else {
+        a
+    }
 }
 
 fn conj(q: [f32; 4]) -> [f32; 4] {
@@ -466,6 +628,76 @@ fn rotate(q: [f32; 4], v: [f32; 3]) -> [f32; 3] {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_grips_angle_is_the_arctangent() {
+        for n in [-3.0f32, -1.0, -0.4, 0.0, 0.3, 1.0, 2.5] {
+            for d in [-2.0f32, -0.5, 0.5, 1.0, 4.0] {
+                let got = grip_angle(n, d);
+                // Straight back (`n` 0, `d` below 0) is -π, not atan2's π.
+                let want = if n == 0.0 && d < 0.0 {
+                    -f32::from_bits(0x4049_0fdb)
+                } else {
+                    libm::atan2f(n, d)
+                };
+                assert!((got - want).abs() < 2e-4, "{n} {d}: {got} vs {want}");
+            }
+        }
+        assert_eq!(grip_angle(1.0, 0.0), f32::from_bits(0x3fc9_0fdb));
+        assert_eq!(grip_angle(0.0, 0.0), 0.0);
+    }
+
+    #[test]
+    fn a_hand_under_the_rims_front_grips_it_facing_round() {
+        // The +x rim, a hand right under its front (toward the court's
+        // middle): turned a quarter round less the truncation's word (-255
+        // of 1024), not tipped; the other hand half round more.
+        let grip = Grip {
+            rim: Move::STILL,
+            centre: 36.75,
+            hands: [true; 2],
+        };
+        let hand = [36.75 - f32::from_bits(0x3f4b_10cb), 11.0, 0.0];
+        let one = |w: i32| w as f32 * 360.0 / 1024.0;
+        let q = grip.hand(hand, [0.0, 0.0, 0.0, 1.0], false);
+        let want = qmul(
+            quat_axis(1, one(-255)),
+            qmul(quat_axis(0, 0.0), quat_axis(2, 90.0)),
+        );
+        for k in 0..4 {
+            assert!((q[k] - want[k]).abs() < 1e-6, "{q:?} vs {want:?}");
+        }
+        let q = grip.hand(hand, [0.0, 0.0, 0.0, 1.0], true);
+        let want = qmul(
+            quat_axis(1, one(257)),
+            qmul(quat_axis(0, 0.0), quat_axis(2, 90.0)),
+        );
+        for k in 0..4 {
+            assert!((q[k] - want[k]).abs() < 1e-6, "{q:?} vs {want:?}");
+        }
+        // Under a parent turned, the local rotation undoes its turn.
+        let parent = quat_axis(1, 30.0);
+        let local = grip.hand(hand, parent, false);
+        let world = qmul(parent, local);
+        let free = grip.hand(hand, [0.0, 0.0, 0.0, 1.0], false);
+        for k in 0..4 {
+            assert!((world[k] - free[k]).abs() < 1e-5);
+        }
+    }
+
+    #[test]
+    fn a_move_undone_puts_the_point_back() {
+        let m = Move {
+            rot: quat_axis(2, 7.0),
+            from: [1.0, 2.0, 0.0],
+            to: [1.1, 1.9, 0.0],
+        };
+        let p = [3.0, 12.0, 0.5];
+        let back = m.undo(m.apply(p));
+        for k in 0..3 {
+            assert!((back[k] - p[k]).abs() < 1e-5);
+        }
+    }
 
     #[test]
     fn the_sines_are_the_ees() {
