@@ -24,10 +24,23 @@ pub use crate::timing_tables::{
 /// The shared set's shot slot scripts (`0x43d6c0`, `moves::SHOTS_SET`):
 /// the id in [`SHOT_SCRIPTS`] for each two-turbo pair of
 /// [`NativeTricks::shot_slot`] (`FUN_0016b4b8` reads `0x43d460` then
-/// `FUN_0013a1f8(record, 2, +0x258, slot)`; the sim plays the generic
-/// set's rows for everyone: a created player's equipped rows and the
-/// legends' overrides are not carried into the sim).
+/// `FUN_0013a1f8(record, 2, +0x258, slot)`, which gives these to every
+/// record but a created player's and the generic team's; theirs are the
+/// player's [`crate::Shooter::slots`]).
 pub const SHOT_SLOTS: [usize; 6] = [4, 7, 5, 6, 3, 1];
+/// `jumpshot_1` (`0x44e51e`, the word at `0x3d7b20`): a woman's default
+/// jump shot.
+pub const FEMALE_SHOT: usize = 0;
+/// `jumpshot_female_2hand_stepforward_set` (`0x44eb03`): a woman's runner.
+pub const FEMALE_RUNNER: usize = 22;
+/// `jumpshot_bird` (`0x44ec83`): record 172's default jump shot.
+pub const BIRD_SHOT: usize = 23;
+/// The legends' own hooks off a side fade's draw: records 149, 166 and 178
+/// (`0x16ba2c..0x16bad8`, `0x16bb7c..0x16bc28`) play `jumpshot_hook_bishop`,
+/// `jumpshot_hook_magic` and `jumpshot_hook_wilt`.
+pub const LEGEND_HOOKS: [(u16, usize); 3] = [(149, 11), (166, 13), (178, 14)];
+/// The record whose default jump shot is [`BIRD_SHOT`].
+pub const BIRD: u16 = 172;
 /// The three jump shots of `0x3d7b10` a male player draws among.
 pub const DEFAULT_SHOTS: [usize; 3] = [18, 19, 20];
 /// The three hooks of `0x3d9038` drawn when moving sideways.
@@ -316,10 +329,11 @@ fn rating(r: f32) -> i32 {
 /// and lay-up branches), as an id in [`SHOT_SCRIPTS`].
 ///
 /// Drawn in the original's order from the shared generator. The player's
-/// own equipped rows, the legends' hooks (`0x95`, `0xa6`, `0xb2`, `0xac`)
-/// and the female set (`0x3d7b20`) are not carried into the sim; a gamebreaker
-/// shot takes the long or short script by range where the original reads
-/// the court map at `0x3d2790` (`FUN_00141298`).
+/// record and sex ([`crate::Shooter`]) pick his slot shots, the legends'
+/// hooks, Bird's jump shot and the female set; a player without one picks
+/// as the shared set's male streetballer. A gamebreaker shot takes the long
+/// or short script by range where the original reads the court map at
+/// `0x3d2790` (`FUN_00141298`).
 pub(crate) fn shot_script(
     w: &mut World,
     i: usize,
@@ -335,9 +349,36 @@ pub(crate) fn shot_script(
             GAMEBREAKER_SHORT
         };
     }
+    let shooter = w.players[i].shooter;
     if let Some(slot) = NativeTricks::shot_slot(buttons) {
-        return SHOT_SLOTS[slot];
+        return shooter.map_or(SHOT_SLOTS[slot], |s| usize::from(s.slots[slot]));
     }
+    let record = shooter.map(|s| s.record);
+    let female = shooter.is_some_and(|s| s.female);
+    // The default jump shot (`0x16b900..0x16b9b8` and its two copies):
+    // Bird's own, else a woman's after one draw, else one of the three.
+    let default = |w: &mut World| {
+        if record == Some(BIRD) {
+            return BIRD_SHOT;
+        }
+        let r = w.rng.next_u32();
+        if female {
+            FEMALE_SHOT
+        } else {
+            DEFAULT_SHOTS[(r % 3) as usize]
+        }
+    };
+    // A side fade's draw: a legend's own hook, else 51% the fade, else one
+    // of the three hooks.
+    let side = |w: &mut World, fade: usize| {
+        if let Some(&(_, hook)) = LEGEND_HOOKS.iter().find(|&&(r, _)| Some(r) == record) {
+            return hook;
+        }
+        if w.rng.next_u32() % 100 < 0x33 {
+            return fade;
+        }
+        SIDE_HOOKS[(w.rng.next_u32() % 3) as usize]
+    };
     let p = &w.players[i];
     let hoop = crate::target_hoop(p.team);
     let rim = w.rim_spot(hoop);
@@ -361,35 +402,29 @@ pub(crate) fn shot_script(
         if w.posting(i) && w.offence_rim_distance(i) <= 25.0 {
             return POST_FADEAWAY;
         }
-        return DEFAULT_SHOTS[(w.rng.next_u32() % 3) as usize];
+        return default(w);
     }
     if moving {
         if (0xa0..0x12d).contains(&angle) {
             if hand == 1 {
                 return SIDEFADE_LEFT_R;
             }
-            if w.rng.next_u32() % 100 < 0x33 {
-                return SIDEFADE_LEFT_L;
-            }
-            return SIDE_HOOKS[(w.rng.next_u32() % 3) as usize];
+            return side(w, SIDEFADE_LEFT_L);
         }
         if (0x2a0..0x32d).contains(&angle) {
             if hand != 1 {
                 return SIDEFADE_RIGHT_L;
             }
-            if w.rng.next_u32() % 100 < 0x33 {
-                return SIDEFADE_RIGHT_R;
-            }
-            return SIDE_HOOKS[(w.rng.next_u32() % 3) as usize];
+            return side(w, SIDEFADE_RIGHT_R);
         }
         // Out of the dunking area (`FUN_0016c500(actor, 1)` 1, `far`)
-        // facing the rim: the runner (actor+0x1e4 7; the female set's
-        // `jumpshot_female_2hand_stepforward_set` is not carried).
+        // facing the rim: the runner (actor+0x1e4 7), a woman's the
+        // stepping set shot (`0x16bce8..0x16bd44`).
         if fold < 0x65 && far {
-            return RUNNER;
+            return if female { FEMALE_RUNNER } else { RUNNER };
         }
     }
-    DEFAULT_SHOTS[(w.rng.next_u32() % 3) as usize]
+    default(w)
 }
 
 /// `FUN_0019bed8(g, vy, y)`: the updates until an actor launched upward at
@@ -932,9 +967,10 @@ pub const FALLBACK_HOOKS: [usize; 3] = [8, 9, 10];
 /// - every row of both families the filter lets through ([`press_candidates`]:
 ///   a dunk row only if its id is unlocked for the held word's turbo bit,
 ///   [`dunk_unlock`]), one drawn (`rand() % count`);
-/// - none: a jump shot (`0x1699ac..0x169bb4`): `rand() % 100` under 75 a
-///   hook of [`FALLBACK_HOOKS`] (`rand() % 3`), else the default three
-///   (the legends' hooks and the female set are not carried).
+/// - none: a jump shot (`0x1699ac..0x169bb4`): a legend's own hook
+///   ([`LEGEND_HOOKS`]) or Bird's shot, else `rand() % 100` under 75 a
+///   hook of [`FALLBACK_HOOKS`] (`rand() % 3`), else a woman's
+///   [`FEMALE_SHOT`] after one draw, or one of the default three.
 ///
 /// Not carried: a created player's or a legend's own unlocks
 /// (`FUN_00139d38`'s record branches) and rows.
@@ -967,10 +1003,20 @@ pub(crate) fn press_move(w: &mut World, i: usize, buttons: u16) -> PressMove {
     }
     let rows = press_candidates(w, i, gates, turbo);
     if rows.is_empty() {
+        let shooter = w.players[i].shooter;
+        let record = shooter.map(|s| s.record);
+        if let Some(&(_, hook)) = LEGEND_HOOKS.iter().find(|&&(r, _)| Some(r) == record) {
+            return PressMove::Shot(hook);
+        }
+        if record == Some(BIRD) {
+            return PressMove::Shot(BIRD_SHOT);
+        }
         let hook = w.rng.next_u32() % 100 < 0x4b;
         let k = (w.rng.next_u32() % 3) as usize;
         return PressMove::Shot(if hook {
             FALLBACK_HOOKS[k]
+        } else if shooter.is_some_and(|s| s.female) {
+            FEMALE_SHOT
         } else {
             DEFAULT_SHOTS[k]
         });

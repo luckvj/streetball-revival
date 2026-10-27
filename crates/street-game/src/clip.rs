@@ -295,6 +295,35 @@ pub fn resolved_trick_slots(
     Some(street_sim::NativeTricks { slots })
 }
 
+/// Who the shot pick sees (`FUN_0016b4b8`): the animation source's record,
+/// its field 12 (female) and the six shot slots' ids (`0x13a1f8(record, 2,
+/// +0x258, slot)`).
+pub fn resolved_shooter(
+    clips: &crate::setup::GameClips,
+    moves: &PlayerMoves,
+    disc: &crate::setup::Disc,
+    player: usize,
+) -> Option<street_sim::Shooter> {
+    let (record, _) = routed(moves, player)?;
+    let mut slots = [0u8; 6];
+    for (slot, id) in slots.iter_mut().enumerate() {
+        let script = move_script_id(
+            clips,
+            moves,
+            disc,
+            player,
+            street_assets::moves::Kind::Shot,
+            slot,
+        )?;
+        *id = u8::try_from(script).ok().filter(|&id| id < 27)?;
+    }
+    Some(street_sim::Shooter {
+        record: u16::try_from(record).ok()?,
+        female: disc.players.get(record).is_some_and(|p| p.female),
+        slots,
+    })
+}
+
 /// The dunk slots (a bit each, eleven) whose dunk is advanced: the dunk
 /// id's flag word at `0x43f5f0` has 0x800 (`FUN_00171de8`). The default set
 /// has one, its four-turbo slot (dunk 48); a created player's equipped
@@ -593,6 +622,26 @@ mod tests {
                 Some(word(defaults + 4) as u16)
             );
         }
+    }
+
+    #[test]
+    fn the_shooter_carries_the_records_sex_and_shot_slots() {
+        // `FUN_0016b4b8`'s view: record 172 (Bird's shot) with the shared
+        // set's slots (`0x43d6c0`), and a woman's field 12.
+        let Ok(path) = std::env::var("STREET_ISO") else {
+            return;
+        };
+        let mut disc =
+            crate::setup::Disc::load(street_assets::iso::Iso::open(path).unwrap()).unwrap();
+        let clips = crate::setup::load_clips(&mut disc.iso).unwrap();
+        let moves = PlayerMoves(vec![(172, Default::default())]);
+        let bird = resolved_shooter(&clips, &moves, &disc, 0).unwrap();
+        assert_eq!(bird.record, 172);
+        assert!(!bird.female);
+        assert_eq!(bird.slots.map(usize::from), street_sim::timing::SHOT_SLOTS);
+        let woman = disc.players.iter().position(|p| p.female).unwrap();
+        let moves = PlayerMoves(vec![(woman, Default::default())]);
+        assert!(resolved_shooter(&clips, &moves, &disc, 0).unwrap().female);
     }
 
     #[test]

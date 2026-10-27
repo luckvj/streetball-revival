@@ -113,7 +113,7 @@ use crate::{
 /// `inbound_walk`); 101: the team's passout value (team +0x5c); 102: the
 /// swing ([`Event::Swing`], actor+0x1d8); 103: the pick's call
 /// ([`Event::PickCall`], the AI game's `pick_call`).
-const VERSION: u8 = 103;
+const VERSION: u8 = 104;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1043,6 +1043,7 @@ fn player(w: &mut Writer, p: &Player) {
         action_buttons,
         native_tricks,
         native_dunks,
+        shooter,
         height,
         turbo,
         gait_channel,
@@ -1128,6 +1129,17 @@ fn player(w: &mut Writer, p: &Player) {
         Some(mask) => {
             w.u8(1);
             w.uv(u64::from(*mask));
+        }
+    }
+    match shooter {
+        None => w.u8(0),
+        Some(s) => {
+            w.u8(1);
+            w.uv(u64::from(s.record));
+            w.u8(u8::from(s.female));
+            for slot in s.slots {
+                w.u8(slot);
+            }
         }
     }
     w.f(*height);
@@ -1618,6 +1630,19 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
             0 => None,
             1 => Some(u16::try_from(r.uv()?).map_err(|_| "invalid dunk slots")?),
             k => return Err(format!("bad dunk slots flag {k}")),
+        },
+        shooter: match r.u8()? {
+            0 => None,
+            1 => Some(crate::Shooter {
+                record: u16::try_from(r.uv()?).map_err(|_| "invalid shooter record")?,
+                female: match r.u8()? {
+                    0 => false,
+                    1 => true,
+                    k => return Err(format!("bad shooter sex {k}")),
+                },
+                slots: [r.u8()?, r.u8()?, r.u8()?, r.u8()?, r.u8()?, r.u8()?],
+            }),
+            k => return Err(format!("bad shooter flag {k}")),
         },
         height: r.f()?,
         turbo: r.f()?,
@@ -3656,6 +3681,26 @@ mod tests {
                 equipped_row: None,
             }),
         }
+    }
+
+    #[test]
+    fn the_shooter_round_trips_and_is_validated() {
+        let mut w = three_on_three(5);
+        let shooter = crate::Shooter {
+            record: 172,
+            female: true,
+            slots: [21, 7, 5, 6, 3, 26],
+        };
+        w.players[1].shooter = Some(shooter);
+        let back = World::from_snapshot(&w.to_snapshot()).unwrap();
+        assert_eq!(back.players[1].shooter, Some(shooter));
+        assert_eq!(back.players[0].shooter, None);
+        let mut bad = w.clone();
+        bad.players[1].shooter = Some(crate::Shooter {
+            slots: [27, 0, 0, 0, 0, 0],
+            ..shooter
+        });
+        assert!(bad.validate().is_err());
     }
 
     #[test]

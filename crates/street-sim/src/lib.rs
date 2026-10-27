@@ -92,7 +92,7 @@ pub use passing::{
     FIRST_PASS_FLIGHT, INBOUND_RELEASE, PASS_MIN_FLIGHT, PASS_SPEED, PassAim, PassStyle, Windup,
     flight_updates,
 };
-pub use player::{Action, Gait, NativeTricks, Player, Ratings, TrickIdentity};
+pub use player::{Action, Gait, NativeTricks, Player, Ratings, Shooter, TrickIdentity};
 pub use rng::Rng;
 pub use rules::{CLOCKS, Difficulty, Goal, Mode, Rules, Scoring};
 pub use shooting::{

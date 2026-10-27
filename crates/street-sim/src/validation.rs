@@ -525,6 +525,7 @@ impl World {
                 action_buttons: _,
                 native_tricks,
                 native_dunks,
+                shooter,
                 height,
                 turbo,
                 gait_channel,
@@ -598,6 +599,10 @@ impl World {
                 native_dunks.is_none_or(|mask| mask < 1 << 11),
                 "native dunk slots",
             )?;
+            if let Some(s) = shooter {
+                // Slot shots are ids of `0x3d8fd8`.
+                require(s.slots.iter().all(|&id| id < 27), "shot slot ids")?;
+            }
             if let Some(tricks) = native_tricks {
                 for (slot, identity) in tricks.slots.iter().enumerate() {
                     require(

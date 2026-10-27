@@ -546,6 +546,14 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
             .map(|player| crate::clip::advanced_dunk_slots(clips, &moves, disc, player))
             .collect()
     });
+    // Who the shot pick sees: record, sex and shot slots.
+    let shooters: Option<Vec<Option<street_sim::Shooter>>> =
+        world.get_resource::<GameClips>().map(|clips| {
+            let disc = world.resource::<Disc>();
+            (0..moves.0.len())
+                .map(|player| crate::clip::resolved_shooter(clips, &moves, disc, player))
+                .collect()
+        });
     // The C library's generator: each league player's model draws his
     // shorts from it as it loads (`0x315cc8`).
     let mut libc = world
@@ -705,6 +713,11 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(dunks) = native_dunks {
         for (state, mask) in sim.players.iter_mut().zip(dunks) {
             state.native_dunks = mask;
+        }
+    }
+    if let Some(shooters) = shooters {
+        for (state, shooter) in sim.players.iter_mut().zip(shooters) {
+            state.shooter = shooter;
         }
     }
     sim.ball.radius = cheats.ball_radius();
