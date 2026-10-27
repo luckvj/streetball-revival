@@ -305,7 +305,7 @@
           "path": "docs/TRACE.md",
           "locator": "## 6. Audio",
           "note": "Re-read 2026-10-15: FUN_001a1110 fires 0x28 at level 500 then starts loop 0x20; slot 61's first call (FUN_001a56b0) releases 0x20 and resumes speech with its queue cleared (0x1ad9d0(1,1)).",
-          "sha256": "5c73689b4a4a51eabdee7358d8f7301ca519ee42b1813e64381a1720c5bd82bf"
+          "sha256": "0359bd9151de7fb48e3c531242288dc91ed2343fac2921f066a2a411df72c942"
         },
         {
           "path": "crates/street-game/src/sfx.rs",
@@ -315,7 +315,7 @@
         }
       ],
       "tolerance": "Exact event ordering; graph scalars as documented; original PCM tolerance not yet defined.",
-      "limitations": "Static graph/order recovery plus local integration; no synchronized original PCM comparison. The pending-tick completion before release is the rewrite's own way of keeping the native separation. Re-pinned 2026-10-18 after the audio, modes and saves pass: SPEECH_RECOVERY.md gained the section \"The duck, the counter's seed, the queue's clock and the service's order (2026-10-18)\" at its end; TRACE.md gained the two sections at its end, the slot 53 row of section 6 now names the game's reset, and \"The original's default options\" corrects the track the reset leaves off (the Rucker Classic's, not Nelly's); sfx.rs gained loop 0x24's start and release with its message and a test; section 6's listener table now names slot 53 the game's reset (FUN_0013d388) where it read a gamebreaker's end; the rest of the cited region is unchanged. 2026-10-20 (the online pass's last gaps): fire_events' replay block changed (audio.global_blocking_flags); the court's start is unchanged. Last re-pinned 2026-10-27 after the hoop's fireworks (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Static graph/order recovery plus local integration; no synchronized original PCM comparison. The pending-tick completion before release is the rewrite's own way of keeping the native separation. Re-pinned 2026-10-18 after the audio, modes and saves pass: SPEECH_RECOVERY.md gained the section \"The duck, the counter's seed, the queue's clock and the service's order (2026-10-18)\" at its end; TRACE.md gained the two sections at its end, the slot 53 row of section 6 now names the game's reset, and \"The original's default options\" corrects the track the reset leaves off (the Rucker Classic's, not Nelly's); sfx.rs gained loop 0x24's start and release with its message and a test; section 6's listener table now names slot 53 the game's reset (FUN_0013d388) where it read a gamebreaker's end; the rest of the cited region is unchanged. 2026-10-20 (the online pass's last gaps): fire_events' replay block changed (audio.global_blocking_flags); the court's start is unchanged. Last re-pinned 2026-10-27 after per-player jump shots (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture original event/tick chronology and speech gain during intro exit.",
       "match_type": "structural"
     },
@@ -329,7 +329,7 @@
           "path": "docs/TRACE.md",
           "locator": "Floor contact, slot 76",
           "note": "FUN_00156f48 posts DAT_003c6930 when joint 10 crosses 1.5 downward; FUN_001a74f8 is x*500 (lui 0x43fa), cvt.w.s (truncating), magnitude, cap 1000; FUN_001a5348 fires 0x4f kind 2, FUN_001a75a8(0x29) (AEMS 0x29 and the spectators' gasp) and 0x50.",
-          "sha256": "5c73689b4a4a51eabdee7358d8f7301ca519ee42b1813e64381a1720c5bd82bf"
+          "sha256": "0359bd9151de7fb48e3c531242288dc91ed2343fac2921f066a2a411df72c942"
         },
         {
           "path": "crates/street-game/src/sfx.rs",
@@ -339,7 +339,7 @@
         }
       ],
       "tolerance": "Exact event identities and crossing predicate; pose/input correspondence required.",
-      "limitations": "Bounded poster/handler mapping; animation pose accuracy is scored elsewhere; the Script Manager states are represented by the rewrite's replay/pause/intro/staged gates. Re-pinned 2026-10-16 after the court's frame pass: TRACE.md gained the section \"The court's frame\" and notes pointing to it (7b's restart spots, \"Runtime captures\", \"The chooser's facing angle in the original's frame\" and its tests, \"The sector in the original's frame\"); sfx.rs's two test fixtures list their hoops +x first; the cited tests `floor_contact_fires_the_crowds_gasp_with_its_sounds` pass on their scenes mirrored into the original's frame. Last re-pinned 2026-10-27 after the hoop's fireworks (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Bounded poster/handler mapping; animation pose accuracy is scored elsewhere; the Script Manager states are represented by the rewrite's replay/pause/intro/staged gates. Re-pinned 2026-10-16 after the court's frame pass: TRACE.md gained the section \"The court's frame\" and notes pointing to it (7b's restart spots, \"Runtime captures\", \"The chooser's facing angle in the original's frame\" and its tests, \"The sector in the original's frame\"); sfx.rs's two test fixtures list their hoops +x first; the cited tests `floor_contact_fires_the_crowds_gasp_with_its_sounds` pass on their scenes mirrored into the original's frame. Last re-pinned 2026-10-27 after per-player jump shots (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare original joint Y values, posted impact strength and the 0x4f/0x29/0x50 sequence with the crowd's gasp.",
       "match_type": "structural"
     },
@@ -353,7 +353,7 @@
           "path": "docs/TRACE.md",
           "locator": "## 6. Audio",
           "note": "Re-read 2026-10-15: 0x1a6b80 calls 0x1ab760(mgr, side, 0): only the other side's full meter takes its ready theme; then VBlanks over fps*120.0 move to the next song; 0x1ab958 the same over fps*240.0 while the groove plays.",
-          "sha256": "5c73689b4a4a51eabdee7358d8f7301ca519ee42b1813e64381a1720c5bd82bf"
+          "sha256": "0359bd9151de7fb48e3c531242288dc91ed2343fac2921f066a2a411df72c942"
         },
         {
           "path": "crates/street-game/src/song.rs",
@@ -363,7 +363,7 @@
         }
       ],
       "tolerance": "Exact discrete decisions and values; no tolerance.",
-      "limitations": "Event mapping only; no original PathFinder sample-clock/crossfade comparison. Unported 0x1ab760 gates: profile +0xe8 = 3, manager +0x28 = 7, Street School's stop and the game's virtual +0xbc; slot 41 stands as a change of hands; the rewrite counts 60 Hz ticks for VBlanks. Re-pinned 2026-10-18 after the audio, modes and saves pass: TRACE.md gained the two sections at its end, the slot 53 row of section 6 now names the game's reset, and \"The original's default options\" corrects the track the reset leaves off (the Rucker Classic's, not Nelly's); section 6's listener table now names slot 53 the game's reset (FUN_0013d388) where it read a gamebreaker's end; the rest of the cited region is unchanged. Last re-pinned 2026-10-27 after the hoop's fireworks (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Event mapping only; no original PathFinder sample-clock/crossfade comparison. Unported 0x1ab760 gates: profile +0xe8 = 3, manager +0x28 = 7, Street School's stop and the game's virtual +0xbc; slot 41 stands as a change of hands; the rewrite counts 60 Hz ticks for VBlanks. Re-pinned 2026-10-18 after the audio, modes and saves pass: TRACE.md gained the two sections at its end, the slot 53 row of section 6 now names the game's reset, and \"The original's default options\" corrects the track the reset leaves off (the Rucker Classic's, not Nelly's); section 6's listener table now names slot 53 the game's reset (FUN_0013d388) where it read a gamebreaker's end; the rest of the cited region is unchanged. Last re-pinned 2026-10-27 after per-player jump shots (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare original and production music commands at 119/120/121s and 239/240/241s.",
       "match_type": "structural"
     },
@@ -377,7 +377,7 @@
           "path": "docs/TRACE.md",
           "locator": "Resumed Trax investigation (2026-10-12)",
           "note": "Original row tables expose Music Experience, 9 playlist and 15 interactive tracks, rotation and Track Info; no Favorite Song row. FUN_001a0208 chooses full-song/PathFinder routes.",
-          "sha256": "5c73689b4a4a51eabdee7358d8f7301ca519ee42b1813e64381a1720c5bd82bf"
+          "sha256": "0359bd9151de7fb48e3c531242288dc91ed2343fac2921f066a2a411df72c942"
         },
         {
           "path": "crates/street-game/src/original_save.rs",
@@ -399,7 +399,7 @@
         }
       ],
       "tolerance": "Exact discrete decisions and values; no tolerance.",
-      "limitations": "Ported from FUN_001aabc8/FUN_001aaf78/FUN_0019f810 (re-read 2026-10-15): the session's song DAT_003ea23c seeded rand() % 13 + 1, the match's song unless switched off, rotation in turn and at random with the original's repeat avoidance, the Rucker Classic's song 12. The session's song is the C library's second draw after the boot's clock seed (FUN_0019f810, session::Session::audio_controller, 2026-10-18); the rotation's random pick stays on the rewrite's own generator; the Rucker Classic's unlock checks (FUN_001a0c48) and the manager's first-play flag (+0x24) are not modelled; FUN_001a0db8 (Trax bit 0, Playlist) silences commentary through SpeechManager::commentary_open. 2026-10-19 (sixth pass): Trax's screen previews the focused song (audio::Preview, presentation.ui_ea_trax_screen). Last re-pinned 2026-10-27 after the hoop's fireworks (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Ported from FUN_001aabc8/FUN_001aaf78/FUN_0019f810 (re-read 2026-10-15): the session's song DAT_003ea23c seeded rand() % 13 + 1, the match's song unless switched off, rotation in turn and at random with the original's repeat avoidance, the Rucker Classic's song 12. The session's song is the C library's second draw after the boot's clock seed (FUN_0019f810, session::Session::audio_controller, 2026-10-18); the rotation's random pick stays on the rewrite's own generator; the Rucker Classic's unlock checks (FUN_001a0c48) and the manager's first-play flag (+0x24) are not modelled; FUN_001a0db8 (Trax bit 0, Playlist) silences commentary through SpeechManager::commentary_open. 2026-10-19 (sixth pass): Trax's screen previews the focused song (audio::Preview, presentation.ui_ea_trax_screen). Last re-pinned 2026-10-27 after per-player jump shots (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture DAT_003ea23c over a PCSX2 session with a known rand() state and compare the song sequence; then the enabled masks against the save.",
       "match_type": "structural"
     },
@@ -461,7 +461,7 @@
           "path": "docs/TRACE.md",
           "locator": "The audio's generator, the commentator's duck and the speech clock (2026-10-18)",
           "note": "Traced raw: the registrations of the three AEMS ducking percents (38, 40, 25), audio_internal_game_mus_vol 98 and audio_path_music_ducking 35, GAME_EVT.AEM event 0x24's targets, the 100 ms fade, and the live boot's 68 lines.",
-          "sha256": "5c73689b4a4a51eabdee7358d8f7301ca519ee42b1813e64381a1720c5bd82bf"
+          "sha256": "0359bd9151de7fb48e3c531242288dc91ed2343fac2921f066a2a411df72c942"
         },
         {
           "path": "crates/street-game/src/audio.rs",
@@ -495,7 +495,7 @@
         }
       ],
       "tolerance": "Exact discrete decisions and values; no tolerance.",
-      "limitations": "Ported 2026-10-18 (branch audio-modes): the callback's loop 0x24 (FUN_0019ee90 mode 0, the message [0x24, 38, 40, 25] kept for the release) out of Street School, the music's duck to (100 - 35)% of its volume over 100 ms (FUN_001abde8) and its restore when the stream runs out (0x1acf58, FUN_001abe78), the manager's one stream (a line over a line replaces it), the pause's silent stream and the resume's stop; requests are queued and served the next service, 0x1ac9f8 type 1 drops a chosen line at speech volume 0, while paused, or while Bobbito plays without the +0x68 override, and a root's repeat limit refuses the event after its run. Runtime: 68 of 68 original attract-match lines carry the ported message and duck. Not compared line for line: the rewrite's demo and the original's attract match are different games (the first comparison's rates and lengths are in docs/TRACE.md); the music's base share is the rewrite's (MATCH_MUSIC), so the duck applies as the ratio 63/98 of it, one factor for the stream's fade and the path's master volume; no PCM. Last re-pinned 2026-10-27 after the hoop's fireworks (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Ported 2026-10-18 (branch audio-modes): the callback's loop 0x24 (FUN_0019ee90 mode 0, the message [0x24, 38, 40, 25] kept for the release) out of Street School, the music's duck to (100 - 35)% of its volume over 100 ms (FUN_001abde8) and its restore when the stream runs out (0x1acf58, FUN_001abe78), the manager's one stream (a line over a line replaces it), the pause's silent stream and the resume's stop; requests are queued and served the next service, 0x1ac9f8 type 1 drops a chosen line at speech volume 0, while paused, or while Bobbito plays without the +0x68 override, and a root's repeat limit refuses the event after its run. Runtime: 68 of 68 original attract-match lines carry the ported message and duck. Not compared line for line: the rewrite's demo and the original's attract match are different games (the first comparison's rates and lengths are in docs/TRACE.md); the music's base share is the rewrite's (MATCH_MUSIC), so the duck applies as the ratio 63/98 of it, one factor for the stream's fade and the path's master volume; no PCM. Last re-pinned 2026-10-27 after per-player jump shots (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Play one save state's match in both games and compare the lines' starts update by update.",
       "match_type": "structural"
     },
