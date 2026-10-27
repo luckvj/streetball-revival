@@ -2299,6 +2299,65 @@ fn the_shot_chooser_reads_the_facing_from_the_rim_in_the_originals_sense() {
 }
 
 #[test]
+fn the_shot_chooser_knows_the_shooter() {
+    // `FUN_0016b4b8` reads the record (actor+0x288) and its field 12:
+    // record 172 shoots `jumpshot_bird` where others draw the default
+    // three, a woman `jumpshot_1` after the draw and her stepping set shot
+    // for the runner, and records 149, 166 and 178 their own hooks off a
+    // side fade's draw. A two-turbo shot plays the player's own slot.
+    let pick = |shooter: crate::Shooter, at: [f32; 2], heading: f32, hand: u8, extra: u16| {
+        let mut w = driver(at, 8.0, 3);
+        w.players[0].shooter = Some(shooter);
+        w.players[0].set_heading(heading);
+        w.players[0].gait_channel.hand = hand;
+        let ahead = stick(heading.sin(), heading.cos());
+        step_all(&mut w, &[(0, ahead.with(button::SHOOT | extra))], 1);
+        match w.players[0].action {
+            Action::Shooting { script, .. } => usize::from(script),
+            ref other => panic!("{other:?}"),
+        }
+    };
+    let who = |record: u16, female: bool| crate::Shooter {
+        record,
+        female,
+        slots: [4, 7, 5, 6, 3, 1],
+    };
+    let unit = std::f32::consts::TAU / 1024.0;
+    let half_pi = std::f32::consts::FRAC_PI_2;
+    let away = -half_pi;
+    assert_eq!(
+        pick(who(172, false), [10.0, 0.0], away, 1, 0),
+        timing::BIRD_SHOT
+    );
+    assert_eq!(
+        pick(who(3, true), [10.0, 0.0], away, 1, 0),
+        timing::FEMALE_SHOT
+    );
+    assert_eq!(
+        pick(who(3, true), [10.0, 0.0], half_pi, 1, 0),
+        timing::FEMALE_RUNNER
+    );
+    assert_eq!(
+        pick(who(3, false), [10.0, 0.0], half_pi, 1, 0),
+        timing::RUNNER
+    );
+    for (record, hook) in timing::LEGEND_HOOKS {
+        assert_eq!(
+            pick(who(record, false), [20.0, 0.0], -77.0 * unit, 1, 0),
+            hook
+        );
+    }
+    // The hand check comes first: hand 2 in the right band is the fade.
+    assert_eq!(
+        pick(who(149, false), [20.0, 0.0], -77.0 * unit, 2, 0),
+        timing::SIDEFADE_RIGHT_L
+    );
+    let mut own = who(3, false);
+    own.slots[0] = 21;
+    assert_eq!(pick(own, [10.0, 0.0], away, 1, button::L1 | button::R1), 21);
+}
+
+#[test]
 fn a_turbo_block_under_the_rim_goaltends_some_shots() {
     let mut goaltends = 0;
     for seed in 0..40 {

@@ -3820,7 +3820,8 @@ launcher"). The ball does not leave on the button's release:
   from long range `jumpshot_runner_1`; else `0x3d7b10`'s three
   (`jumpshot_2hand_legkick_1/2`, `jumpshot_stepback_2hand_legkick`,
   `rand % 3`), the female set `0x3d7b20` (`jumpshot_1`), Bird's and the
-  hooks of legends 0x95/0xa6/0xb2. In a Level 1 gamebreaker the court
+  hooks of legends 0x95/0xa6/0xb2 (all carried since 2026-10-27, "Who
+  shoots, as the shot pick sees him"). In a Level 1 gamebreaker the court
   map `0x3d2790` (`FUN_00141298`) picks the gamebreaker shots
   (`0x44f7f8`/`0x44f89e`, both 33).
 - Callback 21 by script (updates from the press, plain path):
@@ -13624,3 +13625,29 @@ A court's `DRIFT` line builds a manager (`FUN_001f4248`): its pieces, 0x60 bytes
 **The breath's motion (2026-10-27).** At the court script's end (`~`, `0x2f45a0..0x2f468c`) `FOG` makes effect 11, `COLD` six of type 3 (one a player, index 0..5; `FUN_0020dac0` -> `FUN_001f06a0`, 10 of the engine's particles, vtable `0x4616d8`), and `PRECIPITATION` effect 2 in the cold, 5 out of it. A breather's update (`FUN_001f07c0`, once a frame) finds its player (`FUN_001408e0`), and while his +0x68 is set (1 for the players on screen in save states 1, 9 and 12, 0 for an off-screen side) breathes every `0x4c7e34` + `r % 0x4c7e60` = 120 + 0..180 frames: +0x70/+0x90 open a breath for one frame, in which all `0x4c7e70` = 10 particles take puffs. The mouth is 1.25 along the head bone's (21) up axis turned by its rotation (`FUN_002f7430` of `0x4c7d60` = (0, 1, 0)) from the bone. A puff starts within ±0.3 of it, rising at 0.3 mph (`0x4c7ea0`), size 0.35, and lives `0x4c7e6c` = 40 frames: nudged every 1..`0x4c7e64` = 4 frames by up to ±0.002 across (`0x4c7e90`/`0x4c7e94`), it keeps to the mouth (its offset, +0x9c's entry, moves with its velocity) while it comes in over 30 frames (`0x4c7e98`) to an alpha of `0x4c7e68` = 76.5; over the last `0x4c7e58` = 10 it moves free, leaning into the court's wind at up to 0.005 a frame (`0x4c7e5c`) across, and goes out (`0x4c7e9c` = 0.1 a frame). The rewrite's breath had been its own (five puffs from the jaw along the body's facing every 1.5..4 seconds). Now `street_game::breath` steps each player's breather once a fixed tick from his head bone and `ambience` draws its puffs. The +0x68 gate is not modelled: everyone breathes. Test: `breath::tests`.
 
 **The hoop's fireworks (2026-10-27).** Effect type 15 (`FUN_001f6fc8`: 120 of the engine's particles, the first 74 (`0x3ee3c8`) flames in mode 2, the rest sparks in mode 4; its listener `FUN_001f6cc8`, vtable `0x461e28`) has three handlers: the basket (slot 26, `FUN_001f6d98`) sets the listener's +4 for a made basket that wins the game (the game's vt+0xbc) or any with Explosive Rims (the cheats' +0x14), before the checks that gate only the rim's tear (a dunk or an alley-oop's finish, and outside game type 1 the side's stat 0x23); the game's reset (slot 53, `FUN_001f6f10`) and a replay's start (slot 58, `FUN_001f6ec8`) set every particle's life to 0. The update (`FUN_001f7178`, once a frame), lit: the rim on the ball's side (±36.75, 11.957, 0), 20 frames of flames (`0x4c8568`) and the 46 sparks: each lives 60 + `r % 61`, flies at up to 10 mph (`0x4c8560`) along (u − ½, u, u − ½) made unit (0.1 up if under 0.001), blue (100, 169, 245) while the blue share so far is under 0.76 (`0x3ee3d4`; the first, 0 / 0, grey (128)), fading toward (36, 50, 128) × (0.75 + u/4) over its life, size 0.4, winking every 5 + `r % 6`. A flame pair a frame while the flames last: the first free flame at the rim, its velocity (u − ½) × 0.75 each way, white going out at 2.55 a frame, size 0.2366 growing toward 1.586 at a random share over its 100 frames; the next at the rim less that velocity, alpha 200 going at 2, size 0.2378. Flames move and fade; sparks move, fall at full gravity, fade, bounce off the floor (at their size) and the backboards' faces (|x| over 38, |z| to 3, at 11.5 or up) at half speed, wink out one frame in each wait, and over their last 40 frames shrink 0.0094 a frame and lean into the court's wind at up to 0.005. Then the listener's +8 takes +4 and +4 clears. The rewrite had lit a steady fire at every gamebreaker basket and kept it burning until play went live. Now `street_game::fire` steps the effect once a fixed tick, `ambience::light_hoop` lights it (`hoop_burst`: won, or the cheat) and puts it out at a replay, and `burn` draws the 120 particles added. Tests: `fire::tests`, `the_winning_basket_or_explosive_rims_light_the_hoop`.
+
+## Who shoots, as the shot pick sees him (2026-10-27)
+
+- `FUN_0016b4b8` reads the shooter's record (actor+0x288's vt+0x10) and
+  its field 12 (`FUN_001da4e0(record, 12) > 0`, a woman). The sim now
+  carries both, and the six shot slots, as `street_sim::Shooter`
+  (snapshot version 104), resolved at match setup from the animation
+  source's record (`clip::resolved_shooter`).
+- Slot shots: `FUN_0013a1f8(record, 2, +0x258, slot)` (`0x13a490..`)
+  gives a created player (field 3 = 0x25) his equipped row
+  (`FUN_001d8778(rec, 0, slot)`), the generic team (0x24) its fixed row
+  (`FUN_001d9e60(0, slot)`), and everyone else the shared set `0x43d6c0`;
+  shots have no legend override (only tricks, a1 = 1, and dunks, a1 = 0).
+- The default jump shot (`0x16b900`, `0x16bd48`, `0x16be04`): record 172
+  `jumpshot_bird` with no draw; a woman one draw then the word at
+  `0x3d7b20` (`0x44e51e`, `jumpshot_1`); else `0x3d7b10[rand % 3]`.
+- A side fade past the hand check (`0x16ba18..0x16bb54`,
+  `0x16bb64..0x16bca4`): records 149, 166, 178 play the bishop, magic
+  and wilt hooks before the 51% draw.
+- The runner (`0x16bcdc..0x16bd44`): a woman plays
+  `jumpshot_female_2hand_stepforward_set` (`0x44eb03`).
+- The press fallback (`0x1699ac..0x169bb4`): the legends' hooks, then
+  172's Bird shot, both before any draw; else 75% a hook of `0x3d82f0`;
+  else a woman `jumpshot_1` (one draw), else the default three.
+- The parity captures build players without a record, so they pick as
+  before (the shared set's man).

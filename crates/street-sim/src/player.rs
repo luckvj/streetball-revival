@@ -104,6 +104,19 @@ impl NativeTricks {
     }
 }
 
+/// Who shoots, as the shot pick (`FUN_0016b4b8`) asks it: the record
+/// (actor+0x288's vt+0x10) for its legends and Bird, the record's field 12
+/// (`FUN_001da4e0(record, 12) > 0`) for the female set, and the six
+/// two-turbo slots' shots (`FUN_0013a1f8(record, 2, +0x258, slot)`: a
+/// created player's equipped rows, the generic team's fixed rows, else the
+/// shared set), ids in [`crate::timing::SHOT_SCRIPTS`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Shooter {
+    pub record: u16,
+    pub female: bool,
+    pub slots: [u8; 6],
+}
+
 /// How long a trick runs: its script's updates ([`crate::trick::length`],
 /// a self-toss's with its cue's flight), in seconds.
 pub fn trick_seconds(id: TrickIdentity) -> f32 {
@@ -467,6 +480,10 @@ pub struct Player {
     /// dunk (its id's flag 0x800 at `0x43f5f0`), when the match knows the
     /// player's dunk set. Fixed for the match, carried in snapshots.
     pub native_dunks: Option<u16>,
+    /// The shot pick's view of him ([`Shooter`]), when the match knows his
+    /// record. Fixed for the match, carried in snapshots; None picks as
+    /// the shared set's male streetballer.
+    pub shooter: Option<Shooter>,
     /// Feet above the floor (jumping).
     pub height: f32,
     /// The turbo bar he draws on, 0 to 1: his slot's of the game's six
@@ -580,6 +597,7 @@ impl Player {
             action_buttons: 0,
             native_tricks: None,
             native_dunks: None,
+            shooter: None,
             height: 0.0,
             turbo: 1.0,
             gait_channel: crate::ordinary::PlayerGaitChannel::default(),

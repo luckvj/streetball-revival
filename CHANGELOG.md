@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- **Per-player jump shots:** women shoot their own set shots, one legend
+  his own jumper, the legends with signature hooks throw them off a side
+  fade, and created players' turbo shots play the shots they equipped,
+  as in the original (everyone used to shoot the same men's set).
 - **Passout pop-ups** show the points the passout scored, as in the
   original: 5,000 off a defender's head, 3,000 off the board, less when
   repeated (they always read 3,000).
