@@ -5,6 +5,12 @@ its version's part.
 
 ## Unreleased
 
+- **Per-player dunks:** a legend's turbo-combo dunk is his own signature
+  dunk and a created player's are the ones he equipped, as in the
+  original (everyone used to dunk the same set).
+- **Open shots:** a defender on the floor or in his counter stance no
+  longer counts as guarding the shooter, so the shot keeps its open-shot
+  bonus, as in the original.
 - **Per-player jump shots:** women shoot their own set shots, one legend
   his own jumper, the legends with signature hooks throw them off a side
   fade, and created players' turbo shots play the shots they equipped,

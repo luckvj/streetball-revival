@@ -295,9 +295,10 @@ pub fn resolved_trick_slots(
     Some(street_sim::NativeTricks { slots })
 }
 
-/// Who the shot pick sees (`FUN_0016b4b8`): the animation source's record,
-/// its field 12 (female) and the six shot slots' ids (`0x13a1f8(record, 2,
-/// +0x258, slot)`).
+/// Who the shoot press sees (`FUN_001693b8`, `FUN_0016b4b8`): the
+/// animation source's record, its field 12 (female), the six shot slots'
+/// and eleven dunk slots' ids (`0x13a1f8`) and the dunk slots' unlocks
+/// where the record answers for them (`0x139d38`).
 pub fn resolved_shooter(
     clips: &crate::setup::GameClips,
     moves: &PlayerMoves,
@@ -317,10 +318,46 @@ pub fn resolved_shooter(
         )?;
         *id = u8::try_from(script).ok().filter(|&id| id < 27)?;
     }
+    use street_assets::scripts::{CREATED_TEAM, GENERIC_TEAM};
+    let (mut dunks, mut dunk_unlocks) = ([0u8; 11], [0u8; 11]);
+    let team = disc.players.get(record).map(|p| p.team);
+    let (_, equipped) = routed(moves, player)?;
+    let rows = native_move_slots(disc, 1, &equipped[1]);
+    for slot in 0..11 {
+        let id = move_script_id(
+            clips,
+            moves,
+            disc,
+            player,
+            street_assets::moves::Kind::Dunk,
+            slot,
+        )?;
+        dunks[slot] = u8::try_from(id).ok().filter(|&id| id < 60)?;
+        // `0x139d38`: the row the slot's dunk came from, `1 << level`
+        // (none past level 4); a legend's own dunk 8.
+        let row = match team {
+            Some(GENERIC_TEAM) => clips.scripts.generic_row(1, slot),
+            _ => Some(rows[slot])
+                .filter(|&r| r != street_sim::story::EMPTY_MOVE_SLOT)
+                .map(usize::from),
+        };
+        let legend = slot == 1
+            && !matches!(team, Some(CREATED_TEAM | GENERIC_TEAM))
+            && street_assets::scripts::legend_slot_script(street_assets::moves::Kind::Dunk, record)
+                == Some(id);
+        dunk_unlocks[slot] = match row.and_then(|r| disc.moves.get(r)) {
+            Some(m) if (0..=4).contains(&m.level) => 1 << m.level,
+            Some(_) => 0,
+            None if legend => 8,
+            None => 0,
+        };
+    }
     Some(street_sim::Shooter {
         record: u16::try_from(record).ok()?,
         female: disc.players.get(record).is_some_and(|p| p.female),
         slots,
+        dunks,
+        dunk_unlocks,
     })
 }
 
@@ -642,6 +679,28 @@ mod tests {
         let woman = disc.players.iter().position(|p| p.female).unwrap();
         let moves = PlayerMoves(vec![(woman, Default::default())]);
         assert!(resolved_shooter(&clips, &moves, &disc, 0).unwrap().female);
+        // Shared dunks, a legend's own slot-1 dunk unlocked as 8
+        // (`0x139d38`'s switch), and a created player's equipped dunk by
+        // its row's level.
+        assert_eq!(bird.dunks, street_sim::timing::DUNK_SLOTS);
+        assert_eq!(bird.dunk_unlocks, [0; 11]);
+        let moves = PlayerMoves(vec![(0x91, Default::default())]);
+        let legend = resolved_shooter(&clips, &moves, &disc, 0).unwrap();
+        assert_eq!(legend.dunks[1], 0x35);
+        assert_eq!(legend.dunk_unlocks[1], 8);
+        let created = disc
+            .players
+            .iter()
+            .position(|p| p.team == street_assets::scripts::CREATED_TEAM)
+            .unwrap();
+        let dunk = disc.moves.iter().find(|m| m.kind == 1).unwrap();
+        let mut equipped: [Vec<u8>; 3] = Default::default();
+        equipped[1] = vec![street_sim::story::EMPTY_MOVE_SLOT; 11];
+        equipped[1][3] = dunk.index as u8;
+        let moves = PlayerMoves(vec![(created, equipped)]);
+        let own = resolved_shooter(&clips, &moves, &disc, 0).unwrap();
+        assert_eq!(own.dunk_unlocks[3], 1 << dunk.level);
+        assert_eq!(own.dunk_unlocks[4], 0);
     }
 
     #[test]

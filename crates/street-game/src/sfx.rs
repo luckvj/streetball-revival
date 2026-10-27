@@ -1561,9 +1561,10 @@ pub(crate) fn fire_events(
             // lesson only one with an id, the game's vt+0xb4); a dunker sets
             // the block flag and, finished at level 2 or more, sweetener 13
             // at the ball, or in its place the signature sound for dunk id
-            // 53 by Stretch or 56 by Bonafide ([`dunk_signature`]). Not
-            // modelled: the music's duck at finishes of 2 or more
-            // (`0x1ab070`) and 0x51 inside a staged gamebreaker.
+            // 53 by Stretch or 56 by Bonafide ([`dunk_signature`]). The
+            // music's duck at finishes of 2 or more (`0x1ab070`) is
+            // `crate::song`'s; not modelled: 0x51 inside a staged
+            // gamebreaker.
             Event::TakeOff {
                 player,
                 leap,
@@ -1592,8 +1593,8 @@ pub(crate) fn fire_events(
             }
             // The ball thrown from a holder's hands (slot 18, `0x1a5f48`):
             // sweetener 0 at the ball, a kick pass's ball contact, and to an
-            // alley-oop flier the block flag (and the music's duck, not
-            // modelled).
+            // alley-oop flier the block flag (the music's duck is
+            // `crate::song`'s).
             Event::Launched { kick, leaper, .. } => {
                 let (ba, bd) = at(ball);
                 fx.fire(&[ev::SWEETENER, ba, bd, 1000, 0]);
@@ -1646,7 +1647,7 @@ pub(crate) fn fire_events(
             // A dunk let go at the rim (slot 12, the shot release
             // `0x14aaf8` posting at `0x14bf18` for a dunk or an alley-oop
             // dunk): a grunt. Its handler also brings back the music that
-            // slot 4 ducked for a power dunk (`0x1ab210`), not modelled.
+            // slot 4 ducked for a power dunk (`0x1ab210`, `crate::song`).
             Event::Slam { player, .. } => {
                 let (a, d) = at(player_at(player));
                 let voice = fx.voices.get(player).copied().unwrap_or(0);

@@ -113,7 +113,7 @@ use crate::{
 /// `inbound_walk`); 101: the team's passout value (team +0x5c); 102: the
 /// swing ([`Event::Swing`], actor+0x1d8); 103: the pick's call
 /// ([`Event::PickCall`], the AI game's `pick_call`).
-const VERSION: u8 = 104;
+const VERSION: u8 = 105;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1137,7 +1137,7 @@ fn player(w: &mut Writer, p: &Player) {
             w.u8(1);
             w.uv(u64::from(s.record));
             w.u8(u8::from(s.female));
-            for slot in s.slots {
+            for slot in s.slots.into_iter().chain(s.dunks).chain(s.dunk_unlocks) {
                 w.u8(slot);
             }
         }
@@ -1640,7 +1640,9 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                     1 => true,
                     k => return Err(format!("bad shooter sex {k}")),
                 },
-                slots: [r.u8()?, r.u8()?, r.u8()?, r.u8()?, r.u8()?, r.u8()?],
+                slots: bytes(r)?,
+                dunks: bytes(r)?,
+                dunk_unlocks: bytes(r)?,
             }),
             k => return Err(format!("bad shooter flag {k}")),
         },
@@ -1890,6 +1892,14 @@ fn clip_in(r: &mut Reader) -> Result<Option<(u16, f32)>, String> {
         1 => Some((u16::try_from(r.uv()?).map_err(|_| "invalid clip")?, r.f()?)),
         k => return Err(format!("bad clip flag {k}")),
     })
+}
+
+fn bytes<const N: usize>(r: &mut Reader) -> Result<[u8; N], String> {
+    let mut out = [0; N];
+    for b in &mut out {
+        *b = r.u8()?;
+    }
+    Ok(out)
 }
 
 fn native_tricks_in(r: &mut Reader) -> Result<Option<crate::NativeTricks>, String> {
@@ -3687,9 +3697,9 @@ mod tests {
     fn the_shooter_round_trips_and_is_validated() {
         let mut w = three_on_three(5);
         let shooter = crate::Shooter {
-            record: 172,
-            female: true,
             slots: [21, 7, 5, 6, 3, 26],
+            dunk_unlocks: [0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+            ..crate::Shooter::shared(172, true)
         };
         w.players[1].shooter = Some(shooter);
         let back = World::from_snapshot(&w.to_snapshot()).unwrap();

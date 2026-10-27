@@ -602,6 +602,13 @@ impl World {
             if let Some(s) = shooter {
                 // Slot shots are ids of `0x3d8fd8`.
                 require(s.slots.iter().all(|&id| id < 27), "shot slot ids")?;
+                require(s.dunks.iter().all(|&id| id < 60), "dunk slot ids")?;
+                require(
+                    s.dunk_unlocks
+                        .iter()
+                        .all(|&m| m == 0 || (m.is_power_of_two() && m <= 16)),
+                    "dunk slot unlocks",
+                )?;
             }
             if let Some(tricks) = native_tricks {
                 for (slot, identity) in tricks.slots.iter().enumerate() {

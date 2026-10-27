@@ -297,8 +297,6 @@ impl Ctx<'_> {
         matches!(self.w.players[i].action, Action::ReboundJump { .. })
     }
 
-    /// Animation flag 0x40 (`FUN_0016ea70`) and bit 16 (`FUN_0016e9b0`):
-    /// off balance or on the floor.
     /// Bit 16 (`FUN_0016e9b0`, the AI's `FUN_00181828`): the counter
     /// stance or the take after it ([`crate::counter`]).
     pub fn countering(&self, i: usize) -> bool {
