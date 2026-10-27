@@ -448,22 +448,29 @@ fn quat_z(degrees: f32) -> [f32; 4] {
 /// `FUN_002f6fb0` and `FUN_002f6a28` build one: its half angle's sine of
 /// the EE's polynomial (`π / 360`) and the cosine `√(1 − s²)`, by quadrant.
 fn quat_axis(axis: usize, degrees: f32) -> [f32; 4] {
-    let x = degrees * f32::from_bits(0x3c0e_fa35);
+    let (s, c) = sin_cos(degrees * f32::from_bits(0x3c0e_fa35));
+    let mut q = [0.0, 0.0, 0.0, c];
+    q[axis] = s;
+    q
+}
+
+/// The EE's sine and cosine of `x` radians, as `FUN_002f6828`,
+/// `FUN_002f7700` and their kin take them: the quadrant `x × 2/π` rounded
+/// away from 0, the polynomial's sine of the rest and the cosine
+/// `√(1 − s²)`, turned by the quadrant.
+pub fn sin_cos(x: f32) -> (f32, f32) {
     let k = x * f32::from_bits(0x3f22_f983);
     let k = if x < 0.0 { k - 0.5 } else { k + 0.5 };
     let q = k as i32;
     let r = x - q as f32 * f32::from_bits(0x3fc9_0fdb);
     let s = sin_poly(r, r * r);
     let c = libm::sqrtf(1.0 - s * s);
-    let (s, c) = match q & 3 {
+    match q & 3 {
         0 => (s, c),
         1 => (c, -s),
         2 => (-s, -c),
         _ => (-c, s),
-    };
-    let mut q = [0.0, 0.0, 0.0, c];
-    q[axis] = s;
-    q
+    }
 }
 
 /// `FUN_00157fe0` for a hanging dunker (state bit 14, `0x157e78..0x157eb0`):

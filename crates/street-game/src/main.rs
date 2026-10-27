@@ -42,6 +42,7 @@ mod controls;
 mod create_team;
 mod credits;
 mod diagram;
+mod drift;
 mod edit_moves;
 mod event_intro;
 mod exit_ask;
