@@ -36,16 +36,24 @@ const LEGENDS_KEPT: usize = 50;
 /// Percentage looks a name up).
 const NAME_KEY: usize = 8;
 
-/// A user's career totals (`entername.txt` 15..21; the game's "Busted
-/// Rims" is not counted here).
-pub const CAREER: [&str; 6] = [
+/// A user's career totals (`entername.txt` 15..21, the user's counters
+/// 2..8 at +0x24): the career panel shows the first five
+/// (`FUN_002401b8`); Gamebreakers (8) and Busted Rims (7: a game won with
+/// the rim torn off, `0x400054` bit 3, `0x1df244..0x1df264`, winners only)
+/// are kept and never shown. Busted Rims comes last here so older saves
+/// keep their order.
+pub const CAREER: [&str; 7] = [
     "Points",
     "Trick Points",
     "Dunks",
     "Steals",
     "Blocks",
     "Gamebreakers",
+    "Busted Rims",
 ];
+
+/// [`CAREER`]'s Busted Rims.
+pub const BUSTED_RIMS: usize = 6;
 
 /// The single-game records, in `score.txt`'s order (3..11).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1005,9 +1013,9 @@ mod tests {
         for name in ["A", "B", "C"] {
             r.add_user(name).unwrap();
         }
-        r.played(0, true, [10, 0, 1, 0, 0, 0]);
-        r.played(0, false, [0; 6]);
-        r.played(1, true, [0; 6]);
+        r.played(0, true, [10, 0, 1, 0, 0, 0, 0]);
+        r.played(0, false, [0; 7]);
+        r.played(1, true, [0; 7]);
         assert_eq!((r.users[1].wins, r.users[1].losses), (1, 0));
         assert_eq!(r.users[0].percent(), 50);
         assert_eq!(r.users[0].career[0], 10);
@@ -1122,7 +1130,7 @@ mod tests {
     fn records_and_settings_survive_a_save() {
         let mut r = Records::default();
         r.add_user("JAY").unwrap();
-        r.played(0, true, [21, 5000, 3, 2, 1, 1]);
+        r.played(0, true, [21, 5000, 3, 2, 1, 1, 1]);
         r.offer(
             GameRecord::TrickPoints,
             Row {

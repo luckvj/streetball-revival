@@ -169,7 +169,15 @@ pub fn import(bytes: &[u8], disc: &Disc) -> Result<Import, String> {
             name,
             wins: count(0),
             losses: count(1),
-            career: [count(2), count(3), count(4), count(5), count(6), count(8)],
+            career: [
+                count(2),
+                count(3),
+                count(4),
+                count(5),
+                count(6),
+                count(8),
+                count(7),
+            ],
             league,
             school,
         });
