@@ -497,6 +497,9 @@ pub struct Player {
     /// Actor+0x1a8: updates he may not touch the ball (a block's knock bars
     /// the jumper and the ball's owner), counted down each update.
     pub barred: u16,
+    /// Actor+0x1d8: his block jump's hands have missed the ball once
+    /// ([`Event::Swing`]); cleared at callback 35's take-off (`0x17712c`).
+    pub swung: bool,
     /// Actor+0x1d4 and +0x1b8: a trick press rolled a fumble
     /// ([`World::fumble_tick`]), and the updates until it comes (counted
     /// down each update, `0x157168`).
@@ -586,6 +589,7 @@ impl Player {
             body: None,
             rise: 0.0,
             barred: 0,
+            swung: false,
             fumble: false,
             fumble_timer: 0,
             cooldown: 0,

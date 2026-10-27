@@ -1154,6 +1154,7 @@ impl World {
             j.airtime = airtime;
             j.flown = 0;
         }
+        self.players[i].swung = false;
         // Slot 6 at the callback's end: the pump fake's watch.
         self.watch_jumper(i);
     }
@@ -1248,6 +1249,12 @@ impl World {
         } else {
             len3(sub3(at(if state & 8 != 0 { 1 } else { 2 }), b)) <= reach
         };
+        // The hands short of the ball: the swing, once a jump (slot 7,
+        // `0x16dc64..0x16dca0`), before the arms' sweep is read.
+        if !touch && !self.players[i].swung {
+            self.players[i].swung = true;
+            self.events.push(Event::Swing { player: i });
+        }
         let from: [f32; 3] = std::array::from_fn(|k| b[k] - self.ball.moved[k]);
         let hit = pose::sweep(&pose, from, b, self.ball.radius, poses.reach(body));
         if !touch && let Some(hit) = hit {

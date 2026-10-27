@@ -534,6 +534,7 @@ impl World {
                 body,
                 rise,
                 barred: _,
+                swung: _,
                 fumble: _,
                 fumble_timer: _,
                 cooldown: _,
@@ -1194,7 +1195,7 @@ impl World {
                 | Event::Cancel { team: t } => team(t)?,
                 Event::GameOver { winner } => team(winner)?,
                 Event::ReplayRoll { .. } => {}
-                Event::InboundWalk { player: p } => player(p)?,
+                Event::InboundWalk { player: p } | Event::Swing { player: p } => player(p)?,
                 Event::TrickStart {
                     player: p,
                     level: l,

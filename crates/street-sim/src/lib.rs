@@ -399,6 +399,14 @@ pub enum Event {
     InboundWalk {
         player: usize,
     },
+    /// A hand swung at the ball and missed it (class `0x3c64e0`, the
+    /// listeners' slot 7): a block jumper's hands, once a jump, the first
+    /// update his block test (`FUN_0016d888`, `0x16dc78`) finds them short
+    /// of the ball; a swipe's strip knocking the ball loose (`FUN_0016cf30`,
+    /// `0x16d7a8`), the swiper.
+    Swing {
+        player: usize,
+    },
     /// A trick move started (class `0x3c6490`, the listeners' slot 2,
     /// posted as the trick's script starts: the trick press `0x15f5fc`,
     /// the two-person freestyle `0x15cdb4`): `level` its value class plus
@@ -2546,6 +2554,8 @@ impl World {
             self.ball.flight_left = 0.0;
             self.ball.flight_time = 0.0;
             self.ball.flight_start = 0.0;
+            // Slot 7 for the swiper (`0x16d79c..0x16d7c8`).
+            self.events.push(Event::Swing { player: i });
             return;
         }
         // The take of the held ball by the other side is slot 15's steal

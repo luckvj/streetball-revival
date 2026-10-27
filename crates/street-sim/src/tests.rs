@@ -419,7 +419,8 @@ fn a_swipe_strips_the_ball_like_fun_0016cf30() {
 /// The strip's knock (`0x16d3e0..0x16d7d4`): the standing holder reels on
 /// `steal_reaction_l_1` ([`trick::STRIPPED`]) and is barred from the ball
 /// `r % 5 + 25` updates, the swiper `fps × 0.84` (50), and the ball spins
-/// about a unit axis at 0.075..0.15.
+/// about a unit axis at 0.075..0.15. The swiper's swing (slot 7) is
+/// posted with the knock.
 #[test]
 fn a_strip_knocked_loose_bars_both_and_reels_the_holder() {
     let mut knocked = 0;
@@ -438,9 +439,11 @@ fn a_strip_knocked_loose_bars_both_and_reels_the_holder() {
         w.phase = Phase::Live;
         w.ball.hold(0);
         w.step(&[Input::default(), buttons(button::TRICK)]);
+        let mut swung = false;
         for _ in 0..TICK_HZ {
             w.step(&[Input::default(), Input::default()]);
             if w.ball.state == BallState::Loose {
+                swung = w.events.contains(&Event::Swing { player: 1 });
                 break;
             }
         }
@@ -448,6 +451,7 @@ fn a_strip_knocked_loose_bars_both_and_reels_the_holder() {
             continue;
         }
         knocked += 1;
+        assert!(swung, "the knock posts the swiper's swing");
         assert!(
             (24..=29).contains(&w.players[0].barred),
             "{}",

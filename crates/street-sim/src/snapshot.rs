@@ -110,8 +110,9 @@ use crate::{
 /// the board ([`Event::RimBump`]); 98: a passout's bounce
 /// ([`Event::PassoutBounce`]); 99: a trick's start ([`Event::TrickStart`]);
 /// 100: the inbound walk ([`Event::InboundWalk`], the AI game's
-/// `inbound_walk`); 101: the team's passout value (team +0x5c).
-const VERSION: u8 = 101;
+/// `inbound_walk`); 101: the team's passout value (team +0x5c); 102: the
+/// swing ([`Event::Swing`], actor+0x1d8).
+const VERSION: u8 = 102;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1050,6 +1051,7 @@ fn player(w: &mut Writer, p: &Player) {
         body,
         rise,
         barred,
+        swung,
         fumble,
         fumble_timer,
         cooldown,
@@ -1144,6 +1146,7 @@ fn player(w: &mut Writer, p: &Player) {
     }
     w.f(*rise);
     w.uv(u64::from(*barred));
+    w.bool(*swung);
     w.bool(*fumble);
     w.uv(u64::from(*fumble_timer));
     w.uv(u64::from(*cooldown));
@@ -1632,6 +1635,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
         },
         rise: r.f()?,
         barred: u16::try_from(r.uv()?).map_err(|_| "invalid bar")?,
+        swung: r.bool()?,
         fumble: r.bool()?,
         fumble_timer: u16::try_from(r.uv()?).map_err(|_| "invalid fumble")?,
         cooldown: u16::try_from(r.uv()?).map_err(|_| "invalid cooldown")?,
@@ -3157,6 +3161,10 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(46);
             w.us(player);
         }
+        Event::Swing { player } => {
+            w.u8(47);
+            w.us(player);
+        }
         Event::TrickStart {
             player,
             level,
@@ -3309,6 +3317,7 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
         43 => Event::RimBump { player: r.us()? },
         44 => Event::PassoutBounce { head: r.bool()? },
         46 => Event::InboundWalk { player: r.us()? },
+        47 => Event::Swing { player: r.us()? },
         45 => Event::TrickStart {
             player: r.us()?,
             level: r.u8()?,

@@ -30,7 +30,8 @@
 //! | a block (slot 16, `0x1a4ce8`) | 0x39 (whether the blocker holds the ball), with the block flag sweetener 0x4a 3, crowd 0x27, exertion |
 //! | a steal or counter (slot 15, `0x1a63e0`) | crowd 0x27, 0x49 |
 //! | the tip-off caught from the referee's toss (slot 22, `0x1a5d10`: ball state 7) | crowd 0x25 |
-//! | a block jump's take-off | exertion every other time, counted with the shots' (slot 6); the swing, sweetener 0x4a 11 (slot 7) |
+//! | a block jump's take-off | exertion every other time, counted with the shots' (slot 6) |
+//! | a swing: a block jumper's hands first short of the ball, once a jump, or a swipe's strip knocking it loose | sweetener 0x4a 11 at the swinger (slot 7) |
 //! | a reach for the ball: a swipe, or the counter stance | sweetener 0x4a 12, every other time an exertion (slot 8) |
 //! | a dunk let go at the rim | exertion (slot 12, `0x1a4640`) |
 //! | a pick or a trick counter knocks a player off balance | body 0x4f 0 at the one knocked (slot 74) |
@@ -1598,9 +1599,7 @@ pub(crate) fn fire_events(
             }
             // A block jump's take-off (slot 6): the block scripts' callback
             // 35 (`0x176080`, posting at `0x177120`) grunts every other time
-            // on the shots' count. Then the swing (slot 7): the block's
-            // check (`0x16d888`, posting at `0x16dc78`) fires sweetener 11
-            // once a jump, as the hand first misses the ball.
+            // on the shots' count.
             Event::Jump {
                 player,
                 block: true,
@@ -1610,6 +1609,12 @@ pub(crate) fn fire_events(
                     let voice = fx.voices.get(player).copied().unwrap_or(0);
                     fx.fire(&[ev::EXERTION, a, d, voice]);
                 }
+            }
+            // The swing (slot 7, `0x1a6088`): sweetener 11 at the hand's
+            // owner, a block jumper's hands first short of the ball or a
+            // swipe's strip.
+            Event::Swing { player } => {
+                let (a, d) = at(player_at(player));
                 fx.fire(&[ev::SWEETENER, a, d, 1000, 11]);
             }
             // The "no turbo" message (slot 10, `0x1a5ed8`): HUD kind 5. Its
