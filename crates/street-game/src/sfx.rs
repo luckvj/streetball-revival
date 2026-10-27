@@ -39,7 +39,8 @@
 //! | an ordinary player's animated joint 10 crosses the floor threshold | body 0x4f kind 2 by the joint's drop, crowd 0x29, exertion (slot 76); scripted presentation suppresses the observer |
 //! | a trick of level 1..3 | sweetener 0x4a kind 7 + level and, for four players' own moves, the signature 0x47 (slot 2); HUD 0x4d kind 4, and when it faked a defender out the crowd's 0x29 and a taunt (slot 13, `0x1a5a78`) |
 //! | a meter fills | HUD 0x4d kind 2 (12 at level 2), the loop 0x22 (slot 66) |
-//! | a gamebreaker goes up | transition 0x4c, the loop 0x21 (slot 64) |
+//! | a gamebreaker goes up | a staged Level 2 transition 0x4c 3; else the loop 0x21 and 0x4c 1 (slot 64) |
+//! | a gamebreaker scores | a staged Level 2's jump shot crowd 0x41 1, else crowd 0x3d (1 for a staged Level 2) (slot 26) |
 //! | a meter is pocketed / cancelled | HUD 0x4d kind 16 / crowd 0x3d; the loop 0x22 stops (slots 70, 71) |
 //! | a big trick bonus | HUD 0x4d kind 6 (over 5,000) or 7 (over 12,000) (slot 68) |
 //! | a move asks more of the bar than its player has (the "no turbo" message `0x3c6520`) | HUD 0x4d kind 5 (slot 10) |
@@ -607,6 +608,10 @@ pub struct Effects {
     /// lay-up's launch (slot 11); a block (slot 16) plays sweetener 3 on it
     /// and clears it.
     block_flag: bool,
+    /// The listener's +8: the gamebreaker going up is a staged Level 2
+    /// (slot 64 sets it, `0x1a31e8`, and clears it for any other,
+    /// `0x1a3250`); its basket's crowd reads it (`0x1a41e4..0x1a4298`).
+    level2: bool,
     /// Effects level the globals were set for, and the percents they take.
     level: u8,
     percents: &'static [i32],
@@ -902,6 +907,7 @@ impl Effects {
             exertions: 0,
             reaches: 0,
             block_flag: false,
+            level2: false,
             level: settings.effects,
             percents,
             staged: None,
@@ -1670,7 +1676,18 @@ pub(crate) fn fire_events(
                         });
                         fx.fire(&[ev::DUNK_CROWD, ba, 100 + 200 * finish]);
                     }
-                    Basket::Gamebreaker { .. } => fx.stop_loop(ev::GAMEBREAKER_LOOP),
+                    // A gamebreaker's basket (`0x1a41d4..0x1a4298`): a
+                    // staged Level 2's jump shot (the ball's kind 2) 0x41
+                    // with 1, else 0x3d with the flag, at the ball.
+                    Basket::Gamebreaker { dunk, .. } => {
+                        fx.stop_loop(ev::GAMEBREAKER_LOOP);
+                        let level2 = fx.level2;
+                        if level2 && !dunk {
+                            fx.fire(&[ev::CROWD_BIG, 1]);
+                        } else {
+                            fx.fire(&[ev::CROWD, i32::from(level2)]);
+                        }
+                    }
                     Basket::Jumper { .. } | Basket::Layup => {}
                 }
                 // The game won (vt+0xbc, `0x1a42cc..0x1a448c`): 0x3d 1 but
@@ -1911,9 +1928,18 @@ pub(crate) fn fire_events(
                     speech.resume(true);
                 }
             }
-            Event::Gamebreaker { .. } => {
-                fx.fire(&[ev::TRANSITION, 1]);
-                fx.start_loop(&[ev::GAMEBREAKER_LOOP, 0]);
+            // Slot 64 (`0x1a3130`): a Level 2 the court stages
+            // (`FUN_00141298` finds its family, which is when the world's
+            // staged sequence starts) plays transition 3; any other starts
+            // the loop 0x21 (`FUN_0019ee90`) and transition 1.
+            Event::Gamebreaker { level, .. } => {
+                fx.level2 = level >= 2 && w.sequence.is_some();
+                if fx.level2 {
+                    fx.fire(&[ev::TRANSITION, 3]);
+                } else {
+                    fx.start_loop(&[ev::GAMEBREAKER_LOOP, 0]);
+                    fx.fire(&[ev::TRANSITION, 1]);
+                }
             }
             // Slots 70 and 71 (`0x1a3868`, `0x1a3498`): a pocket resumes
             // speech below a full meter, a cancel always.
