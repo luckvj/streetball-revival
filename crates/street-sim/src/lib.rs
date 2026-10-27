@@ -393,6 +393,12 @@ pub enum Event {
         /// The trick points it was worth (team `+0x24`, the HUD's pop-up).
         points: u32,
     },
+    /// A restart's inbounder starts his walk to the spot ("throw inbound"'s
+    /// first update, `FUN_0010b820` posting class `0x3c6510`, the
+    /// listeners' slot 41).
+    InboundWalk {
+        player: usize,
+    },
     /// A trick move started (class `0x3c6490`, the listeners' slot 2,
     /// posted as the trick's script starts: the trick press `0x15f5fc`,
     /// the two-person freestyle `0x15cdb4`): `level` its value class plus

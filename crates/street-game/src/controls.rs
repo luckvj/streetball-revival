@@ -290,6 +290,33 @@ fn sample(
     s
 }
 
+/// The controller seat `k` of `seats` reads this frame. One person alone
+/// at the machine plays on every controller, the keyboard and every pad,
+/// as the menus take them all: whichever one confirmed the screens that
+/// seat him (the keyboard, say), a pad picked up for the match still
+/// drives him. With several people each keeps his own; a seat whose pad
+/// went away (unplugged, or back under a new id) takes a pad no other
+/// seat holds. `pads`: the connected pads.
+fn seat_device(seats: &[Option<Device>], k: usize, pads: &[Entity]) -> Option<Device> {
+    if seats.len() <= 1 {
+        return None;
+    }
+    let mine = seats.get(k).copied().flatten();
+    let Some(Device::Pad(e)) = mine else {
+        return mine;
+    };
+    if pads.contains(&e) {
+        return mine;
+    }
+    let mut free: Vec<Entity> = pads
+        .iter()
+        .copied()
+        .filter(|&p| !seats.contains(&Some(Device::Pad(p))))
+        .collect();
+    free.sort();
+    free.first().map(|&p| Device::Pad(p)).or(mine)
+}
+
 /// `FUN_00171920` for each actor: off the screen when his point, his
 /// feet less 2 (`(x, +0x260 - 2, z)`), projects (`project`, the shown
 /// camera's) outside the screen of `size` or not at all (behind the near
@@ -354,8 +381,11 @@ pub fn read(
         Err(_) => (0.0, 0),
     };
     let holder_team = sim.world.handler().map(|h| sim.world.team_of(h));
-    for seat in &mut control.seats {
-        let s = sample(&keys, &gamepads, seat.device);
+    let devices: Vec<Option<Device>> = control.seats.iter().map(|s| s.device).collect();
+    let pads: Vec<Entity> = gamepads.iter().map(|(e, _)| e).collect();
+    for (k, seat) in control.seats.iter_mut().enumerate() {
+        let device = seat_device(&devices, k, &pads);
+        let s = sample(&keys, &gamepads, device);
         // The player's controller layout (Options → Controller Layout).
         let layout = layouts[seat.number.min(MAX_SEATS - 1)];
         let offence = holder_team == Some(seat.team);
@@ -437,6 +467,29 @@ mod tests {
             }
         }
         assert_eq!(off_screen(&w, project, size), 1 << 2 | 1 << 4);
+    }
+
+    /// One person alone reads every controller (the keyboard that seated
+    /// him and any pad); several keep their own, a seat whose pad went
+    /// away taking a free one.
+    #[test]
+    fn a_lone_seat_plays_on_every_controller() {
+        let pad = |n: u32| Entity::from_raw_u32(n).unwrap();
+        assert_eq!(seat_device(&[Some(Device::Keyboard)], 0, &[pad(3)]), None);
+        assert_eq!(seat_device(&[Some(Device::Pad(pad(3)))], 0, &[]), None);
+        let two = [Some(Device::Keyboard), Some(Device::Pad(pad(3)))];
+        assert_eq!(seat_device(&two, 0, &[pad(3)]), Some(Device::Keyboard));
+        assert_eq!(seat_device(&two, 1, &[pad(3)]), Some(Device::Pad(pad(3))));
+        // Pad 3 came back as pad 9: its seat takes it; pad 4 is held.
+        let gone = [Some(Device::Pad(pad(4))), Some(Device::Pad(pad(3)))];
+        assert_eq!(
+            seat_device(&gone, 1, &[pad(4), pad(9)]),
+            Some(Device::Pad(pad(9)))
+        );
+        assert_eq!(
+            seat_device(&gone, 0, &[pad(4), pad(9)]),
+            Some(Device::Pad(pad(4)))
+        );
     }
 
     /// Nobody chosen: one person on the home team, on every controller.

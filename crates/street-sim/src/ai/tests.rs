@@ -1107,6 +1107,9 @@ fn every_restart_of_a_computer_game_ends_with_an_inbound_pass() {
     for seed in 0..6 {
         let mut w = three_on_three(seed);
         let (mut restarts, mut longest, mut ticks) = (0, 0, 0);
+        // "throw inbound"'s first update posts slot 41 once a restart
+        // (`Event::InboundWalk`), by the man who then throws it.
+        let (mut walks, mut walker) = (0, None);
         for _ in 0..20_000 {
             step_all(&mut w);
             if w.restarting() {
@@ -1116,7 +1119,12 @@ fn every_restart_of_a_computer_game_ends_with_an_inbound_pass() {
                 ticks = 0;
             }
             for e in &w.events {
+                if let crate::Event::InboundWalk { player } = *e {
+                    walks += 1;
+                    walker = Some(player);
+                }
                 if let crate::Event::Inbound { player } = *e {
+                    assert_eq!(walker.take(), Some(player), "seed {seed}");
                     restarts += 1;
                     assert_eq!(w.ball.state, crate::BallState::Pass, "seed {seed}");
                     assert_eq!(w.ball.pass.map(|p| p.from), Some(player));
@@ -1128,6 +1136,10 @@ fn every_restart_of_a_computer_game_ends_with_an_inbound_pass() {
         }
         println!("seed {seed}: {restarts} restarts, longest {longest} updates");
         assert!(restarts > 3, "seed {seed}: {restarts} restarts");
+        assert!(
+            (restarts..=restarts + 1).contains(&walks),
+            "seed {seed}: {walks} walks"
+        );
         assert!(
             longest < 12 * 60,
             "seed {seed}: a restart of {longest} updates"

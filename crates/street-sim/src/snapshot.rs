@@ -108,8 +108,10 @@ use crate::{
 /// [`Event::RimHold`]), the dribble's speed and the slam's shake
 /// ([`Event::SlamShake`]), every take ([`Event::Take`]); 97: a head into
 /// the board ([`Event::RimBump`]); 98: a passout's bounce
-/// ([`Event::PassoutBounce`]); 99: a trick's start ([`Event::TrickStart`]).
-const VERSION: u8 = 99;
+/// ([`Event::PassoutBounce`]); 99: a trick's start ([`Event::TrickStart`]);
+/// 100: the inbound walk ([`Event::InboundWalk`], the AI game's
+/// `inbound_walk`).
+const VERSION: u8 = 100;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -3147,6 +3149,10 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(44);
             w.bool(head);
         }
+        Event::InboundWalk { player } => {
+            w.u8(46);
+            w.us(player);
+        }
         Event::TrickStart {
             player,
             level,
@@ -3298,6 +3304,7 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
         42 => Event::Take { player: r.us()? },
         43 => Event::RimBump { player: r.us()? },
         44 => Event::PassoutBounce { head: r.bool()? },
+        46 => Event::InboundWalk { player: r.us()? },
         45 => Event::TrickStart {
             player: r.us()?,
             level: r.u8()?,

@@ -339,8 +339,11 @@ impl ThrowInbound {
             }
             return;
         }
-        // Its first frame posts `0x3c6510` to the game listener (a
-        // presentation message, not modelled).
+        // Its first frame (+0x54 clear) posts `0x3c6510`, the listeners'
+        // slot 41 ([`crate::Event::InboundWalk`]).
+        if !self.told {
+            ctx.game.inbound_walk = i as i32 + 1;
+        }
         self.told = true;
         let d = dist(ctx.pos(i), self.spot);
         self.arrived = d <= 1.4;

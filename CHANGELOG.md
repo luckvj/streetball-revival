@@ -5,6 +5,15 @@ its version's part.
 
 ## Unreleased
 
+- **Controllers in matches (issue #1):** playing alone, every controller
+  now drives your player in a match, as in the menus. Before, a match
+  listened only to the controller that confirmed the setup screens, so an
+  Xbox pad did nothing if the keyboard had been used there (or the pad
+  reconnected). With several people each keeps their own controller; a
+  pad that reconnects takes its seat back.
+- **Song changes:** after four minutes of a song the music moves on as a
+  restart's inbounder starts his walk, as in the original, not at any
+  catch in the middle of play.
 - **Ball and rim sounds match the original:** the ball off the backboard,
   rim, floor and through the net now sounds by how hard it hits; a dunker
   grabbing and letting go of the rim, a dribble's bounce and a slam's shake

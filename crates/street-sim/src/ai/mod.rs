@@ -134,6 +134,10 @@ words! {
         /// for ten seconds this frame (`0x10e948..0x10e964`, the take
         /// `FUN_0014cb28`), or 0.
         free_take: i32,
+        /// The inbounder + 1 whose "throw inbound" starts its walk this
+        /// frame (its first update posts `0x3c6510`, the listeners' slot
+        /// 41, `0x10b830..0x10b87c`), or 0.
+        inbound_walk: i32,
     }
 }
 
@@ -849,6 +853,7 @@ impl State {
             || !plus_one(game.trick)
             || !plus_one(game.trick_off)
             || !plus_one(game.free_take)
+            || !plus_one(game.inbound_walk)
         {
             return bad("game");
         }
@@ -1321,7 +1326,11 @@ impl World {
         let point = std::mem::take(&mut state.game.trick_point);
         let defender = usize::try_from(off - 1).ok().filter(|&d| d < n);
         let free = std::mem::take(&mut state.game.free_take);
+        let walk = std::mem::take(&mut state.game.inbound_walk);
         self.ai = state;
+        if let Some(p) = usize::try_from(walk - 1).ok().filter(|&p| p < n) {
+            self.events.push(crate::Event::InboundWalk { player: p });
+        }
         if let Some(to) = usize::try_from(free - 1).ok().filter(|&to| to < n)
             && !matches!(self.ball.state, crate::BallState::Held(_))
         {
