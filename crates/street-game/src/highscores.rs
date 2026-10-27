@@ -142,6 +142,9 @@ pub fn record_match(
             sum(&stats.steals),
             sum(&stats.blocks),
             sum(&stats.gb1) + sum(&stats.gb2),
+            // A game won with the rim torn off (`0x400054` bit 3, set by
+            // `FUN_001f6d98`): the winners' counter 7.
+            u32::from(winner == side && world.rims.iter().any(|r| r.torn)),
         ];
         story.records.played(i, winner == side, career);
         // `FUN_001d4438`: the user's record to Win Percentage (table 1,
@@ -238,6 +241,20 @@ mod tests {
         setup.demo = true;
         record_match(&mut story, &w, &stats, &setup, 0);
         assert_eq!(story.records.users[0].losses, 1);
+        // A game won with the rim torn off counts a busted rim for the
+        // winners only (`0x1df244..0x1df264`), never shown.
+        setup.demo = false;
+        w.rims[0].tear();
+        record_match(&mut story, &w, &stats, &setup, 0);
+        assert_eq!(
+            story.records.users[0].career[street_sim::records::BUSTED_RIMS],
+            0
+        );
+        record_match(&mut story, &w, &stats, &setup, 1);
+        assert_eq!(
+            story.records.users[0].career[street_sim::records::BUSTED_RIMS],
+            1
+        );
     }
 
     #[test]

@@ -282,6 +282,7 @@ pub mod kind {
     pub const PUMP_FAKE: usize = 11;
     pub const DIVE: usize = 12;
     pub const TIP_SLAM: usize = 13;
+    pub const BUSTED_RIM: usize = 14;
     pub const REBOUND: usize = 15;
     pub const TRICK_COUNTER: usize = 16;
     pub const CANCEL: usize = 18;
@@ -1128,8 +1129,20 @@ fn on_event(
             }
             let pick =
                 |table: &[String], v: &[usize]| name(table, v.get(player).copied().unwrap_or(0));
+            // A dunk or an alley-oop's finish (the ball's kind 3 or 4) that
+            // wins the game (vt+0xbc) pops the busted rim, kind 14, but in
+            // the trick points game (config+0xe8 1, `0x2e2658..0x2e268c`,
+            // `0x2e2724..0x2e2754`), a gamebreaker's too.
+            let wide = matches!(
+                basket,
+                Basket::Dunk { .. }
+                    | Basket::AlleyOop { .. }
+                    | Basket::Gamebreaker { dunk: true, .. }
+            );
+            let busted = wide && matches!(w.phase, Phase::Over { .. }) && w.rules.game_type() != 1;
             let (text, points) = match basket {
-                Basket::AlleyOop { .. } => (
+                _ if busted => (kind_word(kind::BUSTED_RIM), kind_points(kind::BUSTED_RIM)),
+                Basket::AlleyOop { advanced: false } => (
                     names.map(|n| name(&n.alley_oops, 0)).unwrap_or_default(),
                     basket.trick_points() as i32,
                 ),
@@ -1138,7 +1151,9 @@ fn on_event(
                 Basket::Dunk { .. } if hud.tip_slam.get(player).copied().unwrap_or(false) => {
                     (kind_word(kind::TIP_SLAM), kind_points(kind::TIP_SLAM))
                 }
-                Basket::Dunk { .. } => (
+                // An advanced alley-oop's finish is the ball's kind 4, a
+                // dunk's (pop-up 5, named by the finisher's dunk id).
+                Basket::Dunk { .. } | Basket::AlleyOop { advanced: true } => (
                     names
                         .map(|n| pick(&n.dunks, &hud.last_dunk))
                         .unwrap_or_default(),
@@ -2646,6 +2661,35 @@ mod tests {
         assert_eq!(
             score(&mut hud, &w, Basket::Dunk { advanced: false }),
             (word(data::KIND_WORD[kind::TIP_SLAM]), "2000".into())
+        );
+        // An advanced alley-oop's finish pops the finisher's dunk name.
+        w.players[0].action = dunk(row as u8, DunkStyle::Normal);
+        hud.note_moves(&w);
+        let oop = score(&mut hud, &w, Basket::AlleyOop { advanced: true });
+        assert_eq!(oop.0, format!("dunk {id}"));
+        // Winning the game with a dunk pops the busted rim; a jumper keeps
+        // its own; the trick points game never busts it.
+        w.phase = Phase::Over { winner: 0 };
+        let busted = (
+            word(data::KIND_WORD[kind::BUSTED_RIM]),
+            data::KIND_POINTS[kind::BUSTED_RIM].to_string(),
+        );
+        assert_eq!(
+            score(&mut hud, &w, Basket::Dunk { advanced: false }),
+            busted
+        );
+        assert_eq!(
+            score(&mut hud, &w, Basket::AlleyOop { advanced: false }),
+            busted
+        );
+        assert_eq!(
+            score(&mut hud, &w, Basket::Jumper { long: false }).0,
+            word(data::KIND_WORD[kind::SHORT_RANGE])
+        );
+        w.rules.goal = Goal::TrickPoints(100_000);
+        assert_eq!(
+            score(&mut hud, &w, Basket::Dunk { advanced: false }).0,
+            format!("dunk {id}")
         );
     }
 

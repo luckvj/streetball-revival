@@ -15,6 +15,11 @@ its version's part.
 
 - **Hanging on the rim:** a dunker's hands turn to grip the rim, and
   follow it as it gives, as in the original.
+- **Busted rim:** a game-winning dunk or alley-oop now shows the
+  original's "Busted Rim" pop-up, and the profile keeps count of busted
+  rims as the original does (it isn't shown on screen there either).
+- **Advanced alley-oops** are named by the finisher's dunk in the pop-up,
+  as in the original.
 - **Replays:** the rim's give plays smoothly in slow motion.
 - **Alley-oop music:** the music stays down from the lob to the slam
   instead of coming back at the catch.
