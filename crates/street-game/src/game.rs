@@ -1112,7 +1112,10 @@ fn crowd_reactions(
             }
             | Counter { .. }
             | Rebound { .. } => (1, 0),
-            Trick { .. } => (0, 1),
+            // Slot 13's gasp only for a trick that faked a defender out.
+            Trick {
+                fakeout: Some(_), ..
+            } => (0, 1),
             _ => (0, 0),
         };
         let call = |cheer| street_render::crowd::Reaction { fraction, cheer };
@@ -2847,11 +2850,13 @@ mod tests {
                 points: 2,
                 basket: Basket::Dunk { advanced: false },
             },
+            // A trick that faked a defender out gasps (one that faked
+            // nobody would not).
             street_sim::Event::Trick {
                 player: 3,
                 level: 1,
                 script: 0,
-                fakeout: None,
+                fakeout: Some(0),
                 points: 500,
             },
             // A passout's bounce (slot 39) cheers; the dunk's basket once.
