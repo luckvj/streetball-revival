@@ -8,15 +8,12 @@
 //! with `fire.ssh` from `/XF/XF000003`.
 //!
 //! What is the game's: which courts have what, the litter's models, counts,
-//! resting heights, sizes and spread (0x1f4248), the vents' places and the
-//! way they blow, 40 particles to a vent (0x20a4d0), six breathers
-//! (0x2f3b30) and the particle image (`smoke.ssh` in `/XF/XF000003`). The
-//! motion is not: the game's update (0x1f4950, the vents' and the breath's)
-//! runs on vector-unit code whose tuning sits in memory set at run time, so
-//! the speeds, lifetimes and sizes here are chosen to look the part. The
-//! litter keeps the game's shape of it: pieces lie still, then a gust
-//! flips them over (a whole number of half turns) and carries them along
-//! the wind.
+//! resting heights, sizes and spread (0x1f4248) and its motion (0x1f4950,
+//! [`crate::drift`]), the vents' places and the way they blow, 40 particles
+//! to a vent (0x20a4d0), six breathers (0x2f3b30) and the particle image
+//! (`smoke.ssh` in `/XF/XF000003`). The steam's and the breath's motion is
+//! not: their updates run on vector-unit code, so the speeds, lifetimes
+//! and sizes here are chosen to look the part.
 
 use std::{collections::BTreeMap, f32::consts::PI};
 
@@ -40,9 +37,9 @@ use crate::{
 /// The litter, vents and breath a court has, read from the disc.
 #[derive(Default)]
 pub struct AmbientAssets {
-    /// One kind of litter: its model and images, how many, resting height
-    /// and drawn size.
-    litter: Vec<(eagl::Model, BTreeMap<String, ssh::Texture>, u32, f32, f32)>,
+    /// One kind of litter: its model and images, how many, whether it is
+    /// the line's second kind (trash), and drawn size.
+    litter: Vec<(eagl::Model, BTreeMap<String, ssh::Texture>, u32, bool, f32)>,
     half: [f32; 2],
     wind: Option<Wind>,
     steam: Vec<Steam>,
@@ -72,10 +69,10 @@ impl AmbientAssets {
             match iso.read("/XF/XF000004") {
                 Ok(bytes) => {
                     if let Ok(big) = Big::parse(&bytes) {
-                        // The first kind rests at 0.25 at half size, the
-                        // second at 0.375 at full size (0x1f4248).
-                        for ((name, count), (height, scale)) in
-                            drift.kinds.iter().zip([(0.25, 0.5), (0.375, 1.0)])
+                        // The first kind is drawn at half size, the second
+                        // at full size (0x1f4248).
+                        for ((name, count), (second, scale)) in
+                            drift.kinds.iter().zip([(false, 0.5), (true, 1.0)])
                         {
                             if *count == 0 {
                                 continue;
@@ -97,7 +94,7 @@ impl AmbientAssets {
                                 .into_iter()
                                 .map(|t| (t.name.clone(), t))
                                 .collect();
-                            out.litter.push((model, images, *count, height, scale));
+                            out.litter.push((model, images, *count, second, scale));
                         }
                     }
                 }
@@ -134,14 +131,14 @@ impl Plugin for AmbiencePlugin {
         )
         .add_systems(
             FixedUpdate,
-            light_hoop
+            (light_hoop, blow_litter.run_if(|p: Res<Paused>| !p.on))
                 .after(crate::game::SimStep)
                 .run_if(in_state(Screen::Playing))
                 .run_if(crate::options::effects_on),
         )
         .add_systems(
             Update,
-            (blow_litter, vent_steam, breathe, burn, fade_puffs)
+            (vent_steam, breathe, burn, fade_puffs)
                 .chain()
                 .run_if(in_state(Screen::Playing))
                 .run_if(|p: Res<Paused>| !p.on)
@@ -150,18 +147,13 @@ impl Plugin for AmbiencePlugin {
     }
 }
 
-/// A piece of litter: resting, or carried by a gust.
+/// The court's litter ([`crate::drift`]), stepped once a frame.
+#[derive(Resource)]
+struct Litter(crate::drift::Drift);
+
+/// A piece of litter on screen: its index in [`Litter`].
 #[derive(Component)]
-struct Litter {
-    height: f32,
-    half: [f32; 2],
-    yaw: f32,
-    roll: f32,
-    /// Seconds left resting, or (when `gust` is set) blowing.
-    left: f32,
-    /// A gust: its length, speed and half turns.
-    gust: Option<(f32, f32, f32)>,
-}
+struct LitterPiece(usize);
 
 /// One puff of steam or breath.
 #[derive(Component)]
@@ -210,8 +202,6 @@ impl Puffs {
 /// Steam: 40 particles alive to a vent (0x20a4d0), each this long.
 const STEAM_LIFE: f32 = 2.6;
 const STEAM_PARTICLES: f32 = 40.0;
-/// Litter: a gust carries it this fraction of the wind's speed.
-const GUST_SHARE: f32 = 0.35;
 
 fn spawn_ambience(
     mut commands: Commands,
@@ -245,30 +235,34 @@ fn spawn_ambience(
     for b in 0..6 {
         puffs.breath[b] = puffs.roll() * 3.0;
     }
-    for (model, textures, count, height, scale) in &a.litter {
-        for _ in 0..*count {
-            let x = (puffs.roll() - 0.5) * 2.0 * a.half[0];
-            let z = (puffs.roll() - 0.5) * 2.0 * a.half[1];
-            let piece = Litter {
-                height: *height,
-                half: a.half,
-                yaw: puffs.roll() * 2.0 * PI,
-                roll: 0.0,
-                left: puffs.roll() * 4.0,
-                gust: None,
-            };
-            let root = street_render::props::spawn(
-                &mut commands,
-                model,
-                textures,
-                Transform::from_xyz(x, *height, z).with_scale(Vec3::splat(*scale)),
-                &mut meshes,
-                &mut materials,
-                &mut images,
-            );
-            commands.entity(root).insert((piece, scoped.clone()));
-        }
+    let count = |second: bool| {
+        a.litter
+            .iter()
+            .filter(|l| l.3 == second)
+            .map(|l| l.2)
+            .sum::<u32>()
+    };
+    let drift = crate::drift::Drift::new(count(false), count(true), a.half, puffs.rng);
+    for (i, piece) in drift.pieces.iter().enumerate() {
+        let Some((model, textures, _, _, scale)) = a.litter.iter().find(|l| l.3 == piece.trash)
+        else {
+            continue;
+        };
+        let root = street_render::props::spawn(
+            &mut commands,
+            model,
+            textures,
+            Transform::from_translation(Vec3::from_array(piece.position))
+                .with_scale(Vec3::splat(*scale)),
+            &mut meshes,
+            &mut materials,
+            &mut images,
+        );
+        commands
+            .entity(root)
+            .insert((LitterPiece(i), scoped.clone()));
     }
+    commands.insert_resource(Litter(drift));
     for steam in &a.steam {
         commands.spawn((
             Vent {
@@ -282,59 +276,37 @@ fn spawn_ambience(
     commands.insert_resource(puffs);
 }
 
+/// One frame of the litter (`FUN_001f4950`), the court's camera as the
+/// one whose view a piece may not come back in.
 fn blow_litter(
-    time: Res<Time>,
-    puffs: Option<ResMut<Puffs>>,
-    mut litter: Query<(&mut Litter, &mut Transform)>,
+    litter: Option<ResMut<Litter>>,
+    camera: Query<(&GlobalTransform, &Projection), With<SidelineCamera>>,
+    mut pieces: Query<(&LitterPiece, &mut Transform)>,
 ) {
-    let Some(mut puffs) = puffs else { return };
-    let dt = time.delta_secs();
-    let wind = puffs.wind;
-    for (mut l, mut t) in &mut litter {
-        l.left -= dt;
-        match l.gust {
-            None if l.left <= 0.0 => {
-                if wind.length_squared() > 0.0 {
-                    // A gust: a turn of the heading, then over it goes.
-                    let length = 0.6 + puffs.roll();
-                    let speed = wind.length() * GUST_SHARE * (0.6 + 0.4 * puffs.roll());
-                    let turns = (1.0 + (puffs.roll() * 3.0).floor()) * PI;
-                    l.yaw += (puffs.roll() - 0.5) * PI / 2.0;
-                    l.gust = Some((length, speed, turns));
-                    l.left = length;
-                } else {
-                    l.left = 4.0;
-                }
-            }
-            Some((length, speed, turns)) => {
-                let along = wind.normalize_or_zero() * speed * dt;
-                t.translation += along;
-                l.roll += turns / length * dt;
-                let done = 1.0 - (l.left / length).clamp(0.0, 1.0);
-                t.translation.y = l.height + 0.4 * (PI * done).sin();
-                if l.left <= 0.0 {
-                    // Settle flat, face up or face down.
-                    l.roll = (l.roll / PI).round() * PI;
-                    t.translation.y = l.height;
-                    l.gust = None;
-                    l.left = 1.0 + puffs.roll() * 4.0;
-                }
-            }
-            None => {}
+    let Some(mut litter) = litter else { return };
+    let camera = camera.single().ok().map(|(t, projection)| {
+        let (fov, aspect, near, far) = match projection {
+            Projection::Perspective(p) => (p.fov, p.aspect_ratio, p.near, p.far),
+            _ => (std::f32::consts::FRAC_PI_4, 4.0 / 3.0, 0.5, 4000.0),
+        };
+        let tan_up = (fov * 0.5).tan();
+        crate::drift::Camera {
+            at: t.translation().to_array(),
+            forward: t.forward().to_array(),
+            right: t.right().to_array(),
+            up: t.up().to_array(),
+            tan_across: tan_up * aspect,
+            tan_up,
+            near,
+            far,
         }
-        // Off one side, back in on the other.
-        for (axis, half) in [(0, l.half[0]), (2, l.half[1])] {
-            if half > 0.0 {
-                let v = &mut t.translation[axis];
-                if *v > half {
-                    *v -= 2.0 * half;
-                } else if *v < -half {
-                    *v += 2.0 * half;
-                }
-            }
+    });
+    litter.0.step(camera.as_ref());
+    for (piece, mut t) in &mut pieces {
+        if let Some(p) = litter.0.pieces.get(piece.0) {
+            t.translation = Vec3::from_array(p.position);
+            t.rotation = Quat::from_array(p.rotation);
         }
-        let across = Vec3::new(-wind.z, 0.0, wind.x).normalize_or(Vec3::X);
-        t.rotation = Quat::from_axis_angle(across, l.roll) * Quat::from_rotation_y(l.yaw);
     }
 }
 

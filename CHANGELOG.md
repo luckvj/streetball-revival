@@ -25,6 +25,10 @@ its version's part.
 - **Gamebreaker sounds:** a Level 2 gamebreaker opens with its own
   transition instead of the Level 1 loop, and a gamebreaker's basket gets
   the crowd's roar, as in the original.
+- **Litter on the courts** (leaves and trash) moves the way the original's
+  does: leaves lie still, then a gust lifts them and they tumble back down;
+  trash rolls along with the wind; pieces blown away come back in out of
+  the camera's sight.
 
 ## v0.1.3-beta
 
