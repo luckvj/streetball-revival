@@ -2,15 +2,15 @@
   "whole_game_accuracy_percent": null,
   "scope": "Version 1 selected obligations; inventory completeness is not certified.",
   "active_counts": {
-    "matched": 168,
+    "matched": 169,
     "mismatched": 24,
-    "untested": 19
+    "untested": 18
   },
   "active_total": 211,
   "matched_acceptance": {
     "exact": 23,
     "numerical": 19,
-    "structural": 126
+    "structural": 127
   },
   "deferred": 1,
   "out_of_scope": 0,
@@ -15113,7 +15113,7 @@
               "path": "README.md",
               "locator": "Playing online; Watch A Game",
               "note": "Where a player finds them.",
-              "sha256": "5586b6bda0d3823a2f399dc1bbda3e350fa50a12877d8d78144fd2bacf466c05"
+              "sha256": "43cd324dd8172b084fbbbe0511aa174d4a17a53ef65afa55b30c14ed0f49851d"
             },
             {
               "path": "$EVIDENCE/street-select/pcs.png",
@@ -15135,14 +15135,12 @@
             }
           ],
           "tolerance": "Nothing of the rewrite's on the original's screens; the notice word for word.",
-          "limitations": "The rewrite's own page (behind the one accepted difference, presentation.ui_adjust_screen_pc_settings), not a parity with the original: the obligation is that the original's screens stay the original's. The notice's words as d3af7d9^:crates/street-game/src/menu.rs's Page::Credits had them. 2026-10-20 (online on the disc): README's Playing online now says a match online plays the rules of a match alone, its replays too, everyone needing the same release's disc (gameplay.online_rules_equal_local); the rows are unchanged. 2026-10-21: Vj asked for Online one press from the Main Menu: Select there opens it, and the Main Menu's legend shows SELECT Online beside the original's Help (look::with_online_pair), an accepted change to the original's Main screen. Last re-pinned 2026-10-26 after the maximized window and PC Settings' notice (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "The rewrite's own page (behind the one accepted difference, presentation.ui_adjust_screen_pc_settings), not a parity with the original: the obligation is that the original's screens stay the original's. The notice's words as d3af7d9^:crates/street-game/src/menu.rs's Page::Credits had them. 2026-10-20 (online on the disc): README's Playing online now says a match online plays the rules of a match alone, its replays too, everyone needing the same release's disc (gameplay.online_rules_equal_local); the rows are unchanged. 2026-10-21: Vj asked for Online one press from the Main Menu: Select there opens it, and the Main Menu's legend shows SELECT Online beside the original's Help (look::with_online_pair), an accepted change to the original's Main screen. Last re-pinned 2026-10-26 after the README's feedback lines (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None.",
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "README.md"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "presentation.online_instant_replays",
