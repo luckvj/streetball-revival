@@ -38,7 +38,10 @@ jobs:
           sudo apt-get install -y
           libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
           libgtk-3-dev pkg-config
-      - uses: dtolnay/rust-toolchain@stable
+      # The compiler the project is checked with locally: a newer
+      # stable brings new clippy lints (and could change float codegen
+      # between builds that play online together).
+      - uses: dtolnay/rust-toolchain@1.98.1
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release -p street-launcher -p street-game -p street-server -p street-export
       - run: cargo test --workspace
