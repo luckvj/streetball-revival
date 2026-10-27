@@ -14,6 +14,12 @@ its version's part.
 - **The pick call:** when the computer sets a pick and closes on the
   defender, a player on the attacking team calls it out, as in the
   original.
+- **Street School narration:** the School's narrator introduces each
+  lesson, reads the tutorial pages and reacts to each pass or fail, as in
+  the original. The School had no voice-over before.
+- **Missing dunk calls:** four sets of the commentator's dunk calls and one
+  special introduction never played (their lines were read from the wrong
+  place in the disc's files). They play now.
 
 ## v0.1.3-beta
 

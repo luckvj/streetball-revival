@@ -837,13 +837,16 @@ fn load_after_a_frame(world: &mut World, mut frames: Local<u32>, mut since: Loca
                     .first_player()
                     .unwrap_or(0);
                 let seen = school::pages_seen(&world.resource::<crate::story::Save>().story);
-                school::stage_world(
+                let page = school::stage_world(
                     &mut world.resource_mut::<Sim>().world,
                     lesson,
                     selected,
                     seen,
                     &[],
                 );
+                if let Some(mut narration) = world.get_resource_mut::<crate::audio::Narration>() {
+                    narration.launch(lesson, page);
+                }
             }
             let next = if crate::online::mark_loaded(world) {
                 Screen::Lobby
@@ -1170,10 +1173,11 @@ pub fn step_sim(
         Option<ResMut<crate::school_prompt::Prompt>>,
         Option<ResMut<crate::school_prompt::Page>>,
     ),
-    (mut level2, hud, cheats): (
+    (mut level2, hud, cheats, mut narration): (
         Option<ResMut<crate::setup::Level2At>>,
         Option<Res<crate::hud::HudState>>,
         Option<Res<crate::setup::MatchCheats>>,
+        Option<ResMut<crate::audio::Narration>>,
     ),
 ) {
     tick_events.events.clear();
@@ -1248,6 +1252,9 @@ pub fn step_sim(
                 Post::Page(n) => {
                     school::see_page(&mut save.story, n);
                     save.store();
+                    if let Some(narration) = narration.as_mut() {
+                        narration.page(n);
+                    }
                     if let Some(p) = page.as_mut() {
                         p.open(n);
                     }
@@ -1261,6 +1268,11 @@ pub fn step_sim(
         }
     }
     if let (Some(story::Run::School(lesson)), Some(passed)) = (running.0, committed) {
+        // The commit's message `0x3c6960` (`0x18f078..0x18f0a4`): the
+        // narration's result (slot 79).
+        if let Some(narration) = narration.as_mut() {
+            narration.result(passed);
+        }
         school::finish_for_setup(&mut save.story, &setup, lesson, passed);
         save.store();
         lesson_passed.0 = Some(if passed { Ok(lesson) } else { Err(()) });
@@ -1721,6 +1733,7 @@ fn school_menu_keys(
     (setup, control): (Res<setup::MatchSetup>, Res<crate::controls::Control>),
     (mut lesson_passed, mut lesson_run): (ResMut<LessonPassed>, ResMut<school::LessonRun>),
     mut prompt: ResMut<crate::school_prompt::Prompt>,
+    mut narration: Option<ResMut<crate::audio::Narration>>,
 ) {
     use crate::school_menu::Key;
     if !menu.open || paused.open() {
@@ -1751,13 +1764,16 @@ fn school_menu_keys(
         running.0 = Some(story::Run::School(lesson));
         let selected = control.first_player().unwrap_or(0);
         let held = sim.inputs.clone();
-        school::stage_world(
+        let page = school::stage_world(
             &mut sim.world,
             lesson,
             selected,
             school::pages_seen(&save.story),
             &held,
         );
+        if let Some(narration) = narration.as_mut() {
+            narration.launch(lesson, page);
+        }
         // `FUN_0018ec28` starts the pads' presses over (`FUN_00130b40`):
         // the Cross that launched it is no pass.
         let held = sim.inputs.clone();
@@ -1776,12 +1792,16 @@ fn school_page_keys(
     paused: Res<Paused>,
     mut page: ResMut<crate::school_prompt::Page>,
     mut sim: ResMut<Sim>,
+    narration: Option<ResMut<crate::audio::Narration>>,
 ) {
     if page.open.is_none() || paused.open() {
         return;
     }
     if input.cross() {
         page.open = None;
+        if let Some(mut narration) = narration {
+            narration.page_closed();
+        }
         let held = sim.inputs.clone();
         sim.world.settle_presses(&held);
     }

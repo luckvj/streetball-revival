@@ -101,8 +101,10 @@ pub struct SpeechHeader {
     /// After the lines, one word per metadata column: every line's values
     /// in that column (`FUN_00364c38`'s early rejection).
     columns: Vec<u32>,
-    /// Each line's start (its big-endian u16 times 0x100: a byte offset in
-    /// the `.dat`, or a player line's lookup key) and metadata bytes.
+    /// Each line's start (its big-endian u16 times 0x100, shifted left by
+    /// byte 7: a byte offset in the `.dat`, or a player line's lookup key)
+    /// and metadata bytes. Byte 7 is 1 in the headers whose `.dat` passes
+    /// 16 MiB / 2 of lines (`TutLessonsB`, `DunkI`..`DunkN`, `SpecIntrosC`).
     pub lines: Vec<(u32, Vec<u8>)>,
     /// Byte 6 entries of recent line indices and the write cursor before
     /// them (`FUN_00363480`, `FUN_00363538`).
@@ -128,11 +130,12 @@ impl SpeechHeader {
         let columns = usize::from(header[4] & 0xf);
         let count = usize::from(header[5]);
         let stride = columns + 2;
+        let shift = u32::from(header[7] & 0xf);
         let mut lines = Vec::with_capacity(count);
         for line in 0..count {
             let v = bytes(h, 12 + stride * line, stride)?;
             lines.push((
-                u32::from(u16::from_be_bytes([v[0], v[1]])) * 0x100,
+                (u32::from(u16::from_be_bytes([v[0], v[1]])) * 0x100) << shift,
                 v[2..].to_vec(),
             ));
         }
@@ -643,10 +646,83 @@ fn gather(h: &SpeechHeader, branch: &EventBranch, packet: &Packet, sub: Option<u
 /// steal (`0x1a63e0`), 0xd a turnover (every fifth steal, every third shot
 /// clock violation), 0xe a miss (`0x1a4550`), 0x11 the shot clock
 /// (`0x1a6d88`), 0x12 a nickname (`0x1a83e0`), 0x13 a passout off a head (`0x1a5d50`,
-/// slot 39: `PassOut.hdr`).
-pub const COMMENTARY_EVENT_IDS: [u16; 15] = [
-    0, 1, 2, 3, 4, 6, 8, 0xb, 0xc, 0xd, 0xe, 0xf, 0x11, 0x12, 0x13,
+/// slot 39: `PassOut.hdr`), 9 Street School's narration (`0x1ad510`:
+/// `Tutorial\TutLessonsA/B`).
+pub const COMMENTARY_EVENT_IDS: [u16; 16] = [
+    0, 1, 2, 3, 4, 6, 8, 9, 0xb, 0xc, 0xd, 0xe, 0xf, 0x11, 0x12, 0x13,
 ];
+
+/// What Street School's narration asks for (`0x1ad510`, the sound
+/// listener's slots 78, 79 and 82 through the speech manager).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Lesson {
+    /// Slot 78, the lesson's launch (`FUN_0018ec28`): its introduction
+    /// (word 3 = 1), once nothing is said and no tutorial page is due.
+    Intro,
+    /// Slot 79, the lesson's result at its commit (`FUN_0018eec0`): word 3
+    /// is 2 passed, 4 failed (+0x4d4).
+    Result { passed: bool },
+    /// Slot 82, a tutorial page (`0x3c6990`), read once nothing is said:
+    /// word 3 = 8, the page's own entry.
+    Page,
+}
+
+/// `0x1ad510`'s table (`0x45d810`, 31 cases): an index, a lesson's (the
+/// game's vt+0xb0) or a tutorial page's (26..30), as event 9's word 1 (the
+/// group 1, 2 or 4) and word 2 (its bit). Index 28 is the Shot Clock page
+/// read (`Lesson::Page`), else a lesson's bit 0x80000. Out of the table, or
+/// group 0, matches no line.
+pub fn lesson_words(index: usize, kind: Lesson) -> (u32, u32) {
+    const TABLE: [(u32, u32); 31] = [
+        (1, 1),
+        (1, 2),
+        (1, 4),
+        (1, 0x20),
+        (1, 0x8000_0000),
+        (1, 0x80),
+        (1, 0x200),
+        (2, 0x400),
+        (2, 0x800),
+        (2, 0x1000),
+        (2, 0x2000),
+        (2, 0x4000_0000),
+        (4, 0x4000),
+        (4, 0x8000),
+        (4, 0x2_0000),
+        (4, 0x8_0000),
+        (4, 0x10_0000),
+        (1, 0x2000_0000),
+        (4, 0x40_0000),
+        (4, 0x80_0000),
+        (4, 0x100_0000),
+        (4, 0x20),
+        (4, 0x200_0000),
+        (4, 0x400_0000),
+        (4, 0x800_0000),
+        (4, 0x1000_0000),
+        (1, 0x10),
+        (0, 0x80),
+        (4, 0x8_0000),
+        (1, 0x100),
+        (4, 0x1_0000),
+    ];
+    if index == 28 && kind == Lesson::Page {
+        return (1, 8);
+    }
+    TABLE.get(index).copied().unwrap_or((0, 0))
+}
+
+/// Event 9's packet for `index` (`0x1ad510`'s post: words 1..3).
+pub fn lesson_packet(index: usize, kind: Lesson) -> Packet {
+    let (group, bit) = lesson_words(index, kind);
+    let situation = match kind {
+        Lesson::Intro => 1,
+        Lesson::Result { passed: true } => 2,
+        Lesson::Result { passed: false } => 4,
+        Lesson::Page => 8,
+    };
+    words_packet(9, &[group, bit, situation])
+}
 
 /// The commentary archive's index, its headers and events.
 #[derive(Clone)]
@@ -1902,6 +1978,8 @@ mod tests {
                 0xe => (200, 500, 100, 1, vec![]),
                 0xf => (400, 500, 100, 0, vec![]),
                 0x13 => (200, 500, 50, 0, vec![]),
+                // Street School's narration outranks every call.
+                9 => (200, 800, 100, 0, vec![]),
                 _ => (200, 500, 100, 0, vec![]),
             };
             assert_eq!(root, expected, "event {id:#x}");
@@ -2300,6 +2378,74 @@ mod tests {
             assert_eq!(random.cursor, 0);
             assert!(random.recent.iter().all(|&r| r == (u16::MAX, u16::MAX)));
         }
+    }
+
+    #[test]
+    fn disc_every_commentary_line_starts_a_stream_in_its_dat() {
+        // Each header's line starts, byte 7's shift taken, are the starts of
+        // the streams in its `.dat` (1 in `TutLessonsB`, `DunkI`, `DunkJ`,
+        // `DunkK`, `DunkN` and `SpecIntrosC`, whose lines pass 0x100 x
+        // 0xffff bytes).
+        let Some(mut iso) = disc() else { return };
+        let commentary = Commentary::open(&mut iso).unwrap();
+        let mut checked = 0;
+        for header in &commentary.headers.headers {
+            // ScoreUpdate's lines are keyed by the margin (22 sub-keys) and
+            // its starts past the fifth fall in padding: its layout is not
+            // read yet.
+            if header.sub_keys != 0 && header.sub_keys != 0xffff {
+                continue;
+            }
+            let Some(entry) = commentary
+                .entries
+                .iter()
+                .find(|e| e.name.eq_ignore_ascii_case(&header.dat()))
+                .cloned()
+            else {
+                continue;
+            };
+            let lines = commentary.lines(&mut iso, &entry).unwrap();
+            for &(start, _) in &header.lines {
+                assert!(
+                    lines.streams.iter().any(|s| s.start == start as usize),
+                    "{}: no stream at {start}",
+                    header.name
+                );
+                checked += 1;
+            }
+        }
+        assert!(checked > 1000, "{checked}");
+    }
+
+    #[test]
+    fn disc_event_9_narrates_each_lesson_and_page() {
+        // `0x1ad510`'s table against event 9's headers: every lesson
+        // 0..25 has an introduction and a passed and a failed line, the
+        // pages 26, 28..30 a reading (situation 8) and nothing else; the
+        // Player Indicator's page (27, group 0) none.
+        let Some(mut iso) = disc() else { return };
+        let commentary = Commentary::open(&mut iso).unwrap();
+        let says = |i: usize, kind: Lesson| {
+            let mut random = PlayerSelectorRandom::new(1);
+            commentary
+                .choose(&lesson_packet(i, kind), &mut random)
+                .is_some_and(|c| c.name.starts_with(r"Tutorial\TutLessons"))
+        };
+        for i in 0..=25 {
+            for kind in [
+                Lesson::Intro,
+                Lesson::Result { passed: true },
+                Lesson::Result { passed: false },
+            ] {
+                assert!(says(i, kind), "lesson {i} {kind:?}");
+            }
+        }
+        for page in [26, 28, 29, 30] {
+            assert!(says(page, Lesson::Page), "page {page}");
+        }
+        assert!(!says(27, Lesson::Page));
+        assert!(!says(26, Lesson::Intro));
+        assert!(!says(3, Lesson::Page));
     }
 
     #[test]
