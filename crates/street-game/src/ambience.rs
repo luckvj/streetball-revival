@@ -14,7 +14,7 @@
 //! (`smoke.ssh` in `/XF/XF000003`), the steam's (0x20a5c8,
 //! [`crate::steam`]) and the breath's (0x1f07c0, [`crate::breath`]).
 
-use std::{collections::BTreeMap, f32::consts::PI};
+use std::collections::BTreeMap;
 
 use bevy::prelude::*;
 use street_assets::{
@@ -132,18 +132,10 @@ impl Plugin for AmbiencePlugin {
             FixedUpdate,
             (
                 light_hoop,
-                (blow_litter, vent_steam, breathe).run_if(|p: Res<Paused>| !p.on),
+                (blow_litter, vent_steam, breathe, burn).run_if(|p: Res<Paused>| !p.on),
             )
                 .after(crate::game::SimStep)
                 .run_if(in_state(Screen::Playing))
-                .run_if(crate::options::effects_on),
-        )
-        .add_systems(
-            Update,
-            (burn, fade_puffs)
-                .chain()
-                .run_if(in_state(Screen::Playing))
-                .run_if(|p: Res<Paused>| !p.on)
                 .run_if(crate::options::effects_on),
         );
     }
@@ -157,16 +149,6 @@ struct Litter(crate::drift::Drift);
 #[derive(Component)]
 struct LitterPiece(usize);
 
-/// One puff of steam or breath.
-#[derive(Component)]
-struct Puff {
-    age: f32,
-    life: f32,
-    velocity: Vec3,
-    size: (f32, f32),
-    opacity: f32,
-}
-
 /// A vent, emitting at its own rate.
 #[derive(Component)]
 struct Vent(crate::steam::Vent);
@@ -179,32 +161,23 @@ struct SteamPuff(Entity, usize);
 #[derive(Component)]
 struct BreathPuff(usize, usize);
 
+/// One of the hoop fireworks' particles on screen.
+#[derive(Component)]
+struct FirePiece(usize);
+
 /// The shared look of every puff, and the breathers' timers.
 #[derive(Resource)]
 struct Puffs {
     quad: Handle<Mesh>,
     image: Option<Handle<Image>>,
     fire: Option<Handle<Image>>,
-    /// A hoop alight: its rim, and seconds to the next flame.
-    burning: Option<(Vec3, f32)>,
-    /// A burst to throw from this rim.
-    burst: Option<Vec3>,
+    /// The hoop's fireworks ([`crate::fire`]).
+    flames: crate::fire::Fire,
     /// The court's wind in feet a frame, as the steam reads it.
     court_wind: [f32; 3],
     /// A breather a player (`0x2f45ec..0x2f462c`), in the cold.
     breathers: Vec<crate::breath::Breather>,
     rng: u32,
-}
-
-impl Puffs {
-    fn roll(&mut self) -> f32 {
-        let mut x = self.rng.max(1);
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        self.rng = x;
-        (x >> 8) as f32 / (1u32 << 24) as f32
-    }
 }
 
 fn spawn_ambience(
@@ -226,8 +199,7 @@ fn spawn_ambience(
             .fire
             .as_ref()
             .map(|t| images.add(street_render::convert::image(t))),
-        burning: None,
-        burst: None,
+        flames: crate::fire::Fire::new(0x001f_6fc8 ^ scene.court.id.len() as u32),
         court_wind: a.wind.map_or([0.0; 3], |w| {
             crate::steam::court_wind(w.speed, w.direction[0], w.direction[1])
         }),
@@ -286,6 +258,24 @@ fn spawn_ambience(
             .insert((LitterPiece(i), scoped.clone()));
     }
     commands.insert_resource(Litter(drift));
+    for i in 0..crate::fire::PARTICLES {
+        let material = materials.add(StandardMaterial {
+            base_color: Color::linear_rgba(1.0, 1.0, 1.0, 0.0),
+            base_color_texture: puffs.fire.clone(),
+            alpha_mode: AlphaMode::Add,
+            unlit: true,
+            cull_mode: None,
+            ..default()
+        });
+        commands.spawn((
+            Mesh3d(puffs.quad.clone()),
+            MeshMaterial3d(material),
+            Transform::default(),
+            Visibility::Hidden,
+            FirePiece(i),
+            scoped.clone(),
+        ));
+    }
     for (k, steam) in a.steam.iter().enumerate() {
         let vent = commands
             .spawn((
@@ -353,33 +343,6 @@ fn blow_litter(
             t.rotation = Quat::from_array(p.rotation);
         }
     }
-}
-
-fn puff_with(
-    commands: &mut Commands,
-    quad: Handle<Mesh>,
-    image: Option<Handle<Image>>,
-    materials: &mut Assets<StandardMaterial>,
-    at: Vec3,
-    p: Puff,
-) {
-    let material = materials.add(StandardMaterial {
-        // The sprite is mid grey; added over the scene, brightened, it
-        // reads as white steam on any court.
-        base_color: Color::linear_rgba(1.6, 1.6, 1.6, 0.0),
-        base_color_texture: image,
-        alpha_mode: AlphaMode::Add,
-        unlit: true,
-        cull_mode: None,
-        ..default()
-    });
-    commands.spawn((
-        Mesh3d(quad),
-        MeshMaterial3d(material),
-        Transform::from_translation(at).with_scale(Vec3::splat(p.size.0)),
-        p,
-        DespawnOnExit(Screen::Playing),
-    ));
 }
 
 /// One frame of each vent (`FUN_0020a5c8`) in the court's wind, and its
@@ -475,129 +438,76 @@ fn breathe(
     }
 }
 
-/// A gamebreaker or Explosive Rims basket sets its hoop alight; play going live again puts it
-/// out (the game's "gamebreaker over", slot 53).
+/// The basket's listener (slot 26, `FUN_001f6d98`) lights the fireworks
+/// for a basket that wins the game, or any with Explosive Rims; a replay's
+/// start (slot 58, `FUN_001f6ec8`) puts them out (the game's reset, slot
+/// 53, is a new match's spawn).
 fn light_hoop(
     sim: Res<crate::game::Sim>,
     tick: Res<crate::game::TickEvents>,
     replay: Res<crate::game::Replay>,
     cheats: Res<crate::setup::MatchCheats>,
     puffs: Option<ResMut<Puffs>>,
+    mut replaying: Local<bool>,
 ) {
     let Some(mut puffs) = puffs else { return };
-    if tick.replay || replay.playing.is_some() {
+    let now = tick.replay || replay.playing.is_some();
+    if now && !*replaying {
+        puffs.flames.out();
+    }
+    *replaying = now;
+    if now {
         return;
     }
     let w = &sim.world;
+    let won = matches!(w.phase, street_sim::Phase::Over { .. });
     for e in &tick.events {
-        if let street_sim::Event::Score { basket, .. } = *e
-            && hoop_burst(basket, cheats.0.explosive_rims())
+        if matches!(e, street_sim::Event::Score { .. })
+            && hoop_burst(won, cheats.0.explosive_rims())
         {
-            // The hoop the ball went through: the nearer rim.
-            let ball = Vec3::from_array(w.ball.position);
-            let rim = w
-                .hoops
-                .iter()
-                .map(|h| Vec3::from_array(h.rim))
-                .min_by(|a, b| a.distance(ball).total_cmp(&b.distance(ball)));
-            if let Some(rim) = rim {
-                puffs.burning = Some((rim, 0.0));
-                puffs.burst = Some(rim);
-            }
+            puffs.flames.light(w.ball.position[0]);
         }
     }
-    if w.phase == street_sim::Phase::Live
-        || matches!(w.phase, street_sim::Phase::Over { .. }) && puffs.burst.is_none()
-    {
-        puffs.burning = None;
-    }
 }
 
-/// `FUN_001f6d98`: a made-basket callback activates the existing fire
-/// particle manager when either the gamebreaker is active or selector
-/// +0x14 is 1. The cheat does not itself authorize backboard destruction.
-pub fn hoop_burst(basket: street_sim::Basket, explosive_rims: bool) -> bool {
-    explosive_rims || matches!(basket, street_sim::Basket::Gamebreaker { .. })
+/// `FUN_001f6d98`'s gate: the basket wins the game (the game's vt+0xbc,
+/// `0x1f6dd0..0x1f6e08`) or the Explosive Rims cheat is on (+0x14). The
+/// cheat does not itself authorize backboard destruction.
+pub fn hoop_burst(won: bool, explosive_rims: bool) -> bool {
+    won || explosive_rims
 }
 
-/// Flames off a burning rim: a burst when it catches, then a steady fire.
+/// One frame of the fireworks (`FUN_001f7178`) in the court's wind, drawn
+/// added: the engine's colour and alpha, 128 is 1.
 fn burn(
-    mut commands: Commands,
-    time: Res<Time>,
     puffs: Option<ResMut<Puffs>>,
+    camera: Query<&GlobalTransform, With<SidelineCamera>>,
+    mut sprites: Query<(
+        &FirePiece,
+        &mut Transform,
+        &mut Visibility,
+        &MeshMaterial3d<StandardMaterial>,
+    )>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let Some(mut puffs) = puffs else { return };
-    let Some(image) = puffs.fire.clone() else {
-        return;
-    };
-    let mut flame =
-        |puffs: &mut Puffs, rim: Vec3, speed: f32, materials: &mut Assets<StandardMaterial>| {
-            let a = puffs.roll() * 2.0 * PI;
-            let edge = Vec3::new(a.cos(), 0.0, a.sin()) * crate::setup::RIM_RADIUS;
-            let out = Vec3::new(puffs.roll() - 0.5, 0.0, puffs.roll() - 0.5);
-            let p = Puff {
-                age: 0.0,
-                life: 0.5 + 0.5 * puffs.roll(),
-                velocity: Vec3::Y * (2.0 + 4.0 * puffs.roll()) * speed + out * 3.0 * speed,
-                size: (0.9, 0.3),
-                opacity: 0.9,
-            };
-            puff_with(
-                &mut commands,
-                puffs.quad.clone(),
-                Some(image.clone()),
-                materials,
-                rim + edge,
-                p,
-            );
-        };
-    if let Some(rim) = puffs.burst.take() {
-        for _ in 0..100 {
-            flame(&mut puffs, rim, 2.0, &mut materials);
-        }
-    }
-    if let Some((rim, next)) = puffs.burning {
-        let mut next = next - time.delta_secs();
-        while next <= 0.0 {
-            next += 1.0 / 40.0;
-            flame(&mut puffs, rim, 1.0, &mut materials);
-        }
-        puffs.burning = Some((rim, next));
-    }
-}
-
-/// Puffs drift, grow and fade, turned to the camera; gone when spent.
-fn fade_puffs(
-    mut commands: Commands,
-    time: Res<Time>,
-    camera: Query<&GlobalTransform, With<SidelineCamera>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut puffs: Query<(
-        Entity,
-        &mut Puff,
-        &mut Transform,
-        &MeshMaterial3d<StandardMaterial>,
-    )>,
-) {
-    let dt = time.delta_secs();
+    let wind = puffs.court_wind;
+    puffs.flames.step(wind);
     let facing = camera.single().map(|c| c.rotation()).unwrap_or_default();
-    for (e, mut p, mut t, material) in &mut puffs {
-        p.age += dt;
-        let k = p.age / p.life;
-        if k >= 1.0 {
-            materials.remove(&material.0);
-            commands.entity(e).despawn();
+    for (piece, mut t, mut shown, material) in &mut sprites {
+        let p = puffs.flames.particles[piece.0];
+        if p.life == 0 || p.size <= 0.0 {
+            *shown = Visibility::Hidden;
             continue;
         }
-        t.translation += p.velocity * dt;
-        p.velocity *= 1.0 - 0.4 * dt;
+        *shown = Visibility::Inherited;
+        t.translation = Vec3::from_array(p.position);
         t.rotation = facing;
-        t.scale = Vec3::splat(p.size.0 + (p.size.1 - p.size.0) * k);
-        // In quickly, out slowly.
-        let alpha = p.opacity * (k / 0.1).min(1.0) * (1.0 - k);
+        t.scale = Vec3::splat(p.size);
         if let Some(mut m) = materials.get_mut(&material.0) {
-            m.base_color.set_alpha(alpha);
+            let [r, g, b, a] = p.colour.map(|c| c.max(0.0) / 128.0);
+            let a = a.min(1.0);
+            m.base_color = Color::linear_rgba(r * a, g * a, b * a, a);
         }
     }
 }
@@ -605,27 +515,13 @@ fn fade_puffs(
 #[cfg(test)]
 mod explosive_tests {
     use super::*;
-    use street_sim::Basket;
 
     #[test]
-    fn explosive_rims_burst_for_every_made_basket_without_granting_gamebreaker_points() {
-        for basket in [
-            Basket::Jumper { long: false },
-            Basket::Jumper { long: true },
-            Basket::Dunk { advanced: true },
-            Basket::Layup,
-            Basket::AlleyOop { advanced: false },
-        ] {
-            assert!(!hoop_burst(basket, false));
-            assert!(hoop_burst(basket, true));
-        }
-        assert!(hoop_burst(
-            Basket::Gamebreaker {
-                level: 2,
-                long: false,
-                dunk: false,
-            },
-            false
-        ));
+    fn the_winning_basket_or_explosive_rims_light_the_hoop() {
+        // `FUN_001f6d98`: any basket with the cheat, else only the one
+        // that wins the game (a gamebreaker's included, no more).
+        assert!(hoop_burst(true, false));
+        assert!(hoop_burst(false, true));
+        assert!(!hoop_burst(false, false));
     }
 }
