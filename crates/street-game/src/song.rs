@@ -23,7 +23,8 @@
 //! both on): when a gamebreaker ends more than two minutes into a song
 //! (`0x1ab760`: VBlanks since the song opened over `fps * 120.0`, unless the
 //! other side's meter is full), or the groove has played past four minutes
-//! (`0x1ab958`, checked on the listener's slot 41), the music stops and the
+//! (`0x1ab958`, checked on the listener's slot 41, as a restart's inbounder
+//! starts his walk), the music stops and the
 //! next song opens on its intro, then its groove. The rewrite counts its
 //! fixed 60 Hz ticks for the VBlanks.
 //!
@@ -33,7 +34,7 @@
 //! interactive music on, sets the song's stream dry level to 0 and sends
 //! it to the effects, whose area the game never sets up: the music drops
 //! out (0.5 s on, its volume goes to 0 too, `0x1ab198`) until the slam,
-//! a block, a basket, a miss, a catch, a steal, a rebound, a pass to anyone
+//! a block, a basket, a miss, a knock, a steal, a rebound, a pass to anyone
 //! else, a meter filling or a violation puts it back (`0x1ab210`). The
 //! one-shots (`WHOOSH`, `TRICKS`) are not the stream and keep playing.
 
@@ -618,10 +619,12 @@ pub fn cues(
                 gamebreaker_over(&mut link, w, team);
             }
             Event::Pocket { .. } | Event::Cancel { .. } => settle(&mut link, w, event::MAIN_NOW),
-            // Slot 41 (a player's state change, `0x1a7370`) checks the
-            // groove's age; a change of hands stands in for it here.
-            Event::Catch { .. } | Event::Pickup { .. } | Event::Inbound { .. }
-                if link.groove && link.past(w, NEXT_IN_GROOVE) =>
+            // Slot 41 (`0x1a7370`, posted as a restart's inbounder starts
+            // his walk) checks the groove's age (`0x1ab958`): the song
+            // open, rotation on, the groove playing, not in the School
+            // (game+0x9c 4), four minutes past the groove's start.
+            Event::InboundWalk { .. }
+                if link.groove && w.lesson.is_none() && link.past(w, NEXT_IN_GROOVE) =>
             {
                 link.post(Command::Stop);
                 link.next = true;
