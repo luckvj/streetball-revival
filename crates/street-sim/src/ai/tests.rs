@@ -1266,9 +1266,11 @@ fn a_set_pick_goes_round_the_defender_waits_and_steps_in() {
     // rim through the holder's defender, 20 units round on the holder's
     // side; there he stands `fps × 0.25` frames (pressing `0x400000`),
     // turns to the defender for the last two, then steps into him
-    // (`0x4000000`) when within 4.5, or rolls.
+    // (`0x4000000`) when within 4.5, or rolls. Within 5 of the defender
+    // he posts the pick's call once (`0x3c68f0`, slot 72).
     let mut stance = 0;
     let mut stepped = 0;
+    let mut called = 0;
     for seed in 0..6 {
         let mut w = front_court(seed);
         let rim = hoops()[0].rim;
@@ -1287,6 +1289,7 @@ fn a_set_pick_goes_round_the_defender_waits_and_steps_in() {
             Act::SetPick(picks::SetPick::new(ctx, false))
         });
         let mut waited_at = None;
+        let mut calls = 0;
         let top = w.players[0].position;
         for _ in 0..240 {
             w.set_turbo(0, 0.0);
@@ -1307,6 +1310,11 @@ fn a_set_pick_goes_round_the_defender_waits_and_steps_in() {
                 d.gamble_timer = 1000;
             }
             step_all(&mut w);
+            if w.events.contains(&crate::Event::PickCall { screener: 1 }) {
+                calls += 1;
+                let gap = court::dist(w.players[1].position, w.players[3].position);
+                assert!(gap <= 5.5, "seed {seed}: called {gap} away");
+            }
             let pad = w.ai.brains[1].pad.buttons;
             if pad & pad::bits::PICK_STANCE != 0 && waited_at.is_none() {
                 stance += 1;
@@ -1334,9 +1342,12 @@ fn a_set_pick_goes_round_the_defender_waits_and_steps_in() {
                 break;
             }
         }
+        assert!(calls <= 1, "seed {seed}: {calls} calls");
+        called += calls;
     }
     assert!(stance >= 3, "{stance} stances");
     assert!(stepped >= 1, "{stepped} picks");
+    assert!(called >= 3, "{called} calls");
 }
 
 #[test]

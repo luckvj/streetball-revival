@@ -1195,7 +1195,9 @@ impl World {
                 | Event::Cancel { team: t } => team(t)?,
                 Event::GameOver { winner } => team(winner)?,
                 Event::ReplayRoll { .. } => {}
-                Event::InboundWalk { player: p } | Event::Swing { player: p } => player(p)?,
+                Event::InboundWalk { player: p }
+                | Event::Swing { player: p }
+                | Event::PickCall { screener: p } => player(p)?,
                 Event::TrickStart {
                     player: p,
                     level: l,

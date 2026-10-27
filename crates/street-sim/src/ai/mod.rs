@@ -138,6 +138,10 @@ words! {
         /// frame (its first update posts `0x3c6510`, the listeners' slot
         /// 41, `0x10b830..0x10b87c`), or 0.
         inbound_walk: i32,
+        /// The screener + 1 whose "set pick" came within 5 of the defender
+        /// this frame (`0x3c68f0`, the listeners' slot 72,
+        /// `0x118a50..0x118ac4`), or 0.
+        pick_call: i32,
     }
 }
 
@@ -854,6 +858,7 @@ impl State {
             || !plus_one(game.trick_off)
             || !plus_one(game.free_take)
             || !plus_one(game.inbound_walk)
+            || !plus_one(game.pick_call)
         {
             return bad("game");
         }
@@ -1327,9 +1332,13 @@ impl World {
         let defender = usize::try_from(off - 1).ok().filter(|&d| d < n);
         let free = std::mem::take(&mut state.game.free_take);
         let walk = std::mem::take(&mut state.game.inbound_walk);
+        let pick = std::mem::take(&mut state.game.pick_call);
         self.ai = state;
         if let Some(p) = usize::try_from(walk - 1).ok().filter(|&p| p < n) {
             self.events.push(crate::Event::InboundWalk { player: p });
+        }
+        if let Some(p) = usize::try_from(pick - 1).ok().filter(|&p| p < n) {
+            self.events.push(crate::Event::PickCall { screener: p });
         }
         if let Some(to) = usize::try_from(free - 1).ok().filter(|&to| to < n)
             && !matches!(self.ball.state, crate::BallState::Held(_))

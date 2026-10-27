@@ -11,6 +11,9 @@ its version's part.
 - **The swing sound** plays when a blocker's hands first miss the ball
   and when a swipe knocks it loose, as in the original, not at every
   block jump's take-off.
+- **The pick call:** when the computer sets a pick and closes on the
+  defender, a player on the attacking team calls it out, as in the
+  original.
 
 ## v0.1.3-beta
 

@@ -111,8 +111,9 @@ use crate::{
 /// ([`Event::PassoutBounce`]); 99: a trick's start ([`Event::TrickStart`]);
 /// 100: the inbound walk ([`Event::InboundWalk`], the AI game's
 /// `inbound_walk`); 101: the team's passout value (team +0x5c); 102: the
-/// swing ([`Event::Swing`], actor+0x1d8).
-const VERSION: u8 = 102;
+/// swing ([`Event::Swing`], actor+0x1d8); 103: the pick's call
+/// ([`Event::PickCall`], the AI game's `pick_call`).
+const VERSION: u8 = 103;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -3165,6 +3166,10 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(47);
             w.us(player);
         }
+        Event::PickCall { screener } => {
+            w.u8(48);
+            w.us(screener);
+        }
         Event::TrickStart {
             player,
             level,
@@ -3318,6 +3323,7 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
         44 => Event::PassoutBounce { head: r.bool()? },
         46 => Event::InboundWalk { player: r.us()? },
         47 => Event::Swing { player: r.us()? },
+        48 => Event::PickCall { screener: r.us()? },
         45 => Event::TrickStart {
             player: r.us()?,
             level: r.u8()?,
