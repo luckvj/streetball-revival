@@ -532,6 +532,8 @@ impl World {
         self.players[d].wanted = self.players[d].heading;
         let r = self.rng.next_u32() & 1;
         self.react(d, crate::trick::HEAD_HIT[usize::from(r == 0)]);
+        // Slot 39 with word 0 (`0x1485ec..0x148634`).
+        self.events.push(crate::Event::PassoutBounce { head: true });
         let left = (total - self.ball.flight_ticks()).max(1);
         self.ball.throw(
             b,
@@ -568,6 +570,9 @@ impl World {
             self.ball.drop_loose();
             return true;
         }
+        // Slot 39 with word 1 (`0x148678..0x1486e8`).
+        self.events
+            .push(crate::Event::PassoutBounce { head: false });
         let left = (total - flown).max(1);
         let from = self.ball.position;
         self.ball.throw(
@@ -757,15 +762,22 @@ mod tests {
             assert!(w.passout_catching(0));
             assert!(i32::from(w.players[0].barred) >= total - 1);
             // The two legs take the whole flight; he takes it at its end.
+            // The board's leg posts slot 39 with word 1 as it goes on.
             let mut n = 0;
+            let mut bounces = Vec::new();
             while w.ball.state == BallState::Pass && n < 200 {
                 // Valid, and carried by a snapshot, through both legs.
                 assert_eq!(w.validate(), Ok(()), "seed {seed}");
                 let back = World::from_snapshot(&w.to_snapshot()).unwrap();
                 assert_eq!((back.passout, back.windup), (w.passout, w.windup));
                 idle(&mut w);
+                bounces.extend(w.events.iter().filter_map(|e| match e {
+                    crate::Event::PassoutBounce { head } => Some(*head),
+                    _ => None,
+                }));
                 n += 1;
             }
+            assert_eq!(bounces, [false], "seed {seed}");
             assert_eq!(w.ball.state, BallState::Held(0), "seed {seed}");
             assert!((total - 1..=total + 1).contains(&n), "{n} against {total}");
             // His row plays its tail out, then his gait.
@@ -792,6 +804,12 @@ mod tests {
         let mut n = 0;
         while w.ball.state == BallState::Pass && n < 60 {
             idle(&mut w);
+            // A miss posts no slot 39.
+            assert!(
+                !w.events
+                    .iter()
+                    .any(|e| matches!(e, crate::Event::PassoutBounce { .. }))
+            );
             n += 1;
         }
         // At the board, loose, the leg back spent.

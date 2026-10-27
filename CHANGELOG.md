@@ -15,6 +15,11 @@ its version's part.
 
 - **Hanging on the rim:** a dunker's hands turn to grip the rim, and
   follow it as it gives, as in the original.
+- **Dunk and passout sounds:** dunks no longer play a passout's sound, the
+  commentator's passout lines or an extra crowd cheer; an off-the-heezay
+  pass bouncing off the board or a defender's head now plays them, as in
+  the original. The dunk's crowd roar now scales with the dunk's finish,
+  and the game-winning basket plays the win or loss sting.
 - **Busted rim:** a game-winning dunk or alley-oop now shows the
   original's "Busted Rim" pop-up, and the profile keeps count of busted
   rims as the original does (it isn't shown on screen there either).

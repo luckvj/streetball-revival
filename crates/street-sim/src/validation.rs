@@ -1134,7 +1134,7 @@ impl World {
                         )?;
                     }
                 }
-                Event::RimOut => {}
+                Event::RimOut | Event::PassoutBounce { .. } => {}
                 Event::BallHit { speed, .. } => {
                     if !speed.is_finite() || speed < 0.0 {
                         return Err("invalid ball contact speed".into());

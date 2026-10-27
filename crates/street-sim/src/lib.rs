@@ -99,7 +99,7 @@ pub use shooting::{
     NATIVE_AIM_HEIGHT, NATIVE_BACKBOARD_BOUNDS_X, NATIVE_BACKBOARD_BOUNDS_Y,
     NATIVE_BACKBOARD_BOUNDS_Z, NATIVE_NET_BOTTOM_HEIGHT, NATIVE_NET_CONE_SCALE,
     NATIVE_RIM_COLLAR_X, NATIVE_RIM_COLLAR_Z_MAX, NATIVE_RIM_ENTRY_CONE_ANGLE, NATIVE_RIM_HEIGHT,
-    NATIVE_RIM_OUTER_RADIUS, NATIVE_RIM_RADIUS, evaluate_shot_quality_tier,
+    NATIVE_RIM_OUTER_RADIUS, NATIVE_RIM_RADIUS, dunk_move_level, evaluate_shot_quality_tier,
 };
 pub use street::{Basket, Combo, TeamState};
 
@@ -524,6 +524,13 @@ pub enum Event {
     /// sound listener's 0x36 at him.
     RimBump {
         player: usize,
+    },
+    /// A passout's first leg ended and the ball goes on to its second
+    /// (`FUN_00148378`, class `0x3c66f0` at `0x14862c`/`0x1486cc`): off the
+    /// board (word 1 = 1) or off a defender's head (`head`, word 1 = 0).
+    /// The listeners' slot 39.
+    PassoutBounce {
+        head: bool,
     },
     /// A hand took the ball: every take (`FUN_0014cb28`'s tail, class
     /// `0x3c6600` at `0x14d160`, whatever else it posted), the sound

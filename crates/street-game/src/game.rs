@@ -1096,11 +1096,14 @@ fn crowd_reactions(
         let (cheers, gasps) = match *event {
             // The tip-off's take (slot 22, `0x1a5d10`, 0x25).
             _ if crate::sfx::tip_taken(w, event) => (1, 0),
+            // The basket's call (`0x1a3b10` through `FUN_001a7708`); a
+            // gamebreaker's adds `FUN_001a6b80`'s.
             Score { basket, .. } => match basket {
-                Basket::Gamebreaker { .. } => (3, 0),
-                Basket::Dunk { .. } | Basket::AlleyOop { .. } => (2, 0),
+                Basket::Gamebreaker { .. } => (2, 0),
                 _ => (1, 0),
             },
+            // A passout going on to its second leg (slot 39, `0x1a5d50`).
+            PassoutBounce { .. } => (1, 0),
             Block { .. }
             | Goaltend { .. }
             | Steal {
@@ -2851,6 +2854,8 @@ mod tests {
                 fakeout: None,
                 points: 500,
             },
+            // A passout's bounce (slot 39) cheers; the dunk's basket once.
+            street_sim::Event::PassoutBounce { head: true },
         ];
         school_steps(&mut app, 1);
         let to_win = match app.world().resource::<Sim>().world.rules.goal {
@@ -2869,7 +2874,7 @@ mod tests {
         };
         assert_eq!(
             std::mem::take(&mut app.world_mut().resource_mut::<CrowdReactions>().0),
-            [cheer, cheer, gasp]
+            [cheer, gasp, cheer]
         );
         // The crowd's tick takes them.
         app.add_systems(
