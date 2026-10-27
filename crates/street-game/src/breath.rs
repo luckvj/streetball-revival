@@ -12,8 +12,10 @@
 //! rises 0.3 mph, is nudged up to ±0.08 mph across every 1..4 frames, and is
 //! 0.35 across.
 //!
-//! The game breathes only for a player whose +0x68 is set (1 for those on
-//! screen in the save states); the rewrite breathes for all. The draws are
+//! The game breathes only for a player whose +0x68 is set: the actor's
+//! enabled word, 1 from its constructor (`0x156168`) and changed only
+//! through the setter `FUN_00156188` (the actor's, ball's and AI's virtual
+//! overrides), so every player on court breathes, as here. The draws are
 //! the rewrite's own generator (the game's shared one).
 
 const FPS: f32 = 60.0;

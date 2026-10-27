@@ -13676,3 +13676,40 @@ A court's `DRIFT` line builds a manager (`FUN_001f4248`): its pieces, 0x60 bytes
   in a block jump (bit 12) contest, 5 off the percentage each; any near
   takes away the open shot's bonus (`shot_percent`). The sim
   had counted them all; `World::contest` now skips both.
+
+## The audit's small details (2026-10-27)
+
+- **The Rucker Classic's song** (`FUN_001a0c48`, from `0x1a0b44` when the
+  profile's court +0xcc is record 10): `FUN_001aa828` makes song 12
+  current; nothing more while the music manager's +0x1790 is set (a song
+  waiting to resume, `0x1a1558`, cleared by the next song at `0x1a11f4`);
+  else it plays song 12 unless the court is the save's (`FUN_001d37b0`:
+  the court card naming record 10 owned through `FUN_001e0398`, or no
+  card names it, or `0x3ec4a0` clear) and song 12 is switched off in
+  Trax (+0x134's bit 12 + 8 + 3), when the next one on plays
+  (`FUN_001aaf78`), or none. `audio::Sounds::match_song`.
+- **The replay side after a rim hang**: the camera listener's slot
+  `+0x154` (`FUN_00302470`; vtable `0x498a68`) is message slot 43, a
+  dunker letting go of the rim (`0x1573a8`); it sets the listener's +0xc
+  to 1, so the next replay request films from the baseline rather than
+  the eye by the rim. `view.rs`, `Event::RimHold { on: false }`.
+- **State bits in the camera's mask `0x7ffdc`**: `World::actor_state_bits`
+  now sets 6 (a swipe or a counter's take, `FUN_0016e9a0`), 11 (posting,
+  `FUN_0016ea20`), 14 (hands on the rim, `FUN_0016ea50`), 17 (boxing out,
+  `FUN_0016e970`) and 18 (boxed, `FUN_0016e980`) from the state the sim
+  already keeps; bit 2 is not identified.
+- **The pass aim's spot** (`0x15fcc4..0x15fd14`): a receiver posting up
+  (bit 11) is aimed at where he stands, as a leaper and a pass to oneself
+  are; otherwise `FUN_0016c970` gives his front behaviour's destination,
+  and for a receiver in the air (actor+0x34 not 0) returns it at once,
+  neither clamped to ±40 by ±24.5 nor snapped to him within 1.5. The
+  fast break's, roll's, cuts' and post cut's own destinations were
+  already the behaviours' `pass_target`; the note calling them stand-ins
+  was stale.
+- **The box-out's pin** (`FUN_00133bb0`, `0x133d74..0x133d80`): the
+  boxed man's target gains his model's root now (actor+0xe0, his clip's
+  root at the frame shown turned and scaled into the world;
+  `World::model_root`).
+- **The breath's gate** actor+0x68 is the actor's enabled word: 1 from
+  the constructor (`0x156168`), changed only through `FUN_00156188`, so
+  every player on court breathes.

@@ -341,20 +341,20 @@ impl World {
     /// The spot is where the receiver is going (`FUN_0016c970`): the
     /// destination of his front behaviour (`FUN_0013b900` →
     /// `FUN_00133380`, vt+0x24, which for most behaviours is their target
-    /// `FUN_00100768` → vt+0x1c), kept within ±40 by ±24.5, or where he
-    /// stands; a leaper for an alley-oop (actor+0xa4 `0x8000`) and a pass
-    /// to oneself take his place. The pass leads him unless he gets to
+    /// `FUN_00100768` → vt+0x1c, [`crate::ai::Act::pass_target`]); on the
+    /// floor kept within ±40 by ±24.5, or where he stands within 1.5 of
+    /// it, but in the air (actor+0x34 not 0, `0x16c994..0x16c9a8`) as the
+    /// behaviour gives it. A leaper for an alley-oop (actor+0xa4
+    /// `0x8000`), a man posting up (bit 11, `FUN_0016ea20`) and a pass to
+    /// oneself take his place. The pass leads him unless he gets to
     /// the spot (its distance over his speed, `DAT_003d9a28`) within
     /// `fps / 2 - trunc(fps × 0.12)` = 23 updates and the passer is
     /// farther from it than he is (`FUN_0018cdb0`). A receiver standing
     /// still is led: the original's division by his speed (`0x15fd60`)
     /// gives the EE's largest float, which fails the test.
     ///
-    /// Not carried (the rewrite's own): the airborne receiver's landing
-    /// spot (his place stands in), "fast break" and "post cut"'s own
-    /// destinations (`FUN_0010aea8`, `FUN_00112f48`; their targets stand
-    /// in), and the passer-record list `0x43f870` and actor+0xa4 bit 11
-    /// gates (read as clear).
+    /// Not carried (the rewrite's own): the passer-record list `0x43f870`
+    /// gate (read as clear).
     pub(crate) fn pass_aim(&self, i: usize, to: usize) -> PassAim {
         let p = &self.players[i];
         let r = &self.players[to];
@@ -362,7 +362,7 @@ impl World {
         let mut spot = r.position;
         if !leaper
             && to != i
-            && r.height <= 0.0
+            && !r.posting
             && self.passout.is_none_or(|po| po.passer != i || po.tossed)
         {
             let rim = self.rim_spot(target_hoop(self.possession.min(1)));
@@ -374,10 +374,12 @@ impl World {
             {
                 spot = target;
             }
-            spot = [spot[0].clamp(-40.0, 40.0), spot[1].clamp(-24.5, 24.5)];
-            // `0x16cc5c..0x16ccb0`: within 1.5 he stays where he is.
-            if distance(r.position, spot) < 1.5 {
-                spot = r.position;
+            if r.height <= 0.0 {
+                spot = [spot[0].clamp(-40.0, 40.0), spot[1].clamp(-24.5, 24.5)];
+                // `0x16cc5c..0x16ccb0`: within 1.5 he stays where he is.
+                if distance(r.position, spot) < 1.5 {
+                    spot = r.position;
+                }
             }
         }
         let fps = crate::TICK_HZ as f32;
