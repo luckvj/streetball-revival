@@ -9,7 +9,8 @@ its version's part.
   rim, floor and through the net now sounds by how hard it hits; a dunker
   grabbing and letting go of the rim, a dribble's bounce and a slam's shake
   have their own sounds; every catch, steal, rebound and pickup plays the
-  take sound, and a ball knocked loose its knock. Gone: the clank the
+  take sound, a ball knocked loose its knock, and a player's head into
+  the backboard its thud. Gone: the clank the
   rewrite played on every miss and the wrong "swish" on made jumpers.
 
 ## v0.1.2-beta

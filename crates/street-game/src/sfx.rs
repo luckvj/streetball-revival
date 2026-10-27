@@ -24,6 +24,7 @@
 //! | a jump shot / a lay-up launched (`0x14aaf8` posts slot 11 with the ball's kind 2 / 5) | the long-flight whoosh 0x3f / sweetener 0x4a 6; the block flag cleared |
 //! | a dunker or flier leaving the floor (the `9e` jump, slot 4, `0x1a4928`) | exertion 0x50 every other time; a flier sweetener 0x4a 10 at the ball, a dunk the block flag and, finished at level 2 or more, sweetener 0x4a 13 at the ball |
 //! | a basket | 0x3e at the ball (slot 26), with its HUD and crowd |
+//! | a player's head into the board, rising (slot 75, `FUN_001389a8`) | 0x36 at him |
 //! | a dunk's slam | 0x40 (slot 39), the crowd's 0x48 by the dunk's power (slot 26) |
 //! | a block (slot 16, `0x1a4ce8`) | 0x39 (whether the blocker holds the ball), with the block flag sweetener 0x4a 3, crowd 0x27, exertion |
 //! | a steal or counter (slot 15, `0x1a63e0`) | crowd 0x27, 0x49 |
@@ -1711,6 +1712,11 @@ pub(crate) fn fire_events(
                     street_sim::BallSurface::Rim => fx.fire(&[ev::BOUNCE, a, d, level]),
                     street_sim::BallSurface::Net => fx.fire(&[ev::NET, a, d]),
                 };
+            }
+            // A head into the board (slot 75, `0x1a7398`): 0x36 at him.
+            Event::RimBump { player } => {
+                let (a, d) = at(player_at(player));
+                fx.fire(&[ev::BOARD, a, d, 1000]);
             }
             // A dunker's hands on the rim and off it (`0x1a4fe8`,
             // `0x1a5050`): at the hoop on his side.

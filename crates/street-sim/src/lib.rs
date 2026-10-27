@@ -519,6 +519,12 @@ pub enum Event {
         holder: usize,
         speed: f32,
     },
+    /// A player's head into the board, rising (`FUN_001389a8`, class
+    /// `0x3c6920`): the listeners' slot 75, the rim's sway of 1.5 and the
+    /// sound listener's 0x36 at him.
+    RimBump {
+        player: usize,
+    },
     /// A hand took the ball: every take (`FUN_0014cb28`'s tail, class
     /// `0x3c6600` at `0x14d160`, whatever else it posted), the sound
     /// listener's slot 24.
