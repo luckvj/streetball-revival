@@ -1695,7 +1695,7 @@ fn navigate(
         return;
     }
     menus.shown = menus.stack.clone();
-    menus.devices = input.devices();
+    menus.devices = column_order(&menus.joined, input.devices());
     menus.style = input.style();
     // Pads that went away leave their seats.
     let devices = menus.devices.clone();
@@ -7580,6 +7580,21 @@ fn players_people(setup: &MatchSetup, side: usize) -> Vec<Device> {
     }
 }
 
+/// Choose Sides' columns, one controller each: those that joined first, in
+/// the order they joined (the one that started the game in column 1, as a
+/// PS2 pad in port 1 is 1P), then the rest as connected (the keyboard, then
+/// the pads). A pad no longer sits in column 2 behind a keyboard nobody
+/// uses.
+fn column_order(joined: &[Device], connected: Vec<Device>) -> Vec<Device> {
+    let mut order: Vec<Device> = joined
+        .iter()
+        .copied()
+        .filter(|d| connected.contains(d))
+        .collect();
+    order.extend(connected.into_iter().filter(|d| !joined.contains(d)));
+    order
+}
+
 /// A controller's number (0 for 1P): its seat, in the order they joined.
 fn seat_number(setup: &MatchSetup, device: Device) -> usize {
     setup
@@ -8823,6 +8838,24 @@ mod tests {
         // ready, Choose Players (0x1d) does the same; then Choose Court.
         assert_eq!(after_team(0), (Page::ChooseTeam(1), 0));
         assert_eq!(after_team(1), (Page::ChoosePlayers, 0));
+    }
+
+    #[test]
+    fn the_controller_that_started_takes_the_first_column() {
+        // A pad that started the game sits in column 1 (1P), the keyboard
+        // nobody joined with after it; a pad gone leaves the order.
+        let pad = |n: u32| Device::Pad(Entity::from_raw_u32(n).unwrap());
+        let connected = vec![Device::Keyboard, pad(3), pad(4)];
+        assert_eq!(
+            column_order(&[pad(3)], connected.clone()),
+            vec![pad(3), Device::Keyboard, pad(4)]
+        );
+        assert_eq!(
+            column_order(&[pad(4), Device::Keyboard], connected.clone()),
+            vec![pad(4), Device::Keyboard, pad(3)]
+        );
+        assert_eq!(column_order(&[pad(9)], connected.clone()), connected);
+        assert_eq!(column_order(&[], connected.clone()), connected);
     }
 
     #[test]

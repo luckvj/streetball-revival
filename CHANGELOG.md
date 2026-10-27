@@ -3,7 +3,7 @@
 What changed in each release. The newest is first; the release page shows
 its version's part.
 
-## Unreleased
+## v0.1.3-beta
 
 - **Controllers in matches (issue #1):** playing alone, every controller
   now drives your player in a match, as in the menus. Before, a match
@@ -11,6 +11,9 @@ its version's part.
   Xbox pad did nothing if the keyboard had been used there (or the pad
   reconnected). With several people each keeps their own controller; a
   pad that reconnects takes its seat back.
+- **Choose Sides:** the controller that started the game takes the first
+  slot (1P), as in the original. An Xbox pad used alone no longer shows up
+  in the player 2 slot behind the keyboard.
 - **Song changes:** after four minutes of a song the music moves on as a
   restart's inbounder starts his walk, as in the original, not at any
   catch in the middle of play.
@@ -19,9 +22,8 @@ its version's part.
   grabbing and letting go of the rim, a dribble's bounce and a slam's shake
   have their own sounds; every catch, steal, rebound and pickup plays the
   take sound, a ball knocked loose its knock, and a player's head into
-  the backboard its thud. Gone: the clank the
-  rewrite played on every miss and the wrong "swish" on made jumpers.
-
+  the backboard its thud. Gone: the clank the rewrite played on every
+  miss and the wrong "swish" on made jumpers.
 - **Hanging on the rim:** a dunker's hands turn to grip the rim, and
   follow it as it gives, as in the original.
 - **Dunk and passout sounds:** dunks no longer play a passout's sound, the
