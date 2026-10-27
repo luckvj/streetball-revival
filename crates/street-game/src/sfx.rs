@@ -52,7 +52,8 @@
 //! block (9), a steal (10), a jump shot's launch (14), a rebound pickup (0,
 //! or every other time 1 from a teammate), a teammate's dunk (5), the shot
 //! clock at 5 seconds (2) and at 21 (7, the defence, half the time), a
-//! violation (4 and 8 in turn). Each raw `jal 0x1ad068` site names its
+//! violation (4 and 8 in turn), the computer's pick (6, the offence's third
+//! player, slot 72). Each raw `jal 0x1ad068` site names its
 //! masks; none has a caller-side chance except the 21-second call's
 //! `rand() & 1`.
 //!
@@ -1872,6 +1873,14 @@ pub(crate) fn fire_events(
             Event::SlamShake { player } => {
                 let (a, d) = at(player_at(player));
                 fx.fire(&[ev::BOUNCE, a, d, 1000]);
+            }
+            // The pick's call (slot 72, `0x1a4c08`): category 6 (mask
+            // `1 << 6`, action mask 1), said by the offence's third player
+            // (actor 2, or 5 with side 1 on offence: game+0x110), whoever
+            // set the pick; the message's words go unread.
+            Event::PickCall { .. } => {
+                let p = third(w, w.possession);
+                fx.say(speech.as_deref_mut(), p, 6, at(player_at(p)));
             }
             Event::Pick { screener, defender } => {
                 let (a, d) = at(player_at(screener));

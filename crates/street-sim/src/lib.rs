@@ -407,6 +407,12 @@ pub enum Event {
     Swing {
         player: usize,
     },
+    /// A computer screener's "set pick" came within 5 of the defender he
+    /// screens (`FUN_00118a30` posting class `0x3c68f0`, the listeners'
+    /// slot 72), once a pick.
+    PickCall {
+        screener: usize,
+    },
     /// A trick move started (class `0x3c6490`, the listeners' slot 2,
     /// posted as the trick's script starts: the trick press `0x15f5fc`,
     /// the two-person freestyle `0x15cdb4`): `level` its value class plus

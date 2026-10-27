@@ -202,10 +202,11 @@ impl SetPick {
             return;
         };
         if !self.posted && ctx.between(i, d) <= 5.0 {
-            // `0x3c68f0` {1, screener, defender}: the AI's game listener
-            // takes it with an empty handler (`0x132da0`); nothing in
-            // the simulation listens.
+            // `0x3c68f0` {1, screener, defender}, the listeners' slot 72:
+            // the AI's game listener's handler is empty (`0x132da0`), the
+            // sound listener's calls the pick ([`crate::Event::PickCall`]).
             self.posted = true;
+            ctx.game.pick_call = i as i32 + 1;
         }
         if !self.touched {
             self.touched = ctx.between(i, d) <= f32::from_bits(0x402c_cccd);
