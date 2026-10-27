@@ -5704,3 +5704,34 @@ fn the_gait_clock_runs_by_the_skeletons_scale() {
     let (unit, big) = (step(1.0), step(1.3));
     assert!((unit / big - 1.3).abs() < 1e-3, "{unit} / {big}");
 }
+
+#[test]
+fn a_dropped_ball_posts_its_floor_bounce_with_the_speed_it_lost() {
+    // `FUN_00153278` posts slot 31 with the velocity the bounce took off
+    // the ball, per update (`0x153330..0x153370`).
+    let mut w = live(vec![
+        Player::new(0, [-20.0, 0.0], 0.0),
+        Player::new(1, [-20.0, 5.0], 0.0),
+    ]);
+    w.ball = Ball::loose_at([0.0, 6.0, 0.0]);
+    w.ball.airborne = true;
+    let mut hits = Vec::new();
+    for _ in 0..TICK_HZ * 2 {
+        let before = w.ball.velocity;
+        w.step(&[Input::default(), Input::default()]);
+        for e in &w.events {
+            if let Event::BallHit { surface, speed } = *e {
+                hits.push((surface, speed, before[1]));
+            }
+        }
+    }
+    let (surface, speed, falling) = hits[0];
+    assert_eq!(surface, BallSurface::Floor, "{hits:?}");
+    // It was falling at `falling` per second: the bounce took more than that
+    // fall's update off it, and less than twice it plus gravity's update.
+    let fall = -falling * crate::TICK_SECONDS;
+    assert!(
+        speed > fall && speed < 2.0 * fall + 0.05,
+        "{speed} vs {fall}"
+    );
+}

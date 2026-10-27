@@ -719,7 +719,8 @@ impl World {
     /// of its way, or lower than the update before, ball+0x84), and once
     /// armed the first other update on a dribbling clip with the ball
     /// under 2 (now or the update before) posts the floor event
-    /// (`0x3c6670`, [`Event::Dribble`]) and disarms it. A clip that carries
+    /// (`0x3c6670`, [`Event::Dribble`], with twice the height the ball fell
+    /// this update) and disarms it. A clip that carries
     /// the ball on the floor or hand to hand leaves the flag be.
     pub(crate) fn dribble_bounce(&mut self, h: usize, d: crate::dribble::Dribbled, y: f32) {
         let before = self.ball.position[1];
@@ -731,7 +732,10 @@ impl World {
             self.dribble_armed = true;
         } else if self.dribble_armed && (y < 2.0 || before < 2.0) {
             self.dribble_armed = false;
-            self.events.push(crate::Event::Dribble { holder: h });
+            self.events.push(crate::Event::Dribble {
+                holder: h,
+                speed: (y - before).abs() * 2.0,
+            });
         }
     }
 }

@@ -103,8 +103,11 @@ use crate::{
 /// started from (the updates it has flown); 85: a computer screener's
 /// three pick scripts among the reactions; 93: the "no turbo" message
 /// ([`Event::NoTurbo`]); 94: the take-off and the throw from the hands
-/// ([`Event::TakeOff`], [`Event::Launched`]); 95: the take-off's dunk id.
-const VERSION: u8 = 95;
+/// ([`Event::TakeOff`], [`Event::Launched`]); 95: the take-off's dunk id;
+/// 96: the ball's contacts and the rim held ([`Event::BallHit`],
+/// [`Event::RimHold`]), the dribble's speed and the slam's shake
+/// ([`Event::SlamShake`]).
+const VERSION: u8 = 96;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -3090,6 +3093,16 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(finish);
             w.uv(u64::from(dunk));
         }
+        Event::BallHit { surface, speed } => {
+            w.u8(39);
+            w.u8(surface as u8);
+            w.f(speed);
+        }
+        Event::RimHold { player, on } => {
+            w.u8(40);
+            w.us(player);
+            w.bool(on);
+        }
         Event::Launched {
             from,
             to,
@@ -3111,9 +3124,14 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(23);
             w.us(player);
         }
-        Event::Dribble { holder } => {
+        Event::Dribble { holder, speed } => {
             w.u8(35);
             w.us(holder);
+            w.f(speed);
+        }
+        Event::SlamShake { player } => {
+            w.u8(41);
+            w.us(player);
         }
         Event::Pick { screener, defender } => {
             w.u8(24);
@@ -3248,7 +3266,11 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
             shooter: r.us()?,
         },
         23 => Event::Dive { player: r.us()? },
-        35 => Event::Dribble { holder: r.us()? },
+        35 => Event::Dribble {
+            holder: r.us()?,
+            speed: r.f()?,
+        },
+        41 => Event::SlamShake { player: r.us()? },
         24 => Event::Pick {
             screener: r.us()?,
             defender: r.us()?,
@@ -3283,6 +3305,20 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
             leap: r.bool()?,
             finish: r.u8()?,
             dunk: u16::try_from(r.uv()?).map_err(|_| "invalid dunk id")?,
+        },
+        39 => Event::BallHit {
+            surface: match r.u8()? {
+                0 => crate::BallSurface::Floor,
+                1 => crate::BallSurface::Board,
+                2 => crate::BallSurface::Rim,
+                3 => crate::BallSurface::Net,
+                k => return Err(format!("bad ball surface {k}")),
+            },
+            speed: r.f()?,
+        },
+        40 => Event::RimHold {
+            player: r.us()?,
+            on: r.bool()?,
         },
         38 => Event::Launched {
             from: r.us()?,

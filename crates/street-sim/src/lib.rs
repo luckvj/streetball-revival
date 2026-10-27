@@ -316,6 +316,16 @@ pub enum Phase {
     },
 }
 
+/// What a free ball met.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BallSurface {
+    Floor,
+    Board,
+    /// The rim or its collar.
+    Rim,
+    Net,
+}
+
 /// Something that happened during a tick, for sound, effects and the HUD.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Event {
@@ -480,6 +490,19 @@ pub enum Event {
         kick: bool,
         leaper: bool,
     },
+    /// The free ball met a surface (`FUN_0014d1f8`'s contacts), `speed` the
+    /// velocity it took off the ball per update (the net: its speed
+    /// through it): the listener's slots 29 to 31 and 37.
+    BallHit {
+        surface: BallSurface,
+        speed: f32,
+    },
+    /// A dunker took hold of the rim (`on`, slot 42, `0x15734c`) or let it
+    /// go (slot 43, `0x1573a8`), on the hoop at `hoop`'s side.
+    RimHold {
+        player: usize,
+        on: bool,
+    },
     /// A turbo block swatted a shot on its way down.
     Goaltend {
         player: usize,
@@ -489,10 +512,18 @@ pub enum Event {
         player: usize,
     },
     /// The dribbled ball meets the floor (`0x3c6670` from the held ball's
-    /// update, [`World::dribble_bounce`]): the sound listener's slot 44
-    /// plays the floor sound at the holder.
+    /// update, [`World::dribble_bounce`]): the sound listener's slot 31,
+    /// the floor's, `speed` twice the height it fell this update
+    /// (`0x14f588..0x14f5a4`).
     Dribble {
         holder: usize,
+        speed: f32,
+    },
+    /// Callback 27 after a slam (`FUN_001720a8`, class `0x3c6730`): the
+    /// sound listener's slot 44 at the dunker; the pole's sway when he is
+    /// the ball's last shooter.
+    SlamShake {
+        player: usize,
     },
     /// A screen on the holder's own defender by the arc (`0x3c6910`'s
     /// kind 3, [`World::post_contact`]'s 500): `defender` was screened.
@@ -3437,6 +3468,13 @@ impl World {
     }
 
     fn step_ball(&mut self, held_before: Option<(usize, [f32; 3])>) {
+        self.step_ball_state(held_before);
+        for (surface, speed) in std::mem::take(&mut self.ball.hits) {
+            self.events.push(Event::BallHit { surface, speed });
+        }
+    }
+
+    fn step_ball_state(&mut self, held_before: Option<(usize, [f32; 3])>) {
         match self.ball.state {
             // `FUN_0014e060`: the ball on whatever clip the holder's channel
             // shows ([`held`]: his gait's dribble, a trick, a shot, a dunk,
