@@ -18,7 +18,6 @@ use crate::{
 /// Centre of the rim in a hoop model's own space: the middle of the `orim`
 /// and `rim1` meshes (x 3.02..5.12, y 2.13..2.63 in every court's hoop).
 const RIM_LOCAL: Vec3 = Vec3::new(4.07, 2.45, 0.0);
-pub(crate) const RIM_RADIUS: f32 = 0.75;
 /// Players per side.
 pub const TEAM_SIZE: usize = 3;
 

@@ -35,6 +35,10 @@ its version's part.
 - **Breath on the Foster court** comes out the way the original's does:
   every two to five seconds each player breathes out a small cloud from
   his mouth that follows his head, then drifts off on the wind.
+- **The rim's fireworks** go off on the basket that wins the game (or any
+  basket with Explosive Rims), as in the original: a burst of blue and
+  grey sparks that bounce off the floor and backboard, with a moment of
+  flames. Before, a steady fire burned after every gamebreaker basket.
 
 ## v0.1.3-beta
 
