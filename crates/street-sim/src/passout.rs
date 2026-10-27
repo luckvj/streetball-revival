@@ -30,7 +30,8 @@ use crate::timing::PASS_ROWS;
 use crate::{Action, BallState, Pass, World, ball::Via, distance};
 
 /// Game+0x160, retained through the return leg for FUN_00143a88's value
-/// and repeat key. The head route's flight is still the rewrite's own.
+/// and repeat key. The head route flies to the head bone's point
+/// (`World::head_point`) on its own ratio (`World::head_legs`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Kind {

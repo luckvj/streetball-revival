@@ -1080,10 +1080,10 @@ fn spawn_overlays(mut commands: Commands) {
 /// | a loose ball picked up | slot 17 `FUN_001a65c0` | 0x27 |
 /// | a trick move lands | slot 13 `FUN_001a5a78` | 0x29 |
 ///
-/// Not wired: slot 76's floor contacts (`FUN_001a5348`, 0x29, sampled from
-/// posed joints in `sfx.rs`), slot 22 (`FUN_001a5d10`, 0x25, sender not
-/// traced) and intercepted passes (whether they reach slot 15 is not
-/// traced). A replay's updates call nothing.
+/// Also: the tip-off's take (slot 22, `FUN_001a5d10`, 0x25, the first
+/// arm) and slot 76's floor contacts (`FUN_001a5348`, 0x29, from posed
+/// joints in `sfx.rs`'s `floor_contact`). Not traced: whether intercepted
+/// passes reach slot 15. A replay's updates call nothing.
 fn crowd_reactions(
     tick: Res<TickEvents>,
     sim: Res<Sim>,

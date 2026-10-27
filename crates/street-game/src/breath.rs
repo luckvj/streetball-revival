@@ -4,8 +4,9 @@
 //! each once a frame (`FUN_001f07c0`), ported from the executable. Its
 //! tuning is the shared constructor's (`FUN_0020aba0`), at the game's 60
 //! frames a second: every 120 + `r % 181` frames a player breathes out all
-//! ten puffs at once, from 1.25 along his head bone's turned up axis
-//! (bone 21's +y), each within 0.3 of it; a puff lives 40 frames, keeping
+//! ten puffs at once, from 1.25 along his head bone's +y (bone 21's: level
+//! and the way his face looks on the disc's clips; its +x is up), each
+//! within 0.3 of it; a puff lives 40 frames, keeping
 //! to the mouth as it comes in over 30 to an alpha of 76.5, then drifts
 //! free for the last 10, leaning into the court's wind, going out. It
 //! rises 0.3 mph, is nudged up to ±0.08 mph across every 1..4 frames, and is
