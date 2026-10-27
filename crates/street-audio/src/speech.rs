@@ -642,7 +642,8 @@ fn gather(h: &SpeechHeader, branch: &EventBranch, packet: &Packet, sub: Option<u
 /// (`0x1a56b0`), 4 a trick move (`0x1a5a78`), 6 the end (`0x1a5638`), 8 a
 /// steal (`0x1a63e0`), 0xd a turnover (every fifth steal, every third shot
 /// clock violation), 0xe a miss (`0x1a4550`), 0x11 the shot clock
-/// (`0x1a6d88`), 0x12 a nickname (`0x1a83e0`), 0x13 a slam (`0x1a5d50`).
+/// (`0x1a6d88`), 0x12 a nickname (`0x1a83e0`), 0x13 a passout off a head (`0x1a5d50`,
+/// slot 39: `PassOut.hdr`).
 pub const COMMENTARY_EVENT_IDS: [u16; 15] = [
     0, 1, 2, 3, 4, 6, 8, 0xb, 0xc, 0xd, 0xe, 0xf, 0x11, 0x12, 0x13,
 ];
@@ -2299,5 +2300,28 @@ mod tests {
             assert_eq!(random.cursor, 0);
             assert!(random.recent.iter().all(|&r| r == (u16::MAX, u16::MAX)));
         }
+    }
+
+    #[test]
+    fn disc_event_0x13_is_the_passout_call() {
+        // Slot 39 (`0x1a5d50`) posts event 0x13 when a passout off a
+        // defender's head goes on to its second leg (`FUN_00148378`): its
+        // one branch is the commentator's PassOut header, not a dunk's.
+        let Some(mut iso) = disc() else { return };
+        let commentary = Commentary::open(&mut iso).unwrap();
+        let event = commentary.event(0x13).unwrap();
+        let names: Vec<_> = event
+            .branches
+            .iter()
+            .flat_map(|b| {
+                commentary
+                    .headers
+                    .headers
+                    .iter()
+                    .filter(move |h| h.kind == b.kind)
+                    .map(|h| h.name.as_str())
+            })
+            .collect();
+        assert_eq!(names, ["PassOut.hdr"]);
     }
 }

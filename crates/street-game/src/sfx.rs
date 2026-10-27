@@ -25,7 +25,8 @@
 //! | a dunker or flier leaving the floor (the `9e` jump, slot 4, `0x1a4928`) | exertion 0x50 every other time; a flier sweetener 0x4a 10 at the ball, a dunk the block flag and, finished at level 2 or more, sweetener 0x4a 13 at the ball |
 //! | a basket | 0x3e at the ball (slot 26), with its HUD and crowd |
 //! | a player's head into the board, rising (slot 75, `FUN_001389a8`) | 0x36 at him |
-//! | a dunk's slam | 0x40 (slot 39), the crowd's 0x48 by the dunk's power (slot 26) |
+//! | a passout off the board or a defender's head goes on to its second leg (slot 39, `FUN_00148378`) | 0x40 at the ball (word 1 off the board, 0 off a head), the crowd's 0x25 |
+//! | a basket (slot 26, `0x1a3b10`) | a dunk's or alley-oop's (outside a gamebreaker) 0x48 at the ball by the finish (100..900); HUD 9, or the win/loss sting at the game's end; 0x3e at the ball; the crowd's 0x27 by the shooter's side |
 //! | a block (slot 16, `0x1a4ce8`) | 0x39 (whether the blocker holds the ball), with the block flag sweetener 0x4a 3, crowd 0x27, exertion |
 //! | a steal or counter (slot 15, `0x1a63e0`) | crowd 0x27, 0x49 |
 //! | the tip-off caught from the referee's toss (slot 22, `0x1a5d10`: ball state 7) | crowd 0x25 |
@@ -121,7 +122,7 @@ pub(crate) mod ev {
     /// courts' ambience (module 14922) take its three percents.
     pub const COMMENTATOR_DUCK: i32 = 0x24;
     /// The crowd's calls through `FUN_001a75a8` (`[event, leads]`): 0x25
-    /// a cheer (the tip-off, a dunk's slam), 0x27 a cheer for a block, a
+    /// a cheer (the tip-off, a passout's bounce), 0x27 a cheer for a basket, a block, a
     /// steal or a rebound, 0x29 a gasp (a fall, a trick landing).
     pub const TIP_CROWD: i32 = 0x25;
     pub const CROWD_CALL: i32 = 0x27;
@@ -139,7 +140,8 @@ pub(crate) mod ev {
     pub const NET: i32 = 0x3e;
     /// A jump shot's long flight (slot 11, `0x1a4738`).
     pub const LOB: i32 = 0x3f;
-    pub const SLAM: i32 = 0x40;
+    /// A passout's bounce on to its second leg (slot 39, `0x1a5d50`).
+    pub const PASSOUT: i32 = 0x40;
     pub const CROWD_BIG: i32 = 0x41;
     /// A dunker's hands on the rim (slot 42).
     pub const RIM_HOLD: i32 = 0x43;
@@ -1656,34 +1658,56 @@ pub(crate) fn fire_events(
                 // The rim's sounds are the contacts' and the hands'
                 // (`Event::BallHit`, `Event::RimHold`); a jumper's swish is
                 // the net's 0x3e.
-                let _ = hd;
+                let _ = (ha, hd);
+                // A dunk or an alley-oop's finish (the ball's kind 3 or 4)
+                // outside a gamebreaker (`FUN_00141018`): 0x48 at the ball
+                // by the scorer's finish (actor+0x24c, the table at
+                // `0x45be50`: 100, 300, 500, 700, 900; `0x1a40c4..0x1a4184`).
                 match basket {
-                    Basket::Dunk { advanced } => {
-                        fx.fire(&[ev::SLAM, ha, 1000, i32::from(advanced)]);
-                        let power = if advanced { 700 } else { 300 };
-                        fx.fire(&[ev::DUNK_CROWD, ba, power]);
+                    Basket::Dunk { .. } | Basket::AlleyOop { .. } => {
+                        let finish = w.players.get(player).map_or(0, |p| {
+                            street_sim::dunk_move_level(p.action_buttons).clamp(0, 4)
+                        });
+                        fx.fire(&[ev::DUNK_CROWD, ba, 100 + 200 * finish]);
                     }
-                    Basket::AlleyOop { .. } => {
-                        fx.fire(&[ev::SLAM, ha, 1000, 1]);
-                        fx.fire(&[ev::DUNK_CROWD, ba, 900]);
-                    }
-                    Basket::Gamebreaker { .. } => {
-                        fx.fire(&[ev::SLAM, ha, 1000, 1]);
-                        fx.fire(&[ev::DUNK_CROWD, ba, 900]);
-                        fx.stop_loop(ev::GAMEBREAKER_LOOP);
-                    }
+                    Basket::Gamebreaker { .. } => fx.stop_loop(ev::GAMEBREAKER_LOOP),
                     Basket::Jumper { .. } | Basket::Layup => {}
                 }
-                fx.fire(&[ev::HUD, side(team_of(player)), 9]);
+                // The game won (vt+0xbc, `0x1a42cc..0x1a448c`): 0x3d 1 but
+                // in a staged script, then the sting for the side a person
+                // plays (kind 1 won, 0 lost, panned to it; both sides
+                // people: kind 1 at the scorer's side). Otherwise HUD 9.
+                if let Phase::Over { winner } = w.phase {
+                    if w.sequence.is_none() {
+                        fx.fire(&[ev::CROWD, 1]);
+                    }
+                    let human = [w.teams[0].human, w.teams[1].human];
+                    let (pan_side, won) = match human {
+                        [true, true] => (team_of(player), true),
+                        [true, false] => (0, winner == 0),
+                        _ => (1, winner == 1),
+                    };
+                    fx.fire(&[ev::HUD, side(pan_side), i32::from(won)]);
+                } else {
+                    fx.fire(&[ev::HUD, side(team_of(player)), 9]);
+                }
                 fx.fire(&[ev::NET, ba, bd]);
                 // A dunk: a teammate hypes it (slot 26, `0x1a41cc`).
                 if matches!(basket, Basket::Dunk { .. } | Basket::AlleyOop { .. }) {
                     let mate = teammate(w, player);
                     fx.say(speech.as_deref_mut(), mate, 5, at(player_at(mate)));
                 }
-                if !matches!(w.phase, Phase::Over { .. }) {
-                    fx.fire(&[ev::CROWD, 1]);
-                }
+                // The crowd's call (`FUN_001a7708`): 0x27 by the shooter's
+                // side (actors 3..5 are side 1).
+                fx.fire(&[ev::CROWD_CALL, i32::from(team_of(player) == 1)]);
+            }
+            // A passout's first leg ended and the ball goes on (slot 39,
+            // `0x1a5d50`): 0x40 at the ball with word 1, 1000; the
+            // crowd's 0x25 (the head's commentary is `audio.rs`'s).
+            Event::PassoutBounce { head } => {
+                let (ba, _) = at(ball);
+                fx.fire(&[ev::PASSOUT, ba, 1000, i32::from(!head)]);
+                fx.fire(&[ev::TIP_CROWD]);
             }
             Event::RimOut => {
                 // A missed shot (slot 27, `0x1a4550`, posted by `0x14d1f8`
@@ -2574,11 +2598,12 @@ mod tests {
             let crowd = listen(&mut fx, &mut src, 2000);
             eprintln!("{court:?}: crowd {hushed} hushed, {crowd} after the tip");
             assert!(crowd > 0.002, "{court:?}: the crowd plays ({crowd})");
-            // A dribble, a catch, a dunk's slam: each adds to the crowd.
+            // A dribble, a catch, a passout's bounce: each adds to the
+            // crowd.
             for msg in [
                 vec![ev::FLOOR, 0, 200, 1000],
                 vec![ev::REBOUND, 0, 200],
-                vec![ev::SLAM, 0, 1000, 1],
+                vec![ev::PASSOUT, 0, 1000, 1],
                 vec![ev::HUD, 0x2000, 9],
                 vec![ev::EXERTION, 0, 200, 1],
                 // A block's swing, a reach (slots 7, 8), a body knocked

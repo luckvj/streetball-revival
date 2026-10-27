@@ -1717,7 +1717,7 @@ pub(crate) fn score_update_packet(
 /// third violation 0xd, the basket's `0x1a3b10` (0xf for the winning one,
 /// else every fourth basket past 3 a side 0xb, else 1 a dunk or 0xc a
 /// shot; a gamebreaker's basket 2 through `0x1a6b80`), a miss's
-/// `0x1a4550` 0xe, a slam's `0x1a5d50` 0x13, the end's `0x1a5638` 6, and
+/// `0x1a4550` 0xe, a head passout's `0x1a5d50` 0x13, the end's `0x1a5638` 6, and
 /// at the first script's end (slot 61, `0x1a56b0`) the court's 3.
 #[allow(clippy::too_many_arguments)]
 fn match_sounds(
@@ -1980,23 +1980,12 @@ fn match_sounds(
                     false,
                 ));
             }
-            // Slot 39 (`0x1a5d50`) as `0x148378` posts it at a dunker's
-            // slam: its word 0 (not the high-flying segment that gives 1)
-            // calls the slam (0x13, root chance 50). The rewrite's reading:
-            // an advanced dunk is the high one.
-            Event::Slam { player, .. } => {
-                let high = world.players.get(player).is_some_and(|p| {
-                    matches!(
-                        p.action,
-                        street_sim::Action::Dunking {
-                            style: street_sim::player::DunkStyle::Advanced,
-                            ..
-                        }
-                    )
-                });
-                if !high {
-                    packets.push((speech::words_packet(0x13, &[2]), false));
-                }
+            // Slot 39 (`0x1a5d50`), which the passout's legs post as the
+            // ball goes on to its second leg (`FUN_00148378`): with word 0,
+            // off a defender's head, the commentator's PassOut (0x13, words
+            // [2], root chance 50); off the board (word 1) nothing.
+            Event::PassoutBounce { head: true } => {
+                packets.push((speech::words_packet(0x13, &[2]), false));
             }
             // Slot 56 (`0x1a5638`, posted by `0x13e4c8` when a person
             // plays): the closing line, over any call (event 6 sets +0x68).
