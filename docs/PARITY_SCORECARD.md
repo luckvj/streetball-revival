@@ -4,8 +4,8 @@ Whole-game accuracy: **not yet measurable**. This is a version-1 inventory of se
 behavior obligations, not a representative or complete sample of the entire game.
 Feature coverage and passing rewrite tests do not establish original-game parity.
 
-Active inventory: **211 obligations**; **168 matched**, **24 known differences**, **19 untested/unresolved**.
-Matched acceptance: 23 exact, 19 numerical, 126 structural.
+Active inventory: **211 obligations**; **169 matched**, **24 known differences**, **18 untested/unresolved**.
+Matched acceptance: 23 exact, 19 numerical, 127 structural.
 Separately tracked: 1 deferred; 0 outside original-parity scope.
 
 A match is limited to its stated scenario, evidence and tolerance. Static source agreement
@@ -24,7 +24,7 @@ a paired-output equality result. None alone proves an entire subsystem accurate.
 | Audio | 16 | 3 | 0 | 1 | 0 |
 | Gameplay and animation | 26 | 27 | 16 | 3 | 0 |
 | Modes, progression and saves | 17 | 7 | 2 | 1 | 1 |
-| Presentation, camera and menus | 14 | 58 | 6 | 14 | 0 |
+| Presentation, camera and menus | 15 | 58 | 6 | 13 | 0 |
 
 ## Bounded numerical comparisons
 
@@ -3091,9 +3091,9 @@ A zero exact-match count can coexist with very small numerical errors; read the 
   - Evidence: `$EVIDENCE/street-select/c5_ask_720.png` — whole frame; 1280x720: in the pillarboxed 4:3.
   - Evidence: `$EVIDENCE/street-select/c28_ask_720.png` — whole frame; 1280x720: in the pillarboxed 4:3.
   - Evidence: `$EVIDENCE/street-select/wiz_ask_720.png` — whole frame; 1280x720: in the pillarboxed 4:3.
-- **presentation.ui_pc_settings_rewrite_rows** — untested / structural / static / active: The rewrite's own rows and notice stay off the original's screens (Vj, 2026-10-20): Online, Watch A Game and the created teams' list are rows of the rewrite's PC Settings page (Options, Adjust Screen), not buttons on Main, Play It or My Team, whose Select asks the original's question; the project's notice ("Streetball Revival: an unofficial rebuild of / the original game, written from scratch. / Every model, texture, animation and / number is read from your own disc. / the original game: the publisher and NuFX, 2003.") stands under PC Settings' rows, word for word as the rewrite's credits page had it before d3af7d9.
+- **presentation.ui_pc_settings_rewrite_rows** — matched / structural / static / active: The rewrite's own rows and notice stay off the original's screens (Vj, 2026-10-20): Online, Watch A Game and the created teams' list are rows of the rewrite's PC Settings page (Options, Adjust Screen), not buttons on Main, Play It or My Team, whose Select asks the original's question; the project's notice ("Streetball Revival: an unofficial rebuild of / the original game, written from scratch. / Every model, texture, animation and / number is read from your own disc. / the original game: the publisher and NuFX, 2003.") stands under PC Settings' rows, word for word as the rewrite's credits page had it before d3af7d9.
   - Acceptance: Nothing of the rewrite's on the original's screens; the notice word for word.
-  - Limits: The rewrite's own page (behind the one accepted difference, presentation.ui_adjust_screen_pc_settings), not a parity with the original: the obligation is that the original's screens stay the original's. The notice's words as d3af7d9^:crates/street-game/src/menu.rs's Page::Credits had them. 2026-10-20 (online on the disc): README's Playing online now says a match online plays the rules of a match alone, its replays too, everyone needing the same release's disc (gameplay.online_rules_equal_local); the rows are unchanged. 2026-10-21: Vj asked for Online one press from the Main Menu: Select there opens it, and the Main Menu's legend shows SELECT Online beside the original's Help (look::with_online_pair), an accepted change to the original's Main screen. Last re-pinned 2026-10-26 after the maximized window and PC Settings' notice (re-pins that leave the cited region unchanged replace this line).
+  - Limits: The rewrite's own page (behind the one accepted difference, presentation.ui_adjust_screen_pc_settings), not a parity with the original: the obligation is that the original's screens stay the original's. The notice's words as d3af7d9^:crates/street-game/src/menu.rs's Page::Credits had them. 2026-10-20 (online on the disc): README's Playing online now says a match online plays the rules of a match alone, its replays too, everyone needing the same release's disc (gameplay.online_rules_equal_local); the rows are unchanged. 2026-10-21: Vj asked for Online one press from the Main Menu: Select there opens it, and the Main Menu's legend shows SELECT Online beside the original's Help (look::with_online_pair), an accepted change to the original's Main screen. Last re-pinned 2026-10-26 after the README's feedback lines (re-pins that leave the cited region unchanged replace this line).
   - Next: None.
   - Evidence: `docs/FRONTEND_RECOVERY.md` — Select's questions and the rewrite's own rows (2026-10-20): The rewrite's own rows; Where each went.
   - Evidence: `crates/street-game/src/options.rs` — pc; NOTICE; pc_items; pc_help; pc_step; tests::every_row_steps_and_wraps; The rows and the notice.
@@ -3103,7 +3103,6 @@ A zero exact-match count can coexist with very small numerical errors; read the 
   - Evidence: `$EVIDENCE/street-select/pcs.png` — whole frame; PC Settings with its rows and the notice.
   - Evidence: `$EVIDENCE/street-select/pcs_online.png` — whole frame; Online lit: "Host or join a match over the network."
   - Evidence: `$EVIDENCE/street-select/pcs_720.png` — whole frame; 1280x720: no overlap.
-  - Changed since review: README.md
 - **presentation.online_instant_replays** — matched / structural / runtime / active: Online matches play the game's replays as a match alone does: a basket's instant replay (the director's roll on the shared generator; the match plays its creator's Replays option), the won game's forced replay, the gamebreaker task's two slowed replays, a person's replay and cancel presses. The original's replay manager holds the gameplay while a replay plays (FUN_0033d380(0x401b2) suspends the gameplay task groups), so the manager, director and task are simulated (street_sim::replay, their control alone) and the online Match steps them on every machine after the world: while a replay plays the world isn't stepped and its clock stands still while the match's tick, the network's, runs on; the replays and the match's tick are in the match's snapshot and checksum; each machine shows its own drawing of the updates replayed (tape.rs); a finished match stays up from the end of its won game's replay.
   - Acceptance: The same replays at the same match ticks on every machine; no confirmed state differing; the game's replay tests passing unchanged with the control moved.
   - Limits: The frames a replay shows are each machine's own drawing of the updates: a remote pad that arrived late can leave a tick or two of a guess among them (the match itself is never affected), and where a machine stepped two ticks in one frame a tick shows the frame before. The staged Level 2 gamebreaker's rerun is presentation.online_staged_rerun. The replays' behaviour against the original is presentation.effects_and_replay_runtime's. 2026-10-20 (the online pass's last gaps): the staged Level 2's rerun is a replay too, mode 7 (presentation.online_staged_rerun); the match holds the world through it and through its script's own end update (Replays::holds_world); the determinism test counts the staged reruns at the referee's ticks on every machine. 2026-10-23: the match's snapshot and checksum carry the burst hold too (protocol 23). Last re-pinned 2026-10-26 after the distance tables' sort (re-pins that leave the cited region unchanged replace this line).
