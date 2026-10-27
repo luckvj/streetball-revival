@@ -8,6 +8,9 @@ its version's part.
 - **Passout pop-ups** show the points the passout scored, as in the
   original: 5,000 off a defender's head, 3,000 off the board, less when
   repeated (they always read 3,000).
+- **The swing sound** plays when a blocker's hands first miss the ball
+  and when a swipe knocks it loose, as in the original, not at every
+  block jump's take-off.
 
 ## v0.1.3-beta
 
