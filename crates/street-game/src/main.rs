@@ -93,6 +93,7 @@ mod smooth;
 pub mod song;
 pub mod squeak;
 pub mod staged;
+mod steam;
 pub mod story;
 pub mod tape;
 pub mod teams;

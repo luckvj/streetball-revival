@@ -11,9 +11,9 @@
 //! resting heights, sizes and spread (0x1f4248) and its motion (0x1f4950,
 //! [`crate::drift`]), the vents' places and the way they blow, 40 particles
 //! to a vent (0x20a4d0), six breathers (0x2f3b30) and the particle image
-//! (`smoke.ssh` in `/XF/XF000003`). The steam's and the breath's motion is
-//! not: their updates run on vector-unit code, so the speeds, lifetimes
-//! and sizes here are chosen to look the part.
+//! (`smoke.ssh` in `/XF/XF000003`), and the steam's (0x20a5c8,
+//! [`crate::steam`]). The breath's motion is not: the speeds, lifetimes and
+//! sizes here are chosen to look the part.
 
 use std::{collections::BTreeMap, f32::consts::PI};
 
@@ -131,14 +131,17 @@ impl Plugin for AmbiencePlugin {
         )
         .add_systems(
             FixedUpdate,
-            (light_hoop, blow_litter.run_if(|p: Res<Paused>| !p.on))
+            (
+                light_hoop,
+                (blow_litter, vent_steam).run_if(|p: Res<Paused>| !p.on),
+            )
                 .after(crate::game::SimStep)
                 .run_if(in_state(Screen::Playing))
                 .run_if(crate::options::effects_on),
         )
         .add_systems(
             Update,
-            (vent_steam, breathe, burn, fade_puffs)
+            (breathe, burn, fade_puffs)
                 .chain()
                 .run_if(in_state(Screen::Playing))
                 .run_if(|p: Res<Paused>| !p.on)
@@ -167,10 +170,11 @@ struct Puff {
 
 /// A vent, emitting at its own rate.
 #[derive(Component)]
-struct Vent {
-    steam: Steam,
-    next: f32,
-}
+struct Vent(crate::steam::Vent);
+
+/// One of a vent's puffs on screen: its vent and index.
+#[derive(Component)]
+struct SteamPuff(Entity, usize);
 
 /// The shared look of every puff, and the breathers' timers.
 #[derive(Resource)]
@@ -182,7 +186,8 @@ struct Puffs {
     burning: Option<(Vec3, f32)>,
     /// A burst to throw from this rim.
     burst: Option<Vec3>,
-    wind: Vec3,
+    /// The court's wind in feet a frame, as the steam reads it.
+    court_wind: [f32; 3],
     cold: bool,
     breath: [f32; 6],
     rng: u32,
@@ -199,10 +204,6 @@ impl Puffs {
     }
 }
 
-/// Steam: 40 particles alive to a vent (0x20a4d0), each this long.
-const STEAM_LIFE: f32 = 2.6;
-const STEAM_PARTICLES: f32 = 40.0;
-
 fn spawn_ambience(
     mut commands: Commands,
     scene: Res<Scene>,
@@ -212,9 +213,6 @@ fn spawn_ambience(
 ) {
     let a = &scene.ambience;
     let scoped = DespawnOnExit(Screen::Playing);
-    let wind = a.wind.map_or(Vec3::ZERO, |w| {
-        Vec3::new(w.direction[0], 0.0, w.direction[1]).normalize_or_zero() * w.speed
-    });
     let mut puffs = Puffs {
         quad: meshes.add(Rectangle::new(1.0, 1.0)),
         image: a
@@ -227,7 +225,9 @@ fn spawn_ambience(
             .map(|t| images.add(street_render::convert::image(t))),
         burning: None,
         burst: None,
-        wind,
+        court_wind: a.wind.map_or([0.0; 3], |w| {
+            crate::steam::court_wind(w.speed, w.direction[0], w.direction[1])
+        }),
         cold: a.cold,
         breath: [0.0; 6],
         rng: 0x002f_3b30 ^ scene.court.id.len() as u32,
@@ -263,15 +263,37 @@ fn spawn_ambience(
             .insert((LitterPiece(i), scoped.clone()));
     }
     commands.insert_resource(Litter(drift));
-    for steam in &a.steam {
-        commands.spawn((
-            Vent {
-                steam: *steam,
-                next: 0.0,
-            },
-            Transform::from_translation(Vec3::from_array(steam.at)),
-            scoped.clone(),
-        ));
+    for (k, steam) in a.steam.iter().enumerate() {
+        let vent = commands
+            .spawn((
+                Vent(crate::steam::Vent::new(
+                    steam.at,
+                    steam.blow,
+                    puffs.rng ^ (k as u32 + 1).wrapping_mul(0x9e37_79b9),
+                )),
+                Transform::from_translation(Vec3::from_array(steam.at)),
+                scoped.clone(),
+            ))
+            .id();
+        for i in 0..crate::steam::PUFFS {
+            let material = materials.add(StandardMaterial {
+                base_color: Color::linear_rgba(1.0, 1.0, 1.0, 0.0),
+                base_color_texture: puffs.image.clone(),
+                alpha_mode: AlphaMode::Blend,
+                unlit: true,
+                cull_mode: None,
+                ..default()
+            });
+            commands.spawn((
+                Mesh3d(puffs.quad.clone()),
+                MeshMaterial3d(material),
+                Transform::from_translation(Vec3::from_array(steam.at))
+                    .with_scale(Vec3::splat(crate::steam::SIZE)),
+                Visibility::Hidden,
+                SteamPuff(vent, i),
+                scoped.clone(),
+            ));
+        }
     }
     commands.insert_resource(puffs);
 }
@@ -354,31 +376,41 @@ fn puff_with(
     ));
 }
 
+/// One frame of each vent (`FUN_0020a5c8`) in the court's wind, and its
+/// puffs drawn where it puts them: white, the engine's alpha (128 is 1),
+/// turned to the camera.
 fn vent_steam(
-    mut commands: Commands,
-    time: Res<Time>,
-    puffs: Option<ResMut<Puffs>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    puffs: Option<Res<Puffs>>,
+    camera: Query<&GlobalTransform, With<SidelineCamera>>,
     mut vents: Query<&mut Vent>,
+    mut sprites: Query<(
+        &SteamPuff,
+        &mut Transform,
+        &mut Visibility,
+        &MeshMaterial3d<StandardMaterial>,
+    )>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let Some(mut puffs) = puffs else { return };
-    let dt = time.delta_secs();
+    let Some(puffs) = puffs else { return };
+    let wind = puffs.court_wind;
     for mut vent in &mut vents {
-        vent.next -= dt;
-        while vent.next <= 0.0 {
-            vent.next += STEAM_LIFE / STEAM_PARTICLES;
-            let blow = Vec3::from_array(vent.steam.blow);
-            let jitter = Vec3::new(puffs.roll() - 0.5, 0.0, puffs.roll() - 0.5) * 0.6;
-            let velocity = Vec3::Y * 4.0 + blow * 2.0 + puffs.wind * 0.1 + jitter * 2.0;
-            let p = Puff {
-                age: 0.0,
-                life: STEAM_LIFE * (0.8 + 0.4 * puffs.roll()),
-                velocity,
-                size: (1.5, 7.0),
-                opacity: 0.4,
-            };
-            let at = Vec3::from_array(vent.steam.at) + jitter;
-            puff(&mut commands, &puffs, &mut materials, at, p);
+        vent.0.step(wind);
+    }
+    let facing = camera.single().map(|c| c.rotation()).unwrap_or_default();
+    for (sprite, mut t, mut shown, material) in &mut sprites {
+        let Ok(vent) = vents.get(sprite.0) else {
+            continue;
+        };
+        let p = vent.0.puffs[sprite.1];
+        if p.life == 0 {
+            *shown = Visibility::Hidden;
+            continue;
+        }
+        *shown = Visibility::Inherited;
+        t.translation = Vec3::from_array(p.position);
+        t.rotation = facing;
+        if let Some(mut m) = materials.get_mut(&material.0) {
+            m.base_color.set_alpha((p.alpha / 128.0).min(1.0));
         }
     }
 }

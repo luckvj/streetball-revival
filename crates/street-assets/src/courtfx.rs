@@ -67,7 +67,8 @@ pub struct Wind {
 }
 
 /// A steam vent (`PS_STEAM`, type 7 at 0x20a4d0): where it is and the way
-/// its steam blows (normalised; zero for straight up).
+/// its steam blows, as written (feet a frame added to each puff's rise;
+/// the handler, `0x2f41a0..0x2f4258`, passes it on unchanged).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Steam {
     pub at: [f32; 3],
@@ -166,15 +167,9 @@ impl CourtFx {
                 let [x, y, z, dx, dy, dz] = f[..] else {
                     return None;
                 };
-                let len = (dx * dx + dy * dy + dz * dz).sqrt();
-                let blow = if len > 0.0 {
-                    [dx / len, dy / len, dz / len]
-                } else {
-                    [0.0; 3]
-                };
                 Some(Steam {
                     at: [x, y, z],
-                    blow,
+                    blow: [dx, dy, dz],
                 })
             })
             .collect()
@@ -240,7 +235,7 @@ mod tests {
             fx.steam(),
             [Steam {
                 at: [-61.808, 6.2257, 10.181],
-                blow: [1.0, 0.0, 0.0]
+                blow: [0.1, 0.0, 0.0]
             }]
         );
         assert!(!fx.cold());
