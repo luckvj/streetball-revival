@@ -626,8 +626,9 @@ pub fn cues(
                 link.post(Command::Stop);
                 link.next = true;
             }
-            // The game's trick levels run 0..4; its top two get stingers.
-            Event::Trick { level, .. } if level >= 4 => {
+            // The game's trick levels run 0..4; its top two get stingers
+            // as the trick starts (slot 2, `0x1a61f4..0x1a6264`).
+            Event::TrickStart { level, .. } if level >= 4 => {
                 let now = time.elapsed_secs_f64();
                 if now - link.last_stinger > 2.0 {
                     link.last_stinger = now;

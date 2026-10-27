@@ -393,6 +393,15 @@ pub enum Event {
         /// The trick points it was worth (team `+0x24`, the HUD's pop-up).
         points: u32,
     },
+    /// A trick move started (class `0x3c6490`, the listeners' slot 2,
+    /// posted as the trick's script starts: the trick press `0x15f5fc`,
+    /// the two-person freestyle `0x15cdb4`): `level` its value class plus
+    /// one (actor+0x248), `script` its script (actor+0x264).
+    TrickStart {
+        player: usize,
+        level: u8,
+        script: u16,
+    },
     /// The handler lost the ball mid-trick. No longer sent: a trick alone
     /// never loses the ball in the original (`World::score_trick`); kept
     /// for the snapshot's and the listeners' sake.

@@ -1333,6 +1333,12 @@ impl World {
                 ..Play::new(id.script, left, word)
             },
         };
+        // Slot 2 as the script starts (`0x15f5e8..0x15f60c`).
+        self.events.push(crate::Event::TrickStart {
+            player: i,
+            level: id.level + 1,
+            script: id.script,
+        });
     }
 
     /// The holder's juke press (pad +0x7c & 0x10, `FUN_0015a060`
@@ -1431,6 +1437,12 @@ impl World {
             play.faked = Some(d as u8);
         }
         self.players[i].action = Action::Trick { id, play };
+        // Slot 2 as the freestyle's script starts (`0x15cdac..0x15cdc4`).
+        self.events.push(crate::Event::TrickStart {
+            player: i,
+            level: id.level + 1,
+            script: id.script,
+        });
         true
     }
 
