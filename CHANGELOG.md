@@ -20,6 +20,9 @@ its version's part.
   pass bouncing off the board or a defender's head now plays them, as in
   the original. The dunk's crowd roar now scales with the dunk's finish,
   and the game-winning basket plays the win or loss sting.
+- **Trick sounds on time:** a trick's whoosh, the signature players' own
+  trick sounds and the music sting for the biggest tricks now play as the
+  move starts, not when it ends.
 - **Trick and dunk pop-ups:** a dunk no longer pops up the last trick's
   name as it leaves the hands. A trick's name shows in crowns only when it
   faked a defender out, and only those tricks get the crowd's gasp, the

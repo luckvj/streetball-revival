@@ -1053,11 +1053,20 @@ fn a_still_fresh_holders_juke_press_clears_out() {
         assert_eq!(w.teams[0].trick_points, 0);
     }
     assert!(knocked > 0);
-    // Moving, or once he has dribbled, the press is a trick.
+    // Moving, or once he has dribbled, the press is a trick, which posts
+    // slot 2 as it starts (the clearout posts none).
     let mut w = face_off(1);
     w.players[0].dribble = 1;
     w.step(&[buttons(button::TRICK), Input::default()]);
     assert!(w.players[0].action.juking());
+    let Action::Trick { id, .. } = w.players[0].action else {
+        unreachable!()
+    };
+    assert!(w.events.contains(&Event::TrickStart {
+        player: 0,
+        level: id.level + 1,
+        script: id.script,
+    }));
 }
 
 #[test]

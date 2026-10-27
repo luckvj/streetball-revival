@@ -108,8 +108,8 @@ use crate::{
 /// [`Event::RimHold`]), the dribble's speed and the slam's shake
 /// ([`Event::SlamShake`]), every take ([`Event::Take`]); 97: a head into
 /// the board ([`Event::RimBump`]); 98: a passout's bounce
-/// ([`Event::PassoutBounce`]).
-const VERSION: u8 = 98;
+/// ([`Event::PassoutBounce`]); 99: a trick's start ([`Event::TrickStart`]).
+const VERSION: u8 = 99;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -3147,6 +3147,16 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(44);
             w.bool(head);
         }
+        Event::TrickStart {
+            player,
+            level,
+            script,
+        } => {
+            w.u8(45);
+            w.us(player);
+            w.u8(level);
+            w.uv(u64::from(script));
+        }
         Event::Pick { screener, defender } => {
             w.u8(24);
             w.us(screener);
@@ -3288,6 +3298,11 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
         42 => Event::Take { player: r.us()? },
         43 => Event::RimBump { player: r.us()? },
         44 => Event::PassoutBounce { head: r.bool()? },
+        45 => Event::TrickStart {
+            player: r.us()?,
+            level: r.u8()?,
+            script: u16::try_from(r.uv()?).map_err(|_| "invalid trick script")?,
+        },
         24 => Event::Pick {
             screener: r.us()?,
             defender: r.us()?,

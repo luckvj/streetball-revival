@@ -1192,6 +1192,18 @@ impl World {
                 | Event::Cancel { team: t } => team(t)?,
                 Event::GameOver { winner } => team(winner)?,
                 Event::ReplayRoll { .. } => {}
+                Event::TrickStart {
+                    player: p,
+                    level: l,
+                    script,
+                } => {
+                    player(p)?;
+                    level(l, 1, 5, "event trick start level")?;
+                    require(
+                        usize::from(script) < crate::trick::SCRIPTS.len(),
+                        "event trick start script",
+                    )?;
+                }
                 Event::Trick {
                     player: p,
                     level: l,

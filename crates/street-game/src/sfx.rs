@@ -1798,26 +1798,33 @@ pub(crate) fn fire_events(
                     speech.override_busy = false;
                 }
             }
-            Event::Trick {
+            // A trick's start (slot 2, `0x1a61b8`): the game's levels count
+            // from 0; 0..2 get a sweetener, the higher ones a music stinger
+            // instead (`song.rs`); then the signature sound for four
+            // players' own moves (else event 0x4b, which the routing
+            // `0x19ed30` drops).
+            Event::TrickStart {
                 player,
                 level,
                 script,
-                fakeout,
-                ..
             } => {
-                // The game's levels count from 0; 0..2 get a sweetener, the
-                // higher ones a music stinger instead (`song.rs`).
                 let game_level = i32::from(level) - 1;
                 let (a, d) = at(player_at(player));
                 if (0..3).contains(&game_level) {
                     fx.fire(&[ev::SWEETENER, a, d, 1000, 7 + game_level]);
                 }
-                // Then the signature sound for four players' own moves
-                // (else event 0x4b, which the routing `0x19ed30` drops).
                 let bit = fx.signatures.get(player).copied().unwrap_or(0);
                 if let Some(kind) = trick_signature(script, bit) {
                     fx.fire(&[ev::SIGNATURE, a, kind]);
                 }
+            }
+            Event::Trick {
+                player,
+                level,
+                fakeout,
+                ..
+            } => {
+                let (a, d) = at(player_at(player));
                 // The move ends (slot 13, `FUN_001a5a78`, posted by the
                 // actor's update as bit 10 drops with the ball held,
                 // `0x157e44`, its word +8 the qualifier actor+0x218): HUD
