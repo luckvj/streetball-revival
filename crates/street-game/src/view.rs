@@ -4321,8 +4321,27 @@ pub fn sync_ball(
     joints: Query<&GlobalTransform>,
     mut balls: Query<&mut Transform, With<BallView>>,
     mut ball_shown: Query<&mut Visibility, With<BallView>>,
+    mut turned: Local<(u64, Quat)>,
 ) {
     let _ = &time;
+    // The ball's orientation (ball+0x50): turned each update by its spin
+    // about its axis (`ball+0x14c`, `+0x70`), held (`0x14f5d4..0x14f660`)
+    // or free (`FUN_0014d1f8`).
+    let tick = sim.world.tick;
+    let (last, q) = &mut *turned;
+    if tick < *last || tick - *last > 8 {
+        *last = tick;
+    }
+    let axis = Vec3::from_array(sim.world.ball.spin_axis);
+    while *last < tick {
+        *last += 1;
+        if axis.length_squared() > 1e-8 {
+            *q = (Quat::from_axis_angle(axis.normalize(), sim.world.ball.spin) * *q).normalize();
+        }
+    }
+    for mut transform in &mut balls {
+        transform.rotation = *q;
+    }
     let shown = if game_ended(&sim.world, tape.as_deref()) {
         Visibility::Hidden
     } else {

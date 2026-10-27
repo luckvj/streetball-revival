@@ -26,8 +26,13 @@
 //! hand on it). The rewrite's own: the hands are posed as [`crate::pose`]
 //! poses a clip; the channel blends (flag 0x200000, `DAT_004b8380`) and the
 //! cached ends (ball+0xc0, +0xe0, reused while the clip and both frames
-//! stay) are not modelled, nor the ball's spin. The bounce's sound (event
-//! 0x3c6670) is [`World::dribble_bounce`]'s.
+//! stay) are not modelled. On a clip that carries it on the floor the ball
+//! rolls (`0x14efd4..0x14f0ac`): its spin axis is up × its way across since
+//! the update before (ball+0x80), made unit, and its spin that way over its
+//! radius (none, about up, when the axis is under 0.0001); elsewhere in
+//! the hands it keeps the spin it had, and the ball update turns it by that
+//! spin every update it is held ([`World::place_held`]). The bounce's
+//! sound (event 0x3c6670) is [`World::dribble_bounce`]'s.
 
 use crate::pose::{self, Body, Frame, Place, Pose, Poses};
 
@@ -162,6 +167,8 @@ pub enum Dribbled {
     /// In flight: the clip's way `t` from the release to the catch, and
     /// the share of it the fall to the floor takes (`0x14f0e0`).
     Flight { t: f32, fall: f32 },
+    /// Carried on the floor, rolling.
+    Floor,
 }
 
 /// [`ball_point`] with where the dribble has the ball ([`Dribbled`]), none
@@ -255,6 +262,7 @@ pub fn ball_place(
         // Hand to hand.
     } else if on_floor {
         at[1] = radius;
+        dribbled = Some(Dribbled::Floor);
     } else {
         // The bounce (`0x14efd4..0x14f128`).
         let (da, db) = (a[1] - radius, b[1] - radius);
@@ -272,9 +280,41 @@ pub fn ball_place(
     Some((at, dribbled))
 }
 
+/// The roll on a clip that carries the ball on the floor
+/// (`0x14efd4..0x14f0ac`): the axis up × the way across from `before` to
+/// `now`, made unit, and that way over the radius; under 0.0001 none, about
+/// up.
+pub fn roll(before: [f32; 3], now: [f32; 3], radius: f32) -> ([f32; 3], f32) {
+    let d = [now[0] - before[0], now[2] - before[2]];
+    let axis = [d[1], 0.0, -d[0]];
+    let l = crate::math::len(axis[0], axis[2]);
+    if f32::from_bits(0x38d1_b717) < l {
+        (axis.map(|c| c / l), crate::math::len(d[0], d[1]) / radius)
+    } else {
+        ([0.0, 1.0, 0.0], 0.0)
+    }
+}
+
 /// Whether `record` dribbles: a frame of its clip lets the ball go (0x10).
 pub fn dribbles(poses: &Poses, record: u16) -> bool {
     poses
         .frames(record)
         .is_some_and(|n| (0..n as i32).any(|f| poses.state(record, f) & 0x10 != 0))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_ball_carried_on_the_floor_rolls_the_way_it_goes() {
+        // Moving 0.25 along +x at radius 0.47: about -z (up × +x), the top
+        // going the way it moves, 0.25 / 0.47 an update; standing, none.
+        let r = 0.46875;
+        let (axis, spin) = super::roll([1.0, r, 2.0], [1.25, r, 2.0], r);
+        assert_eq!(axis, [0.0, 0.0, -1.0]);
+        assert!((spin - 0.25 / r).abs() < 1e-6);
+        assert_eq!(
+            super::roll([1.0, r, 2.0], [1.0, r, 2.0], r),
+            ([0.0, 1.0, 0.0], 0.0)
+        );
+    }
 }
