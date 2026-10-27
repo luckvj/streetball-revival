@@ -243,6 +243,9 @@ pub struct TeamState {
     pub pump_fake: bool,
     /// Team meter+0x8: the possession the meter last saw at a catch.
     pub possession_seen: i32,
+    /// Team +0x5c: the last passout special's value (`FUN_00143a88`,
+    /// discounts included), which the HUD's passout pop-up shows.
+    pub passout_value: i32,
 }
 
 impl Default for TeamState {
@@ -264,6 +267,7 @@ impl Default for TeamState {
             paid: false,
             pump_fake: false,
             possession_seen: -1,
+            passout_value: 0,
         }
     }
 }

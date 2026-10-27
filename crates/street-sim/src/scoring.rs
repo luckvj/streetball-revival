@@ -443,13 +443,16 @@ impl World {
     /// passout's state `FUN_00142038` is 2), discounted by
     /// its key −3 (−2) in the side's repeat ring like a trick's.
     fn passout_value(&mut self, team: usize, passer: usize) -> i32 {
-        if self.passout.is_some_and(|po| {
+        let value = if self.passout.is_some_and(|po| {
             po.passer == passer && po.tossed && po.kind == crate::passout::Kind::Head
         }) {
             self.repeat_discount(team, -2, 5_000)
         } else {
             self.repeat_discount(team, -3, 3_000)
-        }
+        };
+        // Kept at team +0x5c (`0x143ab0..0x143b88`) for the pop-up.
+        self.teams[team].passout_value = value;
+        value
     }
 
     /// The receiver's move has flag 0x800 (`FUN_00171de8`): the advanced

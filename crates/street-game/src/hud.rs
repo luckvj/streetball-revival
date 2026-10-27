@@ -492,8 +492,8 @@ pub struct HudState {
     /// Each player's last dunk a putback (+0x1e4 1, a tip slam).
     pub tip_slam: Vec<bool>,
     pub last_trick_points: [i32; 2],
-    /// A passout special in the air (ball+0x1ac): its passer and value.
-    pub passout: Option<(usize, i32)>,
+    /// A passout special in the air (ball+0x1ac): its passer.
+    pub passout: Option<usize>,
     /// The HUD listener's +0xc: the last passout bounce's word 1 (slot 39,
     /// `0x2e2558`), true off the board, false off a head.
     pub passout_board: bool,
@@ -1078,8 +1078,7 @@ fn on_event(
         // A passout special thrown (ball+0x1ac set by its legs): kept
         // for its catch.
         Event::Pass { from, style, .. } => {
-            hud.passout = matches!(style, PassStyle::Glass | PassStyle::Heezay)
-                .then(|| (from, style.trick_points() as i32));
+            hud.passout = matches!(style, PassStyle::Glass | PassStyle::Heezay).then_some(from);
         }
         // Slot 39 (`0x2e2558`): the bounce's word 1 kept for the name.
         Event::PassoutBounce { head } => hud.passout_board = !head,
@@ -1089,9 +1088,10 @@ fn on_event(
         // Back at Ya (2) off the board, Off the Heezay (1) off a head; the
         // passer's own, Back 2 Papa (0) off the board, Off the Heezay off a
         // head. A flier whose move is advanced (`FUN_00171de8 & 0x800`)
-        // pops nothing. With its value (team `+0x5c`).
+        // pops nothing. With its value (team `+0x5c`: 3,000 off the board,
+        // 5,000 off a head, each discounted when repeated).
         Event::Catch { player } => {
-            if let Some((passer, value)) = hud.passout.take() {
+            if let Some(passer) = hud.passout.take() {
                 let flier = w.players.get(player).is_some_and(|p| p.leaping());
                 let board = hud.passout_board;
                 let index = if flier && board && player != passer {
@@ -1107,6 +1107,7 @@ fn on_event(
                     && !(flier && w.advanced_move(player))
                 {
                     let team = team_of(player);
+                    let value = w.teams[team.min(1)].passout_value;
                     hud.popup(team, name(&n.passouts, index), value, pocketed(team));
                 }
             }
@@ -2709,6 +2710,8 @@ mod tests {
         // (`FUN_002e2418`): back to the passer off the board, Back 2 Papa
         // (0); to a teammate off the board, Back at Ya (2); off a head, Off
         // the Heezay (1). Nothing at the throw.
+        w.teams[0].passout_value = 3_000;
+        w.teams[1].passout_value = 1_250;
         for (head, catcher, want) in [(false, 0, 0), (false, 1, 2), (true, 1, 1), (true, 0, 1)] {
             hud.popups = Default::default();
             let pass = Event::Pass {
@@ -2736,6 +2739,9 @@ mod tests {
             );
             let side = screen_side(w.players[catcher].team);
             assert_eq!(hud.popups[side][0].word, format!("passout {want}"));
+            // Its value is what the passout scored (team +0x5c).
+            let scored = w.teams[w.players[catcher].team].passout_value;
+            assert_eq!(hud.popups[side][0].points, scored.to_string());
         }
         // An advanced alley-oop's finish pops the finisher's dunk name.
         w.players[0].action = dunk(row as u8, DunkStyle::Normal);

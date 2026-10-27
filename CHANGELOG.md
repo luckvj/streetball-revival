@@ -3,6 +3,12 @@
 What changed in each release. The newest is first; the release page shows
 its version's part.
 
+## Unreleased
+
+- **Passout pop-ups** show the points the passout scored, as in the
+  original: 5,000 off a defender's head, 3,000 off the board, less when
+  repeated (they always read 3,000).
+
 ## v0.1.3-beta
 
 - **Controllers in matches (issue #1):** playing alone, every controller
