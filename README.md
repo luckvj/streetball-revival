@@ -10,8 +10,8 @@ a side, over the internet or a home network.
 > with friends and tell us how it goes.
 >
 > **Feedback welcome.** Join the [Discord](https://discord.com/invite/htu5pdxPQz) to report bugs, share
-> what feels different from the original, or find people to play online, or
-> find Vj on X/Twitter at [@UnLuckvj](https://x.com/UnLuckvj).
+> what feels different from the original, or find people to play online.
+> You can also reach Vj on X/Twitter at [@UnLuckvj](https://x.com/UnLuckvj).
 >
 > **Unofficial fan project.** Not affiliated with or endorsed by the original
 > game's makers or its league. It contains no game data: it plays from **your
