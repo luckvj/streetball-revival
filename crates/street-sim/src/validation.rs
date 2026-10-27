@@ -972,6 +972,7 @@ impl World {
                 paid: _,
                 pump_fake: _,
                 possession_seen,
+                passout_value,
             } = t;
             floats(
                 &[
@@ -1003,6 +1004,7 @@ impl World {
                 "recent trick key",
             )?;
             require((-1..=1).contains(possession_seen), "meter possession")?;
+            require((0..=5_000).contains(passout_value), "passout value")?;
         }
         match *phase {
             Phase::Live => {}

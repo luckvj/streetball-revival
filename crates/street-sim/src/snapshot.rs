@@ -110,8 +110,8 @@ use crate::{
 /// the board ([`Event::RimBump`]); 98: a passout's bounce
 /// ([`Event::PassoutBounce`]); 99: a trick's start ([`Event::TrickStart`]);
 /// 100: the inbound walk ([`Event::InboundWalk`], the AI game's
-/// `inbound_walk`).
-const VERSION: u8 = 100;
+/// `inbound_walk`); 101: the team's passout value (team +0x5c).
+const VERSION: u8 = 101;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -2691,6 +2691,7 @@ fn team(w: &mut Writer, t: &TeamState) {
         paid,
         pump_fake,
         possession_seen,
+        passout_value,
     } = t;
     w.uv((*trick_points).into());
     w.f(*meter_scale);
@@ -2716,6 +2717,7 @@ fn team(w: &mut Writer, t: &TeamState) {
     w.bool(*paid);
     w.bool(*pump_fake);
     w.iv((*possession_seen).into());
+    w.iv((*passout_value).into());
 }
 
 fn team_in(r: &mut Reader) -> Result<TeamState, String> {
@@ -2742,6 +2744,7 @@ fn team_in(r: &mut Reader) -> Result<TeamState, String> {
     let paid = r.bool()?;
     let pump_fake = r.bool()?;
     let possession_seen = r.i32()?;
+    let passout_value = r.i32()?;
     Ok(TeamState {
         trick_points,
         combo,
@@ -2759,6 +2762,7 @@ fn team_in(r: &mut Reader) -> Result<TeamState, String> {
         paid,
         pump_fake,
         possession_seen,
+        passout_value,
     })
 }
 
