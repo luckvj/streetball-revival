@@ -29,6 +29,9 @@ its version's part.
   does: leaves lie still, then a gust lifts them and they tumble back down;
   trash rolls along with the wind; pieces blown away come back in out of
   the camera's sight.
+- **Steam on the Philly court** rises and fades the way the original's
+  does, and leans with the court's wind; one vent's steam no longer shoots
+  sideways ten times too fast.
 
 ## v0.1.3-beta
 
