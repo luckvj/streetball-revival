@@ -496,6 +496,7 @@ impl Plugin for AudioPlugin {
             .init_resource::<AudioSettings>()
             .init_resource::<Sounds>()
             .init_resource::<SpeechManager>()
+            .init_resource::<Narration>()
             .init_resource::<MusicDuck>()
             .init_resource::<MenuSongCue>()
             .add_systems(Startup, load_front_end)
@@ -1302,6 +1303,86 @@ fn play_commentary(
     true
 }
 
+/// Street School's narration (`0x1ad510`, the sound listener's slots 78, 79
+/// and 82): what the School posted since the speech manager's last update,
+/// and the manager's waits. The School reports its launch, its results'
+/// commits and its tutorial pages; [`speech_service`] asks for the lines.
+#[derive(Resource, Debug, Default)]
+pub struct Narration {
+    /// The lesson (the game's vt+0xb0).
+    lesson: usize,
+    /// The singleton `0x19f7c8`'s +0x28: the tutorial page due. The launch
+    /// (`FUN_0018ec28`, `0x18ecd4..0x18ed28`) notes the lesson's first page
+    /// unless it is the Player Indicator's, `FUN_0018f540` the Shot Clock's
+    /// (`0x18f68c`); the page closing clears it (`0x251328`).
+    page_due: Option<u8>,
+    /// Posted since the last update, in order.
+    posts: Vec<speech::Lesson>,
+    /// Manager +0x58: the introduction waits.
+    intro_waits: bool,
+    /// Manager +0x54: the page's reading waits.
+    page_waits: bool,
+}
+
+impl Narration {
+    /// Slot 78: lesson `lesson` launched, `page` its tutorial page due.
+    pub fn launch(&mut self, lesson: usize, page: Option<u8>) {
+        self.lesson = lesson;
+        self.page_due = page.filter(|&p| p != street_sim::school::page::PLAYER_INDICATOR);
+        self.posts.push(speech::Lesson::Intro);
+    }
+
+    /// Slot 79: the lesson's result committed.
+    pub fn result(&mut self, passed: bool) {
+        self.posts.push(speech::Lesson::Result { passed });
+    }
+
+    /// Slot 82: tutorial page `page` opened.
+    pub fn page(&mut self, page: u8) {
+        if page == street_sim::school::page::SHOT_CLOCK {
+            self.page_due = Some(page);
+        }
+        self.posts.push(speech::Lesson::Page);
+    }
+
+    /// The page closed (`0x251328`: Cross, message 35).
+    pub fn page_closed(&mut self) {
+        self.page_due = None;
+    }
+
+    /// `0x1ad510(manager, kind)` with the commentator `busy` (the stream's
+    /// status, `FUN_00351f30`): event 9's packet. A wait posts word 3 = 0,
+    /// which matches no line, and the manager's update asks again. The
+    /// gates on `0x3f9ae8`, `0x3f9bc8` and the one-shot +0x50 are not
+    /// modelled (none is set in a lesson).
+    fn request(&mut self, kind: speech::Lesson, busy: bool) -> speech::Packet {
+        use speech::Lesson;
+        let mut index = self.lesson;
+        let mut waiting = false;
+        match kind {
+            Lesson::Intro => {
+                waiting = busy || self.page_due.is_some();
+                self.intro_waits = waiting;
+            }
+            Lesson::Result { .. } => {}
+            Lesson::Page => {
+                if !self.page_waits || busy {
+                    self.page_waits = true;
+                    waiting = true;
+                } else {
+                    self.page_waits = false;
+                    index = self.page_due.map_or(0, usize::from);
+                }
+            }
+        }
+        let mut packet = speech::lesson_packet(index, kind);
+        if waiting {
+            packet[3] = 0;
+        }
+        packet
+    }
+}
+
 /// The speech queue's clock: the timer's hundredths at each fixed tick, in
 /// every state, as the PS2's timer counts from the boot.
 fn speech_clock(mut manager: ResMut<SpeechManager>) {
@@ -1329,13 +1410,31 @@ fn speech_service(
         Option<ResMut<MusicDuck>>,
         Option<Res<story::Running>>,
     ),
-    (mut log, sim): (Option<ResMut<crate::game::EventLog>>, Option<Res<Sim>>),
+    (mut log, sim, mut narration): (
+        Option<ResMut<crate::game::EventLog>>,
+        Option<Res<Sim>>,
+        Option<ResMut<Narration>>,
+    ),
 ) {
     let m = &mut *manager;
     // The profile's front-end mode (+0x78) is 1 in Street School.
     let school = run.is_some_and(|run| matches!(run.0, Some(story::Run::School(_))));
     let was_playing = m.commentary_playing;
     let mut started = false;
+    // The School's posts, as the listener took them in the game's update:
+    // `0x1ad510` asks at once, in the School only, with the manager up.
+    if let Some(n) = narration.as_deref_mut() {
+        let posts = std::mem::take(&mut n.posts);
+        if school
+            && m.up
+            && let Some(commentary) = sounds.commentary.as_ref()
+        {
+            for kind in posts {
+                let packet = n.request(kind, !voices.is_empty());
+                m.request_commentary(commentary, packet);
+            }
+        }
+    }
     serve_players(m, fx.as_deref_mut());
     let mut event = None;
     let chosen = serve_commentary(m, sounds.commentary.as_mut()).and_then(|(id, selected)| {
@@ -1391,6 +1490,24 @@ fn speech_service(
                     m.clock
                 ),
             );
+        }
+    }
+    // The waits (`0x1acfb0..0x1acfd4`): the introduction (+0x58), then the
+    // page's reading (+0x54), asked again with the stream as it now plays.
+    if let Some(n) = narration.as_deref_mut()
+        && school
+        && m.up
+        && let Some(commentary) = sounds.commentary.as_ref()
+    {
+        let busy = started || !voices.is_empty();
+        for (waits, kind) in [
+            (n.intro_waits, speech::Lesson::Intro),
+            (n.page_waits, speech::Lesson::Page),
+        ] {
+            if waits {
+                let packet = n.request(kind, busy);
+                m.request_commentary(commentary, packet);
+            }
         }
     }
     // The stream has run out (`FUN_00351f30` reports nothing left): loop
@@ -2703,6 +2820,83 @@ mod rotation_tests {
                     .keys()
                     .all(|k| k.eq_ignore_ascii_case(&expected.name))
         );
+        assert_eq!(voices(&mut app), 1);
+    }
+
+    /// Street School's narration (`0x1ad510`): a lesson launched with no
+    /// page due is introduced at once (event 9, `Tutorial\TutLessons`);
+    /// one with a page due waits, its introduction asked for every update
+    /// with word 3 = 0 (no line), until the page closes; the page itself is
+    /// read the update after it opens; a result is said at once.
+    #[test]
+    fn disc_street_school_narrates_launches_pages_and_results() {
+        let Ok(path) = std::env::var("STREET_ISO") else {
+            return;
+        };
+        let disc = Disc::load(street_assets::iso::Iso::open(path).unwrap()).unwrap();
+        let mut app = commentary_app(disc);
+        app.insert_resource(story::Running(Some(story::Run::School(0))))
+            .init_resource::<Narration>();
+        let line = |app: &App| {
+            app.world()
+                .resource::<Sounds>()
+                .lines
+                .keys()
+                .any(|k| k.to_ascii_lowercase().starts_with(r"tutorial\tutlessons"))
+        };
+        app.world_mut().resource_mut::<Narration>().launch(0, None);
+        app.update();
+        assert!(line(&app), "the first lesson's introduction");
+        assert_eq!(voices(&mut app), 1);
+
+        // The Turbo lesson's page is due: nothing until it closes.
+        let mut app = commentary_app(
+            Disc::load(
+                street_assets::iso::Iso::open(std::env::var("STREET_ISO").unwrap()).unwrap(),
+            )
+            .unwrap(),
+        );
+        app.insert_resource(story::Running(Some(story::Run::School(3))))
+            .init_resource::<Narration>();
+        let turbo = street_sim::school::page::TURBO;
+        app.world_mut()
+            .resource_mut::<Narration>()
+            .launch(3, Some(turbo));
+        for _ in 0..5 {
+            app.update();
+        }
+        assert!(app.world().resource::<Narration>().intro_waits);
+        assert_eq!(voices(&mut app), 0);
+        // The page opens: read the update after.
+        app.world_mut().resource_mut::<Narration>().page(turbo);
+        app.update();
+        assert_eq!(voices(&mut app), 0);
+        app.update();
+        assert!(line(&app), "the Turbo page's reading");
+        assert_eq!(voices(&mut app), 1);
+        assert!(!app.world().resource::<Narration>().page_waits);
+        // Closed: the introduction comes once the reading is over.
+        app.world_mut().resource_mut::<Narration>().page_closed();
+        let voice = app
+            .world_mut()
+            .query_filtered::<Entity, With<CommentaryVoice>>()
+            .single(app.world())
+            .unwrap();
+        app.world_mut().despawn(voice);
+        app.update();
+        app.update();
+        assert!(!app.world().resource::<Narration>().intro_waits);
+        assert_eq!(voices(&mut app), 1);
+        // A result, at once (the stream free again).
+        let voice = app
+            .world_mut()
+            .query_filtered::<Entity, With<CommentaryVoice>>()
+            .single(app.world())
+            .unwrap();
+        app.world_mut().despawn(voice);
+        app.update();
+        app.world_mut().resource_mut::<Narration>().result(true);
+        app.update();
         assert_eq!(voices(&mut app), 1);
     }
 

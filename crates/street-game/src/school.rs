@@ -166,18 +166,20 @@ pub use street_sim::school::Before;
 /// at the spots and the gamebreaker lessons' meters
 /// ([`World::launch_lesson`]). The game's vt+0xb4 is the lesson's index:
 /// the meter stops at 49,999 outside the gamebreaker lessons (14, 23..25;
-/// `FUN_00143d38`).
+/// `FUN_00143d38`). The tutorial page due, which the narration waits for
+/// ([`crate::audio::Narration::launch`]).
 pub fn stage_world(
     world: &mut World,
     lesson: usize,
     selected: usize,
     seen: u8,
     inputs: &[street_sim::Input],
-) {
+) -> Option<u8> {
     let side = world.team_of(selected);
     let offense = street_sim::school::expected_side(lesson, side);
-    let page = street_sim::school::page_due(lesson, seen).is_some();
-    world.launch_lesson(lesson as u8, offense, page, inputs);
+    let page = street_sim::school::page_due(lesson, seen);
+    world.launch_lesson(lesson as u8, offense, page.is_some(), inputs);
+    page
 }
 
 impl LessonRun {
