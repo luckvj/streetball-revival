@@ -22,6 +22,9 @@ its version's part.
   place in the disc's files). They play now.
 - **Score calls:** the commentator's score updates now play for every
   margin between the teams; all but six of them were silent.
+- **Gamebreaker sounds:** a Level 2 gamebreaker opens with its own
+  transition instead of the Level 1 loop, and a gamebreaker's basket gets
+  the crowd's roar, as in the original.
 
 ## v0.1.3-beta
 

@@ -828,8 +828,10 @@ pub(crate) fn catch_candidates(
 /// direction from the passer to the receiver (`FUN_0016f508`, the pair
 /// table of `FUN_0013fed0`). The ball comes from the passer's spot
 /// (`0x161f2c`) unless the pass has a waypoint (game+0x150 when game+0x160
-/// is not -2), carried by [`crate::passout`]; the paths that turn
-/// the receiver at the release (`0x1619f4`, `0x161e4c`) are not carried.
+/// is not -2), carried by [`crate::passout`]. The word is the release's
+/// (sp+0x604): the receiver's facing, as [`World::release_point`] turned
+/// it at a lead that meets the court's edge (`0x1619f4`, `0x161e4c`); a lead
+/// within the court keeps `FUN_001636c0`'s, his facing too.
 pub(crate) fn catch_bit(w: &World, from: usize, to: usize, spot: [f32; 2]) -> u32 {
     let r = &w.players[to];
     let source = w
