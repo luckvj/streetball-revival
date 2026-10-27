@@ -347,6 +347,14 @@ impl Plugin for GamePlugin {
                     .before(TransformSystems::Propagate)
                     .run_if(in_state(Screen::Playing)),
             )
+            // A hanging dunker's hands turned to grip the rim.
+            .add_systems(
+                PostUpdate,
+                crate::grip::grip_rims
+                    .after(crate::head_turn::turn_heads)
+                    .before(TransformSystems::Propagate)
+                    .run_if(in_state(Screen::Playing)),
+            )
             // Smooth Motion: the drawn frame between the last two updates,
             // the game's own transforms back before anything reads them.
             .init_resource::<crate::smooth::SmoothClock>()
@@ -360,7 +368,7 @@ impl Plugin for GamePlugin {
                 PostUpdate,
                 (crate::smooth::clock, crate::smooth::blend)
                     .chain()
-                    .after(crate::head_turn::turn_heads)
+                    .after(crate::grip::grip_rims)
                     .before(TransformSystems::Propagate)
                     .run_if(in_state(Screen::Playing)),
             )
@@ -987,9 +995,14 @@ fn spawn_scene(
 }
 
 /// The hoops' give on screen ([`street_sim::rim`]): each hoop's meshes
-/// ride its bones, each net's top ring its rim.
+/// ride its bones, each net's top ring its rim. A replay shows the recorded
+/// world's hoops slerped between the two frames it shows: the backboard
+/// registers a recorded object with the replay manager (`FUN_00148eb0`,
+/// `FUN_003261a0`, vtable `0x49bae0`) that keeps its bones' turns and
+/// blends them (`0x326228`).
 fn show_rims(
     sim: Res<Sim>,
+    tape: Option<Res<crate::tape::Tape>>,
     mut skins: Query<&mut street_render::court::HoopSkin>,
     mut nets: Query<&mut street_render::net::Net>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -1001,7 +1014,19 @@ fn show_rims(
         to: Vec3::from_array(m.to),
     };
     let w = &sim.world;
-    let moves = [0, 1].map(|s| w.rims[s].moves(&w.rim_rigs[s]));
+    let mut moves = [0, 1].map(|s| w.rims[s].moves(&w.rim_rigs[s]));
+    let shown_frames = tape
+        .as_deref()
+        .filter(|t| t.replaying())
+        .and_then(crate::tape::Tape::shown);
+    if let Some((_, b, t)) = shown_frames {
+        for (s, side) in moves.iter_mut().enumerate() {
+            let next = b.world.rims[s].moves(&b.world.rim_rigs[s]);
+            for (m, n) in side.iter_mut().zip(next) {
+                *m = m.blend(&n, t);
+            }
+        }
+    }
     for mut skin in &mut skins {
         let side = skin.side;
         skin.pose(moves[side].map(shown), &mut meshes);

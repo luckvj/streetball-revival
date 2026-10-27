@@ -13,6 +13,12 @@ its version's part.
   the backboard its thud. Gone: the clank the
   rewrite played on every miss and the wrong "swish" on made jumpers.
 
+- **Hanging on the rim:** a dunker's hands turn to grip the rim, and
+  follow it as it gives, as in the original.
+- **Replays:** the rim's give plays smoothly in slow motion.
+- **Alley-oop music:** the music stays down from the lob to the slam
+  instead of coming back at the catch.
+
 ## v0.1.2-beta
 
 - **Ultrawide screens (21:9, 32:9):** the court widens to fill the screen

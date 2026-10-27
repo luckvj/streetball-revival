@@ -25,7 +25,10 @@ pub struct Turn {
 }
 
 /// The world transform of `entity` through its parents.
-fn world_of(entity: Entity, nodes: &Query<(&mut Transform, Option<&ChildOf>)>) -> Option<Mat4> {
+pub(crate) fn world_of(
+    entity: Entity,
+    nodes: &Query<(&mut Transform, Option<&ChildOf>)>,
+) -> Option<Mat4> {
     let mut m = Mat4::IDENTITY;
     let mut at = entity;
     for _ in 0..64 {

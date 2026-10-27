@@ -534,8 +534,11 @@ fn tip_off(link: &mut MusicLink, w: &World) {
 /// (a pass to a flier, `0x1a6010`), only while the song is in its groove
 /// (the manager's state 1) with interactive music on; `0x1ab210`, which
 /// acts only in states 5 and 6, from slots 12, 15, 16, 17, 18 (a pass to
-/// anyone else), 21, 26, 27, 52 and 66.
-fn dunk_mix(link: &mut MusicLink, e: &Event, interactive: bool) {
+/// anyone else), 20, 21 (a knock that is no block, live only), 25 (a loose
+/// ball picked up), 26, 27, 52 and 66. A catch (slot 19, an empty handler)
+/// and the take's slot 24 leave it: an alley-oop's music stays down from
+/// the pass to the slam.
+fn dunk_mix(link: &mut MusicLink, e: &Event, interactive: bool, live: bool) {
     match *e {
         Event::TakeOff {
             leap: false,
@@ -558,11 +561,11 @@ fn dunk_mix(link: &mut MusicLink, e: &Event, interactive: bool) {
         | Event::Rebound { .. }
         | Event::Pickup { .. }
         | Event::Launched { leaper: false, .. }
-        | Event::Catch { .. }
         | Event::Score { .. }
         | Event::RimOut
         | Event::ShotClockViolation { .. }
         | Event::GamebreakerReady { .. } => link.mix(false),
+        Event::Deflection { .. } if live => link.mix(false),
         _ => {}
     }
 }
@@ -588,8 +591,9 @@ pub fn cues(
         return;
     }
     let interactive = options.as_ref().is_none_or(|o| o.0.interactive);
+    let live = matches!(w.phase, street_sim::Phase::Live);
     for e in &tick.events {
-        dunk_mix(&mut link, e, interactive);
+        dunk_mix(&mut link, e, interactive, live);
         match *e {
             Event::GamebreakerReady { team } => {
                 link.groove = false;
@@ -677,11 +681,11 @@ mod tests {
             dunk: 0,
         };
         // A finish of 1 keeps the music; 2 drops it until the slam.
-        dunk_mix(&mut link, &take_off(1), true);
+        dunk_mix(&mut link, &take_off(1), true, true);
         assert!(!dry_off(&link));
-        dunk_mix(&mut link, &take_off(2), true);
+        dunk_mix(&mut link, &take_off(2), true, true);
         assert!(dry_off(&link));
-        dunk_mix(&mut link, &Event::Slam { player: 0, hoop: 0 }, true);
+        dunk_mix(&mut link, &Event::Slam { player: 0, hoop: 0 }, true, true);
         assert!(!dry_off(&link));
         // A pass to a flier drops it too; not without interactive music,
         // nor outside the groove.
@@ -691,14 +695,25 @@ mod tests {
             kick: false,
             leaper,
         };
-        dunk_mix(&mut link, &lob(true), false);
+        dunk_mix(&mut link, &lob(true), false, true);
         assert!(!dry_off(&link));
-        dunk_mix(&mut link, &lob(true), true);
+        dunk_mix(&mut link, &lob(true), true, true);
         assert!(dry_off(&link));
-        dunk_mix(&mut link, &lob(false), true);
+        dunk_mix(&mut link, &lob(false), true, true);
+        assert!(!dry_off(&link));
+        // The flier's catch keeps it down; a knock restores it in live
+        // play only.
+        dunk_mix(&mut link, &lob(true), true, true);
+        let catch = Event::Catch { player: 1 };
+        dunk_mix(&mut link, &catch, true, true);
+        assert!(dry_off(&link));
+        let knock = Event::Deflection { player: 1 };
+        dunk_mix(&mut link, &knock, true, false);
+        assert!(dry_off(&link));
+        dunk_mix(&mut link, &knock, true, true);
         assert!(!dry_off(&link));
         link.groove = false;
-        dunk_mix(&mut link, &take_off(3), true);
+        dunk_mix(&mut link, &take_off(3), true, true);
         assert!(!dry_off(&link));
     }
 

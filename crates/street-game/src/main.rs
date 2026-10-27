@@ -47,6 +47,7 @@ mod event_intro;
 mod exit_ask;
 pub mod game;
 mod game_data;
+mod grip;
 mod head_turn;
 mod help_view;
 pub mod highscores;
