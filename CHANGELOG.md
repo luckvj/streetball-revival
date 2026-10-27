@@ -3,7 +3,7 @@
 What changed in each release. The newest is first; the release page shows
 its version's part.
 
-## Unreleased
+## v0.1.4-beta
 
 - **Fixed: controllers on Choose Players in the league challenge and Be A
   Legend.** Entering the mode with a controller left only the keyboard
