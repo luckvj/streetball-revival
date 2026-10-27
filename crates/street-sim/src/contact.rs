@@ -374,6 +374,7 @@ impl World {
             && rise > 0.0
         {
             self.react(i, crate::trick::KNOCK_BEHIND);
+            self.events.push(crate::Event::RimBump { player: i });
             let side = crate::rim::post_side(self.players[i].position[0]);
             let rim = &mut self.rims[side];
             if !(rim.torn && !rim.held) {

@@ -106,8 +106,9 @@ use crate::{
 /// ([`Event::TakeOff`], [`Event::Launched`]); 95: the take-off's dunk id;
 /// 96: the ball's contacts and the rim held ([`Event::BallHit`],
 /// [`Event::RimHold`]), the dribble's speed and the slam's shake
-/// ([`Event::SlamShake`]), every take ([`Event::Take`]).
-const VERSION: u8 = 96;
+/// ([`Event::SlamShake`]), every take ([`Event::Take`]); 97: a head into
+/// the board ([`Event::RimBump`]).
+const VERSION: u8 = 97;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -3137,6 +3138,10 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(42);
             w.us(player);
         }
+        Event::RimBump { player } => {
+            w.u8(43);
+            w.us(player);
+        }
         Event::Pick { screener, defender } => {
             w.u8(24);
             w.us(screener);
@@ -3276,6 +3281,7 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
         },
         41 => Event::SlamShake { player: r.us()? },
         42 => Event::Take { player: r.us()? },
+        43 => Event::RimBump { player: r.us()? },
         24 => Event::Pick {
             screener: r.us()?,
             defender: r.us()?,
