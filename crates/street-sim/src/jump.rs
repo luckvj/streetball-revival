@@ -612,6 +612,10 @@ impl World {
         p.on_rim = hung;
         let side = crate::rim::post_side(p.position[0]);
         self.rims[side].hang(hung);
+        self.events.push(crate::Event::RimHold {
+            player: i,
+            on: hung,
+        });
     }
 
     /// One update of `i`'s flight on his move's script, after his step (the
@@ -756,9 +760,12 @@ impl World {
             // Callback 27 (`FUN_001720a8`, slot 44, `FUN_00141e98`): after
             // the slam the pole sways by 3 on his side when he is the
             // ball's last shooter.
-            if m.ran.slam_shake && self.ball.shooter == Some(i as u8) {
-                let side = crate::rim::post_side(self.players[i].position[0]);
-                self.rims[side].sway(3.0);
+            if m.ran.slam_shake {
+                self.events.push(crate::Event::SlamShake { player: i });
+                if self.ball.shooter == Some(i as u8) {
+                    let side = crate::rim::post_side(self.players[i].position[0]);
+                    self.rims[side].sway(3.0);
+                }
             }
         }
         // His hands on the rim or off it, told to the rim's listeners

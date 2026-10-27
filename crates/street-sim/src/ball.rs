@@ -13,7 +13,7 @@ use crate::shooting::{
     NATIVE_RIM_ENTRY_CONE_ANGLE, NATIVE_RIM_HEIGHT, NATIVE_RIM_OUTER_RADIUS, NATIVE_RIM_RADIUS,
 };
 use crate::street::Basket;
-use crate::{GRAVITY, Player, TICK_SECONDS, tuning};
+use crate::{BallSurface, GRAVITY, Player, TICK_SECONDS, tuning};
 
 /// Native physics radius: 0x43edc8[0] * 0.5 * 0.75, FUN_0014a300.
 pub const RADIUS: f32 = 1.25 * 0.5 * 0.75;
@@ -242,6 +242,9 @@ pub struct Ball {
     /// `0x3d6580`: the release callback's last roll (`rand() % 100 <
     /// percent`, a shot's or a dunk's), which callback 28 reads.
     pub(crate) rolled: bool,
+    /// This update's contacts and the speeds they took off the ball
+    /// ([`crate::Event::BallHit`]); the world posts them after the step.
+    pub(crate) hits: Vec<(BallSurface, f32)>,
 }
 
 impl Ball {
@@ -526,6 +529,7 @@ impl Ball {
             long: [true; 2],
             shooter: None,
             rolled: false,
+            hits: Vec::new(),
         }
     }
 
@@ -755,15 +759,30 @@ impl Ball {
         self.velocity = per_update;
         let mut contact = Contact::default();
         let mut again = false;
+        self.hits.clear();
         loop {
-            contact.floor = self.floor(g) || self.ceiling_contact();
+            // Each contact posts its listener's slot with the speed it took
+            // off the ball (the velocity before less after, per update):
+            // the floor slot 31 (`0x153370`), the backboard 29 (`0x152148`,
+            // `0x152318`), the collar and the rim 30 (`0x152618`,
+            // `0x152d9c`).
+            let v = self.velocity;
+            let floor = self.floor(g);
+            self.hit(BallSurface::Floor, floor, v);
+            contact.floor = floor || self.ceiling_contact();
             if !contact.floor {
                 let mut scored = false;
                 let off = !how.watch && how.board_off.is_some_and(|s| s * side > 0.0);
                 if self.near_hoop() && !off {
+                    let v = self.velocity;
                     contact.board = self.board(g, side, hoop);
-                    let rim =
-                        !how.staged && (self.collar(g, hoop) || self.rim(g, hoop, before, again));
+                    self.hit(BallSurface::Board, contact.board, v);
+                    let v = self.velocity;
+                    let collar = !how.staged && self.collar(g, hoop);
+                    self.hit(BallSurface::Rim, collar, v);
+                    let v = self.velocity;
+                    let rim = collar || (!how.staged && self.rim(g, hoop, before, again));
+                    self.hit(BallSurface::Rim, rim && !collar, v);
                     contact.touched = rim || contact.board;
                     contact.rim |= rim;
                     if !self.through {
@@ -780,6 +799,11 @@ impl Ball {
                     && self.net(hoop)
                 {
                     self.airborne = true;
+                    // Slot 37 (`0x153754`), the look-ahead's excepted: the
+                    // ball's speed through the net.
+                    if !how.watch {
+                        self.hits.push((BallSurface::Net, len(self.velocity)));
+                    }
                 }
             }
             if self.airborne || contact.touched || contact.floor {
@@ -824,6 +848,13 @@ impl Ball {
         let along = dot(self.spin_axis, n).abs().min(0.9999);
         let speed = libm::sinf(libm::acosf(along)) * self.radius * self.spin;
         add(v, scale(c, speed))
+    }
+
+    /// A contact with `surface` if `met`, from velocity `before` (per update).
+    fn hit(&mut self, surface: BallSurface, met: bool, before: V3) {
+        if met {
+            self.hits.push((surface, len(sub(before, self.velocity))));
+        }
     }
 
     /// `FUN_00150d88`: a bounce off a surface facing `n` with restitution

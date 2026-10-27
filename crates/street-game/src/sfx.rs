@@ -12,14 +12,17 @@
 //! |---|---|
 //! | the court comes alive at the match start | 0x28, then the crowd loop 0x20 |
 //! | play starts | sweetener 0x4a kind 14 (slot 40) |
-//! | a dribble, a loose ball on the floor | 0x44 (slots 44, 30) |
+//! | the dribbled ball on the floor (slot 31 from the held ball, `0x14f588`) | 0x3b at the ball by twice its fall |
+//! | a slam's shake (callback 27, slot 44) | 0x44 at the dunker, 1000 |
+//! | the free ball off the floor / backboard / rim or collar (slots 31, 29, 30, `0x153370`, `0x152148`, `0x152618`, `0x152d9c`) | 0x3b / 0x36 / 0x44 at the ball, by the speed it lost |
+//! | the free ball through the net (slot 37, `0x153754`) | 0x3e at the ball |
+//! | a dunker takes hold of the rim / lets go (slots 42, 43) | 0x43 / 0x45 at the hoop |
 //! | a catch / a rebound | 0x38 (slot 21) / 0x3a (slot 24) |
 //! | a pass pressed | nothing: the pass class `0x3c6500` dispatches to slot 9, an empty handler (`0x142ff8`) |
 //! | a ball thrown from the hands (`FUN_0014c0c0`, slot 18, `0x1a5f48`) | sweetener 0x4a 0 at the ball; a kick pass the ball contact 0x38; to an alley-oop flier, the block flag (+0x2c) |
 //! | a jump shot / a lay-up launched (`0x14aaf8` posts slot 11 with the ball's kind 2 / 5) | the long-flight whoosh 0x3f / sweetener 0x4a 6; the block flag cleared |
 //! | a dunker or flier leaving the floor (the `9e` jump, slot 4, `0x1a4928`) | exertion 0x50 every other time; a flier sweetener 0x4a 10 at the ball, a dunk the block flag and, finished at level 2 or more, sweetener 0x4a 13 at the ball |
-//! | the ball on the rim | 0x43 at the hoop (slot 42); a dunk's rattle 0x36 (slot 75) |
-//! | the net | 0x45 at the hoop (slot 43), 0x3e (slots 26, 37) |
+//! | a basket | 0x3e at the ball (slot 26), with its HUD and crowd |
 //! | a dunk's slam | 0x40 (slot 39), the crowd's 0x48 by the dunk's power (slot 26) |
 //! | a block (slot 16, `0x1a4ce8`) | 0x39 (whether the blocker holds the ball), with the block flag sweetener 0x4a 3, crowd 0x27, exertion |
 //! | a steal or counter (slot 15, `0x1a63e0`) | crowd 0x27, 0x49 |
@@ -122,7 +125,8 @@ pub(crate) mod ev {
     pub const CROWD_CALL: i32 = 0x27;
     pub const COURT: i32 = 0x28;
     pub const FALL_CROWD: i32 = 0x29;
-    pub const RIM_RATTLE: i32 = 0x36;
+    /// The backboard by speed (slot 29); a body against the rim (slot 75).
+    pub const BOARD: i32 = 0x36;
     /// A hand on the ball: a catch (slot 21), a swat.
     pub const HIT: i32 = 0x38;
     /// A block (slot 16, `0x1a4ce8`).
@@ -135,9 +139,14 @@ pub(crate) mod ev {
     pub const LOB: i32 = 0x3f;
     pub const SLAM: i32 = 0x40;
     pub const CROWD_BIG: i32 = 0x41;
-    pub const RIM: i32 = 0x43;
-    pub const FLOOR: i32 = 0x44;
-    pub const SWISH: i32 = 0x45;
+    /// A dunker's hands on the rim (slot 42).
+    pub const RIM_HOLD: i32 = 0x43;
+    /// The rim or collar by speed (slot 30); the dribble (slot 44).
+    pub const BOUNCE: i32 = 0x44;
+    /// A dunker letting go of the rim (slot 43).
+    pub const RIM_RELEASE: i32 = 0x45;
+    /// The floor by speed (slot 31).
+    pub const FLOOR: i32 = 0x3b;
     pub const DUNK_CROWD: i32 = 0x48;
     /// A steal (slot 15, `0x1a63e0`).
     pub const STEAL: i32 = 0x49;
@@ -561,7 +570,6 @@ pub struct Effects {
     /// The intro normally separates its start and release; a skipped intro
     /// can reach both callbacks in one frame.
     court_start_pending: bool,
-    ball_vy: f32,
     shot_clock: i32,
     /// Each player's grunt and shoe voice (`0x1a8288`).
     pub(crate) voices: Vec<i32>,
@@ -877,7 +885,6 @@ impl Effects {
             replaying: false,
             started: false,
             court_start_pending: false,
-            ball_vy: 0.0,
             shot_clock: i32::MAX,
             voices: Vec::new(),
             speakers: Vec::new(),
@@ -1635,15 +1642,17 @@ pub(crate) fn fire_events(
                 let hoop = street_sim::target_hoop(team);
                 let (ha, hd) = at(hoop_at(hoop));
                 let (ba, bd) = at(ball);
+                // The rim's sounds are the contacts' and the hands'
+                // (`Event::BallHit`, `Event::RimHold`); a jumper's swish is
+                // the net's 0x3e.
+                let _ = hd;
                 match basket {
                     Basket::Dunk { advanced } => {
-                        fx.fire(&[ev::RIM_RATTLE, ha, hd, 1000]);
                         fx.fire(&[ev::SLAM, ha, 1000, i32::from(advanced)]);
                         let power = if advanced { 700 } else { 300 };
                         fx.fire(&[ev::DUNK_CROWD, ba, power]);
                     }
                     Basket::AlleyOop { .. } => {
-                        fx.fire(&[ev::RIM_RATTLE, ha, hd, 1000]);
                         fx.fire(&[ev::SLAM, ha, 1000, 1]);
                         fx.fire(&[ev::DUNK_CROWD, ba, 900]);
                     }
@@ -1652,9 +1661,7 @@ pub(crate) fn fire_events(
                         fx.fire(&[ev::DUNK_CROWD, ba, 900]);
                         fx.stop_loop(ev::GAMEBREAKER_LOOP);
                     }
-                    Basket::Jumper { .. } | Basket::Layup => {
-                        fx.fire(&[ev::SWISH, ha, hd]);
-                    }
+                    Basket::Jumper { .. } | Basket::Layup => {}
                 }
                 fx.fire(&[ev::HUD, side(team_of(player)), 9]);
                 fx.fire(&[ev::NET, ba, bd]);
@@ -1668,9 +1675,6 @@ pub(crate) fn fire_events(
                 }
             }
             Event::RimOut => {
-                let hoop = if ball.x < 0.0 { 0 } else { 1 };
-                let (a, _) = at(hoop_at(hoop));
-                fx.fire(&[ev::RIM, a, 1000]);
                 // A missed shot (slot 27, `0x1a4550`, posted by `0x14d1f8`
                 // with the ball's shooter): the shooter asks category 14
                 // with shot mask 2, then category 4 (raw `0x1a458c..`).
@@ -1680,6 +1684,34 @@ pub(crate) fn fire_events(
                     let spot = at(player_at(shooter));
                     fx.say_masks(Some(&mut *speech), shooter, [1 << 14, 2, 2], spot);
                     fx.say_masks(Some(speech), shooter, [1 << 4, 0, 1], spot);
+                }
+            }
+            // The free ball's contacts (`0x1a46c8`, `0x1a39a8`, `0x1a3a30`,
+            // `0x1a3aa0`): the level its speed times 500, held to 1000
+            // (`0x1a74f8`); the floor's message carries four times it, held
+            // to 1000 (`0x19ed30`'s 0x3b), the net's none.
+            Event::BallHit { surface, speed } => {
+                let (a, d) = at(ball);
+                let level = contact_level(speed);
+                match surface {
+                    street_sim::BallSurface::Floor => {
+                        fx.fire(&[ev::FLOOR, a, d, level.saturating_mul(4).min(1000)])
+                    }
+                    street_sim::BallSurface::Board => fx.fire(&[ev::BOARD, a, d, level]),
+                    street_sim::BallSurface::Rim => fx.fire(&[ev::BOUNCE, a, d, level]),
+                    street_sim::BallSurface::Net => fx.fire(&[ev::NET, a, d]),
+                };
+            }
+            // A dunker's hands on the rim and off it (`0x1a4fe8`,
+            // `0x1a5050`): at the hoop on his side.
+            Event::RimHold { player, on } => {
+                let x = w.players.get(player).map_or(0.0, |p| p.position[0]);
+                let hoop = street_sim::rim::post_side(x);
+                let (a, d) = at(hoop_at(hoop));
+                if on {
+                    fx.fire(&[ev::RIM_HOLD, a, 1000]);
+                } else {
+                    fx.fire(&[ev::RIM_RELEASE, a, d, 1000]);
                 }
             }
             Event::Goaltend { .. } => {
@@ -1784,11 +1816,18 @@ pub(crate) fn fire_events(
                 let voice = fx.voices.get(player).copied().unwrap_or(0);
                 fx.fire(&[ev::EXERTION, a, d, voice]);
             }
-            // Slot 44 (`0x1a50b8`): the floor sound at the holder, always
-            // at 1000.
-            Event::Dribble { holder } => {
-                let (a, d) = at(player_at(holder));
-                fx.fire(&[ev::FLOOR, a, d, 1000]);
+            // The dribbled ball on the floor (slot 31 from the held ball,
+            // `0x1a39a8`): the floor's sound at the ball by its speed.
+            Event::Dribble { speed, .. } => {
+                let (a, d) = at(ball);
+                let level = contact_level(speed);
+                fx.fire(&[ev::FLOOR, a, d, level.saturating_mul(4).min(1000)]);
+            }
+            // Callback 27 after a slam (slot 44, `0x1a50b8`): 0x44 at the
+            // dunker, always at 1000.
+            Event::SlamShake { player } => {
+                let (a, d) = at(player_at(player));
+                fx.fire(&[ev::BOUNCE, a, d, 1000]);
             }
             Event::Pick { screener, defender } => {
                 let (a, d) = at(player_at(screener));
@@ -1886,16 +1925,12 @@ pub(crate) fn fire_events(
         }
         fx.shot_clock = left;
     }
+}
 
-    // A loose ball's fall turning into a rise (slot 30); the dribble's
-    // bounce is the simulation's event (slot 44, `Event::Dribble`).
-    let vy = w.ball.velocity[1];
-    if w.ball.state == BallState::Loose && fx.ball_vy < -2.0 && vy > 0.0 {
-        let (a, d) = at(ball);
-        let level = intensity(-fx.ball_vy);
-        fx.fire(&[ev::FLOOR, a, d, level]);
-    }
-    fx.ball_vy = vy;
+/// `0x1a74f8`: a contact's speed (per update) as its sound's level, the
+/// speed times 500 truncated, its size, at most 1000.
+fn contact_level(speed: f32) -> i32 {
+    ((speed * 500.0) as i32).abs().min(1000)
 }
 
 #[cfg(test)]

@@ -439,7 +439,10 @@ fn the_dribble_sounds_once_a_bounce_as_the_ball_rises_off_the_floor() {
             w.dribble_bounce(0, d, at[1]);
         }
         w.ball.position = at;
-        if w.events.contains(&Event::Dribble { holder: 0 }) {
+        if w.events
+            .iter()
+            .any(|e| matches!(e, Event::Dribble { holder: 0, .. }))
+        {
             bounces.push(time);
         }
     }

@@ -1213,13 +1213,13 @@ texts confirm Select, `overlays.txt` #54..56) and strategy on R3.
   | 22 | `0x1a5d10` | the tip-off's take: a ball in state 7, the referee's toss (`0x14cb28` -> class `0x3c65e0`) | crowd 0x25; clears the speech manager's +0x68 |
   | 24 | `0x1a4f90` | rebound | 0x3a |
   | 26 | `0x1a3b10` | basket | 0x48 (dunks, by power 100..900), 0x41/0x3d (game over), 0x4d 9/0/1, 0x3e |
-  | 29 | `0x1a3a30` | ball on the rim (`0x152418`, `0x1526d0`) | 0x36 by speed |
-  | 30 | `0x1a46c8` | ball on the floor (`0x153278`) | 0x44 by speed |
-  | 31 | `0x1a39a8` | ball against the ceiling (`0x153428`) | 0x3b |
-  | 37 | `0x1a3aa0` | ball in the net | 0x3e by speed |
+  | 29 | `0x1a3a30` | the free ball off the backboard (`FUN_00151928`, class `0x3c6650`) | 0x36 at the ball by speed |
+  | 30 | `0x1a46c8` | the free ball off the collar or the rim (`FUN_00152418`, `FUN_001526d0`, class `0x3c6660`) | 0x44 at the ball by speed |
+  | 31 | `0x1a39a8` | the ball on the floor (`FUN_00153278`; a held ball's dribble in `FUN_0014e060`, class `0x3c6670`) | 0x3b at the ball by speed |
+  | 37 | `0x1a3aa0` | the ball through the net (`FUN_00153550`) | 0x3e at the ball |
   | 39 | `0x1a5d50` | dunk slam | 0x40, 0x51 |
   | 40 | `0x1a6f38` | play opens | 0x4a 14, music event 1 |
-  | 42, 43 | `0x1a4fe8`, `0x1a5050` | rim, swish (at the hoop) | 0x43, 0x45 |
+  | 42, 43 | `0x1a4fe8`, `0x1a5050` | a dunker takes hold of the rim, lets go (`0x15734c`, `0x1573a8`) | 0x43, 0x45 at the hoop |
   | 44 | `0x1a50b8` | dribble | 0x44 |
   | 48 | `0x1a5bd0` | shot clock second | 0x4d 10 under 9 s |
   | 52 | `0x1a6d88` | shot clock violation | 0x4d 11 |
@@ -1230,7 +1230,7 @@ texts confirm Select, `overlays.txt` #54..56) and strategy on R3.
   | 66, 67 | `0x1a3638`, `0x1a3308` | meter full / meter drops | 0x4d 2 or 0x12, loop 0x22 / 0x4d 3 or 0x13 |
   | 68 | `0x1a3578` | trick points | 0x4d 6 over 5,000, 7 over 12,000 |
   | 70, 71 | `0x1a3868`, `0x1a3498` | pocket, cancel | 0x4d 0x10; 0x3d; loop 0x22 released |
-  | 75 | `0x1a7398` | a dunker on the rim | 0x36 |
+  | 75 | `0x1a7398` | a body against the rim (`FUN_001389a8`) | 0x36 at the player |
   | 77 | `0x1a5120` | a sneaker squeak | 0x3c, sometimes 0x46 (the court's) |
 
   Slots 6, 7, 8, 12 and 74 are wired in `sfx.rs`: exertion on releases
@@ -13548,4 +13548,10 @@ The signature sound 0x47 (`[angle, kind]` by the routing `0x19ed30`) follows `0x
 Live (PINE on the attract, save states 50..53 in the project runtime): the manager went 1 → 5 at a take-off, 5 → 6 0.52 s later and back to 1 0.12 s after that. In PCSX2's SPU2 state the mix turns on both cores' effect volume (0 → 0x800) and the voices' effect sends (0xffff), and the reverb's input buffer fills with the music, but the effect area stays the default 8 words (0xFFFF8..0xFFFFF: the game never sets one up), so the reverb's output buffer holds −1: with the dry path at 0 the music is silent from the take-off until the restore. The sound effects are not the stream and keep playing.
 
 Ported in `street_game::song` (`dunk_mix`, the inbox's `dry_off` muting the stream's segments while they keep their place) from `Event::TakeOff` and `Event::Launched`, ended by the slots' events above that the rewrite has (the slam, a steal or counter, a block, a rebound or pickup, a pass to anyone else, a catch, a basket, a miss, a violation, a meter filling). Test: `a_big_dunk_drops_the_music_until_the_slam`.
+
+## The ball's contacts and the rim's hands, heard (2026-10-26)
+
+The listener table above had slots 29..31, 37, 42, 43 and 75 against the wrong moments (re-read off the classes' senders, "The no-turbo buzz"). Each free-ball contact posts its slot from inside the contact with the speed it took off the ball, the velocity before less after, per update (the board `0x152148`/`0x152318`, the collar `0x152618`, the rim `0x152d9c`, the floor `0x153370`); the net (`0x153754`, outside the launcher's look-ahead, ball+0x190) posts the ball's speed through it. The handlers make the level `|trunc(speed × 500)|` held to 1000 (`0x1a74f8`): the board 0x36, the collar and rim 0x44, the floor 0x3b (whose message `0x19ed30` gives four times the level, held to 1000), the net 0x3e (no level), all at the ball. Slots 42 and 43 are a dunker's hands taking and leaving the rim: 0x43 and 0x45 at the hoop. A made basket adds 0x3e at the ball (slot 26).
+
+The rewrite had played the rim's 0x43 on every miss, the 0x45 as a jumper's swish, 0x36 at the hoop for every dunk and 0x44 for a loose ball rising off the floor. Now `Ball::step` records its contacts (`Ball::hits`), `World::step_ball` posts them as `Event::BallHit` (snapshot version 96) and `World::rim_hands` posts `Event::RimHold`; `street_game::sfx` plays them as the original does. The held ball's floor post (`FUN_0014e060`, `0x14f420..0x14f5b8`, already ported as `World::dribble_bounce` and `Event::Dribble`) is the same slot 31: `Event::Dribble` now carries twice the height the ball fell that update (`0x14f588..0x14f5a4`) and plays 0x3b at the ball, where the rewrite had played 0x44 at the holder as slot 44. Slot 44 (class `0x3c6730`) is callback 27 after a slam (`FUN_001720a8`): 0x44 at the dunker at 1000, now `Event::SlamShake` (the pole's sway still only for the ball's last shooter). Test: `a_dropped_ball_posts_its_floor_bounce_with_the_speed_it_lost`.
 

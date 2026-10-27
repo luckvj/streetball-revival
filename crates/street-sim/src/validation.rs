@@ -874,6 +874,7 @@ impl World {
             long: _,
             shooter,
             rolled: _,
+            hits: _,
         } = ball;
         floats(moved, "ball move")?;
         for p in touch.iter().chain([shooter]).flatten() {
@@ -1134,6 +1135,11 @@ impl World {
                     }
                 }
                 Event::RimOut => {}
+                Event::BallHit { speed, .. } => {
+                    if !speed.is_finite() || speed < 0.0 {
+                        return Err("invalid ball contact speed".into());
+                    }
+                }
                 Event::Block {
                     player: p,
                     shooter: q,
@@ -1157,7 +1163,8 @@ impl World {
                 }
                 Event::Catch { player: p }
                 | Event::Pickup { player: p }
-                | Event::Dribble { holder: p }
+                | Event::Dribble { holder: p, .. }
+                | Event::SlamShake { player: p }
                 | Event::Rebound { player: p }
                 | Event::Inbound { player: p }
                 | Event::Fumble { player: p }
@@ -1167,6 +1174,7 @@ impl World {
                 | Event::PumpFakeBite { player: p }
                 | Event::NoTurbo { player: p }
                 | Event::TakeOff { player: p, .. }
+                | Event::RimHold { player: p, .. }
                 | Event::Dive { player: p }
                 | Event::Reach { player: p, .. }
                 | Event::Jump { player: p, .. } => player(p)?,
