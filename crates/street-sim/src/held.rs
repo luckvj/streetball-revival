@@ -702,7 +702,10 @@ impl World {
                 self.held_anchor = Some(a);
             }
         }
-        if let Some(d) = dribbled {
+        if dribbled == Some(crate::dribble::Dribbled::Floor) {
+            (self.ball.spin_axis, self.ball.spin) =
+                crate::dribble::roll(self.ball.position, point, radius);
+        } else if let Some(d) = dribbled {
             self.dribble_bounce(h, d, at[1]);
         }
         let p = &mut self.players[h];
@@ -727,6 +730,7 @@ impl World {
         let falling = match d {
             crate::dribble::Dribbled::Flight { t, fall } => t <= fall || y < before,
             crate::dribble::Dribbled::Hand => false,
+            crate::dribble::Dribbled::Floor => return,
         };
         if falling {
             self.dribble_armed = true;

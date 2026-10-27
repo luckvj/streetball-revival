@@ -13713,3 +13713,21 @@ A court's `DRIFT` line builds a manager (`FUN_001f4248`): its pieces, 0x60 bytes
 - **The breath's gate** actor+0x68 is the actor's enabled word: 1 from
   the constructor (`0x156168`), changed only through `FUN_00156188`, so
   every player on court breathes.
+
+## The ball's spin, drawn (2026-10-27)
+
+- The ball update turns the ball's orientation (ball+0x50) by its spin
+  (+0x14c) about its axis (+0x70) every update: held at `0x14f5d4`
+  (`FUN_002f64b0`'s rotation into the quaternion), free in
+  `FUN_0014d1f8`. The rewrite kept the spin in the simulation but drew the
+  ball unturned; `view::sync_ball` now turns it once per simulation
+  update.
+- On a clip that carries the ball on the floor (222, 223, 300, 301; 270,
+  271 to frame 23; 252, 253 to frame 44) the held ball rolls
+  (`0x14efd4..0x14f0ac`): the axis is up (`0x4b83b0`, (0, 1, 0) in the
+  save states) × its way across since the update before (+0x80), made
+  unit, and the spin that way over the radius (+0x11c); under 0.0001 the
+  spin is 0 about up. `dribble::roll`, set in `World::place_held`.
+- Not settled: whether the catch (`FUN_0014cb28`) keeps a pass's spin in
+  the hands; the rewrite's catch clears it, so a held ball turns only on
+  the floor clips.

@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- **The ball spins:** shots, passes and loose balls turn in the air, and
+  the ball rolls on the floor through the moves that carry it there, as
+  in the original (it used to hang unturned).
 - **Rucker Classic song:** once you own the court, switching its song
   off in Trax plays the next song instead, as in the original.
 - **Replays after a rim hang** film from the baseline, as in the
