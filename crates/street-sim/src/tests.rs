@@ -223,10 +223,19 @@ fn passes_reach_the_teammate() {
     }));
     assert!(w.windup.is_none());
     assert!(matches!(w.players[0].action, Action::Passing { .. }));
+    let mut takes = Vec::new();
     for _ in 0..TICK_HZ {
         w.step(&[Input::default(), Input::default()]);
+        takes.extend(
+            w.events
+                .iter()
+                .filter(|e| matches!(e, Event::Take { .. }))
+                .copied(),
+        );
     }
     assert_eq!(w.ball.state, BallState::Held(1));
+    // The catch is a take (`FUN_0014cb28`'s tail posts slot 24).
+    assert_eq!(takes, [Event::Take { player: 1 }]);
 }
 
 #[test]

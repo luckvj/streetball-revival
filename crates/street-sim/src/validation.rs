@@ -1165,6 +1165,7 @@ impl World {
                 | Event::Pickup { player: p }
                 | Event::Dribble { holder: p, .. }
                 | Event::SlamShake { player: p }
+                | Event::Take { player: p }
                 | Event::Rebound { player: p }
                 | Event::Inbound { player: p }
                 | Event::Fumble { player: p }

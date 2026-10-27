@@ -17,7 +17,8 @@
 //! | the free ball off the floor / backboard / rim or collar (slots 31, 29, 30, `0x153370`, `0x152148`, `0x152618`, `0x152d9c`) | 0x3b / 0x36 / 0x44 at the ball, by the speed it lost |
 //! | the free ball through the net (slot 37, `0x153754`) | 0x3e at the ball |
 //! | a dunker takes hold of the rim / lets go (slots 42, 43) | 0x43 / 0x45 at the hoop |
-//! | a catch / a rebound | 0x38 (slot 21) / 0x3a (slot 24) |
+//! | any take of the ball: a catch, a steal, a rebound, a pickup (slot 24, the take's tail `0x14d160`) | 0x3a at the ball |
+//! | a knock that is no block (slot 21, `FUN_0014c408`, the game live) | 0x38 at the ball |
 //! | a pass pressed | nothing: the pass class `0x3c6500` dispatches to slot 9, an empty handler (`0x142ff8`) |
 //! | a ball thrown from the hands (`FUN_0014c0c0`, slot 18, `0x1a5f48`) | sweetener 0x4a 0 at the ball; a kick pass the ball contact 0x38; to an alley-oop flier, the block flag (+0x2c) |
 //! | a jump shot / a lay-up launched (`0x14aaf8` posts slot 11 with the ball's kind 2 / 5) | the long-flight whoosh 0x3f / sweetener 0x4a 6; the block flag cleared |
@@ -1496,16 +1497,25 @@ pub(crate) fn fire_events(
     let mut speech = pause_speech.as_deref_mut().filter(|_| !tick.replay);
     for event in &tick.events {
         match *event {
-            Event::Catch { .. } => {
+            // Every take (slot 24, `0x1a4f90`): 0x3a at the ball. A catch,
+            // a steal, a rebound or a pickup is one; the catch posts no
+            // sound of its own.
+            Event::Take { .. } => {
                 let (a, d) = at(ball);
-                fx.fire(&[ev::HIT, a, d, 1000]);
+                fx.fire(&[ev::REBOUND, a, d]);
+            }
+            // A knock that is no block (slot 21, `0x1a4ee0`, from the knock
+            // `FUN_0014c408` while the game is live): 0x38 at the ball.
+            Event::Deflection { .. } => {
+                if matches!(w.phase, Phase::Live) {
+                    let (a, d) = at(ball);
+                    fx.fire(&[ev::HIT, a, d, 1000]);
+                }
             }
             // A live rebound taken (slot 17, `0x1a65c0`, class `0x3c6590`):
             // the crowd's call, then every other time (`DAT_004bb2d8`, for
             // the session) a teammate's line 1, else the player's line 0.
             Event::Rebound { player } => {
-                let (a, d) = at(ball);
-                fx.fire(&[ev::REBOUND, a, d]);
                 fx.fire(&[ev::CROWD_CALL, i32::from(leads(w, player))]);
                 if let Some(speech) = speech.as_deref_mut() {
                     speech.rebounds = speech.rebounds.wrapping_add(1);
