@@ -1642,7 +1642,11 @@ fn nickname_word(
 fn nickname_action(event: &Event) -> Option<(usize, &'static [street_assets::db::Skill])> {
     use street_assets::db::Skill;
     match *event {
-        Event::Trick { player, .. } => Some((player, &[Skill::Handles])),
+        Event::Trick {
+            player,
+            fakeout: Some(_),
+            ..
+        } => Some((player, &[Skill::Handles])),
         Event::Block { player, .. } => Some((player, &[Skill::Blocks, Skill::Power])),
         Event::Counter { player, .. }
         | Event::Steal {
@@ -1811,7 +1815,13 @@ fn match_sounds(
         // an attempt spends the pending nickname.
         let mut nickname = || nickname_action(event).and_then(|(p, s)| attempt(&mut save, p, s));
         match *event {
-            Event::Trick { player, .. } => {
+            // Slot 13's commentary (`0x1a5a78`) only for a trick that
+            // faked a defender out (its word +8).
+            Event::Trick {
+                player,
+                fakeout: Some(_),
+                ..
+            } => {
                 if let Some(p) = nickname() {
                     packets.push((p, false));
                 } else if let (Some(_), Some(actor)) = (world.players.get(player), female(player)) {
@@ -2674,7 +2684,7 @@ mod rotation_tests {
                 player: 0,
                 level: 1,
                 script: 0,
-                fakeout: None,
+                fakeout: Some(3),
                 points: 500,
             }],
         );
@@ -3078,7 +3088,7 @@ mod rotation_tests {
             player: 0,
             level: 1,
             script: 0,
-            fakeout: None,
+            fakeout: Some(3),
             points: 500,
         };
         app.world_mut().resource_mut::<Sounds>().interactive = false;
@@ -3218,7 +3228,7 @@ mod rotation_tests {
             player: 0,
             level: 1,
             script: 0,
-            fakeout: None,
+            fakeout: Some(3),
             points: 500,
         };
         // Bobbito talking: no attempt; the pending flag stays and Move is

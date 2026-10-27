@@ -32,11 +32,11 @@
 //! | the tip-off caught from the referee's toss (slot 22, `0x1a5d10`: ball state 7) | crowd 0x25 |
 //! | a block jump's take-off | exertion every other time, counted with the shots' (slot 6); the swing, sweetener 0x4a 11 (slot 7) |
 //! | a reach for the ball: a swipe, or the counter stance | sweetener 0x4a 12, every other time an exertion (slot 8) |
-//! | a dunk let go at the rim | exertion (slot 12), HUD 0x4d kind 4 (slot 13, shared with trick lands) |
+//! | a dunk let go at the rim | exertion (slot 12, `0x1a4640`) |
 //! | a pick or a trick counter knocks a player off balance | body 0x4f 0 at the one knocked (slot 74) |
 //! | a faked-out defender is knocked down | body 0x4f at the one knocked (slot 74): kind 0 a stagger, kind 1 the fall (`FUN_001a5288`'s knock level − 1; a fall adds sweetener 5) |
 //! | an ordinary player's animated joint 10 crosses the floor threshold | body 0x4f kind 2 by the joint's drop, crowd 0x29, exertion (slot 76); scripted presentation suppresses the observer |
-//! | a trick of level 1..3 | sweetener 0x4a kind 7 + level and, for four players' own moves, the signature 0x47 (slot 2); HUD 0x4d kind 4, crowd 0x29 and a taunt (slot 13, shared with dunk releases) |
+//! | a trick of level 1..3 | sweetener 0x4a kind 7 + level and, for four players' own moves, the signature 0x47 (slot 2); HUD 0x4d kind 4, and when it faked a defender out the crowd's 0x29 and a taunt (slot 13, `0x1a5a78`) |
 //! | a meter fills | HUD 0x4d kind 2 (12 at level 2), the loop 0x22 (slot 66) |
 //! | a gamebreaker goes up | transition 0x4c, the loop 0x21 (slot 64) |
 //! | a meter is pocketed / cancelled | HUD 0x4d kind 16 / crowd 0x3d; the loop 0x22 stops (slots 70, 71) |
@@ -1639,12 +1639,6 @@ pub(crate) fn fire_events(
                 let (a, d) = at(player_at(player));
                 let voice = fx.voices.get(player).copied().unwrap_or(0);
                 fx.fire(&[ev::EXERTION, a, d, voice]);
-                // Slot 13 (`FUN_001a5a78`, 0x4d kind 4): posted by the shot
-                // setup at `0x14bf28` (class `DAT_003c6540`, conditional on
-                // the dunk-release flag at 0xd4(sp)) — the same handler the
-                // scoring listener routes trick lands (ring 10/11) to. It
-                // sounds as the dunk leaves the hands, even on a miss.
-                fx.fire(&[ev::HUD, side(team_of(player)), 4]);
             }
             Event::Score {
                 team,
@@ -1824,18 +1818,16 @@ pub(crate) fn fire_events(
                 if let Some(kind) = trick_signature(script, bit) {
                     fx.fire(&[ev::SIGNATURE, a, kind]);
                 }
-                // The move lands (slot 13, `FUN_001a5a78` — the scoring
-                // listener routes trick lands, ring classes 10/11, to it;
-                // the shot setup posts the same handler for dunk releases,
-                // wired on `Event::Slam`): a sting and a taunt. The handler
-                // fires its crowd 0x29 + speech only when the event word at
-                // +8 is nonzero — the trick value on the ring path, against
-                // 0 on the dunk post — so tricks get the crowd's gasp too.
+                // The move ends (slot 13, `FUN_001a5a78`, posted by the
+                // actor's update as bit 10 drops with the ball held,
+                // `0x157e44`, its word +8 the qualifier actor+0x218): HUD
+                // kind 4; with a defender faked out, the crowd's 0x29 and
+                // the player's taunt (category 3, no draw of its own).
                 fx.fire(&[ev::HUD, side(team_of(player)), 4]);
-                fx.fire(&[ev::FALL_CROWD]);
-                // FUN_001a5a78 posts this request without a caller-side
-                // probability draw.
-                fx.say(speech.as_deref_mut(), player, 3, (a, d));
+                if fakeout.is_some() {
+                    fx.fire(&[ev::FALL_CROWD]);
+                    fx.say(speech.as_deref_mut(), player, 3, (a, d));
+                }
                 // A faked-out defender is knocked down (`FUN_001a5288`):
                 // 0x4f's kind is the knockdown's level minus one — kind 0
                 // a stagger, kind 1 the fall — and a fall (the knockdown's

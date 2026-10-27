@@ -492,6 +492,11 @@ pub struct HudState {
     /// Each player's last dunk a putback (+0x1e4 1, a tip slam).
     pub tip_slam: Vec<bool>,
     pub last_trick_points: [i32; 2],
+    /// A passout special in the air (ball+0x1ac): its passer and value.
+    pub passout: Option<(usize, i32)>,
+    /// The HUD listener's +0xc: the last passout bounce's word 1 (slot 39,
+    /// `0x2e2558`), true off the board, false off a head.
+    pub passout_board: bool,
     /// The team whose combo paid this tick (the basket shows "combo").
     pub paid: Option<usize>,
     pub banner: crate::banner::Banner,
@@ -530,6 +535,8 @@ impl Default for HudState {
             last_layup: Vec::new(),
             tip_slam: Vec::new(),
             last_trick_points: [0; 2],
+            passout: None,
+            passout_board: false,
             paid: None,
             banner: Default::default(),
             tick: None,
@@ -1028,13 +1035,16 @@ fn on_event(
         hud.popup(team, kind_word(k), kind_points(k), pocketed(team));
     };
     match *event {
-        // Slot 13, a trick move landing with its value: kind 1, the move's
-        // name between the font's crowns (`*%s*`, `0x48ccc0`) and its
+        // Slot 13 (`FUN_002e2c10`), a trick move ending with the ball
+        // (`0x157dd0..0x157e60`): kind 1 when it faked a defender out (the
+        // qualifier actor+0x218), the move's name between the font's crowns
+        // (`*%s*`, `0x48ccc0`); kind 0 otherwise, its name alone; with the
         // trick points (team `+0x24`).
         Event::Trick {
             player,
             points,
             script,
+            fakeout,
             ..
         } => {
             let team = team_of(player);
@@ -1045,22 +1055,17 @@ fn on_event(
             }
             hud.last_trick_points[team] = points as i32;
             if let (Some(n), Some(s)) = (names, script) {
-                let text = format!("*{}*", name(&n.tricks, s));
+                let text = if fakeout.is_some() {
+                    format!("*{}*", name(&n.tricks, s))
+                } else {
+                    name(&n.tricks, s)
+                };
                 hud.popup(team, text, points as i32, pocketed(team));
             }
         }
-        // Slot 13 again at a dunk's release (the post at `0x14bf28` with
-        // value 0): kind 0, the ball owner's actor `+0x264` (written only
-        // by the trick starts, `0x15f600`, `0x15c8e8`: the last trick's
-        // name) and team `+0x24`.
-        Event::Slam { player, .. } => {
-            let team = team_of(player);
-            if let Some(n) = names {
-                let text = name(&n.tricks, hud.last_trick.get(player).copied().unwrap_or(0));
-                let points = hud.last_trick_points[team];
-                hud.popup(team, text, points, pocketed(team));
-            }
-        }
+        // A dunk's release is slot 12 (class `0x3c6540`, posted at
+        // `0x14bf18`), which the HUD's listener leaves empty (`0x132c00`):
+        // no pop-up.
         // Slot 15: a steal, or a trick counter's (kinds 8 and 16).
         Event::Steal { player, .. } => simple(hud, team_of(player), kind::STEAL),
         Event::Counter { player, .. } => simple(hud, team_of(player), kind::TRICK_COUNTER),
@@ -1070,18 +1075,40 @@ fn on_event(
         }
         // Slot 17: a rebound picked up.
         Event::Rebound { player } => simple(hud, team_of(player), kind::REBOUND),
-        // Slot 19 (`FUN_002e2418`): a passout special, named (`0x3fb790`)
-        // with its value (team `+0x5c`).
+        // A passout special thrown (ball+0x1ac set by its legs): kept
+        // for its catch.
         Event::Pass { from, style, .. } => {
-            let index = match style {
-                PassStyle::Glass => Some(0),
-                PassStyle::Heezay => Some(1),
-                _ => None,
-            };
-            if let (Some(n), Some(k)) = (names, index) {
-                let team = team_of(from);
-                let value = style.trick_points() as i32;
-                hud.popup(team, name(&n.passouts, k), value, pocketed(team));
+            hud.passout = matches!(style, PassStyle::Glass | PassStyle::Heezay)
+                .then(|| (from, style.trick_points() as i32));
+        }
+        // Slot 39 (`0x2e2558`): the bounce's word 1 kept for the name.
+        Event::PassoutBounce { head } => hud.passout_board = !head,
+        // Slot 19 (`FUN_002e2418`), the catch, with ball+0x1ac set: kind 17,
+        // a passout named (`0x3fb790`) by the HUD's +0x1e4: a flier's catch
+        // off the board from another, Downtown Rebound (3); another's catch,
+        // Back at Ya (2) off the board, Off the Heezay (1) off a head; the
+        // passer's own, Back 2 Papa (0) off the board, Off the Heezay off a
+        // head. A flier whose move is advanced (`FUN_00171de8 & 0x800`)
+        // pops nothing. With its value (team `+0x5c`).
+        Event::Catch { player } => {
+            if let Some((passer, value)) = hud.passout.take() {
+                let flier = w.players.get(player).is_some_and(|p| p.leaping());
+                let board = hud.passout_board;
+                let index = if flier && board && player != passer {
+                    3
+                } else if player != passer {
+                    if board { 2 } else { 1 }
+                } else if board {
+                    0
+                } else {
+                    1
+                };
+                if let Some(n) = names
+                    && !(flier && w.advanced_move(player))
+                {
+                    let team = team_of(player);
+                    hud.popup(team, name(&n.passouts, index), value, pocketed(team));
+                }
             }
         }
         // Slot 24 (`FUN_002e2ff8`): a dive's recovery.
@@ -2585,6 +2612,8 @@ mod tests {
         let names = street_assets::overlays::MoveNames {
             dunks: (0..60).map(|k| format!("dunk {k}")).collect(),
             layups: (0..28).map(|k| format!("layup {k}")).collect(),
+            tricks: (0..90).map(|k| format!("trick {k}")).collect(),
+            passouts: (0..4).map(|k| format!("passout {k}")).collect(),
             ..Default::default()
         };
         let word = |id: u16| format!("{id:#x}");
@@ -2662,6 +2691,52 @@ mod tests {
             score(&mut hud, &w, Basket::Dunk { advanced: false }),
             (word(data::KIND_WORD[kind::TIP_SLAM]), "2000".into())
         );
+        // A trick that faked a defender out pops its name in crowns (kind
+        // 1); one that faked nobody, its name alone (kind 0).
+        for (fakeout, want) in [(Some(1), "*trick 7*"), (None, "trick 7")] {
+            hud.popups = Default::default();
+            let trick = Event::Trick {
+                player: 0,
+                level: 1,
+                script: 7,
+                fakeout,
+                points: 500,
+            };
+            on_event(&mut hud, &w, &trick, Some(&names), &word, false);
+            assert_eq!(hud.popups[screen_side(0)][0].word, want);
+        }
+        // A passout pops at its catch, named by the bounce and the catcher
+        // (`FUN_002e2418`): back to the passer off the board, Back 2 Papa
+        // (0); to a teammate off the board, Back at Ya (2); off a head, Off
+        // the Heezay (1). Nothing at the throw.
+        for (head, catcher, want) in [(false, 0, 0), (false, 1, 2), (true, 1, 1), (true, 0, 1)] {
+            hud.popups = Default::default();
+            let pass = Event::Pass {
+                from: 0,
+                to: catcher,
+                style: PassStyle::Glass,
+            };
+            on_event(&mut hud, &w, &pass, Some(&names), &word, false);
+            assert!(hud.popups[screen_side(0)][0].word.is_empty());
+            on_event(
+                &mut hud,
+                &w,
+                &Event::PassoutBounce { head },
+                Some(&names),
+                &word,
+                false,
+            );
+            on_event(
+                &mut hud,
+                &w,
+                &Event::Catch { player: catcher },
+                Some(&names),
+                &word,
+                false,
+            );
+            let side = screen_side(w.players[catcher].team);
+            assert_eq!(hud.popups[side][0].word, format!("passout {want}"));
+        }
         // An advanced alley-oop's finish pops the finisher's dunk name.
         w.players[0].action = dunk(row as u8, DunkStyle::Normal);
         hud.note_moves(&w);

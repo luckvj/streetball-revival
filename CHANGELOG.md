@@ -20,6 +20,14 @@ its version's part.
   pass bouncing off the board or a defender's head now plays them, as in
   the original. The dunk's crowd roar now scales with the dunk's finish,
   and the game-winning basket plays the win or loss sting.
+- **Trick and dunk pop-ups:** a dunk no longer pops up the last trick's
+  name as it leaves the hands. A trick's name shows in crowns only when it
+  faked a defender out, and only those tricks get the crowd's gasp, the
+  commentator and the player's taunt, as in the original.
+- **Passout names:** the pop-up comes when the passout is caught, not when
+  it's thrown, and uses all four of the original's names: Back 2 Papa,
+  Back at Ya (to a teammate off the board), Off the Heezay and Downtown
+  Rebound (an alley-oop off the board).
 - **Busted rim:** a game-winning dunk or alley-oop now shows the
   original's "Busted Rim" pop-up, and the profile keeps count of busted
   rims as the original does (it isn't shown on screen there either).
