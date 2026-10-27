@@ -120,6 +120,10 @@ pub struct SpeechHeader {
     /// any (22, keyed by the score's margin).
     sub_keys: u16,
     sub_enabled: Vec<bool>,
+    /// Bytes 8..10: the span of one sub-key's lines in the `.dat` (its
+    /// LE u16 times 0x100, shifted as the starts are; the whole file when
+    /// it has none). A line under sub-key `k` starts `k` spans on.
+    span: u32,
 }
 
 impl SpeechHeader {
@@ -165,6 +169,7 @@ impl SpeechHeader {
             (ring[0], ring[1..].to_vec())
         };
         let sub_keys = u16::from_le_bytes([header[10], header[11]]);
+        let span = (u32::from(u16::from_le_bytes([header[8], header[9]])) * 0x100) << shift;
         let sub_enabled = if sub_keys == 0 || sub_keys == 0xffff {
             Vec::new()
         } else {
@@ -190,6 +195,7 @@ impl SpeechHeader {
             enabled,
             sub_keys,
             sub_enabled,
+            span,
         }))
     }
 
@@ -557,7 +563,7 @@ impl SpeechEvent {
                 header: index,
                 slot: h.slot,
                 line,
-                start: h.lines[line].0,
+                start: h.lines[line].0 + sub.map_or(0, |k| u32::from(k) * h.span),
             });
         }
         None
@@ -2385,17 +2391,11 @@ mod tests {
         // Each header's line starts, byte 7's shift taken, are the starts of
         // the streams in its `.dat` (1 in `TutLessonsB`, `DunkI`, `DunkJ`,
         // `DunkK`, `DunkN` and `SpecIntrosC`, whose lines pass 0x100 x
-        // 0xffff bytes).
+        // 0xffff bytes), and ScoreUpdate's under each margin key a span on.
         let Some(mut iso) = disc() else { return };
         let commentary = Commentary::open(&mut iso).unwrap();
         let mut checked = 0;
         for header in &commentary.headers.headers {
-            // ScoreUpdate's lines are keyed by the margin (22 sub-keys) and
-            // its starts past the fifth fall in padding: its layout is not
-            // read yet.
-            if header.sub_keys != 0 && header.sub_keys != 0xffff {
-                continue;
-            }
             let Some(entry) = commentary
                 .entries
                 .iter()
@@ -2405,13 +2405,27 @@ mod tests {
                 continue;
             };
             let lines = commentary.lines(&mut iso, &entry).unwrap();
-            for &(start, _) in &header.lines {
-                assert!(
-                    lines.streams.iter().any(|s| s.start == start as usize),
-                    "{}: no stream at {start}",
-                    header.name
-                );
-                checked += 1;
+            // ScoreUpdate's lines are keyed by the margin: line `i` under
+            // sub-key `k`, where its bit is on, starts `k` spans on.
+            let keys = if header.sub_keys == 0 || header.sub_keys == 0xffff {
+                1
+            } else {
+                header.sub_keys
+            };
+            for (i, &(start, _)) in header.lines.iter().enumerate() {
+                for k in 0..keys {
+                    let sub = (keys > 1).then_some(k);
+                    if sub.is_some() && !header.enabled_for(i, sub) {
+                        continue;
+                    }
+                    let at = start + u32::from(k) * header.span;
+                    assert!(
+                        lines.streams.iter().any(|s| s.start == at as usize),
+                        "{} line {i} key {k}: no stream at {at}",
+                        header.name
+                    );
+                    checked += 1;
+                }
             }
         }
         assert!(checked > 1000, "{checked}");

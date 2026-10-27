@@ -20,6 +20,8 @@ its version's part.
 - **Missing dunk calls:** four sets of the commentator's dunk calls and one
   special introduction never played (their lines were read from the wrong
   place in the disc's files). They play now.
+- **Score calls:** the commentator's score updates now play for every
+  margin between the teams; all but six of them were silent.
 
 ## v0.1.3-beta
 
