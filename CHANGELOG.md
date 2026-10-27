@@ -3,6 +3,15 @@
 What changed in each release. The newest is first; the release page shows
 its version's part.
 
+## Unreleased
+
+- **Ball and rim sounds match the original:** the ball off the backboard,
+  rim, floor and through the net now sounds by how hard it hits; a dunker
+  grabbing and letting go of the rim, a dribble's bounce and a slam's shake
+  have their own sounds; every catch, steal, rebound and pickup plays the
+  take sound, and a ball knocked loose its knock. Gone: the clank the
+  rewrite played on every miss and the wrong "swish" on made jumpers.
+
 ## v0.1.2-beta
 
 - **Ultrawide screens (21:9, 32:9):** the court widens to fill the screen
