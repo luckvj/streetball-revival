@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- **Fixed: controllers on Choose Players in the league challenge and Be A
+  Legend.** Entering the mode with a controller left only the keyboard
+  able to pick players; the controller that entered the mode now picks.
 - **The ball spins:** shots, passes and loose balls turn in the air, and
   the ball rolls on the floor through the moves that carry it there, as
   in the original (it used to hang unturned).

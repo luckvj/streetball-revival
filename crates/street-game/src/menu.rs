@@ -8159,7 +8159,13 @@ fn begin_story_players(
         mode,
         &|_| false,
     );
-    screen.sides[screen.panel(MINE)] = Picker::held(home, vec![Device::Keyboard], mode);
+    // The person who entered the mode (`seat_league_user`): whichever
+    // controller that was, not only the keyboard.
+    let mut people = players_people(setup, MINE);
+    if people.is_empty() {
+        people.push(Device::Keyboard);
+    }
+    screen.sides[screen.panel(MINE)] = Picker::held(home, people, mode);
     screen.sides[screen.panel(THEIRS)] = Picker::computer(away, setup.lineups[THEIRS]);
     menus.players = screen;
 }
@@ -8480,6 +8486,46 @@ mod tests {
             crate::school::start_for_setup(&mut save.story, setup, lesson);
             running.0 = Some(story::Run::School(lesson));
         }
+    }
+
+    #[test]
+    fn a_pad_that_entered_the_challenge_picks_its_players() {
+        // The League Challenge and Be A Legend seat the controller that
+        // entered the mode; its Choose Players side must take that pad,
+        // not only the keyboard.
+        let Some(path) = std::env::var_os("STREET_ISO") else {
+            return;
+        };
+        let disc = Disc::load(street_assets::iso::Iso::open(path).unwrap()).unwrap();
+        let story = street_sim::story::Story::default();
+        let pad = Device::Pad(Entity::from_raw_u32(7).unwrap());
+        for mode in [crate::choose::Mode::League, crate::choose::Mode::Legend] {
+            let mut setup = MatchSetup::new(&disc, 0, 1);
+            setup.seats = vec![(Device::Keyboard, 0), (pad, 1)];
+            seat_league_user(&mut setup, pad);
+            let mut menus = Menus::default();
+            begin_story_players(&mut menus, &disc, &setup, &story, mode);
+            let mine = menus.players.side(story::CAREER_SIDE);
+            assert!(mine.takes(pad), "{mode:?}");
+            assert!(!mine.takes(Device::Keyboard), "{mode:?}");
+        }
+        // Entered from the keyboard (or with no seat), the keyboard picks.
+        let mut setup = MatchSetup::new(&disc, 0, 1);
+        seat_league_user(&mut setup, Device::Keyboard);
+        let mut menus = Menus::default();
+        begin_story_players(
+            &mut menus,
+            &disc,
+            &setup,
+            &story,
+            crate::choose::Mode::League,
+        );
+        assert!(
+            menus
+                .players
+                .side(story::CAREER_SIDE)
+                .takes(Device::Keyboard)
+        );
     }
 
     #[test]
