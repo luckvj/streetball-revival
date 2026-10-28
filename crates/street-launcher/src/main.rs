@@ -12,6 +12,8 @@
 
 #![cfg_attr(not(test), windows_subsystem = "windows")]
 
+mod court;
+
 use eframe::egui::{
     self, Align2, Color32, FontData, FontDefinitions, FontFamily, FontId, Key, Pos2, Rect, Sense,
     Stroke, Vec2,
@@ -34,6 +36,9 @@ const ERR: Color32 = Color32::from_rgb(0xfc, 0xa5, 0xa5);
 const BOOT_FILE: &str = "/SLUS_206.51";
 const SERIAL: &str = "SLUS-20651";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// The MyBaller site and its Discord, the launcher's two links.
+const SITE: &str = "https://myballer.online";
+const DISCORD: &str = "https://discord.com/invite/htu5pdxPQz";
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -182,6 +187,8 @@ struct Launcher {
     since: Instant,
     message: Option<(String, Color32)>,
     particles: Vec<Particle>,
+    /// myballer.online's court behind it all, turned by the cursor.
+    arena: court::Arena,
     started: Option<Instant>,
     /// `STREET_LAUNCHER_SHOT`: a PNG of the window two seconds in, then
     /// quit (for the README and checks without a person at the screen).
@@ -206,6 +213,7 @@ impl Launcher {
             since: Instant::now(),
             message: None,
             particles: particles(170),
+            arena: court::Arena::new(&cc.egui_ctx),
             started: None,
             shot: std::env::var_os("STREET_LAUNCHER_SHOT").map(PathBuf::from),
             shot_asked: false,
@@ -321,6 +329,8 @@ impl eframe::App for Launcher {
                 let screen = ui.max_rect();
                 let painter = ui.painter_at(screen);
                 let time = ctx.input(|i| i.time) as f32;
+                let (pointer, dt) = ctx.input(|i| (i.pointer.latest_pos(), i.stable_dt));
+                self.arena.draw(&painter, screen, pointer, dt);
                 self.draw_field(&painter, screen, time);
 
                 let t = self.since.elapsed().as_secs_f32();
@@ -451,6 +461,16 @@ impl eframe::App for Launcher {
                     );
                 }
 
+                // The links: the MyBaller site (with its mark) and its Discord.
+                let links_y = screen.bottom() - 64.0;
+                let mark = self.arena.mark().id();
+                if link_button(ui, Pos2::new(screen.center().x - 110.0, links_y), "myballer.online", Some(mark)) {
+                    open_link(SITE);
+                }
+                if link_button(ui, Pos2::new(screen.center().x + 110.0, links_y), "Discord", None) {
+                    open_link(DISCORD);
+                }
+
                 // The fine print.
                 words(
                     &painter,
@@ -481,7 +501,8 @@ impl eframe::App for Launcher {
 
 impl Launcher {
     /// The field: slow motes of light drifting up, nearer ones larger,
-    /// brighter and quicker, with a purple glow under the middle.
+    /// brighter and quicker, a faint purple glow under the middle, and a
+    /// dark pool behind the words so they read over the court.
     fn draw_field(&mut self, painter: &egui::Painter, screen: Rect, time: f32) {
         // The court's light: a wide, soft purple pool low in the middle,
         // breathing slowly.
@@ -491,14 +512,17 @@ impl Launcher {
             screen.center() + Vec2::new(0.0, screen.height() * 0.32),
             Vec2::new(screen.width() * 0.55, screen.height() * 0.42),
             PURPLE,
-            0.22 * breath,
+            0.07 * breath,
+            2.2,
         );
+        // The words' shade: a soft dark pool over the court behind them.
         glow(
             painter,
-            screen.center() + Vec2::new(0.0, screen.height() * 0.30),
-            Vec2::new(screen.width() * 0.22, screen.height() * 0.14),
-            PURPLE_HI,
-            0.10 * breath,
+            screen.center() + Vec2::new(0.0, -8.0),
+            Vec2::new(screen.width() * 0.36, screen.height() * 0.36),
+            BG,
+            0.8,
+            0.7,
         );
         for p in &mut self.particles {
             p.pos += p.drift * (0.4 + p.depth);
@@ -615,16 +639,109 @@ fn line_button(ui: &mut egui::Ui, at: Pos2, label: &str, primary: bool) -> bool 
     response.clicked()
 }
 
+/// A link: small capitals in the muted ink, the MB mark before them when
+/// given, brighter with a thin line under it on hover. True when clicked.
+fn link_button(ui: &mut egui::Ui, at: Pos2, label: &str, mark: Option<egui::TextureId>) -> bool {
+    let size = 13.0;
+    let painter = ui.painter().clone();
+    let text = label.to_uppercase();
+    let probe = words(
+        &painter,
+        Pos2::new(-10_000.0, -10_000.0),
+        Align2::LEFT_TOP,
+        &text,
+        size,
+        Color32::TRANSPARENT,
+        0.24,
+        true,
+    );
+    // The mark: 469 by 323, drawn 22 high.
+    let mark_size = Vec2::new(22.0 * 469.0 / 323.0, 22.0);
+    let gap = 10.0;
+    let lead = if mark.is_some() {
+        mark_size.x + gap
+    } else {
+        0.0
+    };
+    let whole = Vec2::new(lead + probe.width(), probe.height().max(mark_size.y));
+    let rect = Align2::CENTER_CENTER.anchor_size(at, whole + Vec2::new(16.0, 14.0));
+    let response = ui.interact(rect, ui.id().with(("link", label)), Sense::click());
+    let hot = response.hovered();
+    let left = at.x - whole.x / 2.0;
+    if let Some(mark) = mark {
+        let r = Rect::from_min_size(Pos2::new(left, at.y - mark_size.y / 2.0), mark_size);
+        let tint = if hot {
+            Color32::WHITE
+        } else {
+            alpha(Color32::WHITE, 0.85)
+        };
+        painter.image(
+            mark,
+            r,
+            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+            tint,
+        );
+    }
+    let color = if hot { Color32::WHITE } else { MUTED };
+    let drawn = words(
+        &painter,
+        Pos2::new(left + lead, at.y),
+        Align2::LEFT_CENTER,
+        &text,
+        size,
+        color,
+        0.24,
+        true,
+    );
+    let line = if hot {
+        alpha(PURPLE_HI, 0.9)
+    } else {
+        alpha(PURPLE_HI, 0.25)
+    };
+    painter.line_segment(
+        [
+            Pos2::new(drawn.left(), drawn.bottom() + 5.0),
+            Pos2::new(drawn.right(), drawn.bottom() + 5.0),
+        ],
+        Stroke::new(1.0_f32, line),
+    );
+    if hot {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    response.clicked()
+}
+
+/// Opens `url` in the person's browser.
+fn open_link(url: &str) {
+    let mut command = if cfg!(windows) {
+        let mut c = std::process::Command::new("rundll32");
+        c.arg("url.dll,FileProtocolHandler");
+        c
+    } else if cfg!(target_os = "macos") {
+        std::process::Command::new("open")
+    } else {
+        std::process::Command::new("xdg-open")
+    };
+    let _ = command.arg(url).spawn();
+}
+
 /// A soft elliptical pool of `color`, `peak` opaque in the middle and
-/// fading to nothing at its edge.
-fn glow(painter: &egui::Painter, center: Pos2, radius: Vec2, color: Color32, peak: f32) {
+/// fading to nothing at its edge, the sooner the higher `falloff`.
+fn glow(
+    painter: &egui::Painter,
+    center: Pos2,
+    radius: Vec2,
+    color: Color32,
+    peak: f32,
+    falloff: f32,
+) {
     const RINGS: u32 = 20;
     const SEGMENTS: u32 = 72;
     let mut mesh = egui::Mesh::default();
     mesh.colored_vertex(center, alpha(color, peak));
     for ring in 1..=RINGS {
         let r = ring as f32 / RINGS as f32;
-        let a = peak * (1.0 - r).powf(2.2);
+        let a = peak * (1.0 - r).powf(falloff);
         for seg in 0..SEGMENTS {
             let t = seg as f32 / SEGMENTS as f32 * std::f32::consts::TAU;
             let at = center + Vec2::new(t.cos() * radius.x * r, t.sin() * radius.y * r);
