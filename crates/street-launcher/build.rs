@@ -1,7 +1,10 @@
 //! The launcher's build: the Windows icon resource (`assets/icon.ico`,
 //! linked as a `.res`), and, when the release build names it in
 //! `STREET_GAME_EMBED`, the game program carried inside the launcher for the
-//! one-file download, deflated (about a third of its size).
+//! one-file download, deflated (about a third of its size). And the version
+//! the launcher shows (`STREET_RELEASE`): the release's tag on a release build
+//! (GitHub names the pushed tag in `GITHUB_REF_NAME`), else the last tag the
+//! checkout has, else the package's version.
 
 use std::{env, fs, path::PathBuf};
 
@@ -25,11 +28,30 @@ fn main() {
         println!("cargo:rustc-cfg=embedded_game");
     }
     let target = |k: &str| env::var(k).unwrap_or_default();
+    println!("cargo:rerun-if-env-changed=GITHUB_REF_TYPE");
+    println!("cargo:rerun-if-env-changed=GITHUB_REF_NAME");
+    println!("cargo:rerun-if-changed=../../.git/HEAD");
+    println!("cargo:rerun-if-changed=../../.git/refs/tags");
+    let release = Some(target("GITHUB_REF_NAME"))
+        .filter(|name| target("GITHUB_REF_TYPE") == "tag" && !name.is_empty())
+        .or_else(last_tag)
+        .unwrap_or_else(|| format!("v{}", target("CARGO_PKG_VERSION")));
+    println!("cargo:rustc-env=STREET_RELEASE={release}");
     if target("CARGO_CFG_TARGET_OS") == "windows" && target("CARGO_CFG_TARGET_ENV") == "msvc" {
         let res = out.join("icon.res");
         fs::write(&res, icon_res(&fs::read("assets/icon.ico").unwrap())).unwrap();
         println!("cargo:rustc-link-arg-bins={}", res.display());
     }
+}
+
+/// The newest tag behind the checkout (`git describe --tags --abbrev=0`).
+fn last_tag() -> Option<String> {
+    let out = std::process::Command::new("git")
+        .args(["describe", "--tags", "--abbrev=0"])
+        .output()
+        .ok()?;
+    let tag = String::from_utf8(out.stdout).ok()?.trim().to_string();
+    (out.status.success() && !tag.is_empty()).then_some(tag)
 }
 
 /// A `.res` holding the `.ico`'s images as icons 1.. and their group as

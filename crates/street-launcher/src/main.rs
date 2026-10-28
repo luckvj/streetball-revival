@@ -35,7 +35,8 @@ const ERR: Color32 = Color32::from_rgb(0xfc, 0xa5, 0xa5);
 /// The executable the game's disc image must hold.
 const BOOT_FILE: &str = "/SLUS_206.51";
 const SERIAL: &str = "SLUS-20651";
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// The release's tag (`build.rs`), as the release page names it.
+const VERSION: &str = env!("STREET_RELEASE");
 /// The MyBaller site and its Discord, the launcher's two links.
 const SITE: &str = "https://myballer.online";
 const DISCORD: &str = "https://discord.com/invite/htu5pdxPQz";
@@ -486,7 +487,7 @@ impl eframe::App for Launcher {
                     &painter,
                     Pos2::new(screen.right() - 30.0, screen.top() + 30.0),
                     Align2::RIGHT_TOP,
-                    &format!("v{VERSION}"),
+                    VERSION,
                     11.0,
                     DIM,
                     0.2,

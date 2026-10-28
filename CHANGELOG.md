@@ -9,6 +9,8 @@ its version's part.
   as you move the mouse, with the MB mark at center court.
 - **Links in the launcher:** buttons for myballer.online (with the MB
   mark) and the Discord.
+- **The launcher shows its release's version** (it read v0.1.0 in every
+  release).
 
 ## v0.1.4-beta
 
