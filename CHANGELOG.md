@@ -3,6 +3,13 @@
 What changed in each release. The newest is first; the release page shows
 its version's part.
 
+## Unreleased
+
+- **The launcher's court:** the MyBaller arena turns behind the launcher
+  as you move the mouse, with the MB mark at center court.
+- **Links in the launcher:** buttons for myballer.online (with the MB
+  mark) and the Discord.
+
 ## v0.1.4-beta
 
 - **Fixed: controllers on Choose Players in the league challenge and Be A

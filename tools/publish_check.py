@@ -50,6 +50,9 @@ TEXT_EXTENSIONS = {".rs", ".md", ".json", ".py", ".toml", ".yml", ".yaml", ".txt
 # small. Every other check (size, magic numbers) still applies to them.
 SCREENSHOTS = os.path.join("docs", "screenshots")
 SCREENSHOT_LIMIT = 512 * 1024
+# The launcher's own art (the MyBaller mark and banner, the author's): PNGs
+# in this one folder only, each small. Every other check still applies.
+LAUNCHER_ART = os.path.join("crates", "street-launcher", "assets")
 
 
 _TRACKED = None
@@ -88,6 +91,10 @@ def offenders(root):
             if os.path.dirname(rel) == SCREENSHOTS and ext == ".jpg":
                 if size > SCREENSHOT_LIMIT:
                     found.append(f"{rel}: screenshot over 512 KB")
+                    continue
+            elif os.path.dirname(rel) == LAUNCHER_ART and ext == ".png":
+                if size > SCREENSHOT_LIMIT:
+                    found.append(f"{rel}: launcher art over 512 KB")
                     continue
             elif ext in BAD_EXTENSIONS:
                 found.append(f"{rel}: game-data extension")
