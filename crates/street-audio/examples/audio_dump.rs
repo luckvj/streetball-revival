@@ -3,6 +3,8 @@
 //!     cargo run -p street-audio --release --example audio_dump -- <iso> <out dir> [what...]
 //!
 //! `what` is any of `banks`, `music`, `crowd`, `speech`, `menu` (default: all).
+//! The court's banks and crowd are Rucker Park's, or the `XDBCOURT` record
+//! `COURT` names.
 //! Files are named `<bank>_<index>.wav` and so on. The output is the
 //! game's own audio: keep it out of the repository.
 
@@ -51,6 +53,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(2);
     };
     let want = |w: &str| args.len() <= 2 || args[2..].iter().any(|a| a == w);
+    let court: usize = std::env::var("COURT")
+        .ok()
+        .and_then(|c| c.parse().ok())
+        .unwrap_or(9);
     let out = Path::new(out);
     fs::create_dir_all(out)?;
     let mut iso = Iso::open(iso_path)?;
@@ -84,12 +90,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             dump_bank(&mut iso, path, "game")?;
         }
         // Rucker Park's ambience and crowd calls, as an example court.
-        let (ambience, crowd, _) = courts::banks(Some(9));
+        let (ambience, crowd, _) = courts::banks(Some(court));
         dump_bank(&mut iso, ambience, "court")?;
         dump_bank(&mut iso, crowd, "court")?;
     }
     if want("crowd") {
-        let (_, _, stream) = courts::banks(Some(9));
+        let (_, _, stream) = courts::banks(Some(court));
         let data = iso.read(stream)?;
         let streams = schl::streams(&data)?;
         let dir = out.join("crowd");
