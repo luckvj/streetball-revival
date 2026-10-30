@@ -107,9 +107,14 @@
 //!   rate (`FixedUpdate`), with [`Client::ticks_due_fixed`], never both
 //!   clocks at once.
 //! - The world drawn is a prediction. A rollback can move players a little
-//!   between frames; [`Advanced::rolled_back`] says when one happened, if
-//!   the renderer wants to blend. Events of re-simulated ticks are not
-//!   repeated, so a sound may play for a guess that did not stand.
+//!   between frames; [`Client::take_correction`] says how far (a
+//!   [`Correction`]), for the renderer to ease out rather than jump. Events
+//!   of re-simulated ticks are not repeated, so a sound may play for a
+//!   guess that did not stand.
+//! - A game that hosts should run its [`Server`] on a thread of its own:
+//!   in the game's frame loop, its ticks and frames go out at the host's
+//!   frame rate, and every pad that misses its tick costs a player's own
+//!   move.
 //! - The server never pauses, and replays would step the world outside the
 //!   session, so online play disables pausing and instant replays. The
 //!   story-mode hooks in `step_sim` (lessons, stats) should read the
@@ -138,7 +143,7 @@ pub use protocol::{
 };
 pub use roster::{DiscTables, Known, ModTables, RosterError};
 pub use server::{Host, Server, ServerConfig, ServerEvent};
-pub use session::{Advanced, Session, SessionConfig, SessionStats};
+pub use session::{Advanced, Correction, Session, SessionConfig, SessionStats};
 pub use transport::{Conditions, MemoryNetwork, MemoryTransport, Transport, UdpTransport};
 
 /// The server's default UDP port.

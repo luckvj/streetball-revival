@@ -11,6 +11,15 @@
 //! fraction of a second) and the client aims for a small lead, running a few
 //! percent fast or slow to get there, or jumping when it is far off (on
 //! joining, after a stall).
+//!
+//! A pad that reaches the server after its tick is lost: the server repeats
+//! the seat's last one, and this machine's own player is pulled back to
+//! what the server played. So the lead aimed for follows the connection: it
+//! grows at once when the worst report comes in with no tick to spare, and
+//! shrinks a tick at a time after a steady stretch with room over. The
+//! input delay is picked from the round trip when the match starts: more of
+//! it on a long connection keeps the other machines' guesses of our pads
+//! short.
 
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -29,9 +38,16 @@ use crate::wire::DecodeError;
 /// Tuning for a [`Client`].
 #[derive(Clone, Copy, Debug)]
 pub struct ClientConfig {
+    /// The session's tuning; its input delay is the least used (see
+    /// [`ClientConfig::max_input_delay`]).
     pub session: SessionConfig,
-    /// How many ticks early our pads should reach the server.
+    /// How many ticks early our pads should reach the server, at least.
     pub target_lead: i16,
+    /// The most the lead aimed for grows to over a jittery connection.
+    pub max_lead: i16,
+    /// The most input delay a long round trip is given (half the round
+    /// trip in ticks, from [`SessionConfig::input_delay`] up to this).
+    pub max_input_delay: u32,
     /// Give up after hearing nothing from the server for this long.
     pub timeout: Duration,
     /// Resend the join this often until answered.
@@ -45,6 +61,8 @@ impl Default for ClientConfig {
         Self {
             session: SessionConfig::default(),
             target_lead: 2,
+            max_lead: 12,
+            max_input_delay: 6,
             timeout: Duration::from_secs(5),
             join_retry: Duration::from_millis(250),
             ping_every: Duration::from_millis(500),
@@ -109,6 +127,10 @@ const JUMP_AT: i64 = 10;
 const NUDGE: f64 = 0.06;
 /// Most ticks of local pads in one message.
 const MAX_INPUT_RUN: usize = 32;
+/// Ticks of steady lead reports before the lead aimed for comes down a tick.
+const LEAD_EASE: u64 = 600;
+/// The worst lead over such a stretch that lets it come down.
+const LEAD_ROOM: i16 = 3;
 
 /// A connection to a match on a server.
 pub struct Client {
@@ -152,6 +174,15 @@ pub struct Client {
     /// Lead reports are ignored until the prediction reaches this tick
     /// (they describe pads sent before the last jump).
     lead_guard: u64,
+    /// The lead aimed for now, from [`ClientConfig::target_lead`] up to
+    /// [`ClientConfig::max_lead`].
+    lead_target: i16,
+    /// No raise of the lead aimed for before the prediction reaches this
+    /// tick (the last raise has to show in the reports first).
+    raise_guard: u64,
+    /// The worst lead reported since `ease_from`.
+    lead_lowest: i16,
+    ease_from: u64,
     budget: f64,
     frame_at: Option<Duration>,
     events: Vec<ClientEvent>,
@@ -199,6 +230,10 @@ impl Client {
             part_id: 0,
             lead: None,
             lead_guard: 0,
+            lead_target: cfg.target_lead,
+            raise_guard: 0,
+            lead_lowest: i16::MAX,
+            ease_from: 0,
             budget: 0.0,
             frame_at: None,
             events: Vec::new(),
@@ -420,7 +455,7 @@ impl Client {
         if let Some(lead) = self.lead
             && s.tick() >= self.lead_guard
         {
-            let err = i64::from(lead) - i64::from(self.cfg.target_lead);
+            let err = i64::from(lead) - i64::from(self.lead_target);
             if err.abs() > JUMP_AT {
                 self.budget -= err as f64;
                 self.lead = None;
@@ -501,9 +536,50 @@ impl Client {
             .unwrap_or_default()
     }
 
+    /// How far rollbacks moved the drawn world since the last call (see
+    /// [`Session::take_correction`]).
+    pub fn take_correction(&mut self) -> Option<crate::session::Correction> {
+        self.session.as_mut()?.take_correction()
+    }
+
     /// The smoothed round trip time.
     pub fn rtt(&self) -> Option<Duration> {
         self.rtt
+    }
+
+    /// The lead our pads are aimed to reach the server with, in ticks.
+    pub fn lead_target(&self) -> i16 {
+        self.lead_target
+    }
+
+    /// A lead report from the server: raise the lead aimed for when the
+    /// worst pad had no tick to spare (a late one, two), and lower it a
+    /// tick after [`LEAD_EASE`] ticks that always had [`LEAD_ROOM`] over.
+    fn note_lead(&mut self, lead: i16) {
+        let Some(tick) = self.session.as_ref().map(Session::tick) else {
+            return;
+        };
+        if tick < self.lead_guard {
+            return;
+        }
+        if lead < 1 {
+            if tick >= self.raise_guard {
+                let up = if lead < 0 { 2 } else { 1 };
+                self.lead_target = (self.lead_target + up).min(self.cfg.max_lead);
+                self.raise_guard = tick + self.settle_ticks();
+            }
+            self.lead_lowest = i16::MAX;
+            self.ease_from = tick;
+            return;
+        }
+        self.lead_lowest = self.lead_lowest.min(lead);
+        if tick >= self.ease_from + LEAD_EASE {
+            if self.lead_lowest >= LEAD_ROOM && self.lead_target > self.cfg.target_lead {
+                self.lead_target -= 1;
+            }
+            self.lead_lowest = i16::MAX;
+            self.ease_from = tick;
+        }
     }
 
     /// Change our confirmed state behind the server's back (tests only).
@@ -672,6 +748,7 @@ impl Client {
                     s.acknowledge_inputs(ack);
                     if lead != i16::MAX {
                         self.lead = Some(lead);
+                        self.note_lead(lead);
                     }
                 }
             }
@@ -727,9 +804,11 @@ impl Client {
             return;
         };
         let state = state.unwrap_or_else(|| Match::new(setup.world.clone(), setup.seat_teams));
-        let session = Session::new(state, self.seats.clone(), self.cfg.session);
-        let aim = server_tick as i64 + self.rtt_ticks() as i64 + i64::from(self.cfg.target_lead)
-            - i64::from(self.cfg.session.input_delay);
+        let mut cfg = self.cfg.session;
+        cfg.input_delay = self.input_delay();
+        let session = Session::new(state, self.seats.clone(), cfg);
+        let aim = server_tick as i64 + self.rtt_ticks() as i64 + i64::from(self.lead_target)
+            - i64::from(cfg.input_delay);
         let ahead = (aim - session.tick() as i64).max(0);
         self.budget = ahead as f64;
         self.lead_guard = session.tick() + ahead as u64 + self.settle_ticks();
@@ -799,6 +878,14 @@ impl Client {
         self.rtt.map_or(6, |r| {
             (r.as_secs_f64() * f64::from(street_sim::TICK_HZ)).ceil() as u64
         })
+    }
+
+    /// The input delay for a match starting now: half the round trip in
+    /// ticks, within the config's least and most.
+    fn input_delay(&self) -> u32 {
+        let least = self.cfg.session.input_delay;
+        let half = self.rtt.map_or(0, |_| self.rtt_ticks().div_ceil(2) as u32);
+        half.clamp(least, self.cfg.max_input_delay.max(least))
     }
 
     /// Ticks for a clock change to show in the server's lead reports.

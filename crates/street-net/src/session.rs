@@ -66,6 +66,46 @@ pub struct SessionStats {
     /// Calls to `advance` that waited because the prediction was too far
     /// ahead.
     pub stalls: u64,
+    /// Confirmed ticks where the server fixed another pad for one of our
+    /// seats than the one played here: ours reached it late, and our own
+    /// player was corrected.
+    pub overridden: u64,
+}
+
+/// How far the rollbacks since the last look moved what is drawn: the
+/// prediction's places before each re-run less those after it, at the same
+/// tick (players on the floor, the ball in the air), summed. A renderer
+/// eases these out rather than jump.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Correction {
+    pub players: Vec<[f32; 2]>,
+    pub ball: [f32; 3],
+}
+
+impl Correction {
+    fn of(world: &World) -> Self {
+        Self {
+            players: world.players.iter().map(|p| p.position).collect(),
+            ball: world.ball.position,
+        }
+    }
+
+    /// Add `before - after` to the sum.
+    fn add(&mut self, before: &Self, after: &Self) {
+        self.players.resize(after.players.len(), [0.0; 2]);
+        for ((sum, b), a) in self
+            .players
+            .iter_mut()
+            .zip(&before.players)
+            .zip(&after.players)
+        {
+            sum[0] += b[0] - a[0];
+            sum[1] += b[1] - a[1];
+        }
+        for k in 0..3 {
+            self.ball[k] += before.ball[k] - after.ball[k];
+        }
+    }
 }
 
 /// A rollback session over one match (see the module docs).
@@ -91,6 +131,8 @@ pub struct Session {
     /// What happened in confirmed ticks since the last look: `(tick,
     /// events)` for ticks with any.
     confirmed_events: Vec<(u64, Vec<Event>)>,
+    /// The rollbacks' corrections since the last look.
+    correction: Option<Correction>,
     stats: SessionStats,
 }
 
@@ -115,6 +157,7 @@ impl Session {
             input_ack: tick,
             reports: Vec::new(),
             confirmed_events: Vec::new(),
+            correction: None,
             stats: SessionStats::default(),
         }
     }
@@ -222,6 +265,12 @@ impl Session {
         std::mem::take(&mut self.confirmed_events)
     }
 
+    /// How far the rollbacks since the last call moved the drawn world
+    /// ([`Correction`]); `None` if none did. A resync's jump is not one.
+    pub fn take_correction(&mut self) -> Option<Correction> {
+        self.correction.take()
+    }
+
     /// The present, to draw: the predicted world.
     pub fn world(&self) -> &World {
         &self.predicted.world
@@ -269,7 +318,15 @@ impl Session {
         while let Some(f) = self.arrived.remove(&self.confirmed.tick()) {
             match self.guesses.pop_front() {
                 Some(g) if g == f => {}
-                Some(_) => wrong = true,
+                Some(g) => {
+                    wrong = true;
+                    if self.local_seats.iter().any(|&s| {
+                        usize::from(s) < MAX_SEATS
+                            && g.seats[usize::from(s)] != f.seats[usize::from(s)]
+                    }) {
+                        self.stats.overridden += 1;
+                    }
+                }
                 None => {}
             }
             self.confirmed.step(&f);
@@ -290,7 +347,12 @@ impl Session {
         if self.confirmed.tick() >= self.predicted.tick() {
             // The confirmations overtook the prediction.
             if self.confirmed.tick() > self.predicted.tick() || wrong {
+                let before = Correction::of(&self.predicted.world);
+                let same = self.confirmed.tick() == self.predicted.tick();
                 self.predicted = self.confirmed.clone();
+                if same {
+                    self.note_correction(&before);
+                }
             }
             self.guesses.clear();
             return 0;
@@ -299,10 +361,22 @@ impl Session {
             return 0;
         }
         let target = self.predicted.tick();
+        let before = Correction::of(&self.predicted.world);
         self.predicted = self.confirmed.clone();
         self.guesses.clear();
         self.stats.rollbacks += 1;
-        self.resimulate(target)
+        let n = self.resimulate(target);
+        self.note_correction(&before);
+        n
+    }
+
+    /// Add the move from `before` to the prediction now (the same tick) to
+    /// the corrections not taken yet.
+    fn note_correction(&mut self, before: &Correction) {
+        let after = Correction::of(&self.predicted.world);
+        self.correction
+            .get_or_insert_with(Correction::default)
+            .add(before, &after);
     }
 
     /// Predict from the predicted match up to tick `target`.
