@@ -29,9 +29,18 @@
 //! gameplay everywhere at once while the server's clock runs on; this game
 //! shows its own drawing of the updates replayed (`tape.rs`). Nothing
 //! pauses online.
+//!
+//! A game that hosts runs its server on a thread of its own, so the
+//! server's ticks and the frames it sends keep time whatever this game's
+//! frame rate does. What a rollback moves (a player, the ball) is eased
+//! out over a few updates rather than jumped ([`Smooth`]).
 
 use std::{
     net::{SocketAddr, ToSocketAddrs},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{Duration, Instant},
 };
 
@@ -345,12 +354,128 @@ fn key(s: &setup::MatchSetup) -> Key {
     (s.court.to_ascii_uppercase(), s.teams, s.lineups)
 }
 
+/// A hosted server on a thread of its own, updated every millisecond. In
+/// the game's frame loop it ran its ticks and sent its frames at this
+/// machine's frame rate, in bursts, and every other machine's pads missed
+/// their ticks whenever a frame ran long.
+struct HostThread {
+    stop: Arc<AtomicBool>,
+    handle: Option<std::thread::JoinHandle<()>>,
+}
+
+impl HostThread {
+    fn start(mut server: Server, start: Instant) -> Self {
+        let stop = Arc::new(AtomicBool::new(false));
+        let flag = stop.clone();
+        let handle = std::thread::Builder::new()
+            .name("street-server".into())
+            .spawn(move || {
+                while !flag.load(Ordering::Relaxed) {
+                    for e in server.update(start.elapsed()) {
+                        info!("server: {e:?}");
+                    }
+                    std::thread::sleep(Duration::from_millis(1));
+                }
+                // The last pads and leaves in, then the closing out.
+                server.update(start.elapsed());
+                server.shutdown();
+            })
+            .map_err(|e| error!("online: no thread for the server: {e}"))
+            .ok();
+        Self { stop, handle }
+    }
+
+    /// Close the server: everyone still in hears it shut down.
+    fn shutdown(&mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(h) = self.handle.take() {
+            let _ = h.join();
+        }
+    }
+}
+
+impl Drop for HostThread {
+    fn drop(&mut self) {
+        self.shutdown();
+    }
+}
+
+/// What rollbacks moved ([`street_net::Correction`]), eased out: each
+/// update draws the players and a free ball this much off the prediction,
+/// shrinking by [`EASE`] a tick.
+#[derive(Default)]
+struct Smooth {
+    players: Vec<[f32; 2]>,
+    ball: [f32; 3],
+}
+
+/// What is left of an eased correction after a tick.
+const EASE: f32 = 0.8;
+/// Corrections longer than this are shown at once (a restart, an inbound,
+/// a resync's jump).
+const SNAP: f32 = 3.0;
+
+impl Smooth {
+    /// Ease by `ticks`, add `correction`, and draw `world` off by what is
+    /// left.
+    fn update(
+        &mut self,
+        correction: Option<street_net::Correction>,
+        world: &mut street_sim::World,
+        ticks: u32,
+    ) {
+        let keep = EASE.powi(ticks as i32);
+        for o in &mut self.players {
+            o[0] *= keep;
+            o[1] *= keep;
+        }
+        for v in &mut self.ball {
+            *v *= keep;
+        }
+        if let Some(c) = correction {
+            self.players.resize(c.players.len(), [0.0; 2]);
+            for (o, d) in self.players.iter_mut().zip(&c.players) {
+                o[0] += d[0];
+                o[1] += d[1];
+                if o[0].hypot(o[1]) > SNAP {
+                    *o = [0.0; 2];
+                }
+            }
+            for k in 0..3 {
+                self.ball[k] += c.ball[k];
+            }
+            if self.ball.iter().map(|v| v * v).sum::<f32>().sqrt() > SNAP {
+                self.ball = [0.0; 3];
+            }
+        }
+        for (p, o) in world.players.iter_mut().zip(&self.players) {
+            p.position[0] += o[0];
+            p.position[1] += o[1];
+        }
+        // A held ball goes with its holder (the simulation's place for it
+        // is his, as a dribble or a script's hand holds it).
+        if let street_sim::BallState::Held(h) = world.ball.state {
+            self.ball = [0.0; 3];
+            if let Some(o) = self.players.get(h) {
+                world.ball.position[0] += o[0];
+                world.ball.position[2] += o[1];
+            }
+        } else {
+            for k in 0..3 {
+                world.ball.position[k] += self.ball[k];
+            }
+        }
+    }
+}
+
 /// The connection, while online.
 #[derive(Resource)]
 pub struct Online {
     start: Instant,
     client: Option<Client>,
-    server: Option<Server>,
+    server: Option<HostThread>,
+    /// Rollbacks' corrections, eased out of the drawn world.
+    smooth: Smooth,
     addr: SocketAddr,
     join: Join,
     /// This game's disc: the hosted server's referee and the client play on it.
@@ -417,10 +542,12 @@ impl Online {
             (None, None) => return Err("neither hosting nor joining".into()),
         };
         let lan = args.host.and_then(|_| lan_address());
+        let start = Instant::now();
         Ok(Self {
-            start: Instant::now(),
+            start,
             client: None,
-            server,
+            server: server.map(|s| HostThread::start(s, start)),
+            smooth: Smooth::default(),
             addr,
             join: Join {
                 match_name: args.match_name.clone(),
@@ -769,11 +896,6 @@ fn pump(mut online: ResMut<Online>) {
     });
     if let (Some(announcer), Some(beacon)) = (&mut online.announcer, beacon) {
         announcer.update(now, &beacon);
-    }
-    if let Some(server) = &mut online.server {
-        for e in server.update(now) {
-            info!("server: {e:?}");
-        }
     }
     if let Some(client) = &mut online.client {
         let events = client.update(now);
@@ -1652,6 +1774,18 @@ pub fn net_step(
             events.extend(w.events.iter().cloned());
         }
     }
+    let correction = client.take_correction();
+    if let (Some(s), Some(rtt)) = (client.stats(), client.rtt())
+        && client
+            .session()
+            .is_some_and(|s| s.tick() % 1800 < u64::from(due))
+    {
+        info!(
+            "online: rtt {rtt:?}, lead {}, delay {}, {s:?}",
+            client.lead_target(),
+            client.session().map_or(0, |s| s.config().input_delay)
+        );
+    }
     let Some(m) = client.session().map(|s| s.current()) else {
         return;
     };
@@ -1687,6 +1821,7 @@ pub fn net_step(
     for (_, events) in client.take_confirmed_events() {
         note_events(&mut sim, &mut stats, events, &names, &teams);
     }
+    online.smooth.update(correction, &mut sim.world, due);
 }
 
 #[cfg(test)]
@@ -1792,6 +1927,34 @@ mod tests {
         assert_eq!(there.teams, [3, 9]);
         assert_eq!(there.court, "RUCKER");
         assert_eq!(there.roster_data, vec![1]);
+    }
+
+    #[test]
+    fn a_rollbacks_move_is_eased_out_and_a_held_ball_goes_with_its_holder() {
+        let world = street_net::MatchSetup::standard(Default::default(), 1).world;
+        let mut smooth = Smooth::default();
+        let correction = |p0: [f32; 2], ball: [f32; 3]| {
+            let mut players = vec![[0.0; 2]; world.players.len()];
+            players[0] = p0;
+            players[1] = [5.0, 0.0]; // a jump: shown at once
+            Some(street_net::Correction { players, ball })
+        };
+        let mut w = world.clone();
+        w.ball.state = street_sim::BallState::Loose;
+        smooth.update(correction([1.0, 0.0], [0.0, 0.5, 0.0]), &mut w, 1);
+        assert_eq!(w.players[0].position[0], world.players[0].position[0] + 1.0);
+        assert_eq!(w.players[1].position, world.players[1].position);
+        assert_eq!(w.ball.position[1], world.ball.position[1] + 0.5);
+        // A tick on: eased by EASE.
+        let mut w = world.clone();
+        w.ball.state = street_sim::BallState::Held(0);
+        smooth.update(None, &mut w, 1);
+        let dx = w.players[0].position[0] - world.players[0].position[0];
+        assert!((dx - EASE).abs() < 1e-6);
+        // Held, the ball moves with its holder and keeps no offset of its own.
+        assert!((w.ball.position[0] - world.ball.position[0] - EASE).abs() < 1e-6);
+        assert_eq!(w.ball.position[1], world.ball.position[1]);
+        assert_eq!(smooth.ball, [0.0; 3]);
     }
 
     #[test]

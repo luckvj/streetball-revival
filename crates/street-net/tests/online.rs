@@ -245,8 +245,9 @@ fn bad_network_match(conditions: Conditions, seed: u32, ticks: u64) -> u64 {
         let stats = p.client.stats().unwrap();
         assert!(stats.rollbacks > 0, "{name}: guesses never missed?");
         println!(
-            "seed {seed} {name}: rtt {:?}, {stats:?}",
-            p.client.rtt().unwrap_or_default()
+            "seed {seed} {name}: rtt {:?}, lead {}, {stats:?}",
+            p.client.rtt().unwrap_or_default(),
+            p.client.lead_target()
         );
     }
     let resyncs = drifted(&server_events);
@@ -296,6 +297,84 @@ fn clients_agree_over_harsh_networks() {
     for seed in 1..=5 {
         bad_network_match(conditions, seed, 2400);
     }
+}
+
+/// A machine whose frames hitch (150 ms, every second, as a slow PC's do):
+/// its pads for those ticks go out late, and the server plays its last pad
+/// in their place, pulling its own player back. Its client aims its pads
+/// further ahead until the hitches no longer cost it any, and the other,
+/// steady machine keeps its small lead.
+#[test]
+fn a_hitching_machine_leads_its_pads_past_the_hitches() {
+    let net = MemoryNetwork::new(
+        Conditions {
+            loss: 0.01,
+            duplicate: 0.0,
+            delay: Duration::from_millis(30),
+            jitter: Duration::from_millis(15),
+        },
+        11,
+    );
+    let mut server = Server::new(
+        Box::new(net.endpoint(addr(SERVER))),
+        ServerConfig::default(),
+        disc(),
+    );
+    let mut players = [
+        Player::new(
+            Box::new(net.endpoint(addr("10.0.0.2:5000"))),
+            join("A", Some(0), true),
+            1,
+        ),
+        Player::new(
+            Box::new(net.endpoint(addr("10.0.0.3:5000"))),
+            join("B", Some(1), true),
+            2,
+        ),
+    ];
+    let step = Duration::from_millis(4);
+    let mut now = Duration::ZERO;
+    let mut warm = None;
+    while server.host("park").is_none_or(|h| h.tick() < 5400) {
+        now += step;
+        assert!(now < Duration::from_secs(200));
+        net.set_time(now);
+        server.update(now);
+        let hitch = now.as_millis() % 1000 < 150;
+        for (k, p) in players.iter_mut().enumerate() {
+            if k != 0 || !hitch {
+                p.frame(now);
+            }
+        }
+        if warm.is_none() && server.host("park").is_some_and(|h| h.tick() >= 2400) {
+            warm = Some(
+                players
+                    .iter()
+                    .map(|p| p.client.stats().unwrap())
+                    .collect::<Vec<_>>(),
+            );
+        }
+    }
+    let warm = warm.unwrap();
+    let (a, b) = (
+        players[0].client.stats().unwrap(),
+        players[1].client.stats().unwrap(),
+    );
+    println!(
+        "A lead {} {a:?}; B lead {} {b:?}",
+        players[0].client.lead_target(),
+        players[1].client.lead_target()
+    );
+    assert!(
+        players[0].client.lead_target() > 4,
+        "A leads past its hitches"
+    );
+    assert!(players[1].client.lead_target() <= 3, "B stays close");
+    // Fifty seconds of hitches once settled: hardly a pad of A's lost.
+    assert!(a.overridden - warm[0].overridden <= 6, "{a:?}");
+    assert!(b.overridden - warm[1].overridden <= 2, "{b:?}");
+    assert_agrees(&server, &players[0], "A");
+    assert_agrees(&server, &players[1], "B");
 }
 
 #[test]

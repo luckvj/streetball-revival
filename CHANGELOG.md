@@ -11,6 +11,15 @@ its version's part.
   mark) and the Discord.
 - **The launcher shows its release's version** (it read v0.1.0 in every
   release).
+- **Smoother online play.** Your own moves no longer get pulled back when
+  your connection or your PC hiccups: the game now sends your controls
+  further ahead when it needs to, and less when the connection is steady.
+  The host's server runs on its own thread, so a busy host PC no longer
+  delays everyone. On a long connection the game adds a little input delay
+  (up to a tenth of a second) so the other side has to guess your moves
+  less. When a guess about the other players turns out wrong, the players
+  and the ball glide to where they belong instead of snapping back and
+  forth.
 
 ## v0.1.4-beta
 
