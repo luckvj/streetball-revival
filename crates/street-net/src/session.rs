@@ -137,8 +137,21 @@ pub struct Session {
     confirmed_events: Vec<(u64, Vec<Event>)>,
     /// The rollbacks' corrections since the last look.
     correction: Option<Correction>,
+    /// The events handed out for predicted ticks not confirmed yet, by
+    /// tick: a re-run's events are told from them ([`Session::take_events`]).
+    emitted: BTreeMap<u64, Vec<Event>>,
+    /// Events handed out for re-run ticks that the re-run has not made
+    /// again (yet): a repeat within [`EVENT_SLACK`] ticks is not handed
+    /// out twice.
+    unmatched: BTreeMap<u64, Vec<Event>>,
+    /// Events not handed out yet.
+    fresh: Vec<Event>,
     stats: SessionStats,
 }
+
+/// Ticks either way a re-run's event may move and still be the one
+/// handed out before.
+const EVENT_SLACK: u64 = 2;
 
 /// Confirmed events kept for a game that does not take them.
 const MAX_CONFIRMED_EVENTS: usize = 600;
@@ -162,6 +175,9 @@ impl Session {
             reports: Vec::new(),
             confirmed_events: Vec::new(),
             correction: None,
+            emitted: BTreeMap::new(),
+            unmatched: BTreeMap::new(),
+            fresh: Vec::new(),
             stats: SessionStats::default(),
         }
     }
@@ -189,6 +205,9 @@ impl Session {
         let guess = self.guess(tick);
         self.predicted.step(&guess);
         self.guesses.push_back(guess);
+        self.note_events(tick, &self.predicted.world.events.clone());
+        let stale = tick.saturating_sub(EVENT_SLACK);
+        self.unmatched = self.unmatched.split_off(&stale);
         self.stats.predicted += 1;
         Some(Advanced { tick, rolled_back })
     }
@@ -219,6 +238,7 @@ impl Session {
         self.predicted = self.confirmed.clone();
         self.guesses.clear();
         self.stats.resyncs += 1;
+        self.begin_rerun(floor);
         self.resimulate(target);
         if self.local_base > floor {
             // Nothing local that old: start the record at the new state.
@@ -275,6 +295,16 @@ impl Session {
         self.correction.take()
     }
 
+    /// The events of the present since the last call, each once, for sound
+    /// and effects: those of every tick predicted, and those a rollback's
+    /// re-run makes that were not handed out already (an event the guess
+    /// made and the re-run undoes has gone out and stays out; one the
+    /// re-run makes, the other side's shot, goes out late rather than
+    /// never).
+    pub fn take_events(&mut self) -> Vec<Event> {
+        std::mem::take(&mut self.fresh)
+    }
+
     /// The present, to draw: the predicted world.
     pub fn world(&self) -> &World {
         &self.predicted.world
@@ -326,11 +356,17 @@ impl Session {
     /// the ticks re-simulated.
     fn settle(&mut self) -> u64 {
         let mut wrong = false;
+        // The first tick whose guess was wrong: its events and those after
+        // it are made again; the ticks before it stand as handed out.
+        let mut first_wrong = None;
+        let reached = self.predicted.tick();
+        let mut steps: Vec<(u64, Vec<Event>)> = Vec::new();
         while let Some(f) = self.arrived.remove(&self.confirmed.tick()) {
             match self.guesses.pop_front() {
                 Some(g) if g == f => {}
                 Some(g) => {
                     wrong = true;
+                    first_wrong.get_or_insert(self.confirmed.tick());
                     if self.local_seats.iter().any(|&s| {
                         usize::from(s) < MAX_SEATS
                             && g.seats[usize::from(s)] != f.seats[usize::from(s)]
@@ -342,6 +378,9 @@ impl Session {
             }
             self.confirmed.step(&f);
             let events = &self.confirmed.world.events;
+            if self.confirmed.tick() > reached || wrong {
+                steps.push((self.confirmed.tick() - 1, events.clone()));
+            }
             if !events.is_empty() {
                 if self.confirmed_events.len() >= MAX_CONFIRMED_EVENTS {
                     self.confirmed_events.remove(0);
@@ -355,6 +394,14 @@ impl Session {
             }
         }
         self.prune_local();
+        // The confirmed ticks' events where the guess was wrong or never
+        // got to.
+        if let Some(floor) = first_wrong {
+            self.begin_rerun(floor);
+        }
+        for (t, events) in &steps {
+            self.note_events(*t, events);
+        }
         if self.confirmed.tick() >= self.predicted.tick() {
             // The confirmations overtook the prediction.
             if self.confirmed.tick() > self.predicted.tick() {
@@ -393,13 +440,49 @@ impl Session {
             .add(before, &after);
     }
 
+    /// The ticks from `floor` on are about to be re-run: what was handed
+    /// out for them waits to be matched by the re-run's events.
+    fn begin_rerun(&mut self, floor: u64) {
+        for (t, events) in self.emitted.split_off(&floor) {
+            self.unmatched.entry(t).or_default().extend(events);
+        }
+    }
+
+    /// Tick `tick` made `events`: hand out those not handed out for it (or
+    /// for a tick within [`EVENT_SLACK`]) before a re-run.
+    fn note_events(&mut self, tick: u64, events: &[Event]) {
+        for e in events {
+            let kind = std::mem::discriminant(e);
+            let lo = tick.saturating_sub(EVENT_SLACK);
+            let seen = self
+                .unmatched
+                .range_mut(lo..=tick + EVENT_SLACK)
+                .find_map(|(_, list)| {
+                    let i = list
+                        .iter()
+                        .position(|o| std::mem::discriminant(o) == kind)?;
+                    list.swap_remove(i);
+                    Some(())
+                })
+                .is_some();
+            if !seen {
+                self.fresh.push(*e);
+            }
+        }
+        self.emitted.insert(tick, events.to_vec());
+        let settled = self.confirmed.tick().saturating_sub(EVENT_SLACK);
+        self.emitted = self.emitted.split_off(&settled);
+    }
+
     /// Predict from the predicted match up to tick `target`.
     fn resimulate(&mut self, target: u64) -> u64 {
         let mut n = 0;
         while self.predicted.tick() < target {
-            let guess = self.guess(self.predicted.tick());
+            let tick = self.predicted.tick();
+            let guess = self.guess(tick);
             self.predicted.step(&guess);
             self.guesses.push_back(guess);
+            self.note_events(tick, &self.predicted.world.events.clone());
             n += 1;
         }
         self.stats.resimulated += n;
@@ -519,6 +602,73 @@ mod tests {
             truth.step(&frame(t));
         }
         assert_eq!(s.confirmed().checksum(), truth.checksum());
+    }
+
+    /// The events handed out for sound are what really happened: each of
+    /// the truth's, though the guess missed it and a re-run made it, goes
+    /// out (late, not never), and few the guess made and undid. Taking the
+    /// newest tick's events alone, as the game once did, lost the other
+    /// side's.
+    #[test]
+    fn every_event_that_happened_is_handed_out_once() {
+        use std::collections::HashMap;
+        let cfg = SessionConfig {
+            input_delay: 0,
+            ..Default::default()
+        };
+        let mut s = Session::new(start(), vec![0], cfg);
+        let mut truth = start();
+        let kind = |e: &Event| {
+            format!("{e:?}")
+                .split([' ', '{', '('])
+                .next()
+                .unwrap()
+                .to_owned()
+        };
+        let (mut real, mut handed, mut newest) = (
+            HashMap::<String, i64>::new(),
+            HashMap::<String, i64>::new(),
+            HashMap::<String, i64>::new(),
+        );
+        let ticks = 6000u64;
+        for t in 0..ticks {
+            s.add_local_input(0, pad(t, 0));
+            s.advance().expect("not stalled");
+            for e in &s.world().events {
+                *newest.entry(kind(e)).or_default() += 1;
+            }
+            for e in s.take_events() {
+                *handed.entry(kind(&e)).or_default() += 1;
+            }
+            if t >= 8 && t % 4 == 0 {
+                let from = t - 8;
+                let frames: Vec<Frame> = (from..from + 4).map(frame).collect();
+                s.confirm(from, &frames);
+            }
+        }
+        // The truth up to where the session's present stands.
+        for t in 0..s.tick() {
+            truth.step(&frame(t));
+            for e in &truth.world.events {
+                *real.entry(kind(e)).or_default() += 1;
+            }
+        }
+        let (mut missed, mut extra, mut missed_before, mut total) = (0, 0, 0, 0);
+        for (k, &n) in &real {
+            let h = handed.get(k).copied().unwrap_or(0);
+            let o = newest.get(k).copied().unwrap_or(0);
+            missed += (n - h).max(0);
+            extra += (h - n).max(0);
+            missed_before += (n - o).max(0);
+            total += n;
+        }
+        println!(
+            "{total} events: missed {missed}, extra {extra}; newest tick alone missed {missed_before}"
+        );
+        assert!(total > 100, "a busy match: {total}");
+        assert!(missed * 100 <= total, "missed {missed} of {total}");
+        assert!(extra * 20 <= total, "extra {extra} of {total}");
+        assert!(missed_before > missed, "the old way lost more");
     }
 
     /// The confirmed events are the truth's, tick for tick, however the
