@@ -13802,3 +13802,26 @@ songs) in it. Through it, the rewrite's Lords sits within 0.7 dB of the
 original's in every band from 4 to 20 kHz (the same offset in each: the
 fitted level). On a 48 kHz device the audio library plays the result as it
 is.
+
+### The mixer's volume ramp and loop seams (2026-10-31)
+
+GitHub issue 2 reports a buzz "in the background of all the sound" in a
+match (Be A Legend's first game), not in the menus. Two differences from
+the sound driver turned up in `sfx.rs`'s mixer, which plays the match's
+banks and crowd:
+
+- A playing voice's volume and pan jumped to each update's new values.
+  `SNDDRV.IRX`'s `SNDMIXI_volramp` mixes a voice whose volume changed
+  through `MIXI_interpolatemix` over 0x10 samples (`jal 0xba8` with the
+  old and new gains) before taking the new one. The crowd and every moving
+  sound change gain each update; stepped gains at the update rate are a
+  buzz under them. The mixer now ramps a playing voice's gains over 16
+  frames at 48 kHz (`GAIN_RAMP`).
+- Looping bank sounds dropped a frame at each seam and, for a loop ending
+  before the clip's last frame, looped the wrong stretch. The patch's
+  0x87 is the last frame looped (a whole-clip loop's is the sample count
+  less one, as the loading loop's 0x6cd15 of 0x6cd16), and the loop start
+  follows it. The voice now wraps from the loop's end frame to its start,
+  interpolating across the seam.
+
+Neither has been heard against the report's own machine.

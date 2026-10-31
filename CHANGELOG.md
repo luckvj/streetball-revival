@@ -42,6 +42,10 @@ its version's part.
 - **A player who drops is taken over by the computer** after a second,
   instead of their player running in the last direction they held until
   the connection gave up. If they come back, they take over again.
+- **Fixed: a buzz under the match's sounds** (reported on GitHub). Sound
+  volumes changed in steps many times a second instead of sliding, as the
+  original's sound driver slides them, and looping sounds clicked at
+  every pass of their loop. Both now play as the original does.
 - **Less stutter online.** The game nudged its clock whenever its timing
   drifted by a hair, and each nudge showed one moment twice or skipped
   one. It now lets small drifts be: about one hitch every 4 seconds on a
