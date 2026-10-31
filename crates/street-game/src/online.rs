@@ -205,6 +205,12 @@ impl OnlineForm {
     /// network's match, the code typed, the name).
     pub fn help(&self, k: usize) -> String {
         match self.row(k) {
+            Row::Host(2) if self.spectate => {
+                "Host for two others and watch (Watch Only is on).".into()
+            }
+            Row::Host(_) if self.spectate => {
+                "Host for up to six others and watch (Watch Only is on).".into()
+            }
             Row::Host(2) => "Play one other person online.".into(),
             Row::Host(_) => "Up to six people, three a side.".into(),
             Row::Lan(i) => {
@@ -225,7 +231,9 @@ impl OnlineForm {
             }
             Row::Code => format!("Join {}.", self.server.trim()),
             Row::Name => format!("Your name online: {}.", self.name),
-            Row::Spectate => "Join to watch the match without playing.".into(),
+            Row::Spectate => {
+                "Watch without playing; hosting, the others play on equal terms.".into()
+            }
             Row::Browse => "The matches on the server typed under Join With Code.".into(),
         }
     }
@@ -264,7 +272,7 @@ impl OnlineForm {
             },
             people: self.people,
             match_name: self.match_name.clone(),
-            spectate: !host && self.spectate,
+            spectate: self.spectate,
             ..OnlineArgs::default()
         }
     }
@@ -613,7 +621,9 @@ impl Online {
                 .host
                 .and_then(|_| street_net::lan::Announcer::new().ok()),
             sent: None,
-            lobby_flow: !args.ready && !args.spectate,
+            // A host that only watches still runs the lobby: it makes the
+            // match.
+            lobby_flow: !args.ready && !(args.spectate && args.host.is_none()),
             stage: crate::lobby::Stage::default(),
             duties: Default::default(),
             device: crate::controls::Device::Keyboard,
@@ -1567,6 +1577,12 @@ fn decide(
         setup.seats.clear();
         online.stage = Stage::Picked;
     }
+    // A host that only watches has no side to choose; it picks the court
+    // and the rules once both sides have someone to play them.
+    if creator && mine.is_empty() && online.stage == Stage::Sides {
+        online.stage = Stage::SidesDone;
+    }
+    let both_sides = (0..2u8).all(|side| lobby.iter().any(|e| e.team == side));
     match online.stage {
         Stage::Sides => {
             // The side chooser: up for AWAY, down for HOME (`FUN_00245b88`).
@@ -1584,11 +1600,18 @@ fn decide(
                 return Err(String::new());
             }
         }
+        // A host that only watches has no side to go back to.
+        Stage::SidesDone if input.back() && mine.is_empty() && creator => {
+            return Err(String::new());
+        }
         Stage::SidesDone if input.back() => online.stage = Stage::Sides,
         _ => {}
     }
     // Everyone's side set: each side's first person picks.
-    if online.stage == Stage::SidesDone && lobby::everyone_at(&lobby, 1) {
+    if online.stage == Stage::SidesDone
+        && lobby::everyone_at(&lobby, 1)
+        && (!mine.is_empty() || both_sides)
+    {
         let duties = lobby::duties(&lobby, &mine, creator);
         online.duties = duties.clone();
         if duties.sides.is_empty() && !duties.court {

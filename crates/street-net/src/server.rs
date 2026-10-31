@@ -712,10 +712,7 @@ impl Server {
             return;
         }
         if !self.matches.contains_key(&join.match_name) {
-            if join.players.is_empty() {
-                self.refuse(from, Refusal::Invalid);
-                return;
-            }
+            // A creator with nobody to seat is a host that only watches.
             let Some(setup) = join.create.clone() else {
                 self.refuse(from, Refusal::NoMatch);
                 return;
@@ -1588,6 +1585,53 @@ mod rematch_tests {
             }
         }
         events
+    }
+
+    /// A host that only watches makes the match; the two who join take
+    /// its seats and play, the host holding none.
+    #[test]
+    fn a_watching_host_makes_the_match_others_play() {
+        let net = MemoryNetwork::new(Conditions::default(), 72);
+        let mut server = Server::new(
+            Box::new(net.endpoint(addr(7375))),
+            ServerConfig::default(),
+            std::sync::Arc::new(Disc::stand_ins()),
+        );
+        let client = |port, name, watch| {
+            Client::new(
+                Box::new(net.endpoint(addr(port))),
+                addr(7375),
+                join(name, watch),
+                ClientConfig::default(),
+                std::sync::Arc::new(Disc::stand_ins()),
+            )
+        };
+        let mut clients = vec![client(5003, "host", true)];
+        for step in 0..10 {
+            pump(
+                &net,
+                &mut server,
+                &mut clients,
+                Duration::from_millis(step * 10),
+            );
+        }
+        assert!(server.host("rematch").is_some(), "the watcher made it");
+        clients.push(client(5001, "a", false));
+        clients.push(client(5002, "b", false));
+        for client in &mut clients {
+            client.set_ready(true);
+        }
+        for step in 10..100 {
+            pump(
+                &net,
+                &mut server,
+                &mut clients,
+                Duration::from_millis(step * 10),
+            );
+        }
+        assert!(clients.iter().all(|c| c.status() == Status::Playing));
+        assert!(clients[0].seats().is_empty());
+        assert_eq!(clients[1].seats().len() + clients[2].seats().len(), 2);
     }
 
     #[test]

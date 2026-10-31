@@ -35,6 +35,10 @@ its version's part.
   adjusting during the match: about 67 ms on a 40 ms connection, 117 ms
   at 115 ms. To trade that steadiness for quicker presses, start the game
   with `--responsive`.
+- **Host without playing.** Turn on Watch Only on the Online page, then
+  host: your game runs the match and shows it, and the two (or up to six)
+  people who join play it on equal terms. Hosting while playing gives the
+  host the lowest ping; hosting to watch gives that edge to nobody.
 - **Online matches open with their intros,** as matches played alone do:
   the court's intro, then the away side's. Everyone sees the same intros
   at the same time, and anyone pressing Cross skips them for everyone.
