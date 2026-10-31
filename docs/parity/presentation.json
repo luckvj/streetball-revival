@@ -4804,7 +4804,7 @@
           "path": "crates/street-game/src/main.rs",
           "locator": "Screen::Boot; the start state",
           "note": "The boot before the movies.",
-          "sha256": "d11bc9d12928d5388f8f029142c69d55c05f3a6fe300907ef64ad7458642f28c"
+          "sha256": "4281745ade46bcd70dd4bb6ad9b1e06007094bba93624637cf4bd7b373eeb7d5"
         },
         {
           "path": "$EVIDENCE/street-card-orig/boot_unformatted/log.json",
@@ -4910,7 +4910,7 @@
         }
       ],
       "tolerance": "The picture and bar at their places within 5 of the Difficulty baseline; the bar's width at each moment within 2 pixels of the measured fill; the picture's time within 0.15 s of the runtime's; the card's messages as presentation.ui_game_data_file_saves; no press taken.",
-      "limitations": "Known difference, accepted by Vj 2026-10-21: the loading screens are quick by default (the boot's picture 1.0 s, its bar filling across it, crate::pace); the measured hold below is kept behind --original-load-times. The time and fill are the runtime's boot (three boots agree within 0.15 s); a console's drive may load at another pace. xldfrscn.bin, a French console's (FUN_00342088 = 2), is not shown: the rewrite runs in English. The boot shows when the movies would (not in scripted, screenshot or quick runs; --intro forces it). Last re-pinned 2026-10-30 after online grace (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Known difference, accepted by Vj 2026-10-21: the loading screens are quick by default (the boot's picture 1.0 s, its bar filling across it, crate::pace); the measured hold below is kept behind --original-load-times. The time and fill are the runtime's boot (three boots agree within 0.15 s); a console's drive may load at another pace. xldfrscn.bin, a French console's (FUN_00342088 = 2), is not shown: the rewrite runs in English. The boot shows when the movies would (not in scripted, screenshot or quick runs; --intro forces it). Last re-pinned 2026-10-31 after steady delay (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -5440,7 +5440,7 @@
           "path": "crates/street-game/src/main.rs",
           "locator": "--demo-delay; attract::AttractPlugin",
           "note": "The wait for a run.",
-          "sha256": "d11bc9d12928d5388f8f029142c69d55c05f3a6fe300907ef64ad7458642f28c"
+          "sha256": "4281745ade46bcd70dd4bb6ad9b1e06007094bba93624637cf4bd7b373eeb7d5"
         },
         {
           "path": "$EVIDENCE/street-idle-orig/INDEX.md",
@@ -5612,7 +5612,7 @@
         }
       ],
       "tolerance": "The demo when, and as, the original starts it: the timer's 120 s within a frame, Main's restarts, the 4 s, the turns, the picks drawn as FUN_001db7f8 draws them on the session's generator, the ways back; the title again's transition within 110 ms of the two measured; the screens within 5 of the Difficulty baseline (10.9).",
-      "limitations": "The rewrite's load into the demo stands as long as its other loads (the original's 7.2 to 13 s follow its disc's reads). The game's end goes to the load back 0.97 s after the won basket's replay, as after Start (the runtime's 1.3 s, within half a second). Main's timer pausing under the Help overlay follows the code (FUN_002d7ad8), not a measurement. The command line's --demo keeps the rewrite's own pause and boards. Superseded: until 2026-10-20 the rewrite waited on the title and Main forever. 2026-10-20 (the movies pass): the title's turn plays TITLE_REEL through the movie task's chain (presentation.ui_boot_movies); its Start check stays armed until a Start is taken (+0x70), so a Start during the zoom with none before plays the zoom again; the model 0.10 and 0.14 s short of the two turns. Last re-pinned 2026-10-30 after online grace (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The rewrite's load into the demo stands as long as its other loads (the original's 7.2 to 13 s follow its disc's reads). The game's end goes to the load back 0.97 s after the won basket's replay, as after Start (the runtime's 1.3 s, within half a second). Main's timer pausing under the Help overlay follows the code (FUN_002d7ad8), not a measurement. The command line's --demo keeps the rewrite's own pause and boards. Superseded: until 2026-10-20 the rewrite waited on the title and Main forever. 2026-10-20 (the movies pass): the title's turn plays TITLE_REEL through the movie task's chain (presentation.ui_boot_movies); its Start check stays armed until a Start is taken (+0x70), so a Start during the zoom with none before plays the zoom again; the model 0.10 and 0.14 s short of the two turns. Last re-pinned 2026-10-31 after steady delay (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -6772,7 +6772,7 @@
           "path": "crates/street-game/src/online.rs",
           "locator": "the creator's looks (city, nickname)",
           "note": "The creator sends its records' names.",
-          "sha256": "0409960b8aa554e1d4ad92240e6438593a84927151d54f13942248d6450a4895"
+          "sha256": "f056208e0b56ceb63d3b795ca07c0042056ab2ee8365f98f68689ec0b4638dfc"
         },
         {
           "path": "crates/street-game/src/boards.rs",
@@ -6812,7 +6812,7 @@
         }
       ],
       "tolerance": "The same city and nickname elements on every machine, as a match alone draws them.",
-      "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-30 after online grace (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-31 after steady delay (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
