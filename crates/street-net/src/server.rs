@@ -173,6 +173,9 @@ pub enum ServerEvent {
 
 /// Ticks per lead measuring window.
 const LEAD_WINDOW: u64 = 20;
+/// Ticks in a row a machine's pads may miss before the computer takes its
+/// seats (a second, after the grace).
+const HAND_OVER: u64 = 60;
 /// Most ticks run in one update when the server falls behind real time.
 const MAX_CATCH_UP: u64 = 10;
 /// Gap between full states sent to one client.
@@ -204,6 +207,8 @@ struct Remote {
     state_sent_at: Option<Duration>,
     /// Pads that missed their tick.
     late: u64,
+    /// Ticks in a row whose pads missed them.
+    missing: u64,
     /// What the machine's people have picked in the lobby.
     pick: Vec<u8>,
 }
@@ -385,13 +390,21 @@ impl Host {
             r.pads.retain(|&k, _| k > t);
             if pads.is_none() {
                 r.late += 1;
+                r.missing += 1;
+            } else {
+                r.missing = 0;
             }
+            // A machine silent past HAND_OVER ticks has dropped or stalled:
+            // the computer plays its seats until its pads come back, rather
+            // than its last pad running a player into the stands.
+            let gone = r.missing > HAND_OVER;
             for (j, &seat) in r.seats.iter().enumerate() {
                 let k = usize::from(seat);
-                frame.seats[k] = Some(match &pads {
-                    Some(p) => p[j],
-                    None => self.last[k].unwrap_or_default(),
-                });
+                frame.seats[k] = match &pads {
+                    Some(p) => Some(p[j]),
+                    None if gone => None,
+                    None => Some(self.last[k].unwrap_or_default()),
+                };
             }
             r.ack = r.ack.max(t + 1);
             while r.pads.contains_key(&r.ack) {
@@ -781,6 +794,7 @@ impl Server {
             resync_floor: 0,
             state_sent_at: None,
             late: 0,
+            missing: 0,
             pick: Vec::new(),
         });
         host.lobby_dirty = true;
@@ -954,6 +968,7 @@ impl Server {
                 r.resync_floor = host.state.tick();
                 r.state_sent_at = None;
                 r.late = 0;
+                r.missing = 0;
             }
         }
         let restart_round = host.round;
@@ -1585,6 +1600,55 @@ mod rematch_tests {
             }
         }
         events
+    }
+
+    /// A machine gone silent mid-match: its last pad stands in for a
+    /// moment, then the computer plays its seat (no input) rather than run
+    /// its player on that pad until the timeout.
+    #[test]
+    fn a_silent_machines_seat_goes_to_the_computer() {
+        let net = MemoryNetwork::new(Conditions::default(), 73);
+        let mut server = Server::new(
+            Box::new(net.endpoint(addr(7375))),
+            ServerConfig::default(),
+            std::sync::Arc::new(Disc::stand_ins()),
+        );
+        let client = |port, name| {
+            Client::new(
+                Box::new(net.endpoint(addr(port))),
+                addr(7375),
+                join(name, false),
+                ClientConfig::default(),
+                std::sync::Arc::new(Disc::stand_ins()),
+            )
+        };
+        let mut clients = vec![client(5001, "a"), client(5002, "b")];
+        for c in &mut clients {
+            c.set_ready(true);
+        }
+        let mut now = Duration::ZERO;
+        for _ in 0..200 {
+            now += Duration::from_millis(10);
+            pump(&net, &mut server, &mut clients, now);
+        }
+        assert!(clients.iter().all(|c| c.status() == Status::Playing));
+        let b_seat = usize::from(clients[1].seats()[0]);
+        let silent_from = server.host("rematch").unwrap().tick();
+        // b goes quiet; a plays on.
+        let mut a = vec![clients.remove(0)];
+        for _ in 0..300 {
+            now += Duration::from_millis(10);
+            pump(&net, &mut server, &mut a, now);
+        }
+        let host = server.host("rematch").unwrap();
+        let seat_at = |t: u64| host.history[(t - host.history_start) as usize].seats[b_seat];
+        assert!(
+            seat_at(silent_from + 5).is_some(),
+            "the last pad stands in at first"
+        );
+        let late = host.tick() - 1;
+        assert!(late > silent_from + 12 + HAND_OVER, "{late}");
+        assert_eq!(seat_at(late), None, "then the computer plays it");
     }
 
     /// A host that only watches makes the match; the two who join take

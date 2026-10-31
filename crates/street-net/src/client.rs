@@ -56,6 +56,9 @@ pub struct ClientConfig {
     pub steady: bool,
     /// Give up after hearing nothing from the server for this long.
     pub timeout: Duration,
+    /// The same once the match is under way, when no loading can stall a
+    /// game: the most a dead server's world stands frozen.
+    pub play_timeout: Duration,
     /// Resend the join this often until answered.
     pub join_retry: Duration,
     /// Ping (and, in the lobby, repeat the ready flag) this often.
@@ -71,6 +74,7 @@ impl Default for ClientConfig {
             max_input_delay: 15,
             steady: true,
             timeout: Duration::from_secs(5),
+            play_timeout: Duration::from_secs(5),
             join_retry: Duration::from_millis(250),
             ping_every: Duration::from_millis(500),
         }
@@ -327,7 +331,12 @@ impl Client {
             }
             Status::Ended => {}
         }
-        if self.status != Status::Ended && now.saturating_sub(self.heard_at) > self.cfg.timeout {
+        let timeout = if self.status == Status::Playing {
+            self.cfg.play_timeout.min(self.cfg.timeout)
+        } else {
+            self.cfg.timeout
+        };
+        if self.status != Status::Ended && now.saturating_sub(self.heard_at) > timeout {
             self.end(ClientEvent::TimedOut);
         }
         std::mem::take(&mut self.events)
@@ -565,6 +574,15 @@ impl Client {
     /// [`Session::take_correction`]).
     pub fn take_correction(&mut self) -> Option<crate::session::Correction> {
         self.session.as_mut()?.take_correction()
+    }
+
+    /// The present's events since the last call, each once (see
+    /// [`Session::take_events`]).
+    pub fn take_events(&mut self) -> Vec<street_sim::Event> {
+        self.session
+            .as_mut()
+            .map(Session::take_events)
+            .unwrap_or_default()
     }
 
     /// The smoothed round trip time.
@@ -937,8 +955,10 @@ impl Client {
     /// Move the input delay toward the one the round trips now ask for: at
     /// once while the intros hold the world (the match's start, when
     /// loading has just inflated the round trips), else a tick at a time
-    /// every [`DELAY_STEP`] ticks. The clock moves by the change, so the
-    /// pads still reach the server as early as before.
+    /// every [`DELAY_STEP`] ticks, down as soon as asked but up only when
+    /// asked for two more (a round trip on a tick's edge would flip it
+    /// back and forth, each flip a pad dropped or held). The clock moves by
+    /// the change, so the pads still reach the server as early as before.
     fn adapt_delay(&mut self) {
         let want = self.input_delay();
         let Some(s) = &mut self.session else {
@@ -949,10 +969,12 @@ impl Client {
         let next = if s.current().intro_hold > 0 {
             want
         } else if tick >= self.delay_guard {
-            match want.cmp(&have) {
-                std::cmp::Ordering::Greater => have + 1,
-                std::cmp::Ordering::Less => have - 1,
-                std::cmp::Ordering::Equal => have,
+            if want > have + 1 {
+                have + 1
+            } else if want < have {
+                have - 1
+            } else {
+                have
             }
         } else {
             have

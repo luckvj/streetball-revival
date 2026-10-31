@@ -428,6 +428,10 @@ struct Smooth {
     eased: u32,
     snapped: u32,
     longest: f32,
+    /// Events handed to sound and effects, and events confirmed, for the
+    /// periodic log (they should agree but for a guess's undone few).
+    handed: u64,
+    confirmed: u64,
 }
 
 /// What is left of an eased correction after a tick (half gone in about
@@ -1888,7 +1892,6 @@ pub fn net_step(
         return;
     }
     let seats = client.seats().to_vec();
-    let mut events = Vec::new();
     for _ in 0..due {
         for (k, &seat) in seats.iter().enumerate() {
             let pad = match (control.seats.get(k), client.world()) {
@@ -1901,12 +1904,12 @@ pub fn net_step(
             };
             client.add_local_input(seat, pad);
         }
-        if client.advance().is_some()
-            && let Some(w) = client.world()
-        {
-            events.extend(w.events.iter().cloned());
-        }
+        client.advance();
     }
+    // Each predicted tick's events once, a rollback's re-run included (the
+    // other side's shot that the guess missed sounds late, not never).
+    let events = client.take_events();
+    online.smooth.handed += events.len() as u64;
     let correction = client.take_correction();
     if let (Some(s), Some(rtt)) = (client.stats(), client.rtt())
         && client
@@ -1915,12 +1918,14 @@ pub fn net_step(
     {
         let smooth = &mut online.smooth;
         info!(
-            "online: rtt {rtt:?}, lead {}, delay {}, {s:?}, corrections eased {} snapped {} longest {:.2}",
+            "online: rtt {rtt:?}, lead {}, delay {}, {s:?}, corrections eased {} snapped {} longest {:.2}, events handed {} confirmed {}",
             client.lead_target(),
             client.session().map_or(0, |s| s.config().input_delay),
             smooth.eased,
             smooth.snapped,
-            smooth.longest
+            smooth.longest,
+            smooth.handed,
+            smooth.confirmed
         );
         smooth.longest = 0.0;
     }
@@ -1969,6 +1974,7 @@ pub fn net_step(
     // play-by-play wait for what the server confirms.
     tick_events.events = events;
     for (_, events) in client.take_confirmed_events() {
+        online.smooth.confirmed += events.len() as u64;
         note_events(&mut sim, &mut stats, events, &names, &teams);
     }
     online.smooth.update(correction, &mut sim.world, due);
