@@ -70,6 +70,10 @@ pub struct SessionStats {
     /// seats than the one played here: ours reached it late, and our own
     /// player was corrected.
     pub overridden: u64,
+    /// Times confirmed frames reached past the prediction (the input delay
+    /// longer than the round trip and lead): the present then jumps to
+    /// them.
+    pub overtaken: u64,
 }
 
 /// How far the rollbacks since the last look moved what is drawn: the
@@ -295,6 +299,13 @@ impl Session {
         &self.local_seats
     }
 
+    /// Change the input delay from the next tick's pads on: a longer one
+    /// holds the last pad over the ticks it skips, a shorter one drops the
+    /// pads already set for the ticks it overlaps.
+    pub fn set_input_delay(&mut self, delay: u32) {
+        self.cfg.input_delay = delay;
+    }
+
     pub fn config(&self) -> &SessionConfig {
         &self.cfg
     }
@@ -346,6 +357,9 @@ impl Session {
         self.prune_local();
         if self.confirmed.tick() >= self.predicted.tick() {
             // The confirmations overtook the prediction.
+            if self.confirmed.tick() > self.predicted.tick() {
+                self.stats.overtaken += 1;
+            }
             if self.confirmed.tick() > self.predicted.tick() || wrong {
                 let before = Correction::of(&self.predicted.world);
                 let same = self.confirmed.tick() == self.predicted.tick();

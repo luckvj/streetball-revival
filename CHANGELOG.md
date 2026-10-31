@@ -27,8 +27,14 @@ its version's part.
   of one spike. Other players glide back into place instead of jumping. In tests on
   a 115 ms connection with regular lag spikes, players jumped to new
   spots about twice in 90 seconds instead of more than once a second.
-  The input delay now comes from your real ping rather than the moment
-  the match loads, so a good connection gets the shortest delay.
+- **Steady online feel, like other sports games.** The input delay now
+  covers your whole ping, so the other players' moves arrive before the
+  game needs them and they almost never slide or jump. If a packet is
+  late, the game corrects quietly instead of freezing. The delay is
+  measured from your real ping (not the moment the match loads) and keeps
+  adjusting during the match: about 67 ms on a 40 ms connection, 117 ms
+  at 115 ms. To trade that steadiness for quicker presses, start the game
+  with `--responsive`.
 - **Online matches open with their intros,** as matches played alone do:
   the court's intro, then the away side's. Everyone sees the same intros
   at the same time, and anyone pressing Cross skips them for everyone.
