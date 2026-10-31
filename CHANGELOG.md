@@ -20,6 +20,15 @@ its version's part.
   less. When a guess about the other players turns out wrong, the players
   and the ball glide to where they belong instead of snapping back and
   forth.
+- **Steadier online play through lag spikes.** When your connection
+  hiccups, the host now waits a moment for your controls instead of
+  guessing them, so a spike no longer eats your moves, and the game no
+  longer runs far ahead of the others for the rest of the match because
+  of one spike. Other players glide back into place instead of jumping. In tests on
+  a 115 ms connection with regular lag spikes, players jumped to new
+  spots about twice in 90 seconds instead of more than once a second.
+  The input delay now comes from your real ping rather than the moment
+  the match loads, so a good connection gets the shortest delay.
 - **Online matches open with their intros,** as matches played alone do:
   the court's intro, then the away side's. Everyone sees the same intros
   at the same time, and anyone pressing Cross skips them for everyone.

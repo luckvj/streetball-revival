@@ -300,12 +300,12 @@ fn clients_agree_over_harsh_networks() {
 }
 
 /// A machine whose frames hitch (150 ms, every second, as a slow PC's do):
-/// its pads for those ticks go out late, and the server plays its last pad
-/// in their place, pulling its own player back. Its client aims its pads
-/// further ahead until the hitches no longer cost it any, and the other,
-/// steady machine keeps its small lead.
+/// its pads for those ticks go out late, and the server waits for them
+/// (its grace) rather than play its last pad in their place, so its own
+/// player is never pulled back, and neither machine has to aim its pads
+/// further ahead (which would lengthen every guess at the others).
 #[test]
-fn a_hitching_machine_leads_its_pads_past_the_hitches() {
+fn a_hitching_machine_keeps_its_pads_through_the_hitches() {
     let net = MemoryNetwork::new(
         Conditions {
             loss: 0.01,
@@ -365,10 +365,7 @@ fn a_hitching_machine_leads_its_pads_past_the_hitches() {
         players[0].client.lead_target(),
         players[1].client.lead_target()
     );
-    assert!(
-        players[0].client.lead_target() > 4,
-        "A leads past its hitches"
-    );
+    assert!(players[0].client.lead_target() <= 3, "A stays close");
     assert!(players[1].client.lead_target() <= 3, "B stays close");
     // Fifty seconds of hitches once settled: hardly a pad of A's lost.
     assert!(a.overridden - warm[0].overridden <= 6, "{a:?}");

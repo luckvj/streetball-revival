@@ -131,6 +131,13 @@ const MAX_INPUT_RUN: usize = 32;
 const LEAD_EASE: u64 = 600;
 /// The worst lead over such a stretch that lets it come down.
 const LEAD_ROOM: i16 = 3;
+/// Ticks of late pads before the lead aimed for goes up: the server waits
+/// a while for a late pad ([`crate::ServerConfig::grace`]), so one hitch
+/// costs nothing here, and a lead raised for it would make every tick's
+/// guess at the others longer until it came down again.
+const RAISE_AFTER: u64 = 90;
+/// Round trips kept for the input delay (ten seconds of pings).
+const RTT_KEPT: usize = 20;
 
 /// A connection to a match on a server.
 pub struct Client {
@@ -167,6 +174,8 @@ pub struct Client {
     ping_sent_at: Option<Duration>,
     inputs_sent_at: Duration,
     rtt: Option<Duration>,
+    /// The last [`RTT_KEPT`] round trips, for the least of them.
+    rtts: std::collections::VecDeque<Duration>,
     reassembly: Reassembly,
     part_id: u16,
     /// The latest `(lead, heard)` from the server.
@@ -183,6 +192,8 @@ pub struct Client {
     /// The worst lead reported since `ease_from`.
     lead_lowest: i16,
     ease_from: u64,
+    /// The tick the reports of late pads (a lead under 1) began.
+    late_since: Option<u64>,
     budget: f64,
     frame_at: Option<Duration>,
     events: Vec<ClientEvent>,
@@ -226,6 +237,7 @@ impl Client {
             ping_sent_at: None,
             inputs_sent_at: Duration::ZERO,
             rtt: None,
+            rtts: std::collections::VecDeque::new(),
             reassembly: Reassembly::default(),
             part_id: 0,
             lead: None,
@@ -234,6 +246,7 @@ impl Client {
             raise_guard: 0,
             lead_lowest: i16::MAX,
             ease_from: 0,
+            late_since: None,
             budget: 0.0,
             frame_at: None,
             events: Vec::new(),
@@ -552,9 +565,10 @@ impl Client {
         self.lead_target
     }
 
-    /// A lead report from the server: raise the lead aimed for when the
-    /// worst pad had no tick to spare (a late one, two), and lower it a
-    /// tick after [`LEAD_EASE`] ticks that always had [`LEAD_ROOM`] over.
+    /// A lead report from the server: raise the lead aimed for by what the
+    /// pads lack when they have been late (a lead under 1) for
+    /// [`RAISE_AFTER`] ticks, and lower it a tick after [`LEAD_EASE`] ticks
+    /// that always had [`LEAD_ROOM`] over.
     fn note_lead(&mut self, lead: i16) {
         let Some(tick) = self.session.as_ref().map(Session::tick) else {
             return;
@@ -563,15 +577,18 @@ impl Client {
             return;
         }
         if lead < 1 {
-            if tick >= self.raise_guard {
-                let up = if lead < 0 { 2 } else { 1 };
+            let since = *self.late_since.get_or_insert(tick);
+            if tick >= self.raise_guard && tick >= since + RAISE_AFTER {
+                let up = (1 - lead).clamp(1, 4);
                 self.lead_target = (self.lead_target + up).min(self.cfg.max_lead);
                 self.raise_guard = tick + self.settle_ticks();
+                self.late_since = None;
             }
             self.lead_lowest = i16::MAX;
             self.ease_from = tick;
             return;
         }
+        self.late_since = None;
         self.lead_lowest = self.lead_lowest.min(lead);
         if tick >= self.ease_from + LEAD_EASE {
             if self.lead_lowest >= LEAD_ROOM && self.lead_target > self.cfg.target_lead {
@@ -867,6 +884,10 @@ impl Client {
     }
 
     fn sample_rtt(&mut self, sample: Duration) {
+        if self.rtts.len() == RTT_KEPT {
+            self.rtts.pop_front();
+        }
+        self.rtts.push_back(sample);
         self.rtt = Some(match self.rtt {
             None => sample,
             Some(r) => r.mul_f64(0.8) + sample.mul_f64(0.2),
@@ -880,11 +901,16 @@ impl Client {
         })
     }
 
-    /// The input delay for a match starting now: half the round trip in
-    /// ticks, within the config's least and most.
+    /// The input delay for a match starting now: half the least recent
+    /// round trip in ticks, within the config's least and most. The least,
+    /// as a frame that stalls (loading the match) only ever adds to a
+    /// round trip: the smoothed one would hand a whole match a delay the
+    /// connection never needed.
     fn input_delay(&self) -> u32 {
         let least = self.cfg.session.input_delay;
-        let half = self.rtt.map_or(0, |_| self.rtt_ticks().div_ceil(2) as u32);
+        let half = self.rtts.iter().min().map_or(0, |r| {
+            ((r.as_secs_f64() * f64::from(street_sim::TICK_HZ)).ceil() as u32).div_ceil(2)
+        });
         half.clamp(least, self.cfg.max_input_delay.max(least))
     }
 

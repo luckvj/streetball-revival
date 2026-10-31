@@ -21,8 +21,11 @@
 //! the people it concerns again; a new setup un-readies everyone.
 //!
 //! Each tick the server fixes every occupied seat's pad: the pad the client
-//! sent for that tick, or, if it has not arrived, the seat's pad from the
-//! tick before. It steps its own [`Match`] with the frame, keeps the frame
+//! sent for that tick, or, if it has not arrived within
+//! [`ServerConfig::grace`] ticks of the clock, the seat's pad from the tick
+//! before. A late pad thus still drives its own player (a hitch costs the
+//! others a longer guess, not the late player his move), and a tick whose
+//! pads are all in is fixed as soon as the clock reaches it. It steps its own [`Match`] with the frame, keeps the frame
 //! and the checksum, and sends every client the frames it lacks. Clients
 //! report checksums of their confirmed states; a client whose checksum
 //! differs, or who has fallen behind the frames kept, gets the whole state.
@@ -84,6 +87,9 @@ pub struct ServerConfig {
     pub max_matches: usize,
     /// A client silent this long loses its seats.
     pub timeout: Duration,
+    /// Ticks the server waits past the clock for a late pad before it
+    /// repeats the seat's last one.
+    pub grace: u64,
     /// Frames (and checksums) kept for resending, in ticks.
     pub history: usize,
     /// A finished match stays up this long after its won game's replay
@@ -107,6 +113,7 @@ impl Default for ServerConfig {
             max_matches: 64,
             seats_per_side: 3,
             timeout: Duration::from_secs(5),
+            grace: 12,
             history: 600,
             linger: Duration::from_secs(120),
             rosters: Default::default(),
@@ -216,6 +223,9 @@ pub struct Host {
     started_at: Option<Duration>,
     /// Ticks run since the start, against the clock.
     ticks_run: u64,
+    /// Ticks the clock has reached and the server has not fixed yet
+    /// (waiting for a late pad), as of the last run.
+    owed: u64,
     history: VecDeque<Frame>,
     history_start: u64,
     /// `sums[k]` is the checksum of the state at the start of tick
@@ -248,6 +258,7 @@ impl Host {
             remotes: Vec::new(),
             started_at: None,
             ticks_run: 0,
+            owed: 0,
             history: VecDeque::new(),
             history_start: tick,
             sums: VecDeque::from([first_sum]),
@@ -355,6 +366,14 @@ impl Host {
     fn assign(&self, join: &Join, per_side: usize) -> Option<Vec<u8>> {
         let taken: Vec<u8> = self.remotes.iter().flat_map(|r| r.seats.clone()).collect();
         assign_seats(&self.setup.seat_teams, &taken, join, per_side)
+    }
+
+    /// Every seated machine's pads for the next tick are in.
+    fn pads_in(&self) -> bool {
+        let t = self.state.tick();
+        self.remotes
+            .iter()
+            .all(|r| r.seats.is_empty() || r.pads.contains_key(&t))
     }
 
     /// Fix the pads for the next tick and step the referee's match.
@@ -614,6 +633,9 @@ impl Server {
                 }
                 r.need = need;
                 let next = host.state.tick();
+                // Leads count from the tick the clock is at, not one held
+                // for a late pad.
+                let clock = next + host.owed;
                 for (n, pads) in ticks.iter().enumerate() {
                     let t = start + n as u64;
                     if t >= next && t < next + 1000 && pads.len() == seats.len() {
@@ -623,7 +645,7 @@ impl Server {
                 if !ticks.is_empty() && host.started_at.is_some() {
                     let newest = start + ticks.len() as u64 - 1;
                     r.heard = r.heard.max(newest);
-                    let lead = (newest as i64 - next as i64).clamp(-30_000, 30_000) as i16;
+                    let lead = (newest as i64 - clock as i64).clamp(-30_000, 30_000) as i16;
                     r.lead_now = r.lead_now.min(lead);
                 }
                 r.ack = r.ack.max(next);
@@ -913,6 +935,7 @@ impl Server {
             host.state = host.setup.start();
             host.started_at = None;
             host.ticks_run = 0;
+            host.owed = 0;
             host.history.clear();
             host.history_start = host.state.tick();
             host.sums = VecDeque::from([host.state.checksum()]);
@@ -999,12 +1022,17 @@ impl Server {
             }
         });
 
-        // The ticks due by the clock.
+        // The ticks due by the clock, each once its pads are in or the
+        // grace for a late one has run out.
         let mut ran = 0;
+        let grace = self.cfg.grace;
         if let Some(start) = host.started_at {
             let due =
                 (now.saturating_sub(start).as_secs_f64() * f64::from(street_sim::TICK_HZ)) as u64;
             while host.ticks_run < due && ran < MAX_CATCH_UP {
+                if due - host.ticks_run <= grace && !host.pads_in() {
+                    break;
+                }
                 // AI, simulation and checksum/history work all belong to this
                 // referee. A panic must never unwind through the shared loop.
                 let result = catch_unwind(AssertUnwindSafe(|| {
@@ -1038,7 +1066,8 @@ impl Server {
                 ran += 1;
             }
             // Too far behind real time: let the clock go.
-            host.ticks_run = host.ticks_run.max(due.saturating_sub(MAX_CATCH_UP));
+            host.ticks_run = host.ticks_run.max(due.saturating_sub(MAX_CATCH_UP + grace));
+            host.owed = due - host.ticks_run;
         }
 
         let addrs: Vec<SocketAddr> = host.remotes.iter().map(|r| r.addr).collect();
@@ -1483,8 +1512,9 @@ mod validation_tests {
         let bad = server.matches.get_mut("bad").unwrap();
         bad.state.world.phase = Phase::Live;
         bad.state.world.players[0].team = usize::MAX;
+        // Past the grace for the pads nobody sends, so both matches tick.
         let result = catch_unwind(AssertUnwindSafe(|| {
-            server.update(Duration::from_millis(100))
+            server.update(Duration::from_millis(300))
         }));
         let events = result.expect("shared server loop must survive the referee panic");
         assert!(
@@ -1500,7 +1530,7 @@ mod validation_tests {
         );
         assert!(server.host("healthy").unwrap().tick() > healthy_before);
         let before = server.host("healthy").unwrap().tick();
-        server.update(Duration::from_millis(200));
+        server.update(Duration::from_millis(600));
         assert!(server.host("healthy").unwrap().tick() > before);
         let mut bad_client = network.endpoint(addr(5000));
         let mut fault = false;
