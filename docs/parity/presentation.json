@@ -6550,7 +6550,7 @@
           "path": "crates/street-net/src/server.rs",
           "locator": "Server::run (the linger from the won replay's end); ServerConfig::default (linger 120 s); tests::a_finished_match_lingers_from_the_end_of_its_won_replay",
           "note": "A finished match waits for its won replay.",
-          "sha256": "28d2f2973922a74df70574ca5a4fa656c9f9d681f252040ae12d7d92a17d8b0d"
+          "sha256": "a8864d0e3b58a4a5d61f9fbd8582e51d521a224b35bd26fef4dc5dbfa126d7ae"
         },
         {
           "path": "crates/street-net/tests/disc_determinism.rs",
@@ -6596,7 +6596,7 @@
         }
       ],
       "tolerance": "The same replays at the same match ticks on every machine; no confirmed state differing; the game's replay tests passing unchanged with the control moved.",
-      "limitations": "The frames a replay shows are each machine's own drawing of the updates: a remote pad that arrived late can leave a tick or two of a guess among them (the match itself is never affected), and where a machine stepped two ticks in one frame a tick shows the frame before. The staged Level 2 gamebreaker's rerun is presentation.online_staged_rerun. The replays' behaviour against the original is presentation.effects_and_replay_runtime's. 2026-10-20 (the online pass's last gaps): the staged Level 2's rerun is a replay too, mode 7 (presentation.online_staged_rerun); the match holds the world through it and through its script's own end update (Replays::holds_world); the determinism test counts the staged reruns at the referee's ticks on every machine. 2026-10-23: the match's snapshot and checksum carry the burst hold too (protocol 23). Last re-pinned 2026-10-31 after watching host (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "The frames a replay shows are each machine's own drawing of the updates: a remote pad that arrived late can leave a tick or two of a guess among them (the match itself is never affected), and where a machine stepped two ticks in one frame a tick shows the frame before. The staged Level 2 gamebreaker's rerun is presentation.online_staged_rerun. The replays' behaviour against the original is presentation.effects_and_replay_runtime's. 2026-10-20 (the online pass's last gaps): the staged Level 2's rerun is a replay too, mode 7 (presentation.online_staged_rerun); the match holds the world through it and through its script's own end update (Replays::holds_world); the determinism test counts the staged reruns at the referee's ticks on every machine. 2026-10-23: the match's snapshot and checksum carry the burst hold too (protocol 23). Last re-pinned 2026-10-31 after the online pass (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
@@ -6772,7 +6772,7 @@
           "path": "crates/street-game/src/online.rs",
           "locator": "the creator's looks (city, nickname)",
           "note": "The creator sends its records' names.",
-          "sha256": "a44c561b25e22e1a074aa4410a9e8bebd12656d1c1f5da627e1742b41d187b16"
+          "sha256": "083fa8552bc38268501220ecd8ec7659f000c0450c8b65ead964223c8980a343"
         },
         {
           "path": "crates/street-game/src/boards.rs",
@@ -6812,7 +6812,7 @@
         }
       ],
       "tolerance": "The same city and nickname elements on every machine, as a match alone draws them.",
-      "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-31 after watching host (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-31 after the online pass (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
