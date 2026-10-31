@@ -5,71 +5,55 @@ its version's part.
 
 ## Unreleased
 
-- **The launcher's court:** the MyBaller arena turns behind the launcher
-  as you move the mouse, with the MB mark at center court.
-- **Links in the launcher:** buttons for myballer.online (with the MB
-  mark) and the Discord.
-- **The launcher shows its release's version** (it read v0.1.0 in every
-  release).
-- **Smoother online play.** Your own moves no longer get pulled back when
-  your connection or your PC hiccups: the game now sends your controls
-  further ahead when it needs to, and less when the connection is steady.
-  The host's server runs on its own thread, so a busy host PC no longer
-  delays everyone. On a long connection the game adds a little input delay
-  (up to a tenth of a second) so the other side has to guess your moves
-  less. When a guess about the other players turns out wrong, the players
-  and the ball glide to where they belong instead of snapping back and
-  forth.
-- **Steadier online play through lag spikes.** When your connection
-  hiccups, the host now waits a moment for your controls instead of
-  guessing them, so a spike no longer eats your moves, and the game no
-  longer runs far ahead of the others for the rest of the match because
-  of one spike. Other players glide back into place instead of jumping. In tests on
-  a 115 ms connection with regular lag spikes, players jumped to new
-  spots about twice in 90 seconds instead of more than once a second.
+## v0.1.5-beta
+
+Online play had a big pass this release. Everyone in a match needs this
+version.
+
 - **Steady online feel, like other sports games.** The input delay now
-  covers your whole ping, so the other players' moves arrive before the
-  game needs them and they almost never slide or jump. If a packet is
-  late, the game corrects quietly instead of freezing. The delay is
-  measured from your real ping (not the moment the match loads) and keeps
-  adjusting during the match: about 67 ms on a 40 ms connection, 117 ms
-  at 115 ms. To trade that steadiness for quicker presses, start the game
-  with `--responsive`.
-- **Fixed online: the other player's moves were often silent.** Sounds,
-  score pop-ups and effects only came from the newest moment the game
-  guessed, so when a correction brought in the other player's shot, pass,
-  juke or dunk, it played no sound at all. Every move now sounds, once.
+  covers your ping, so the other players' moves arrive before the game
+  needs them and they almost never slide or jump. If a packet is late,
+  the game corrects quietly instead of freezing. The delay comes from your
+  real ping and keeps adjusting during the match: about 67 ms on a 40 ms
+  connection, 117 ms at 115 ms. To trade steadiness for quicker presses,
+  start the game with `--responsive`.
+- **No more yo-yo ball.** Lag spikes no longer pull your own moves back:
+  the host waits a moment for late controls instead of guessing them, and
+  runs its server on its own thread so a busy host PC doesn't delay
+  anyone. When a guess about another player turns out wrong, they glide
+  back into place instead of snapping. In tests over a 115 ms connection
+  with regular lag spikes, players jumped to new spots about twice in 90
+  seconds, down from more than once a second.
+- **Less stutter online:** about one hitch every 4 seconds on that same
+  connection, down from about one a second.
+- **Fixed: the other player's moves were often silent online.** Their
+  shots, passes, jukes and dunks now play their sounds and effects, once
+  each.
 - **A player who drops is taken over by the computer** after a second,
-  instead of their player running in the last direction they held until
-  the connection gave up. If they come back, they take over again.
+  instead of running in the last direction they held. If they come back,
+  they take over again. When the host's game closes, everyone is told
+  within 5 seconds instead of after a 10-second freeze.
+- **Host without playing.** Turn on Watch Only on the Online page, then
+  host: your game runs and shows the match, and the people who join play
+  it on equal terms, with nobody getting the host's ping advantage.
+- **Online matches open with their intros,** as matches played alone do.
+  Everyone sees them at the same time, and anyone pressing Cross skips
+  them for everyone.
 - **Fixed: a buzz under the match's sounds** (reported on GitHub). Sound
   volumes changed in steps many times a second instead of sliding, as the
-  original's sound driver slides them, and looping sounds clicked at
-  every pass of their loop. Both now play as the original does.
-- **Less stutter online.** The game nudged its clock whenever its timing
-  drifted by a hair, and each nudge showed one moment twice or skipped
-  one. It now lets small drifts be: about one hitch every 4 seconds on a
-  115 ms connection with lag spikes, down from about one a second.
-- **When the host's game closes, you hear about it in 5 seconds,** not
-  after a 10-second freeze.
-- **Host without playing.** Turn on Watch Only on the Online page, then
-  host: your game runs the match and shows it, and the two (or up to six)
-  people who join play it on equal terms. Hosting while playing gives the
-  host the lowest ping; hosting to watch gives that edge to nobody.
-- **Online matches open with their intros,** as matches played alone do:
-  the court's intro, then the away side's. Everyone sees the same intros
-  at the same time, and anyone pressing Cross skips them for everyone.
-  (Online needs everyone on this version.)
-- **Fixed: static in the menu music.** The game now plays music and movies
-  at the original's levels, measured from the original's own output. The
-  menu songs had been about 5.5 dB louder than the original, so any sound
-  on top of them clipped. The volume sliders now work like the original's
-  (half the slider is half the volume).
-- **Fixed: the hiss on hi-hats and cymbals in the music.** Songs, movies
-  and sounds are now converted to 48 kHz the way the original's sound
-  driver converts them, so the top end sounds like the console. Before,
-  the conversion was left to your PC's audio, which adds grit on some
-  setups.
+  original's sound driver slides them, and looping sounds clicked at each
+  pass of their loop. Both now play as the original does.
+- **Music and movies at the original's levels,** measured from the
+  original's own output. The menu songs had been about 5.5 dB too loud,
+  so sounds on top of them clipped. The volume sliders now work like the
+  original's (half the slider is half the volume).
+- **Songs, movies and sounds are converted to 48 kHz the way the
+  original's sound driver does it,** so the top end sounds like the
+  console. (The crunchy hi-hats in "Chief Rocka" are in the record
+  itself.)
+- **The launcher:** the MyBaller arena turns behind it as you move the
+  mouse, it has buttons for myballer.online and the Discord, and it shows
+  its release's version (it read v0.1.0 in every release).
 
 ## v0.1.4-beta
 
