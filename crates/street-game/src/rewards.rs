@@ -339,6 +339,42 @@ pub fn grant_cheat(
     }
 }
 
+/// The cards Unlock Everything (PC Settings) gives: every card but the
+/// development ones, which are bought again and again for a baller.
+fn collectible(card: &Card) -> bool {
+    card.id >= 0 && card.category != DEVELOPMENT
+}
+
+/// PC Settings' Unlock Everything (the rewrite's, for a player's request):
+/// every collectible card owned, without spending points, each opening
+/// what it opens as the original's unlock codes' do ([`grant_cheat`]):
+/// a court's card its court, a legend's card its players. Returns how
+/// many cards were new.
+pub fn grant_everything(story: &mut street_sim::story::Story, disc: &crate::setup::Disc) -> usize {
+    let mut new = 0;
+    for card in disc.cards.iter().filter(|c| collectible(c)) {
+        if !story.owned.contains(&(card.id as u16)) {
+            story.owned.push(card.id as u16);
+            new += 1;
+            if let Some(court) = court_of(card) {
+                story.court_granted(court);
+            }
+        }
+        for &player in card_records(card) {
+            story.unlock_player(player);
+        }
+    }
+    new
+}
+
+/// Whether every collectible card is owned.
+pub fn everything_owned(story: &street_sim::story::Story, disc: &crate::setup::Disc) -> bool {
+    disc.cards
+        .iter()
+        .filter(|c| collectible(c))
+        .all(|c| story.owned.contains(&(c.id as u16)))
+}
+
 /// The ballers who can receive a development card: saved created
 /// players and the stars of existing careers, including premade stars.
 pub fn development_recipients(story: &street_sim::story::Story) -> Vec<u16> {

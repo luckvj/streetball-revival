@@ -10,7 +10,8 @@
 //!   ones repeating, so a pad moves through every list.
 //! - [`ButtonStyle`]: the buttons of whatever was touched last, for the
 //!   prompts (PlayStation names for a Sony pad, Xbox names for any other,
-//!   keys for the keyboard).
+//!   keys for the keyboard), unless PC Settings' Button Prompts picks one
+//!   for every pad (`crate::prompts`).
 //! - Plug and play in a match ([`rebind`]): a seat whose pad was unplugged
 //!   takes any free pad that is plugged in; with none, an offline match
 //!   pauses on the game's own notice (`control_chk_ps2.txt`) until one is.
@@ -47,14 +48,6 @@ pub enum ButtonStyle {
 }
 
 impl ButtonStyle {
-    pub fn of(pad: &Gamepad) -> Self {
-        if pad.vendor_id() == Some(SONY) {
-            ButtonStyle::PlayStation
-        } else {
-            ButtonStyle::Xbox
-        }
-    }
-
     /// The confirm and back buttons' names.
     pub fn confirm(self) -> &'static str {
         match self {
@@ -128,6 +121,8 @@ pub struct PadNav {
     any: IVec2,
     held: HashMap<Entity, (IVec2, f32)>,
     pub style: ButtonStyle,
+    /// Whether the pad touched last is Sony's (`None`: the keyboard was).
+    last_sony: Option<bool>,
 }
 
 impl PadNav {
@@ -185,6 +180,7 @@ fn nav(
     time: Res<Time<Real>>,
     keys: Res<ButtonInput<KeyCode>>,
     gamepads: Query<(Entity, &Gamepad)>,
+    opts: Option<Res<crate::options::Options>>,
     mut nav: ResMut<PadNav>,
 ) {
     let dt = time.delta_secs();
@@ -193,7 +189,7 @@ fn nav(
     nav.any = IVec2::ZERO;
     nav.held.retain(|e, _| gamepads.contains(*e));
     if keys.get_just_pressed().next().is_some() {
-        nav.style = ButtonStyle::Keyboard;
+        nav.last_sony = None;
     }
     for (e, pad) in &gamepads {
         let (before, timer) = nav.held.get(&e).copied().unwrap_or_default();
@@ -215,9 +211,15 @@ fn nav(
             }
         }
         if fire || pad.get_just_pressed().next().is_some() {
-            nav.style = ButtonStyle::of(pad);
+            nav.last_sony = Some(pad.vendor_id() == Some(SONY));
         }
     }
+    // Every frame, so a change of the setting shows at once.
+    let prompts = opts.map_or(street_sim::records::PROMPTS_AUTO, |o| o.0.prompts);
+    nav.style = match nav.last_sony {
+        None => ButtonStyle::Keyboard,
+        Some(sony) => crate::prompts::pad_style(sony, prompts),
+    };
 }
 
 /// Says which controllers come and go, and whose buttons they get.
@@ -227,11 +229,10 @@ fn announce(mut events: MessageReader<GamepadConnectionEvent>) {
             GamepadConnection::Connected {
                 name, vendor_id, ..
             } => {
-                let style = if *vendor_id == Some(SONY) {
-                    ButtonStyle::PlayStation
-                } else {
-                    ButtonStyle::Xbox
-                };
+                let style = crate::prompts::pad_style(
+                    *vendor_id == Some(SONY),
+                    street_sim::records::PROMPTS_AUTO,
+                );
                 info!("controller connected: {name} ({style:?} buttons)");
             }
             GamepadConnection::Disconnected => info!("controller disconnected"),
@@ -268,7 +269,7 @@ impl Plugin for PadsPlugin {
                 PreUpdate,
                 nav.in_set(NavSystems).after(bevy::input::InputSystems),
             )
-            .add_systems(Update, announce)
+            .add_systems(Update, (announce, crate::prompts::follow))
             .add_systems(
                 Update,
                 rebind

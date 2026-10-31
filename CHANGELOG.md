@@ -14,6 +14,15 @@ its version's part.
   it now blends and shades in the PS2's own colour values, so shadows,
   fences, nets, the crowd and effects come out as dark or light as on the
   PS2 (shadows were too light).
+- Xbox button prompts (issue #3): every button picture on the screens
+  (the menus' legends, the pause screen, Help, Street School) shows A, B,
+  X and Y in their colours, LB/RB/LT/RT and View/Menu when an Xbox-style
+  pad is in use, including Steam Input and the Steam Deck. PC Settings has
+  a new Button Prompts row: Auto (follow the controller), PlayStation or
+  Xbox.
+- Unlock Everything (issue #3): a PC Settings row that gives you every
+  reward card at once (legends, courts, jerseys, codes and tips). Press
+  it twice to confirm; the original's unlock codes still work too.
 
 ## v0.1.5-beta
 

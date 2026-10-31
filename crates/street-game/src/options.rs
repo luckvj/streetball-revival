@@ -299,6 +299,8 @@ pub fn changed(before: &Settings, now: &Settings) -> bool {
 /// window does not need). The rewrite's own pages open from it too, off
 /// the original's screens (whose Select asks "Exit to Main Menu?",
 /// [`crate::exit_ask`]): Online, Watch A Game and the created teams' list.
+/// Button Prompts and Unlock Everything answer a player's request
+/// (streetball-revival issue 3).
 pub mod pc {
     /// A window or full screen.
     pub const DISPLAY: usize = 0;
@@ -308,27 +310,48 @@ pub mod pc {
     pub const VIBRATION: usize = 2;
     /// The court drawn between updates on faster screens (`crate::smooth`).
     pub const SMOOTH: usize = 3;
+    /// Whose buttons the screens picture (`crate::prompts`).
+    pub const PROMPTS: usize = 4;
     /// Host or join a match over the network (`Page::Online`).
-    pub const ONLINE: usize = 4;
+    pub const ONLINE: usize = 5;
     /// The computer on both sides.
-    pub const WATCH: usize = 5;
+    pub const WATCH: usize = 6;
     /// The created teams, to edit or delete one (`Page::Teams`).
-    pub const TEAMS: usize = 6;
-    pub const BACK: usize = 7;
+    pub const TEAMS: usize = 7;
+    /// Every reward card owned at once
+    /// (`crate::rewards::grant_everything`), after a second press.
+    pub const UNLOCK: usize = 8;
+    pub const BACK: usize = 9;
 }
 
-/// The project's own notice, under PC Settings' rows: what this game is
+/// Unlock Everything's row: offered, asked (the first press; a second
+/// unlocks) or done (every card owned).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum UnlockRow {
+    #[default]
+    Offer,
+    Asked,
+    Done,
+}
+
+/// The project's own notice, at the foot of PC Settings' right column
+/// (beside the rows without values, from [`NOTICE_X`]): what this game is
 /// and whose the original is (the rewrite's credits page before it built
 /// the original's credits screen).
-pub const NOTICE: [&str; 4] = [
-    "Streetball Revival: an unofficial fan",
-    "project, written from scratch, reads",
-    "everything from your own disc. Not",
-    "affiliated with the original's makers.",
+pub const NOTICE: [&str; 5] = [
+    "Streetball Revival: an unofficial",
+    "fan project, written from scratch,",
+    "reads everything from your own",
+    "disc. Not affiliated with the",
+    "original's makers.",
 ];
 
+/// The notice's left edge: right of the longest row without a value
+/// ("Unlock Everything?"), its longest line inside the panel.
+pub const NOTICE_X: f32 = 305.0;
+
 /// The rewrite's settings page's rows.
-pub fn pc_items(o: &Settings, pads: &PadSettings) -> Vec<String> {
+pub fn pc_items(o: &Settings, pads: &PadSettings, unlock: UnlockRow) -> Vec<String> {
     vec![
         format!(
             "Display  < {} >",
@@ -341,9 +364,19 @@ pub fn pc_items(o: &Settings, pads: &PadSettings) -> Vec<String> {
         format!("Wide Picture  < {} >", on(o.wide)),
         format!("Vibration  < {} >", on(pads.vibration)),
         format!("Smooth Motion  < {} >", on(o.smooth)),
+        format!(
+            "Button Prompts  < {} >",
+            crate::prompts::prompts_name(o.prompts)
+        ),
         "Online".into(),
         "Watch A Game".into(),
         "Created Teams".into(),
+        match unlock {
+            UnlockRow::Offer => "Unlock Everything",
+            UnlockRow::Asked => "Unlock Everything?",
+            UnlockRow::Done => "Everything Unlocked",
+        }
+        .into(),
         "Back".into(),
     ]
 }
@@ -355,9 +388,11 @@ pub fn pc_help(at: usize) -> &'static str {
         pc::WIDE => "With Widescreen on, show the whole 4:3 picture and more at the sides.",
         pc::VIBRATION => "Turn controller vibration on or off.",
         pc::SMOOTH => "On screens over 60 Hz, draw the court between the game's updates.",
+        pc::PROMPTS => "Show PlayStation or Xbox buttons. Auto follows the controller in use.",
         pc::ONLINE => "Host or join a match over the network.",
         pc::WATCH => "Watch the computer play both sides.",
         pc::TEAMS => "Edit or delete a created team.",
+        pc::UNLOCK => "Own every reward card. Press twice to confirm.",
         _ => "Return to Options.",
     }
 }
@@ -371,7 +406,14 @@ pub fn pc_changed(before: &Settings, now: &Settings) -> bool {
         before.wide,
         before.vibration,
         before.smooth,
-    ) != (now.full_screen, now.wide, now.vibration, now.smooth)
+        before.prompts,
+    ) != (
+        now.full_screen,
+        now.wide,
+        now.vibration,
+        now.smooth,
+        now.prompts,
+    )
 }
 
 /// Left, right or a press on the rewrite's settings page.
@@ -381,6 +423,7 @@ pub fn pc_step(at: usize, o: &mut Settings, pads: &mut PadSettings) {
         pc::WIDE => o.wide = !o.wide,
         pc::VIBRATION => pads.vibration = !pads.vibration,
         pc::SMOOTH => o.smooth = !o.smooth,
+        pc::PROMPTS => o.prompts = crate::prompts::next_prompts(o.prompts),
         _ => {}
     }
 }
@@ -713,17 +756,27 @@ mod tests {
         // its own pages doing nothing on left and right.
         pc_step(pc::VIBRATION, &mut o, &mut pads);
         assert!(!pads.vibration);
-        let items = pc_items(&o, &pads);
+        let items = pc_items(&o, &pads, UnlockRow::Offer);
         assert_eq!(items.len(), pc::BACK + 1);
         assert_eq!(
             [&items[pc::ONLINE], &items[pc::WATCH], &items[pc::TEAMS]],
             ["Online", "Watch A Game", "Created Teams"]
         );
+        assert_eq!(items[pc::PROMPTS], "Button Prompts  < Auto >");
+        assert_eq!(items[pc::UNLOCK], "Unlock Everything");
+        assert_eq!(
+            pc_items(&o, &pads, UnlockRow::Asked)[pc::UNLOCK],
+            "Unlock Everything?"
+        );
         let kept = o;
-        for row in [pc::ONLINE, pc::WATCH, pc::TEAMS, pc::BACK] {
+        for row in [pc::ONLINE, pc::WATCH, pc::TEAMS, pc::UNLOCK, pc::BACK] {
             pc_step(row, &mut o, &mut pads);
         }
         assert_eq!((o, pads.vibration), (kept, false));
+        // Button Prompts goes round its three and is kept.
+        pc_step(pc::PROMPTS, &mut o, &mut pads);
+        assert_eq!(o.prompts, street_sim::records::PROMPTS_PLAYSTATION);
+        assert!(pc_changed(&kept, &o));
     }
 
     /// The original's rows in the screen's order, each with its label and

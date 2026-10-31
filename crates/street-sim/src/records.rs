@@ -737,6 +737,10 @@ pub struct Settings {
     /// The rewrite's Smooth Motion (PC Settings): the court drawn between
     /// the game's 60 updates a second on faster screens.
     pub smooth: bool,
+    /// The rewrite's Button Prompts (PC Settings): whose button pictures
+    /// and names the screens show, [`PROMPTS_AUTO`] (the controller
+    /// touched last), [`PROMPTS_PLAYSTATION`] or [`PROMPTS_XBOX`].
+    pub prompts: u8,
     /// Controller Layout A, B or C (0..2) for 1P..4P.
     pub layouts: [u8; 4],
     /// Trax: the songs switched off, one bit each (the in-game songs
@@ -752,6 +756,11 @@ pub struct Settings {
     /// 4 Behind, 5 Wide (`pause.txt` 15..20).
     pub camera: u8,
 }
+
+/// [`Settings::prompts`]' choices.
+pub const PROMPTS_AUTO: u8 = 0;
+pub const PROMPTS_PLAYSTATION: u8 = 1;
+pub const PROMPTS_XBOX: u8 = 2;
 
 /// The league profiles' section tag; the beta's first saves wrote
 /// [`LEGACY_LEAGUE_USERS`], which is still read.
@@ -823,6 +832,7 @@ impl Default for Settings {
             visual_effects: true,
             full_screen: false,
             smooth: true,
+            prompts: PROMPTS_AUTO,
             layouts: [0; 4],
             songs_off: 1 << RUCKER_CLASSIC_SONG_BIT,
             sequential: false,
@@ -873,6 +883,7 @@ impl Settings {
         out.push(self.camera);
         out.push(u8::from(self.interactive));
         out.push(u8::from(self.smooth));
+        out.push(self.prompts);
         out
     }
 
@@ -912,6 +923,9 @@ impl Settings {
             }
             if let Some(&smooth) = bytes.get(18) {
                 s.smooth = smooth != 0;
+            }
+            if let Some(&prompts) = bytes.get(19) {
+                s.prompts = prompts.min(PROMPTS_XBOX);
             }
         }
         Some(s)
@@ -1158,9 +1172,15 @@ mod tests {
             layouts: [1, 2, 0, 1],
             songs_off: 0b101 | 1 << FRONT_END_BIT,
             interactive: false,
+            prompts: PROMPTS_XBOX,
             ..Default::default()
         };
         assert_eq!(Settings::decode(&s.encode()), Some(s));
+        // A save from before Button Prompts follows the controller.
+        assert_eq!(
+            Settings::decode(&s.encode()[..19]).unwrap().prompts,
+            PROMPTS_AUTO
+        );
         assert_eq!(s.picture(), Picture::Wide);
         // A save from before the later options keeps their defaults.
         let old = Settings::decode(&[2, 3, 4, 1, 2]).expect("old options");

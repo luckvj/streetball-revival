@@ -352,7 +352,7 @@ pub fn start(mut commands: Commands, mut disc: ResMut<Disc>, mut images: ResMut<
     let row_star = images.add(image(row_star.width, row_star.height, row_star.rgba));
     let icons = common.as_ref().and_then(|s| s.get(1)).and_then(|s| {
         let t = s.textures.first()?;
-        let frames = s
+        let frames: Vec<Rect> = s
             .frames
             .first()?
             .iter()
@@ -371,6 +371,24 @@ pub fn start(mut commands: Commands, mut disc: ResMut<Disc>, mut images: ResMut<
             images.add(image(b.width, b.height, b.rgba.clone())),
         ])
     });
+    // The same picture lettered for an Xbox pad (`crate::prompts`): both
+    // handles above show whichever the Button Prompts want.
+    if let (Some((icon_atlas, frames)), Some(t)) = (
+        icons.as_ref(),
+        common
+            .as_ref()
+            .and_then(|s| s.get(1))
+            .and_then(|s| s.textures.first()),
+    ) {
+        let xbox = crate::prompts::xbox_picture(&t.rgba, t.width, frames.as_slice(), &fonts);
+        let mut shown = vec![icon_atlas.clone()];
+        shown.extend(pad.as_ref().map(|[a, _]| a.clone()));
+        commands.insert_resource(crate::prompts::ButtonPictures::new(
+            shown,
+            t.rgba.clone(),
+            xbox,
+        ));
+    }
     let tab = common
         .as_ref()
         .and_then(|s| s.first())
@@ -1759,13 +1777,14 @@ pub(crate) fn title(
 }
 
 /// The pieces of a page, back to front.
-/// Lines of small print under a list page's rows, the last ending at the
-/// lists' bottom: the project's notice on PC Settings.
+/// Lines of small print from `x`, the last ending at the lists' bottom:
+/// the project's notice on PC Settings.
 pub fn notes(
     look: &Look,
     labels: &mut Labels,
     images: &mut Assets<Image>,
     lines: &[&str],
+    x: f32,
 ) -> Vec<Piece> {
     let Some(f) = look.fonts.get(fonts::SMALL) else {
         return Vec::new();
@@ -1784,7 +1803,7 @@ pub fn notes(
                 l,
                 colours::DIM,
                 None,
-                Vec2::new(LIST_X, top + line * k as f32),
+                Vec2::new(x, top + line * k as f32),
                 Align::Left,
             )
         })

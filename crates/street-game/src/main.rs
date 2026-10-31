@@ -76,6 +76,7 @@ pub mod pads;
 mod pause;
 mod portraits;
 pub mod progression_trace;
+mod prompts;
 mod reach;
 pub mod referee;
 mod region_view;

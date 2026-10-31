@@ -539,6 +539,9 @@ pub struct Menus {
     pub(crate) credits: Option<crate::credits::Roll>,
     controller_player: usize,
     controller_view: u8,
+    /// PC Settings' Unlock Everything was pressed once: the next press
+    /// unlocks (moving off it asks again).
+    unlock_asked: bool,
     /// User Setup: each seat's column state (`users::Column`), as the
     /// original's column widget runs them.
     pub(crate) user_stages: Vec<UserStage>,
@@ -754,6 +757,7 @@ impl Default for Menus {
             credits: None,
             controller_player: 0,
             controller_view: 0,
+            unlock_asked: false,
             user_stages: Vec::new(),
             team_scroll: [0, 0],
             players: Default::default(),
@@ -1338,7 +1342,17 @@ fn items(
         Page::Wizard(..) => Vec::new(),
         Page::Options => options::items(opts, sound, setup.rules.difficulty),
         Page::OptionsAsk => Vec::new(),
-        Page::PcSettings => options::pc_items(opts, pads),
+        Page::PcSettings => options::pc_items(
+            opts,
+            pads,
+            if crate::rewards::everything_owned(&save.story, disc) {
+                options::UnlockRow::Done
+            } else if menus.unlock_asked {
+                options::UnlockRow::Asked
+            } else {
+                options::UnlockRow::Offer
+            },
+        ),
         Page::Trax => crate::trax_view::rows(opts)
             .iter()
             .map(|r| format!("{r:?}"))
@@ -1701,6 +1715,9 @@ fn navigate(
     let devices = menus.devices.clone();
     setup.seats.retain(|(d, _)| devices.contains(d));
     let (page, cursor) = menus.top();
+    if (page, cursor) != (Page::PcSettings, options::pc::UNLOCK) {
+        menus.unlock_asked = false;
+    }
     *input.only = listens_to(page, &setup.seats);
     // Select's question takes the keys until it is answered; Select opens
     // it where the screen asks (`FUN_0024bfa0`).
@@ -2310,6 +2327,10 @@ fn navigate(
         }
         if page == Page::PcSettings {
             options::pc_step(cursor, &mut opts.0, &mut pads);
+            // Left goes back round Button Prompts' three choices.
+            if cursor == options::pc::PROMPTS && step < 0 {
+                options::pc_step(cursor, &mut opts.0, &mut pads);
+            }
         }
         if page == Page::Layouts {
             match cursor {
@@ -3085,6 +3106,18 @@ fn navigate(
             push_choose_team(&mut menus, &disc, &save.story, setup.teams[0], 0);
         }
         (Page::PcSettings, options::pc::TEAMS) => menus.push(Page::Teams, 0),
+        (Page::PcSettings, options::pc::UNLOCK) => {
+            if menus.unlock_asked {
+                menus.unlock_asked = false;
+                let new = crate::rewards::grant_everything(&mut save.story, &disc);
+                save.store();
+                // Kept as the original keeps a purchase: its autosave.
+                menus.save_to_card();
+                info!("Unlock Everything: {new} cards new");
+            } else if !crate::rewards::everything_owned(&save.story, &disc) {
+                menus.unlock_asked = true;
+            }
+        }
         (Page::PlayIt, 2 | 3) => {
             menus.push(Page::Difficulty, difficulty_row(setup.rules.difficulty));
         }
@@ -5959,6 +5992,7 @@ fn draw(
                 &mut fe.labels,
                 &mut fe.images,
                 &options::NOTICE,
+                options::NOTICE_X,
             ));
         }
         let class = screen_of(page, &menus, &save.story);
@@ -9095,11 +9129,12 @@ mod tests {
     #[test]
     fn the_rewrites_own_pages_open_from_pc_settings() {
         assert_eq!(
-            options::pc_items(&Default::default(), &Default::default())[options::pc::ONLINE],
+            options::pc_items(&Default::default(), &Default::default(), Default::default())
+                [options::pc::ONLINE],
             "Online"
         );
-        assert_eq!(options::NOTICE.len(), 4);
-        assert!(options::NOTICE[0].starts_with("Streetball Revival: an unofficial fan"));
+        assert_eq!(options::NOTICE.len(), 5);
+        assert!(options::NOTICE[0].starts_with("Streetball Revival: an unofficial"));
     }
 
     #[test]
