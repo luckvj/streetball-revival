@@ -93,6 +93,9 @@ use crate::{
 const RATE: u32 = 48_000;
 /// Frames rendered per lock of the bus.
 const BLOCK: usize = 256;
+/// Frames a playing voice's gain change ramps over (`MIXI_interpolatemix`'s
+/// 0x10 samples, from `SNDMIXI_volramp`).
+const GAIN_RAMP: u32 = 16;
 
 /// The game's default mix (`0x1a2340`), percent of the effects volume, by
 /// AEMS global: crowd (bank, stream), player speech, crowd reactions,
@@ -225,6 +228,9 @@ struct Voice {
     prev: [f32; 2],
     cur: [f32; 2],
     gains: [f32; 2],
+    /// The gains a change ramps from, and the frames of the ramp left.
+    ramp_from: [f32; 2],
+    ramp_left: u32,
     rate: u32,
     pitch: f32,
     played: u64,
@@ -241,6 +247,8 @@ impl Voice {
             prev: [0.0; 2],
             cur: [0.0; 2],
             gains: [0.0; 2],
+            ramp_from: [0.0; 2],
+            ramp_left: 0,
             rate: rate.max(1),
             pitch: 1.0,
             played: 0,
@@ -260,10 +268,31 @@ impl Voice {
         let g = p.gain();
         let a = (p.pan().clamp(-1.0, 1.0) + 1.0) * std::f32::consts::FRAC_PI_4;
         let sqrt2 = std::f32::consts::SQRT_2;
-        self.gains = [
+        let gains = [
             g * (a.cos() * sqrt2).min(1.0),
             g * (a.sin() * sqrt2).min(1.0),
         ];
+        // A playing voice's change ramps over GAIN_RAMP frames, as the
+        // sound driver's `SNDMIXI_volramp` mixes a changed volume
+        // (`MIXI_interpolatemix` over 0x10 samples) rather than jump to it:
+        // a jump every update is a buzz under a loud, moving sound.
+        if self.played > 0 && gains != self.gains {
+            self.ramp_from = self.gain_now();
+            self.ramp_left = GAIN_RAMP;
+        }
+        self.gains = gains;
+    }
+
+    /// The gains this frame, partway through a ramp.
+    fn gain_now(&self) -> [f32; 2] {
+        if self.ramp_left == 0 {
+            return self.gains;
+        }
+        let t = 1.0 - self.ramp_left as f32 / GAIN_RAMP as f32;
+        [
+            self.ramp_from[0] + (self.gains[0] - self.ramp_from[0]) * t,
+            self.ramp_from[1] + (self.gains[1] - self.ramp_from[1]) * t,
+        ]
     }
 
     fn read_stream(&mut self) -> Option<[f32; 2]> {
@@ -296,23 +325,32 @@ impl Voice {
             } => {
                 let ch = *channels;
                 let frames = data.len() / ch.max(1);
-                let mut i = self.pos as usize;
-                if i + 1 >= frames {
-                    if let Some((start, end)) = *looping
-                        && end > start
-                    {
-                        self.pos -= (end.min(frames) - start) as f64;
-                        i = self.pos.max(0.0) as usize;
-                    } else {
+                // The loop's end is the last frame it plays (the header's
+                // 0x87, one under the sample count for a whole-clip loop);
+                // the loop's start follows it.
+                let looped = looping
+                    .filter(|&(start, end)| end > start && start < frames)
+                    .map(|(start, end)| (start, end.min(frames - 1)));
+                let (i, next) = if let Some((start, end)) = looped {
+                    let length = (end - start + 1) as f64;
+                    while self.pos >= (end + 1) as f64 {
+                        self.pos -= length;
+                    }
+                    let i = self.pos.max(0.0) as usize;
+                    (i, if i >= end { start } else { i + 1 })
+                } else {
+                    let i = self.pos as usize;
+                    if i + 1 >= frames {
                         self.done = true;
                         return [0.0; 2];
                     }
-                }
+                    (i, i + 1)
+                };
                 let t = (self.pos - i as f64) as f32;
                 let at = |k: usize, c: usize| data[(k.min(frames - 1)) * ch + c.min(ch - 1)];
                 let out = [
-                    at(i, 0) + (at(i + 1, 0) - at(i, 0)) * t,
-                    at(i, 1) + (at(i + 1, 1) - at(i, 1)) * t,
+                    at(i, 0) + (at(next, 0) - at(i, 0)) * t,
+                    at(i, 1) + (at(next, 1) - at(i, 1)) * t,
                 ];
                 self.pos += self.step;
                 out
@@ -382,8 +420,10 @@ impl SfxSource {
                     break;
                 }
                 let [l, r] = v.frame();
-                self.block[2 * f] += l * v.gains[0];
-                self.block[2 * f + 1] += r * v.gains[1];
+                let gains = v.gain_now();
+                v.ramp_left = v.ramp_left.saturating_sub(1);
+                self.block[2 * f] += l * gains[0];
+                self.block[2 * f + 1] += r * gains[1];
             }
         }
         for s in &mut self.block {
@@ -2016,6 +2056,54 @@ fn contact_level(speed: f32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn params(volume: u16) -> VoiceParams {
+        VoiceParams {
+            pitch: 0x1000,
+            volume,
+            azimuth: 0,
+            spread: 0,
+            reverb: 0,
+            level: 0x7fff,
+        }
+    }
+
+    /// A loop plays its last frame, then its first: no frame dropped, no
+    /// seam (`0x87` is the last frame looped).
+    #[test]
+    fn a_loop_runs_from_its_end_frame_straight_to_its_start() {
+        let data: Arc<[f32]> = (0..6).map(|k| k as f32).collect();
+        let src = Src::Pcm {
+            data,
+            channels: 1,
+            looping: Some((2, 4)),
+        };
+        let mut v = Voice::new(1, src, RATE, params(0x7fff));
+        let got: Vec<f32> = (0..10).map(|_| v.frame()[0]).collect();
+        assert_eq!(got, [0.0, 1.0, 2.0, 3.0, 4.0, 2.0, 3.0, 4.0, 2.0, 3.0]);
+    }
+
+    /// A playing voice's volume change ramps over 16 frames.
+    #[test]
+    fn a_volume_change_ramps_over_sixteen_frames() {
+        let data: Arc<[f32]> = vec![1.0; 64].into();
+        let src = Src::Pcm {
+            data,
+            channels: 1,
+            looping: None,
+        };
+        let mut v = Voice::new(1, src, RATE, params(0));
+        v.frame();
+        v.set(params(0x7fff));
+        let mut seen = Vec::new();
+        for _ in 0..20 {
+            seen.push(v.gain_now()[0]);
+            v.ramp_left = v.ramp_left.saturating_sub(1);
+        }
+        assert_eq!(seen[0], 0.0);
+        assert!(seen.windows(2).take(16).all(|w| w[1] > w[0]), "{seen:?}");
+        assert!((seen[16] - 1.0).abs() < 1e-6 && seen[19] == seen[16]);
+    }
 
     #[test]
     fn floor_contact_uses_the_animated_height_drop_once() {
