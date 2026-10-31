@@ -248,6 +248,8 @@ fn main() -> ExitCode {
     );
     let cfg = ServerConfig {
         max_matches: o.max_matches,
+        // As patient as the games (loading can stall one for seconds).
+        timeout: Duration::from_secs(10),
         rosters: std::sync::Arc::new(rosters),
         ..Default::default()
     };
