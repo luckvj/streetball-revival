@@ -71,11 +71,11 @@
           "path": "crates/street-game/src/game.rs",
           "locator": "results: MatchOutcome",
           "note": "The charts now take the side's stats 11/12/13 from the sim (the Level 2 count used to be gamebreakers started, not scored).",
-          "sha256": "4ba1da55a77e73d3adf2dd211bc685ec941bd865fb7ae812dc5b734eb1b95674"
+          "sha256": "4ada90eb1ef7b975cd26e56abfff6356a4dc823f4f5d4ad18282b17a91e2f695"
         }
       ],
       "tolerance": "Exact discrete decisions and values; no tolerance.",
-      "limitations": "Static. The charts' inputs are the sim's stats (street_sim::stats), whose own unported listeners (assists, passout specials, picks) and the rewrite's trick-point awards bound them; no original runtime capture. 2026-10-20 (the load back): the results' end goes through the load back to the front end (presentation.ui_return_loading). 2026-10-20 (the card's messages): a won tournament's results return to its bracket, whose Cross opens Update Team (presentation.ui_card_save_points). 2026-10-20 (the idle demo's pass): the idle demo's game counts for nothing: results leaves before the outcome (presentation.ui_idle_attract). Last re-pinned 2026-10-27 after ball spin (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Static. The charts' inputs are the sim's stats (street_sim::stats), whose own unported listeners (assists, passout specials, picks) and the rewrite's trick-point awards bound them; no original runtime capture. 2026-10-20 (the load back): the results' end goes through the load back to the front end (presentation.ui_return_loading). 2026-10-20 (the card's messages): a won tournament's results return to its bracket, whose Cross opens Update Team (presentation.ui_card_save_points). 2026-10-20 (the idle demo's pass): the idle demo's game counts for nothing: results leaves before the outcome (presentation.ui_idle_attract). Last re-pinned 2026-10-30 after online netcode and intros (69bec2c, this commit) (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the career block's +0xce4 lines and +0x30 after story games with known stats.",
       "match_type": "structural"
     },
@@ -950,7 +950,7 @@
           "path": "crates/street-game/src/game.rs",
           "locator": "the story outcome (mine)",
           "note": "The outcome read on the person's side.",
-          "sha256": "4ba1da55a77e73d3adf2dd211bc685ec941bd865fb7ae812dc5b734eb1b95674"
+          "sha256": "4ada90eb1ef7b975cd26e56abfff6356a4dc823f4f5d4ad18282b17a91e2f695"
         },
         {
           "path": "$EVIDENCE/street-item8/sides_reads.json",
@@ -960,7 +960,7 @@
         }
       ],
       "tolerance": "The same side.",
-      "limitations": "No save state of an League Challenge game; its slot 0 is the trace's (FUN_0026f958, FUN_001dbb20). Choose Players keeps the person's team on the left panel (slot 0). Last re-pinned 2026-10-27 after ball spin (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "No save state of an League Challenge game; its slot 0 is the trace's (FUN_0026f958, FUN_001dbb20). Choose Players keeps the person's team on the left panel (slot 0). Last re-pinned 2026-10-30 after online netcode and intros (69bec2c, this commit) (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "A save state inside an League Challenge game."
     }
   ],
