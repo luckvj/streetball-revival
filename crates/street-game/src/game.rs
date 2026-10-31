@@ -381,16 +381,18 @@ impl Plugin for GamePlugin {
                         crate::online::net_step.run_if(crate::online::is_online),
                     )
                         .in_set(SimStep),
-                    crowd_reactions,
+                    // Online the network runs through the intro (the
+                    // match holds its world); the rest waits for it.
+                    crowd_reactions.run_if(crate::intro::finished),
                     // The replay director, manager and gamebreaker task, in
                     // the original's task order (crate::tape).
-                    crate::tape::step,
-                    crate::referee::step,
+                    crate::tape::step.run_if(crate::intro::finished),
+                    crate::referee::step.run_if(crate::intro::finished),
                 )
                     .chain()
                     .run_if(in_state(Screen::Playing))
                     .run_if(|p: Res<Paused>| !p.on)
-                    .run_if(crate::intro::finished),
+                    .run_if(crate::intro::finished_or_online),
             )
             .add_systems(
                 FixedUpdate,

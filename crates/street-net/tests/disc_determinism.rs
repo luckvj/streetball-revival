@@ -117,6 +117,7 @@ fn setup(disc: &Disc, teams: [usize; 2], rules: Rules, seed: u32, full: bool) ->
         world,
         extra: Vec::new(),
         roster_data: Vec::new(),
+        intro: 0,
     }
 }
 

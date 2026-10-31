@@ -803,7 +803,7 @@ impl Client {
         let Some(setup) = &self.setup else {
             return;
         };
-        let state = state.unwrap_or_else(|| Match::new(setup.world.clone(), setup.seat_teams));
+        let state = state.unwrap_or_else(|| setup.start());
         let mut cfg = self.cfg.session;
         cfg.input_delay = self.input_delay();
         let session = Session::new(state, self.seats.clone(), cfg);

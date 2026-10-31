@@ -1370,6 +1370,7 @@ mod tests {
                             world: world.clone(),
                             extra: Vec::new(),
                             roster_data: Vec::new(),
+                            intro: 0,
                         },
                     };
                     let grams = message.datagrams(2002);

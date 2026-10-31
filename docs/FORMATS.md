@@ -1298,7 +1298,7 @@ gamebreakers' plans and hand tracks, the player and team tables); none of it
 crosses the network, only a SHA-256 digest of it, in the join.
 
 **Datagrams.** Each starts with `0x53` (`'S'`, never `0xE5`, MyBaller's
-sealed-datagram marker), the protocol version (23), and the message kind.
+sealed-datagram marker), the protocol version (24), and the message kind.
 Fields follow in order: counts and ticks as LEB128 varints (`uv`; signed
 ones zigzagged), ids and checksums as fixed little-endian integers, text as
 a varint length and UTF-8 (names at most 32 bytes), and pads as the
@@ -1336,8 +1336,10 @@ empty pad if it was absent).
 (count; a `u16` database record per world player), seed `u32`, the six seats'
 teams (`u8` each; the default is home for 1P 3P 5P, away for 2P 4P 6P), the
 world snapshot at tick 0 (length-prefixed), an opaque `extra` blob the game
-may fill (length-prefixed), and the match's roster as data (length-prefixed;
-empty for the disc's). The rules travel inside the world, the Replays option
+may fill (length-prefixed), the match's roster as data (length-prefixed;
+empty for the disc's), and the updates the opening intros hold play for
+(`u16`, at most 3600; 0 for none). Every machine draws the intros from the
+seed (the game's `intro.rs`); the creator counts their updates. The rules travel inside the world, the Replays option
 too (the creator's). The world carries the match's own values of the disc's
 data and none of its tables; the server and every client install their own
 disc's under them (`World::install`) before playing it.
@@ -1364,7 +1366,8 @@ prompt, the director's notes, the gamebreaker task's step), the match's tick
 (`uv`), the network's clock, which runs on while a replay holds the world's,
 and the updates a staged Level 2's burst still holds the game (`uv`, at most
 31: the match holds the 31 updates after the press, as the game alone holds
-them until GB2's burst wipes).
+them until GB2's burst wipes), then the updates the opening intros still hold
+it (`uv`, at most 3600; a fresh Cross from any seat ends them).
 The checksum the clients report folds the replays and the match's tick into
 the world's.
 
@@ -1397,7 +1400,8 @@ are multiples of 30. The server keeps 600 ticks of frames and checksums; a
 client whose checksum differs, or whose `need` is older than that, gets a
 State (at most every 300 ms). `lead` is the worst margin, over the last 20 to
 40 ticks, by which the client's pads arrived before their tick; clients aim
-for 2. Anyone silent for 5 s is dropped, and their seats go to the computer.
+for 2, more after a report with no tick to spare (up to 12), coming back a
+tick after 600 steady ticks with 3 over. Anyone silent for 5 s is dropped, and their seats go to the computer.
 A Join whose disc digest isn't the server's is refused (6), and one that names
 no match and brings no setup (7); the server makes no match of its own. A
 replay holds the world on every machine alike (the match steps the game's

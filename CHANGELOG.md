@@ -20,6 +20,10 @@ its version's part.
   less. When a guess about the other players turns out wrong, the players
   and the ball glide to where they belong instead of snapping back and
   forth.
+- **Online matches open with their intros,** as matches played alone do:
+  the court's intro, then the away side's. Everyone sees the same intros
+  at the same time, and anyone pressing Cross skips them for everyone.
+  (Online needs everyone on this version.)
 
 ## v0.1.4-beta
 
