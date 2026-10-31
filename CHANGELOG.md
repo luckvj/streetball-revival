@@ -42,6 +42,10 @@ its version's part.
 - **A player who drops is taken over by the computer** after a second,
   instead of their player running in the last direction they held until
   the connection gave up. If they come back, they take over again.
+- **Less stutter online.** The game nudged its clock whenever its timing
+  drifted by a hair, and each nudge showed one moment twice or skipped
+  one. It now lets small drifts be: about one hitch every 4 seconds on a
+  115 ms connection with lag spikes, down from about one a second.
 - **When the host's game closes, you hear about it in 5 seconds,** not
   after a 10-second freeze.
 - **Host without playing.** Turn on Watch Only on the Online page, then

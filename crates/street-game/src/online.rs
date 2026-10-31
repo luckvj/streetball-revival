@@ -432,6 +432,11 @@ struct Smooth {
     /// periodic log (they should agree but for a guess's undone few).
     handed: u64,
     confirmed: u64,
+    /// Fixed updates that drew no new tick (the picture held) and that ran
+    /// two or more (it skipped), for the periodic log: the clock's nudges
+    /// make a few; many would be stutter.
+    held: u64,
+    doubled: u64,
 }
 
 /// What is left of an eased correction after a tick (half gone in about
@@ -1888,6 +1893,13 @@ pub fn net_step(
     };
     // This runs on the fixed 60 Hz update, which is the clock.
     let due = client.ticks_due_fixed();
+    if client.status() == Status::Playing {
+        match due {
+            0 => online.smooth.held += 1,
+            1 => {}
+            _ => online.smooth.doubled += 1,
+        }
+    }
     if due == 0 {
         return;
     }
@@ -1918,14 +1930,16 @@ pub fn net_step(
     {
         let smooth = &mut online.smooth;
         info!(
-            "online: rtt {rtt:?}, lead {}, delay {}, {s:?}, corrections eased {} snapped {} longest {:.2}, events handed {} confirmed {}",
+            "online: rtt {rtt:?}, lead {}, delay {}, {s:?}, corrections eased {} snapped {} longest {:.2}, events handed {} confirmed {}, updates held {} doubled {}",
             client.lead_target(),
             client.session().map_or(0, |s| s.config().input_delay),
             smooth.eased,
             smooth.snapped,
             smooth.longest,
             smooth.handed,
-            smooth.confirmed
+            smooth.confirmed,
+            smooth.held,
+            smooth.doubled
         );
         smooth.longest = 0.0;
     }

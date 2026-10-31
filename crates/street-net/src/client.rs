@@ -136,6 +136,10 @@ const MAX_TICKS_PER_CALL: f64 = 30.0;
 const JUMP_AT: i64 = 10;
 /// How much faster or slower the clock runs to correct a small lead error.
 const NUDGE: f64 = 0.06;
+/// Ticks the lead may stray past its band (0 to 2 over the aim) before
+/// the clock is nudged: each nudge draws a tick twice or skips one, and the
+/// server waits for a pad a tick late, so a little drift costs nothing.
+const LEAD_SLACK: i64 = 1;
 /// Most ticks of local pads in one message.
 const MAX_INPUT_RUN: usize = 32;
 /// Ticks of steady lead reports before the lead aimed for comes down a tick.
@@ -494,9 +498,9 @@ impl Client {
                 self.budget -= err as f64;
                 self.lead = None;
                 self.lead_guard = s.tick() + (-err).max(0) as u64 + self.settle_ticks();
-            } else if err < 0 {
+            } else if err < -LEAD_SLACK {
                 rate = 1.0 + NUDGE;
-            } else if err > 2 {
+            } else if err > 2 + LEAD_SLACK {
                 rate = 1.0 - NUDGE;
             }
         }
