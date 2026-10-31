@@ -440,15 +440,15 @@ impl Source for SfxSource {
 }
 
 impl Decodable for SfxBus {
-    type Decoder = SfxSource;
+    type Decoder = crate::audio::Resampled<SfxSource>;
 
-    fn decoder(&self) -> SfxSource {
-        SfxSource {
+    fn decoder(&self) -> Self::Decoder {
+        crate::audio::Resampled::new(SfxSource {
             bus: self.0.clone(),
             voices: Vec::new(),
             block: Vec::new(),
             at: 0,
-        }
+        })
     }
 }
 

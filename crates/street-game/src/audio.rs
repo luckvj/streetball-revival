@@ -58,6 +58,89 @@ pub fn mono(l: f32, r: f32) -> [f32; 2] {
     }
 }
 
+/// A source played at the mixer's 48 kHz, converted the way the original's
+/// sound driver converts it ([`street_audio::resample`]). On a 48 kHz
+/// device the audio library then plays it as it is.
+pub struct Resampled<S> {
+    inner: S,
+    converter: Option<street_audio::resample::Resampler>,
+    channels: u16,
+    rate: u32,
+    right: Option<f32>,
+}
+
+impl<S: Source> Resampled<S> {
+    pub fn new(inner: S) -> Self {
+        let from = inner.sample_rate().get();
+        let channels = inner.channels().get();
+        let to = street_audio::resample::MIXER_RATE;
+        let converter =
+            (to != from && channels <= 2).then(|| street_audio::resample::Resampler::new(from, to));
+        Self {
+            rate: if converter.is_some() { to } else { from },
+            inner,
+            converter,
+            channels,
+            right: None,
+        }
+    }
+}
+
+impl<S> std::ops::Deref for Resampled<S> {
+    type Target = S;
+
+    fn deref(&self) -> &S {
+        &self.inner
+    }
+}
+
+impl<S> std::ops::DerefMut for Resampled<S> {
+    fn deref_mut(&mut self) -> &mut S {
+        &mut self.inner
+    }
+}
+
+impl<S: Source> Iterator for Resampled<S> {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<f32> {
+        let Some(converter) = &mut self.converter else {
+            return self.inner.next();
+        };
+        if let Some(r) = self.right.take() {
+            return Some(r);
+        }
+        let inner = &mut self.inner;
+        let stereo = self.channels == 2;
+        let frame = converter.next(|| {
+            let l = inner.next()?;
+            Some([l, if stereo { inner.next().unwrap_or(l) } else { l }])
+        })?;
+        if stereo {
+            self.right = Some(frame[1]);
+        }
+        Some(frame[0])
+    }
+}
+
+impl<S: Source> Source for Resampled<S> {
+    fn current_span_len(&self) -> Option<usize> {
+        None
+    }
+
+    fn channels(&self) -> ChannelCount {
+        ChannelCount::new(self.channels.max(1)).expect("non-zero")
+    }
+
+    fn sample_rate(&self) -> SampleRate {
+        SampleRate::new(self.rate.max(1)).expect("non-zero")
+    }
+
+    fn total_duration(&self) -> Option<Duration> {
+        self.inner.total_duration()
+    }
+}
+
 /// Decoded audio, for effects and lines.
 #[derive(Asset, TypePath, Clone)]
 pub struct Pcm {
@@ -120,13 +203,13 @@ impl Source for PcmSource {
 }
 
 impl Decodable for Pcm {
-    type Decoder = PcmSource;
+    type Decoder = Resampled<PcmSource>;
 
-    fn decoder(&self) -> PcmSource {
-        PcmSource {
+    fn decoder(&self) -> Self::Decoder {
+        Resampled::new(PcmSource {
             pcm: self.clone(),
             pos: 0,
-        }
+        })
     }
 }
 
@@ -224,9 +307,15 @@ impl Source for StreamedSource {
 }
 
 impl Decodable for Streamed {
-    type Decoder = StreamedSource;
+    type Decoder = Resampled<StreamedSource>;
 
-    fn decoder(&self) -> StreamedSource {
+    fn decoder(&self) -> Self::Decoder {
+        Resampled::new(self.source())
+    }
+}
+
+impl Streamed {
+    fn source(&self) -> StreamedSource {
         let first = &self.streams[0].patch;
         StreamedSource {
             channels: first.channels,
@@ -609,6 +698,7 @@ fn streamed(disc: &mut Disc, path: &str) -> Option<Streamed> {
 
 /// Whole songs end so the rotation can advance; crowd beds keep looping.
 fn whole_song(disc: &mut Disc, path: &str) -> Option<Streamed> {
+    info!("audio: song {path}");
     let mut song = streamed(disc, path)?;
     song.looping = false;
     Some(song)

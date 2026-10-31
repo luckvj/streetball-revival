@@ -13765,3 +13765,40 @@ software mixer, whose symbols name `SNDIOP_setiopvoicevol` and
 step is straight, so the sliders are: `audio::gain` is now the level / 10.
 The match's song is the menu's measured level scaled from 87 to 98 (0.60;
 it had been a 0.55 stand-in).
+
+### The driver's rate converter (2026-10-30)
+
+After the levels, Vj still heard static on the hi-hats of the menu's songs
+(Lords of the Underground's, `LORDS.ASF`, for sure). The disc's data is not
+the cause: across every XA frame of the song, the quantizing noise sits
+22.8 dB under the frame at the 1st percentile (Pete Rock's 19.7, Nelly's
+15.9), and each block's stored history matches the previous block's last
+decoded samples, newest first, to within the encoder's error.
+
+The original was made to play Lords: the live options' Trax word (staging
+`0x4bc02c`, live `0x4bc044`; bits 3.. are the tracks, Lords is track 3, bit
+6) written over PINE during the boot movies with only Lords on, then the
+menu's audio captured as above. Fitted against the rewrite's decode
+(0.499 of the stream, ncc 0.86), the original's top octaves sat under ours:
+0.6 dB at 8..12 kHz, 1.7 dB at 12..16 kHz, 2.5 dB at 16..20 kHz, peaks and
+medians alike.
+
+`SNDDRV.IRX` (symbols kept) gives the reason. `MIX_setpitch` builds each
+voice's converter through `SFILTER_rsinit`, passing quality 1 (straight
+lines, `SFILTERI_rs16linear`) unless the driver's resample quality byte
+(`0x11dde` in the module, set by `MIX_setresamplequality` from byte 0x13 of
+the game's init command, 0x7d40) is under 25, which picks the nearest
+sample (`SFILTERI_rs16nearest`, `resample4`). Save states 1, 2 and 9 hold 25
+there (the module loads at IOP 0x8d630), so the original converts every
+stream with a 16.16 position stepping by the voice's pitch, each output
+`s[i] + ((s[i + 1] - s[i]) * frac >> 16)`. The rewrite had handed the 44.1
+kHz streams to the audio library (straight lines to whatever rate the
+device runs at), then for a day to a band-limited converter, which kept 2
+to 3 dB more of the top than the console does.
+
+`street_audio::resample` is now that converter, to the mixer's 48 kHz, and
+`audio::Resampled` wraps every decoder (streams, movies, effects, path
+songs) in it. Through it, the rewrite's Lords sits within 0.7 dB of the
+original's in every band from 4 to 20 kHz (the same offset in each: the
+fitted level). On a 48 kHz device the audio library plays the result as it
+is.

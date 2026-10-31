@@ -891,6 +891,7 @@ fn sound_of(
     settings: Option<&crate::audio::AudioSettings>,
 ) {
     if let (Some(sound), Some(pcm), Some(settings)) = (clip.take_sound(), pcm, settings) {
+        info!("audio: {name}'s soundtrack");
         crate::audio::play_movie(
             commands,
             pcm,

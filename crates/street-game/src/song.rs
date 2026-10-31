@@ -447,18 +447,18 @@ impl Source for PathSource {
 }
 
 impl Decodable for PathSong {
-    type Decoder = PathSource;
+    type Decoder = crate::audio::Resampled<PathSource>;
 
-    fn decoder(&self) -> PathSource {
+    fn decoder(&self) -> Self::Decoder {
         let tracks = usize::from(self.player.map.tracks);
-        PathSource {
+        crate::audio::Resampled::new(PathSource {
             song: self.clone(),
             player: self.player.clone(),
             lanes: (0..tracks).map(|_| Lane::idle()).collect(),
             right: None,
             frames: 0,
             dry_off: false,
-        }
+        })
     }
 }
 

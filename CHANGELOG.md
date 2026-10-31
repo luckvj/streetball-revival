@@ -29,6 +29,11 @@ its version's part.
   menu songs had been about 5.5 dB louder than the original, so any sound
   on top of them clipped. The volume sliders now work like the original's
   (half the slider is half the volume).
+- **Fixed: the hiss on hi-hats and cymbals in the music.** Songs, movies
+  and sounds are now converted to 48 kHz the way the original's sound
+  driver converts them, so the top end sounds like the console. Before,
+  the conversion was left to your PC's audio, which adds grit on some
+  setups.
 
 ## v0.1.4-beta
 

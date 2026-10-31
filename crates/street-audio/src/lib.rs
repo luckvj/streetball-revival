@@ -19,6 +19,7 @@ pub mod bank;
 pub mod music;
 pub mod patch;
 pub mod path;
+pub mod resample;
 pub mod schl;
 pub mod speech;
 mod speech_lookup;
