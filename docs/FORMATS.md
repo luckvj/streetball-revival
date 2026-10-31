@@ -298,7 +298,10 @@ skinned scheme as the hoops with a 36-quadword stride):
 
 The program draws two passes per batch: the textured base and an
 environment/specular overlay whose UVs come from the normals. Colour comes
-from toon lighting of a per-batch material colour, not from vertex colours.
+from lighting of a per-batch material colour, not from vertex colours; every
+player batch on the disc carries black lights, a white ambient and a material
+of ambient 128, so the first pass is the texture at 0x80 and the second the
+court's specular map (`docs/TRACE.md`, "The players' light and gloss").
 
 Bodies CALL shared sub-chains (normals and the kick) after unpacking their
 own positions, so only CALL tags that a render method uses start a draw.

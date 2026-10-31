@@ -294,3 +294,48 @@ fn native_prebuilt_scale_is_uniform_and_head_axes_keep_database_morphs() {
     }
     assert!(normal > 0 && prebuilt > 0);
 }
+
+/// The players' second pass: skin draws with `Texture_ToonShade_Skin` and
+/// `SpecularMap1`, clothes with `Texture_ToonShade2_Skin` and `SpecularMap2`
+/// (`street_render::gloss`), and every court ships its own 128 by 128 pair,
+/// whose alpha runs past the GS's 0x80 (a map that brightens what it covers).
+#[test]
+fn players_gloss_with_their_courts_specular_maps() {
+    let Some(mut iso) = disc() else {
+        eprintln!("STREET_ISO not set; skipping");
+        return;
+    };
+    let parts = player::Parts::load(&mut iso).unwrap();
+    let body = parts.model(&mut iso, "body2_outfit1").unwrap();
+    let kind = |texture: &str| {
+        let kinds: Vec<u8> = body
+            .meshes
+            .iter()
+            .filter(|m| m.texture.as_deref() == Some(texture))
+            .map(|m| m.specular)
+            .collect();
+        assert!(!kinds.is_empty(), "{texture}");
+        kinds
+    };
+    for skin in ["arms", "legs", "head", "hand"] {
+        assert!(kind(skin).iter().all(|&k| k == 1), "{skin}");
+    }
+    for cloth in ["shir", "shor", "sock"] {
+        assert!(kind(cloth).iter().all(|&k| k == 2), "{cloth}");
+    }
+    let shared = street_assets::court::specular_maps(&mut iso, None).unwrap();
+    for court in [
+        "CENTER", "FOREST", "FOSTER", "INDOOR", "MOSSWD", "NYCAGE", "PHILLY", "RUCKER", "RUCKRC",
+        "SEATTL", "SOLHOL",
+    ] {
+        let own = street_assets::court::specular_maps(&mut iso, Some(court)).unwrap();
+        for map in &own {
+            assert_eq!(
+                (map.width, map.height, map.texels.len()),
+                (128, 128, 128 * 128 * 4)
+            );
+            assert!(map.texels.chunks(4).any(|t| t[3] > 0x80), "{court}");
+        }
+        assert_ne!(own, shared, "{court} has its own pair");
+    }
+}

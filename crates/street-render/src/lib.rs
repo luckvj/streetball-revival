@@ -4,6 +4,7 @@
 //! - [`convert`]: textures and meshes to Bevy assets
 //! - [`court`]: spawn a court's models where the game puts them
 //! - [`crowd`]: the animated crowd in its seats
+//! - [`gloss`]: the players' second pass, the court's specular maps
 //! - [`hires`]: HD texture packs standing in for the disc's images
 //! - [`net`]: the nets, a cloth hanging from each rim
 //! - [`player`]: load and spawn a skinned player
@@ -19,6 +20,7 @@ pub mod app;
 pub mod convert;
 pub mod court;
 pub mod crowd;
+pub mod gloss;
 pub mod hires;
 pub mod net;
 pub mod player;
@@ -40,6 +42,7 @@ impl Plugin for StreetRenderPlugin {
         shadow::plugin(app);
         net::plugin(app);
         crowd::plugin(app);
+        gloss::plugin(app);
         app.add_plugins(screen_fx::ScreenFxPlugin);
     }
 }

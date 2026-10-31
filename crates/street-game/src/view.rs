@@ -3552,11 +3552,25 @@ pub struct Indicator(pub usize);
 #[derive(Component)]
 pub struct Badge(pub usize);
 
+/// No tone curve and no deband noise on a 3D camera: the GS writes the
+/// texels and blends as they are, and Bevy's default (TonyMcMapface with
+/// dither) would compress every court, crowd and player colour.
+pub fn plain_picture() -> (
+    bevy::core_pipeline::tonemapping::Tonemapping,
+    bevy::core_pipeline::tonemapping::DebandDither,
+) {
+    (
+        bevy::core_pipeline::tonemapping::Tonemapping::None,
+        bevy::core_pipeline::tonemapping::DebandDither::Disabled,
+    )
+}
+
 pub fn spawn_camera(commands: &mut Commands) {
     // FUN_003038b0 builds a new manager for every match.
     commands.insert_resource(ActiveCamera::default());
     commands.spawn((
         Camera3d::default(),
+        plain_picture(),
         Projection::Perspective(PerspectiveProjection {
             fov: 45f32.to_radians(),
             near: 0.5,

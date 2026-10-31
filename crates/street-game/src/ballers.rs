@@ -1598,6 +1598,13 @@ pub fn preview(
             return;
         }
     };
+    // The front end's players gloss with the shared maps (`FUN_00322598`).
+    match street_assets::court::specular_maps(&mut disc.iso, None) {
+        Ok(maps) => {
+            commands.insert_resource(street_render::gloss::SpecularMaps::new(&maps, &mut images))
+        }
+        Err(e) => warn!("specular maps: {e}"),
+    }
     let image = state
         .image
         .get_or_insert_with(|| {
@@ -1639,6 +1646,7 @@ pub fn preview(
     let (at, tilt) = viewer_camera(framing, hips + head);
     commands.spawn((
         Camera3d::default(),
+        crate::view::plain_picture(),
         Camera {
             order: -1,
             clear_color: ClearColorConfig::Custom(Color::NONE),

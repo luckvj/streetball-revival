@@ -149,6 +149,26 @@ pub fn parse(buf: &[u8]) -> Result<Sheet> {
     Ok(sheet)
 }
 
+/// The first image's texels exactly as the GS takes them, when it is a
+/// 32-bit image: RGBA with the PS2's alpha (0x80 is 1.0, and values above it
+/// are kept, which [`parse`]'s 0..=255 alpha clamps). The players' specular
+/// maps need the alpha past 0x80 ([`crate::court::specular_maps`]).
+pub fn raw_32bit(buf: &[u8]) -> Result<Option<(u32, u32, Vec<u8>)>> {
+    if bytes::range(buf, 0, 4)? != b"SHPS" || bytes::u32_le(buf, 8)? == 0 {
+        return Ok(None);
+    }
+    let start = bytes::u32_le(buf, 20)? as usize;
+    let Some(img) = blocks(buf, start, buf.len())?.into_iter().next() else {
+        return Ok(None);
+    };
+    if img.kind != PIXELS_32BIT {
+        return Ok(None);
+    }
+    let (w, h) = (u32::from(img.width), u32::from(img.height));
+    let texels = bytes::range(buf, img.body.start, w as usize * h as usize * 4)?;
+    Ok(Some((w, h, texels.to_vec())))
+}
+
 fn blocks(buf: &[u8], start: usize, end: usize) -> Result<Vec<Block>> {
     let mut out = Vec::new();
     let mut pos = start;

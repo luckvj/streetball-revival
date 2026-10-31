@@ -1758,6 +1758,7 @@ pub fn star(
     let height = assets.hip_height();
     commands.spawn((
         Camera3d::default(),
+        crate::view::plain_picture(),
         Camera {
             order: -1,
             clear_color: ClearColorConfig::Custom(Color::NONE),

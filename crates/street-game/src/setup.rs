@@ -562,6 +562,10 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     let mut disc = world.resource_mut::<Disc>();
     disc.ball = court::ball(&mut disc.iso, ball_suffix)?;
     let court = court::load(&mut disc.iso, &setup.court)?;
+    // The players' second pass samples the court's own specular maps.
+    let specular = court::specular_maps(&mut disc.iso, Some(&setup.court))
+        .inspect_err(|e| warn!("specular maps: {e}"))
+        .ok();
     let hoops = hoops(&court)?;
     let rim_rigs = rim_rigs(&court);
     // A court without an effects script gets the game's defaults.
@@ -803,6 +807,11 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     }
     world.insert_resource(control);
     world.insert_resource(street_render::shadow::ShadowStyle::from_court(&fx));
+    // A world without images (the tests') draws nothing to gloss.
+    if let (Some(maps), Some(mut images)) = (&specular, world.get_resource_mut::<Assets<Image>>()) {
+        let maps = street_render::gloss::SpecularMaps::new(maps, &mut images);
+        world.insert_resource(maps);
+    }
     world.insert_resource(Scene {
         court,
         players: assets,

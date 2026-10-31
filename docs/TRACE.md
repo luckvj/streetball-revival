@@ -13825,3 +13825,63 @@ banks and crowd:
   interpolating across the seam.
 
 Neither has been heard against the report's own machine.
+
+## The players' light and gloss (2026-10-31)
+
+The players draw with `Texture_ToonShade_Skin` (skin: head, arms, legs,
+hands) and `Texture_ToonShade2_Skin` (shirt, shorts, socks), two
+736-instruction programs in `/XF/XF000007` whose maths is the same (only
+their buffer offsets differ; `tools/vudis.py XF000007 0xa040 736` and
+`0x8260`). Despite the name they light nothing:
+
+- The vertex loop (`0x06f0..0x0810`) colours a vertex
+  `min(sum_i max(N.L_i, 0) C_i M_d, 255 - A) + A` with
+  `A = M_e + C_a M_a`: three lights whose directions come per bone in the
+  normal rows (VU 38..40 + 7k) and whose colours `C_i` and ambient `C_a`
+  sit at batch +7..+10, the material bytes `M_d`, `M_a`, `M_e` at +0x79..+0x7b.
+- Every player batch on the disc carries three black lights and a white
+  ambient, and the material diffuse 0, ambient 128, emission 0, and no
+  copy in a played match's RAM is patched (save state 1: 1,860 light blocks,
+  all as on the disc). So every vertex is 0x80: the first pass is the texture
+  as it is. A GS dump of a played match shows exactly that, 0x80808080 on
+  every player strip.
+
+Each batch then draws a second pass (the output buffer's second GIF tag, the
+GS state `GpState1`/`GpState2` in the render method):
+
+- Its texture is `SpecularMap1` for skin and `SpecularMap2` for clothes
+  (`__EAGL::TAR` externals in each render method; `SpecularMap3` is the
+  balls'). `FUN_00322418`, at a court's load (`0x2f30e0`), fills the three from
+  the court's archive: `"%s1%s"` with the court's prefix and `.ssh`, so
+  `/XF/FOREST.VIV`'s `forest1.ssh`.. (every court has its own; `solhol` adds
+  `solholl2/3`), falling back to the shared `specmap1.ssh`.. in `/XF/XF000003`,
+  which `FUN_00322598` loads for the front end (`0x273de0`, `0x28b984`). The
+  maps are 32-bit 128 by 128 and dim, with alpha past the GS's 0x80 (Forest's
+  first: texels up to 0x62, alpha 0x0a to 0xd2). The GS dump's two textures hold Forest's
+  `forest1`/`forest2` texels.
+- Its coordinate is a sphere map: the normal (scaled by
+  `1 / (512 x half extent)`, VU +0xc) through the blended bone's
+  model-view-projection rows, multiplied by
+  `(0.49 / P00, -0.49 / P11, 1 / P22)` (VU 263..265, the projection's
+  diagonal), then `0.49 + 0.49 v / |v|` for s and t (constants at
+  `0x0398..0x0498`), times Q.
+- Its colour is 0x7f (batch +0xb, 127.0 x 4) and its blend ALPHA_1
+  `A=Cd B=0 C=As D=Cs` with TFX modulate: `Cd * As >> 7` plus `Cs`, with
+  `As = Ta * 0x7f >> 7` and `Cs = Tc * 0x7f >> 7`, clamped. A map's alpha
+  above 0x80 brightens the first pass under it, below darkens it, and its
+  colour adds: the highlight on the players' upper, left-facing skin and
+  cloth.
+
+The rewrite's players were lit by a Bevy sun and ambient, which the original
+never does. Now (`street_render::gloss`): an unlit first pass, and in the same
+fragment the second pass's blend on the 8-bit display values, with the
+court's maps loaded at the match's setup (`street_assets::court::specular_maps`,
+raw texels by `ssh::raw_32bit`, since the sheet decoder clamps alpha at 0x80)
+and the shared pair for the front end's viewer. The rewrite's own: the
+coordinate is taken per fragment from the interpolated normal, where the
+original interpolates the vertices' coordinates.
+
+The same pass found the 3D cameras on Bevy's default tone curve
+(TonyMcMapface, with deband dither): every court, crowd and player colour was
+compressed on the way to the screen. The match, viewer and board cameras now
+take `view::plain_picture` (no tone curve, no dither), as the GS writes texels.

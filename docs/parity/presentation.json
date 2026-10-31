@@ -558,38 +558,44 @@
     {
       "id": "presentation.player_lighting",
       "scenario": "Reproduce the original player lighting and material response.",
-      "status": "untested",
+      "status": "matched",
       "match_type": "structural",
       "evidence_kind": "static",
       "evidence": [
         {
-          "path": "docs/FORMATS.md",
-          "locator": "Geometry (Texture_ToonShade_Skin, Texture_ToonShade2_Skin)",
-          "note": "Native VU1 microprogram toon lighting parameters, light directions and 127.0x4 material colour; per-batch material colour, zero specular term.",
-          "sha256": "7d213ac02a34206bc47e7c39e8f85c149956729384a48e78b37ff34653667b94"
+          "path": "docs/TRACE.md",
+          "locator": "The players' light and gloss (2026-10-31)",
+          "note": "Texture_ToonShade_Skin/ToonShade2_Skin read from /XF/XF000007: the vertex loop's lighting formula, the disc's black lights, white ambient and ambient-128 material (no copy patched in a played match's RAM), the second pass's SpecularMap1/2 from the court's archive (FUN_00322418, FUN_00322598), its sphere-map coordinate and ALPHA_1 blend; a GS dump of a played match shows 0x80808080 on every player strip and the court's maps as the second pass's textures."
         },
         {
-          "path": "crates/street-render/src/player.rs",
-          "locator": "spawn / StandardMaterial",
-          "note": "Production applies zero reflectance (turning off grazing specular sheen), roughness 0.85, and double-sided normal handling matching native toon shading. Re-pinned 2026-10-15 after the Choose Court / My Rules pass: texture literals gained the decoder's new `indices` field; the cited code is unchanged.",
-          "sha256": "02b474d18c8fb28c42937e09a05dff2f446cacf7988c567ad9be2c0df7fda678"
+          "path": "crates/street-render/src/gloss.rs",
+          "locator": "GlossMaterial / apply / SpecularMaps",
+          "note": "Production: player meshes of the two programs swap to an unlit first pass with the gloss extension and the map of their kind."
         },
         {
-          "path": "crates/street-render/src/app.rs",
-          "locator": "sync_court_sun / CourtSun",
-          "note": "Production syncs directional lighting to the court's authentic SUN_DIRECTION vector parsed from /COURTFX/<COURT>.BIN.",
-          "sha256": "852ac56499640095b493a6709efc35e8e0ac56704077b550ff0efc44954f3aa4"
+          "path": "crates/street-render/src/gloss.wesl",
+          "locator": "fragment",
+          "note": "The second pass's coordinate (0.49 v / |v| with v = (0.49 x, -0.49 y, z) of the view-space normal) and blend (Cd As >> 7 + Cs, texel modulated by 0x7f) on 8-bit display values."
         },
         {
-          "path": "crates/street-assets/src/courtfx.rs",
-          "locator": "CourtFx::sun_direction",
-          "note": "Decodes authentic court sun direction from disc COURTFX scripts.",
-          "sha256": "546c1cee7343c7958c2d6ecb0843cde453eb3cb27443b4432d4e438c894768fe"
+          "path": "crates/street-assets/src/court.rs",
+          "locator": "specular_maps",
+          "note": "<court>1.ssh and 2.ssh from the court's archive, the shared specmap pair for the front end, raw texels (alpha past 0x80 kept)."
+        },
+        {
+          "path": "crates/street-assets/src/eagl.rs",
+          "locator": "specular_map / Mesh::specular",
+          "note": "Each mesh's map from its render method's program."
+        },
+        {
+          "path": "crates/street-assets/tests/player_disc.rs",
+          "locator": "players_gloss_with_their_courts_specular_maps",
+          "note": "Skin meshes take map 1, clothes map 2; all eleven courts carry their own 128x128 pair with alpha past 0x80."
         }
       ],
-      "tolerance": "Discrete diffuse response, zero specular reflectance, and directional alignment with authentic court sun direction.",
-      "limitations": "Audit 2026-10-14 (F23): StandardMaterial parameters and sun alignment have no paired native ToonShade/Skin lighting output validation. Prior bounded evidence/limitations: Hardware-accelerated PBR pipeline approximates the fixed-function PS2 VU0/VU1 microcode toon lighting math. Last re-pinned 2026-10-30 after online netcode and intros (69bec2c, this commit) (re-pins that leave the cited region unchanged replace this line).",
-      "next_probe": "Compare lit vertex or fragment outputs under controlled poses and court lighting.",
+      "tolerance": "First pass the texel at vertex colour 0x80 (no lighting); second pass the court's SpecularMap1 (skin) or SpecularMap2 (clothes) at the programs' sphere-map coordinate, blended Cd*As>>7 + Cs on 8-bit values with the texel modulated by 0x7f.",
+      "limitations": "The coordinate is computed per fragment from the interpolated normal, where the original interpolates per-vertex coordinates; no paired framebuffer comparison of a posed player (only a visual check against save-state screenshots). Models from other games (canonical characters) keep a lit material. Last re-pinned 2026-10-31 at the port (re-pins that leave the cited region unchanged replace this line).",
+      "next_probe": "Pair a GS dump's player strip (pass 2 ST and the frame's pixels) with the rewrite's fragment output for the same pose and camera.",
       "audit_review": {
         "date": "2026-10-14",
         "previous_status": "matched",

@@ -184,6 +184,55 @@ pub fn load<R: Read + Seek>(iso: &mut Iso<R>, id: &str) -> Result<Court> {
     Ok(court)
 }
 
+/// One of the players' specular maps: 128 by 128 texels as the GS takes them
+/// ([`ssh::raw_32bit`]).
+#[derive(Clone, Debug, PartialEq)]
+pub struct SpecularMap {
+    pub width: u32,
+    pub height: u32,
+    pub texels: Vec<u8>,
+}
+
+/// The court's `SpecularMap1` and `SpecularMap2`, the textures the players'
+/// second pass samples (skin and clothes; `Texture_ToonShade_Skin` and
+/// `Texture_ToonShade2_Skin`). `FUN_00322418` loads `<court>1.ssh`, `2` and
+/// `3` (`"%s1%s"`, the court's prefix and `.ssh`) from the court's archive and,
+/// for one it lacks, `specmap1.ssh`.. from the shared one; every court on the
+/// disc has its own. `SpecularMap3` is the balls'. `None` for the court
+/// gives the shared pair (the front end's).
+pub fn specular_maps<R: Read + Seek>(
+    iso: &mut Iso<R>,
+    court: Option<&str>,
+) -> Result<[SpecularMap; 2]> {
+    let own = match court {
+        Some(id) => Some((
+            id.to_ascii_lowercase(),
+            iso.read(&format!("/XF/{}.VIV", id.to_ascii_uppercase()))?,
+        )),
+        None => None,
+    };
+    let own = match &own {
+        Some((prefix, bytes)) => Some((prefix.as_str(), Big::parse(bytes)?)),
+        None => None,
+    };
+    let shared = iso.read(SHARED)?;
+    let shared = Big::parse(&shared)?;
+    let map = |k: u8| -> Result<SpecularMap> {
+        let data = own
+            .as_ref()
+            .and_then(|(prefix, big)| big.get(&format!("{prefix}{k}.ssh")).ok())
+            .map_or_else(|| shared.get(&format!("specmap{k}.ssh")), Ok)?;
+        let (width, height, texels) = ssh::raw_32bit(data)?
+            .ok_or_else(|| Error::format(format!("specular map {k} is not a 32-bit image")))?;
+        Ok(SpecularMap {
+            width,
+            height,
+            texels,
+        })
+    };
+    Ok([map(1)?, map(2)?])
+}
+
 /// A ball from the shared archive: `bal<letter>.o` and its `bal<letter>.ssh`
 /// (letters a to m; the executable builds the name as `bal%c.o`).
 pub fn ball<R: Read + Seek>(

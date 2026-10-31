@@ -5,6 +5,12 @@ its version's part.
 
 ## Unreleased
 
+- Players look as they do on the PS2: no lighting on the first pass, then
+  the original's gloss from each court's own specular maps (skin and
+  clothes), so shoulders and arms catch the highlight as they should.
+- Courts, crowds and players keep their exact colours: the 3D picture no
+  longer goes through a tone curve and dither the original never had.
+
 ## v0.1.5-beta
 
 Online play had a big pass this release. Everyone in a match needs this

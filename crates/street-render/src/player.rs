@@ -228,6 +228,8 @@ impl PlayerAssets {
                     weights: m.weights.clone(),
                     sources: Vec::new(),
                     indices: m.indices.clone(),
+                    // Not the PS2's models: no second pass is known for them.
+                    specular: 0,
                 }
             })
             .collect();
@@ -403,15 +405,19 @@ pub fn spawn(
         inverse_bind,
     );
 
-    let mut material_for: HashMap<Option<String>, Handle<StandardMaterial>> = HashMap::new();
+    let mut material_for: HashMap<(Option<String>, bool), Handle<StandardMaterial>> =
+        HashMap::new();
     for model in &assets.models {
         for mesh in model
             .meshes
             .iter()
             .filter(|m| m.group.as_deref().is_none_or(|g| assets.shows(g)))
         {
+            // The PS2's player programs light nothing: their first pass is
+            // the texture as it is (crate::gloss).
+            let unlit = mesh.specular != 0;
             let material = material_for
-                .entry(mesh.texture.clone())
+                .entry((mesh.texture.clone(), unlit))
                 .or_insert_with(|| {
                     let texture = mesh
                         .texture
@@ -427,8 +433,9 @@ pub fn spawn(
                             Color::srgb(0.35, 0.35, 0.38)
                         },
                         base_color_texture: texture.map(|t| images.add(convert::image(t))),
+                        unlit,
                         perceptual_roughness: 0.85,
-                        // The game toon-shades players with no specular term. Bevy's
+                        // Models from elsewhere are lit, with no specular term. Bevy's
                         // Fresnel sheen would turn dark hair and jerseys grey at
                         // grazing angles; zero reflectance turns it off.
                         reflectance: 0.0,
@@ -455,6 +462,9 @@ pub fn spawn(
                 Mesh3d(meshes.add(convert::mesh(mesh, skinned))),
                 MeshMaterial3d(material),
             ));
+            if unlit {
+                child.insert(crate::gloss::GlossKind(mesh.specular));
+            }
             if let Some(pose) = mesh.group.as_deref().and_then(hand_pose) {
                 let relaxed = pose == 3 || pose == 9;
                 child.insert((

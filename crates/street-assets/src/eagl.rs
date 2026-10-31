@@ -67,6 +67,11 @@ pub struct Mesh {
     pub sources: Vec<(u32, u16)>,
     /// Triangle list into the vertex arrays.
     pub indices: Vec<u32>,
+    /// The specular map the mesh's second pass samples: 1 for
+    /// `Texture_ToonShade_Skin` (the players' skin, `SpecularMap1`), 2 for
+    /// `Texture_ToonShade2_Skin` (their clothes, `SpecularMap2`), 0 for a
+    /// program without one ([`crate::court::specular_maps`]).
+    pub specular: u8,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -187,7 +192,7 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
         half_extent,
         ..Default::default()
     };
-    let mut mesh_of: HashMap<(Option<&str>, Option<String>), usize> = HashMap::new();
+    let mut mesh_of: HashMap<(Option<&str>, Option<String>, u8), usize> = HashMap::new();
     let mut texture: Option<String> = None;
     // The VU keeps the uploaded bones and blend rows until the next upload, and
     // render methods only upload them when they change, so both carry over.
@@ -202,14 +207,18 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
             texture = Some((*t).to_owned());
         }
         let group = group_of.get(&call).map(String::as_str);
-        let idx = *mesh_of.entry((group, texture.clone())).or_insert_with(|| {
-            model.meshes.push(Mesh {
-                group: group.map(str::to_owned),
-                texture: texture.clone(),
-                ..Default::default()
+        let specular = specular_map(&obj, call, next);
+        let idx = *mesh_of
+            .entry((group, texture.clone(), specular))
+            .or_insert_with(|| {
+                model.meshes.push(Mesh {
+                    group: group.map(str::to_owned),
+                    texture: texture.clone(),
+                    specular,
+                    ..Default::default()
+                });
+                model.meshes.len() - 1
             });
-            model.meshes.len() - 1
-        });
         model.stats.chains += 1;
         decode_chain(
             &obj,
@@ -226,6 +235,21 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
     }
     model.meshes.retain(|m| !m.indices.is_empty());
     Ok(model)
+}
+
+/// The specular map ([`Mesh::specular`]) of the microprogram the render
+/// method after the CALL tag at `call` runs: every player render method names
+/// its program between its CALL and the next one at `next`.
+fn specular_map(obj: &Object, call: u32, next: u32) -> u8 {
+    obj.externals
+        .iter()
+        .filter(|&(&o, _)| o > call && o < next)
+        .find_map(|(_, &k)| match obj.symbols[k].name.as_str() {
+            "Texture_ToonShade_Skin" => Some(1),
+            "Texture_ToonShade2_Skin" => Some(2),
+            _ => None,
+        })
+        .unwrap_or(0)
 }
 
 /// The skeleton bones the render method after the CALL tag at `call` uploads
