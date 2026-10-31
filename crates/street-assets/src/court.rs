@@ -193,17 +193,17 @@ pub struct SpecularMap {
     pub texels: Vec<u8>,
 }
 
-/// The court's `SpecularMap1` and `SpecularMap2`, the textures the players'
-/// second pass samples (skin and clothes; `Texture_ToonShade_Skin` and
-/// `Texture_ToonShade2_Skin`). `FUN_00322418` loads `<court>1.ssh`, `2` and
-/// `3` (`"%s1%s"`, the court's prefix and `.ssh`) from the court's archive and,
-/// for one it lacks, `specmap1.ssh`.. from the shared one; every court on the
-/// disc has its own. `SpecularMap3` is the balls'. `None` for the court
-/// gives the shared pair (the front end's).
+/// The court's `SpecularMap1`, `2` and `3`, the textures the second pass of
+/// the players' skin, their clothes and the ball samples
+/// (`Texture_ToonShade_Skin`, `Texture_ToonShade2_Skin`, `Texture_ToonShade3`).
+/// `FUN_00322418` loads `<court>1.ssh`, `2` and `3` (`"%s1%s"`, the court's
+/// prefix and `.ssh`) from the court's archive and, for one it lacks,
+/// `specmap1.ssh`.. from the shared one; every court on the disc has its own.
+/// `None` for the court gives the shared three (the front end's).
 pub fn specular_maps<R: Read + Seek>(
     iso: &mut Iso<R>,
     court: Option<&str>,
-) -> Result<[SpecularMap; 2]> {
+) -> Result<[SpecularMap; 3]> {
     let own = match court {
         Some(id) => Some((
             id.to_ascii_lowercase(),
@@ -230,7 +230,7 @@ pub fn specular_maps<R: Read + Seek>(
             texels,
         })
     };
-    Ok([map(1)?, map(2)?])
+    Ok([map(1)?, map(2)?, map(3)?])
 }
 
 /// A ball from the shared archive: `bal<letter>.o` and its `bal<letter>.ssh`

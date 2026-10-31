@@ -12,6 +12,7 @@ import bevy_pbr::render::{
 
 @group(constants::MATERIAL_BIND_GROUP) @binding(100) var gloss_texture: texture_2d<f32>;
 @group(constants::MATERIAL_BIND_GROUP) @binding(101) var gloss_sampler: sampler;
+@group(constants::MATERIAL_BIND_GROUP) @binding(102) var<uniform> rigid: vec4<f32>;
 
 fn encode(c: vec3<f32>) -> vec3<f32> {
     let low = c * 12.92;
@@ -42,7 +43,12 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     // negated, the texture's rows run down) before the length is taken.
     let n = (view.view_from_world * vec4(pbr_input.world_normal, 0.0)).xyz;
     let v = vec3(0.49 * n.x, -0.49 * n.y, n.z);
-    let st = vec2(0.49) + 0.49 * v.xy * inverseSqrt(max(dot(v, v), 1e-12));
+    var st = vec2(0.49) + 0.49 * v.xy * inverseSqrt(max(dot(v, v), 1e-12));
+    // The ball's program (Texture_ToonShade3) takes no length: its normal,
+    // scaled by the model's constant (VU 57), comes out of unit length.
+    if rigid.x > 0.5 {
+        st = vec2(0.49) + v.xy;
+    }
     let t = textureSample(gloss_texture, gloss_sampler, st) * 255.0;
 
     // Vertex colour 0x7f, TFX modulate, TCC on: (texel * 0x7f) >> 7. ALPHA_1

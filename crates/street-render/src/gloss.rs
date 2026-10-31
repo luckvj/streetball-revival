@@ -41,6 +41,10 @@ pub struct Gloss {
     #[texture(100)]
     #[sampler(101)]
     pub map: Handle<Image>,
+    /// x: 1 for the ball's rigid program (`Texture_ToonShade3`), whose
+    /// coordinate is the view normal's own `0.49 + 0.49 (x, -y)`, unnormalised.
+    #[uniform(102)]
+    pub rigid: Vec4,
 }
 
 impl MaterialExtension for Gloss {
@@ -54,18 +58,18 @@ pub type GlossMaterial = ExtendedMaterial<StandardMaterial, Gloss>;
 /// The gloss materials made so far, by first-pass material and map.
 type Made = HashMap<(AssetId<StandardMaterial>, u8), Handle<GlossMaterial>>;
 
-/// The court's `SpecularMap1` and `SpecularMap2`, as images. Players get
-/// their gloss while this resource exists.
+/// The court's `SpecularMap1`, `2` and `3`, as images. Players and the ball
+/// get their gloss while this resource exists.
 #[derive(Resource, Clone, Debug)]
-pub struct SpecularMaps(pub [Handle<Image>; 2]);
+pub struct SpecularMaps(pub [Handle<Image>; 3]);
 
 impl SpecularMaps {
-    pub fn new(maps: &[SpecularMap; 2], images: &mut Assets<Image>) -> Self {
+    pub fn new(maps: &[SpecularMap; 3], images: &mut Assets<Image>) -> Self {
         Self(maps.each_ref().map(|m| images.add(image(m))))
     }
 }
 
-/// Which specular map a player mesh's second pass samples (1 or 2,
+/// Which specular map a mesh's second pass samples (1 to 3,
 /// `eagl::Mesh::specular`).
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct GlossKind(pub u8);
@@ -127,7 +131,10 @@ fn apply(
             .or_insert_with(|| {
                 glossy.add(GlossMaterial {
                     base: base.clone(),
-                    extension: Gloss { map: map.clone() },
+                    extension: Gloss {
+                        map: map.clone(),
+                        rigid: Vec4::new(f32::from(u8::from(kind == 3)), 0.0, 0.0, 0.0),
+                    },
                 })
             })
             .clone();

@@ -13881,6 +13881,16 @@ and the shared pair for the front end's viewer. The rewrite's own: the
 coordinate is taken per fragment from the interpolated normal, where the
 original interpolates the vertices' coordinates.
 
+The balls (`bala.o`..`balm.o`, `Texture_ToonShade3`, the rigid program at
+`.data+0x6730`, 0x282 instructions) are the same case: black lights, a white
+ambient, the material 0/128/0, and a second pass with `SpecularMap3` (the
+court's `<court>3.ssh`). Their coordinate takes no length: the normal, scaled
+by the model's constant (VU 57, 1/(128 x 1.5083)), through the rows and the
+projection's diagonal, `0.49 + 0.49 (x, -y)`, which the GS dump's ball pass
+(TBP 14528) spans from 0 to 0.98 as a unit normal does (its tails past them,
+and the players', come from the program pairing a vertex's ST with the next
+one's Q). `props::spawn` gives a toon mesh its unlit pass and gloss.
+
 The same pass found the 3D cameras on Bevy's default tone curve
 (TonyMcMapface, with deband dither): every court, crowd and player colour was
 compressed on the way to the screen. The match, viewer and board cameras now

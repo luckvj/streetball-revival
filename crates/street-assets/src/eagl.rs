@@ -69,7 +69,8 @@ pub struct Mesh {
     pub indices: Vec<u32>,
     /// The specular map the mesh's second pass samples: 1 for
     /// `Texture_ToonShade_Skin` (the players' skin, `SpecularMap1`), 2 for
-    /// `Texture_ToonShade2_Skin` (their clothes, `SpecularMap2`), 0 for a
+    /// `Texture_ToonShade2_Skin` (their clothes and heads, `SpecularMap2`),
+    /// 3 for `Texture_ToonShade3` (the balls, `SpecularMap3`), 0 for a
     /// program without one ([`crate::court::specular_maps`]).
     pub specular: u8,
 }
@@ -247,6 +248,7 @@ fn specular_map(obj: &Object, call: u32, next: u32) -> u8 {
         .find_map(|(_, &k)| match obj.symbols[k].name.as_str() {
             "Texture_ToonShade_Skin" => Some(1),
             "Texture_ToonShade2_Skin" => Some(2),
+            "Texture_ToonShade3" => Some(3),
             _ => None,
         })
         .unwrap_or(0)

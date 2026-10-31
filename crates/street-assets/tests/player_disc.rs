@@ -329,6 +329,7 @@ fn players_gloss_with_their_courts_specular_maps() {
         "SEATTL", "SOLHOL",
     ] {
         let own = street_assets::court::specular_maps(&mut iso, Some(court)).unwrap();
+        assert_eq!(own.len(), 3);
         for map in &own {
             assert_eq!(
                 (map.width, map.height, map.texels.len()),
