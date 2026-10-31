@@ -76,6 +76,9 @@ pub struct OnlineArgs {
     pub ready: bool,
     /// The computer plays this machine's seats (for testing).
     pub bot: bool,
+    /// Pads like a person's, made up (for testing the netcode: the
+    /// computer's pad never changes, so it never proves a guess wrong).
+    pub mash: bool,
     pub spectate: bool,
     /// People a hosted match seats: 2 or 6.
     pub people: u8,
@@ -94,6 +97,7 @@ impl Default for OnlineArgs {
             side: None,
             ready: false,
             bot: false,
+            mash: false,
             spectate: false,
             people: 6,
         }
@@ -407,13 +411,20 @@ impl Drop for HostThread {
 struct Smooth {
     players: Vec<[f32; 2]>,
     ball: [f32; 3],
+    /// Corrections eased and snapped (players' and the ball's), and the
+    /// longest, for the periodic log.
+    eased: u32,
+    snapped: u32,
+    longest: f32,
 }
 
-/// What is left of an eased correction after a tick.
-const EASE: f32 = 0.8;
+/// What is left of an eased correction after a tick (half gone in about
+/// 90 ms).
+const EASE: f32 = 0.88;
 /// Corrections longer than this are shown at once (a restart, an inbound,
-/// a resync's jump).
-const SNAP: f32 = 3.0;
+/// a resync's jump). A player runs 13 units a second, so a guess wrong for
+/// a fifth of a second is off by about 5 at worst: eased, not jumped.
+const SNAP: f32 = 10.0;
 
 impl Smooth {
     /// Ease by `ticks`, add `correction`, and draw `world` off by what is
@@ -437,7 +448,16 @@ impl Smooth {
             for (o, d) in self.players.iter_mut().zip(&c.players) {
                 o[0] += d[0];
                 o[1] += d[1];
-                if o[0].hypot(o[1]) > SNAP {
+                let length = o[0].hypot(o[1]);
+                if d[0] != 0.0 || d[1] != 0.0 {
+                    self.longest = self.longest.max(length);
+                    if length > SNAP {
+                        self.snapped += 1;
+                    } else {
+                        self.eased += 1;
+                    }
+                }
+                if length > SNAP {
                     *o = [0.0; 2];
                 }
             }
@@ -491,6 +511,7 @@ pub struct Online {
     ready: bool,
     auto_ready: bool,
     bot: bool,
+    mash: bool,
     /// What the client reported since the last look.
     events: Vec<ClientEvent>,
     /// This machine voted to replay the finished round.
@@ -571,12 +592,13 @@ impl Online {
             ready: false,
             auto_ready: args.ready,
             bot: args.bot,
+            mash: args.mash,
             events: Vec::new(),
             rematch: false,
             people: args.people,
             reach: args
                 .host
-                .filter(|_| !args.bot)
+                .filter(|_| !args.bot && !args.mash)
                 .map(|port| crate::reach::Reach::start(port, lan)),
             announcer: args
                 .host
@@ -1759,6 +1781,47 @@ fn watch(
     }
 }
 
+/// A made-up person's pad for `seat` at `tick`, on `raw`'s camera: the
+/// stick held a while in one of eight ways (or let go), and now and then a
+/// button tapped or held, as a person plays.
+fn mashed(raw: Input, seat: u8, tick: u64) -> Input {
+    let hash = |x: u64| {
+        let mut h = x.wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ (u64::from(seat) << 56);
+        h ^= h >> 31;
+        h = h.wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        h ^ (h >> 29)
+    };
+    // The stick changes every 12 to 40 updates.
+    let mut start = 0;
+    let mut hold = 0;
+    while start + hold <= tick {
+        start += hold;
+        hold = 12 + hash(start) % 29;
+    }
+    let way = hash(start ^ 0x5157) % 10;
+    let stick = match way {
+        8 | 9 => [0, 0],
+        w => {
+            let a = w as f32 * std::f32::consts::FRAC_PI_4;
+            [(a.cos() * 127.0) as i8, (a.sin() * 127.0) as i8]
+        }
+    };
+    let press = hash((tick / 8) ^ 0xb077) % 24;
+    let buttons = match press {
+        0 => street_sim::button::SHOOT,
+        1 => street_sim::button::PASS,
+        2 => street_sim::button::TRICK,
+        3 => street_sim::button::JUMP,
+        4 | 5 => street_sim::button::R1,
+        _ => 0,
+    };
+    Input {
+        stick,
+        buttons,
+        ..raw
+    }
+}
+
 /// One fixed update online: the ticks due, each with this machine's pads,
 /// and the predicted world shown. The box score counts confirmed ticks
 /// only.
@@ -1774,7 +1837,8 @@ pub fn net_step(
 ) {
     tick_events.events.clear();
     tick_events.replay = false;
-    let bot = online.bot;
+    let online = &mut *online;
+    let (bot, mash) = (online.bot, online.mash);
     let Some(client) = online.client.as_mut() else {
         return;
     };
@@ -1789,6 +1853,9 @@ pub fn net_step(
         for (k, &seat) in seats.iter().enumerate() {
             let pad = match (control.seats.get(k), client.world()) {
                 (Some(s), Some(w)) if bot => street_sim::ai::input(w, s.player),
+                (Some(s), _) if mash => {
+                    mashed(s.raw, seat, client.session().map_or(0, |s| s.tick()))
+                }
                 (Some(s), _) => s.raw,
                 _ => Input::default(),
             };
@@ -1806,11 +1873,16 @@ pub fn net_step(
             .session()
             .is_some_and(|s| s.tick() % 1800 < u64::from(due))
     {
+        let smooth = &mut online.smooth;
         info!(
-            "online: rtt {rtt:?}, lead {}, delay {}, {s:?}",
+            "online: rtt {rtt:?}, lead {}, delay {}, {s:?}, corrections eased {} snapped {} longest {:.2}",
             client.lead_target(),
-            client.session().map_or(0, |s| s.config().input_delay)
+            client.session().map_or(0, |s| s.config().input_delay),
+            smooth.eased,
+            smooth.snapped,
+            smooth.longest
         );
+        smooth.longest = 0.0;
     }
     let Some(m) = client.session().map(|s| s.current()) else {
         return;
@@ -1974,7 +2046,7 @@ mod tests {
         let correction = |p0: [f32; 2], ball: [f32; 3]| {
             let mut players = vec![[0.0; 2]; world.players.len()];
             players[0] = p0;
-            players[1] = [5.0, 0.0]; // a jump: shown at once
+            players[1] = [SNAP + 1.0, 0.0]; // a jump: shown at once
             Some(street_net::Correction { players, ball })
         };
         let mut w = world.clone();
