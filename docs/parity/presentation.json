@@ -632,7 +632,7 @@
         }
       ],
       "tolerance": "Exact geometric ray-plane intersection matching native VU1 ArbitraryShadow formula; single-coat non-overlapping shadow coverage.",
-      "limitations": "Audit 2026-10-14 (F23): Host depth-writing lifted/layered shadow meshes have no native destination-alpha/coverage output comparison. Prior bounded evidence/limitations: Geometric projection uses CPU skinning and depth writes to prevent double-darkening, matching native GS destination-alpha result without requiring PS2 hardware eDRAM. Last re-pinned 2026-10-31 after the ball's gloss (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "2026-10-31 (docs/TRACE.md \"The 3D picture in the GS's own values\"): the shadow's colour and alpha are now the GS dump's bytes (Forest 0x19 0x19 0x26 at 0x5f) and it blends in display values on a DisplaySpace camera, as the GS does; coverage is still unpaired. Audit 2026-10-14 (F23): Host depth-writing lifted/layered shadow meshes have no native destination-alpha/coverage output comparison. Prior bounded evidence/limitations: Geometric projection uses CPU skinning and depth writes to prevent double-darkening, matching native GS destination-alpha result without requiring PS2 hardware eDRAM. Last re-pinned 2026-10-31 after the ball's gloss (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare isolated native and production shadow masks over overlapping limbs.",
       "audit_review": {
         "date": "2026-10-14",

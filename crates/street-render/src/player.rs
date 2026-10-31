@@ -430,9 +430,9 @@ pub fn spawn(
                         base_color: if texture.is_some() {
                             Color::WHITE
                         } else {
-                            Color::srgb(0.35, 0.35, 0.38)
+                            Color::linear_rgb(0.35, 0.35, 0.38)
                         },
-                        base_color_texture: texture.map(|t| images.add(convert::image(t))),
+                        base_color_texture: texture.map(|t| images.add(convert::display_image(t))),
                         unlit,
                         perceptual_roughness: 0.85,
                         // Models from elsewhere are lit, with no specular term. Bevy's

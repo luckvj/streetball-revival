@@ -10,7 +10,10 @@ its version's part.
   clothes), so shoulders and arms catch the highlight as they should. The
   ball gets the same treatment with its own map.
 - Courts, crowds and players keep their exact colours: the 3D picture no
-  longer goes through a tone curve and dither the original never had.
+  longer goes through a tone curve and dither the original never had, and
+  it now blends and shades in the PS2's own colour values, so shadows,
+  fences, nets, the crowd and effects come out as dark or light as on the
+  PS2 (shadows were too light).
 
 ## v0.1.5-beta
 

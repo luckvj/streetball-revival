@@ -35,22 +35,26 @@ pub fn image(t: &ssh::Texture) -> Image {
     image
 }
 
+/// A texture for the 3D picture, read as the GS reads it: its stored values,
+/// undecoded, which a [`crate::screen_fx::DisplaySpace`] camera works in.
+pub fn display_image(t: &ssh::Texture) -> Image {
+    let mut image = image(t);
+    image.texture_descriptor.format = TextureFormat::Rgba8Unorm;
+    image
+}
+
 /// An EAGL mesh as a Bevy triangle list. `skinned` adds the joint attributes,
 /// for meshes drawn with a [`SkinnedMesh`](bevy::mesh::skinning::SkinnedMesh).
 pub fn mesh(m: &eagl::Mesh, skinned: bool) -> Mesh {
     // PS2 vertex colour 0x80 is 1.0; values above it brighten the texture.
     // The GS modulates the texel by it in its own (display) values,
-    // `texel * colour >> 7`; Bevy multiplies in linear light, so the factor
-    // goes in as sRGB to scale the displayed texel by the same amount (as
-    // the crowd's tint does). A court's baked shade then darkens the
-    // picture as much as the original's.
+    // `texel * colour >> 7`, which a DisplaySpace camera's pass does too.
     let colors: Vec<[f32; 4]> = m
         .colors
         .iter()
         .map(|c| {
             let k = |v: u8| f32::from(v) / 128.0;
-            let linear = LinearRgba::from(Srgba::new(k(c[0]), k(c[1]), k(c[2]), 1.0));
-            [linear.red, linear.green, linear.blue, k(c[3]).min(1.0)]
+            [k(c[0]), k(c[1]), k(c[2]), k(c[3]).min(1.0)]
         })
         .collect();
     let mut mesh = Mesh::new(

@@ -1646,7 +1646,7 @@ pub fn preview(
     let (at, tilt) = viewer_camera(framing, hips + head);
     commands.spawn((
         Camera3d::default(),
-        crate::view::plain_picture(),
+        street_render::screen_fx::display_camera(),
         Camera {
             order: -1,
             clear_color: ClearColorConfig::Custom(Color::NONE),

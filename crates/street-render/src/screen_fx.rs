@@ -81,6 +81,53 @@ impl FullscreenMaterial for ScreenLayers {
     }
 }
 
+/// The 3D picture in the GS's own values. The GS samples, modulates and
+/// blends the 8-bit values the display shows, where Bevy works in linear
+/// light: a court's baked shade, a crowd member's tint and every alpha blend
+/// (the players' shadows, the nets, the effects) came out lighter or darker
+/// than the original's. A camera with this component draws into a float
+/// target (with [`display_camera`]) where every texture is read undecoded
+/// ([`crate::convert::display_image`]) and every colour is given as the
+/// GS's value, so the 3D pass's arithmetic is the GS's; this pass then
+/// turns the picture into linear light, before [`ScreenLayers`] and the 2D.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, ShaderType, ExtractComponent)]
+#[extract_app(RenderApp)]
+pub struct DisplaySpace {
+    unused: Vec4,
+}
+
+impl FullscreenMaterial for DisplaySpace {
+    fn fragment_shader() -> ShaderRef {
+        "embedded://street_render/display_decode.wgsl".into()
+    }
+
+    fn schedule_configs(
+        system: bevy::ecs::schedule::ScheduleConfigs<bevy::ecs::system::BoxedSystem>,
+    ) -> bevy::ecs::schedule::ScheduleConfigs<bevy::ecs::system::BoxedSystem> {
+        system
+            .in_set(Core3dSystems::PostProcess)
+            .before(tonemapping)
+    }
+}
+
+/// What a 3D camera of the original's picture wears: the float target (so a
+/// 2D camera over it shares it, it takes [`bevy::camera::Hdr`] too),
+/// [`DisplaySpace`], and no tone curve or deband noise (the GS writes its
+/// values as they are; Bevy's default TonyMcMapface compresses them).
+pub fn display_camera() -> (
+    bevy::camera::Hdr,
+    DisplaySpace,
+    bevy::core_pipeline::tonemapping::Tonemapping,
+    bevy::core_pipeline::tonemapping::DebandDither,
+) {
+    (
+        bevy::camera::Hdr,
+        DisplaySpace::default(),
+        bevy::core_pipeline::tonemapping::Tonemapping::None,
+        bevy::core_pipeline::tonemapping::DebandDither::Disabled,
+    )
+}
+
 /// The copy into the shown buffer: its alpha and colour on the GS's 0..128
 /// (0x80 is one), and whether it is written dithered into the 16-bit buffer
 /// (the original's always is; [`ScreenCopy::SHOWN`] shows the frame exactly
@@ -130,8 +177,10 @@ impl Plugin for ScreenFxPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "screen_layers.wgsl");
         embedded_asset!(app, "screen_copy.wgsl");
+        embedded_asset!(app, "display_decode.wgsl");
         app.add_plugins((
             FullscreenMaterialPlugin::<ScreenLayers>::default(),
+            FullscreenMaterialPlugin::<DisplaySpace>::default(),
             ExtractComponentPlugin::<ScreenCopy>::default(),
             UniformComponentPlugin::<ScreenCopy>::default(),
         ));

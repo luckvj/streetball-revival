@@ -194,11 +194,11 @@ fn spawn_ambience(
         image: a
             .smoke
             .as_ref()
-            .map(|t| images.add(street_render::convert::image(t))),
+            .map(|t| images.add(street_render::convert::display_image(t))),
         fire: a
             .fire
             .as_ref()
-            .map(|t| images.add(street_render::convert::image(t))),
+            .map(|t| images.add(street_render::convert::display_image(t))),
         flames: crate::fire::Fire::new(0x001f_6fc8 ^ scene.court.id.len() as u32),
         court_wind: a.wind.map_or([0.0; 3], |w| {
             crate::steam::court_wind(w.speed, w.direction[0], w.direction[1])

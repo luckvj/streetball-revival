@@ -505,17 +505,15 @@ impl CrowdRig {
 }
 
 /// A seat's vertex colour ([`Seat::vertex_colour`], 0x80 = 1.0) as the
-/// material's base colour. The GS modulates the texture by it in its own
-/// (display) values, `texel * colour >> 7`; Bevy multiplies in linear
-/// light, so the factor goes in as sRGB to scale the displayed texel by
-/// the same amount.
+/// material's base colour, in the GS's own values (the crowd draws for a
+/// [`crate::screen_fx::DisplaySpace`] camera).
 /// The seat's vertex colour as the GS modulates the texel with it
 /// (`texel * colour >> 7`, red, green, blue and alpha alike): its alpha
 /// byte is 0x7f for the plans' 0xff (`0x30a450` halves it), so a texel
 /// keeps 127/128 of its alpha.
 fn tint_colour(c: [u8; 4]) -> Color {
     let k = |v: u8| f32::from(v) / 128.0;
-    Color::srgba(k(c[0]), k(c[1]), k(c[2]), k(c[3]).min(1.0))
+    Color::linear_rgba(k(c[0]), k(c[1]), k(c[2]), k(c[3]).min(1.0))
 }
 
 /// A model's triangles as a mesh: one vertex per corner (texture coordinates
@@ -594,7 +592,7 @@ pub fn spawn(
                 let texture = (!list.is_empty()).then(|| &list[image % list.len()].1);
                 materials.add(StandardMaterial {
                     base_color: tint_colour(tint),
-                    base_color_texture: texture.map(|t| images.add(convert::image(t))),
+                    base_color_texture: texture.map(|t| images.add(convert::display_image(t))),
                     unlit: true,
                     double_sided: true,
                     cull_mode: None,
@@ -831,7 +829,7 @@ mod tests {
             })
             .collect();
         // The alpha byte 0x7f (0xff halved) as well: 127/128.
-        let want = Color::srgba(91.0 / 128.0, 77.0 / 128.0, 45.0 / 128.0, 127.0 / 128.0);
+        let want = Color::linear_rgba(91.0 / 128.0, 77.0 / 128.0, 45.0 / 128.0, 127.0 / 128.0);
         assert_eq!(parts, [want, want], "body then head");
     }
 

@@ -36,7 +36,7 @@ pub fn spawn(
             .or_insert_with(|| {
                 let texture = mesh.texture.as_ref().and_then(|t| textures.get(t));
                 materials.add(StandardMaterial {
-                    base_color_texture: texture.map(|t| images.add(convert::image(t))),
+                    base_color_texture: texture.map(|t| images.add(convert::display_image(t))),
                     unlit: !lit,
                     perceptual_roughness: 0.7,
                     cull_mode: None,

@@ -191,7 +191,7 @@ fn spawn(
     };
     let a = &scene.ambience;
     let image = |t: Option<&street_assets::ssh::Texture>, images: &mut Assets<Image>| {
-        t.map(|t| images.add(street_render::convert::image(t)))
+        t.map(|t| images.add(street_render::convert::display_image(t)))
     };
     let spark = image(a.spark.as_ref(), &mut images);
     let motion = image(a.motion.as_ref(), &mut images);

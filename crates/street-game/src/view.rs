@@ -3552,25 +3552,17 @@ pub struct Indicator(pub usize);
 #[derive(Component)]
 pub struct Badge(pub usize);
 
-/// No tone curve and no deband noise on a 3D camera: the GS writes the
-/// texels and blends as they are, and Bevy's default (TonyMcMapface with
-/// dither) would compress every court, crowd and player colour.
-pub fn plain_picture() -> (
-    bevy::core_pipeline::tonemapping::Tonemapping,
-    bevy::core_pipeline::tonemapping::DebandDither,
-) {
-    (
-        bevy::core_pipeline::tonemapping::Tonemapping::None,
-        bevy::core_pipeline::tonemapping::DebandDither::Disabled,
-    )
-}
-
 pub fn spawn_camera(commands: &mut Commands) {
     // FUN_003038b0 builds a new manager for every match.
     commands.insert_resource(ActiveCamera::default());
     commands.spawn((
         Camera3d::default(),
-        plain_picture(),
+        street_render::screen_fx::display_camera(),
+        // The sky behind the court, in the GS's values like the rest.
+        Camera {
+            clear_color: ClearColorConfig::Custom(Color::linear_rgb(0.53, 0.70, 0.86)),
+            ..default()
+        },
         Projection::Perspective(PerspectiveProjection {
             fov: 45f32.to_radians(),
             near: 0.5,
@@ -3587,6 +3579,8 @@ pub fn spawn_camera(commands: &mut Commands) {
     // (`options::ui_box`).
     commands.spawn((
         Camera2d,
+        // The court camera's float target, shared.
+        bevy::camera::Hdr,
         Camera {
             order: 1,
             clear_color: ClearColorConfig::None,
@@ -4483,7 +4477,7 @@ pub fn spawn_indicator(
         commands.spawn((
             Mesh3d(ring.clone()),
             MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgba(r, g, b, 0.85),
+                base_color: Color::linear_rgba(r, g, b, 0.85),
                 unlit: true,
                 alpha_mode: AlphaMode::Blend,
                 ..default()

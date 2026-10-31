@@ -13895,3 +13895,27 @@ The same pass found the 3D cameras on Bevy's default tone curve
 (TonyMcMapface, with deband dither): every court, crowd and player colour was
 compressed on the way to the screen. The match, viewer and board cameras now
 take `view::plain_picture` (no tone curve, no dither), as the GS writes texels.
+
+### The 3D picture in the GS's own values (2026-10-31)
+
+The GS samples, filters, modulates and blends the 8-bit values the display
+shows. The rewrite drew its 3D pass in linear light and approximated the
+modulations by giving each factor as sRGB (vertex colours, crowd tints),
+which is not exact, and every alpha blend mixed in linear light, which the
+original never does. The players' shadows came out lighter: Forest's shadow
+(`SHADOW_COLOUR 0.10 0.10 0.15 0.75`, drawn by the GS at `0x19 0x19 0x26`,
+alpha `0x5f`, `(Cs - Cd) * As >> 7 + Cd`) over a floor of 150 gives 57 on the
+PS2, and 82 when it is mixed in linear light.
+
+Now every 3D camera (`screen_fx::display_camera`: the match's, the front
+end's baller viewer, the boards' star) draws into a float target in the GS's
+values: 3D textures are read undecoded (`convert::display_image`), vertex
+colours and the crowd's tints are the GS's `/128` factors, the shadow its
+bytes (`ShadowStyle::gs_colour`: each channel `c * 255`, the alpha `a * 255`
+halved, as the crowd's plans' 0xff becomes 0x7f), and `screen_fx::DisplaySpace`
+decodes the picture to linear light before the screen layers and the 2D
+(the match's 2D camera shares the float target). The effects (sparks,
+streamers, trails, fire, steam, breath) already gave the GS's values and now
+draw as the original's. The players' gloss (`gloss.wesl`) works in those
+values without converting. The street-viewer's camera does not wear
+`display_camera`, so its textures show undecoded.

@@ -117,11 +117,11 @@ pub fn spawn(
         .with_inserted_indices(Indices::U32(indices)),
     );
     let material = materials.add(StandardMaterial {
-        base_color_texture: texture.map(|t| images.add(convert::image(t))),
+        base_color_texture: texture.map(|t| images.add(convert::display_image(t))),
         base_color: if texture.is_some() {
             Color::WHITE
         } else {
-            Color::srgb(0.9, 0.9, 0.9)
+            Color::linear_rgb(0.9, 0.9, 0.9)
         },
         unlit: true,
         double_sided: true,

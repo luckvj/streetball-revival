@@ -210,7 +210,7 @@ fn material(texture: Option<&ssh::Texture>, images: &mut Assets<Image>) -> Stand
         _ => AlphaMode::Opaque,
     };
     StandardMaterial {
-        base_color_texture: texture.map(|t| images.add(convert::image(t))),
+        base_color_texture: texture.map(|t| images.add(convert::display_image(t))),
         unlit: true,
         double_sided: true,
         cull_mode: None,

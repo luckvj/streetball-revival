@@ -39,6 +39,24 @@ pub struct ShadowStyle {
 }
 
 impl ShadowStyle {
+    /// The colour as the GS draws it, in its own values (for a
+    /// [`crate::screen_fx::DisplaySpace`] camera): each channel's byte
+    /// `c * 255`, and the alpha's byte halved (`a * 255 >> 1`, 0x80 opaque),
+    /// so Forest's `0.10 0.10 0.15 0.75` is the GS dump's `0x19 0x19 0x26`
+    /// at alpha 0x5f, blended `(Cs - Cd) * As >> 7 + Cd`.
+    pub fn gs_colour(&self) -> Color {
+        let [r, g, b, a] = self.colour.map(|c| c.clamp(0.0, 1.0));
+        let byte = |c: f32| (c * 255.0).floor();
+        Color::linear_rgba(
+            byte(r) / 255.0,
+            byte(g) / 255.0,
+            byte(b) / 255.0,
+            (byte(a) / 2.0).floor() / 128.0,
+        )
+    }
+}
+
+impl ShadowStyle {
     /// From a court's `SUN_DIRECTION` and `SHADOW_COLOUR`.
     pub fn from_court(fx: &street_assets::courtfx::CourtFx) -> Self {
         let mut direction = Vec3::from_array(fx.sun_direction).normalize_or(Vec3::NEG_Y);
@@ -169,10 +187,9 @@ fn attach(
     if sources.is_empty() {
         return;
     }
-    let [r, g, b, a] = style.colour;
     let material = materials.add(ShadowMaterial {
         base: StandardMaterial {
-            base_color: Color::srgba(r, g, b, a.clamp(0.0, 1.0)),
+            base_color: style.gs_colour(),
             unlit: true,
             alpha_mode: AlphaMode::Blend,
             cull_mode: None,
@@ -284,6 +301,25 @@ fn project(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_shadow_takes_the_gs_dumps_bytes() {
+        // Forest's SHADOW_COLOUR 0.10 0.10 0.15 0.75: the played match's GS
+        // dump draws its shadows at 0x19 0x19 0x26, alpha 0x5f.
+        let style = ShadowStyle {
+            direction: Vec3::NEG_Y,
+            colour: [0.10, 0.10, 0.15, 0.75],
+            floor: 0.0,
+        };
+        let c = style.gs_colour().to_linear();
+        let bytes = [
+            c.red * 255.0,
+            c.green * 255.0,
+            c.blue * 255.0,
+            c.alpha * 128.0,
+        ];
+        assert_eq!(bytes.map(f32::round), [25.0, 25.0, 38.0, 95.0]);
+    }
 
     #[test]
     fn native_arbitrary_shadow_plane_projection_matches_formula() {
