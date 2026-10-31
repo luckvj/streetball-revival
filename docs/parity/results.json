@@ -2,15 +2,15 @@
   "whole_game_accuracy_percent": null,
   "scope": "Version 1 selected obligations; inventory completeness is not certified.",
   "active_counts": {
-    "matched": 169,
+    "matched": 168,
     "mismatched": 24,
-    "untested": 18
+    "untested": 19
   },
   "active_total": 211,
   "matched_acceptance": {
     "exact": 23,
     "numerical": 19,
-    "structural": 127
+    "structural": 126
   },
   "deferred": 1,
   "out_of_scope": 0,
@@ -5315,7 +5315,7 @@
               "path": "crates/street-net/src/server.rs",
               "locator": "module docs; Server::new; Host::new (install); Server::join (the digest, NoMatch); tests::a_joiner_on_other_disc_data_is_refused_saying_why",
               "note": "The referee on its own disc.",
-              "sha256": "d28ac1634debf86079473344a2e806f8513ec810e44e5bda20f7bcabdc85ea32"
+              "sha256": "28d2f2973922a74df70574ca5a4fa656c9f9d681f252040ae12d7d92a17d8b0d"
             },
             {
               "path": "crates/street-net/src/client.rs",
@@ -5385,12 +5385,14 @@
             }
           ],
           "tolerance": "Every confirmed tick's checksum the referee's (no resync, no drift) through 15,000-tick matches with rollbacks; the same confirmed events and the same Rundown on both machines in live runs.",
-          "limitations": "The comparison is the rewrite's match online against the rewrite's match alone (the original has no online play), whose parity with the original is the other cases'. The digest covers the tables as the simulation holds them, so builds that compute them differently (another platform's maths, should a staged clip ever take the clip sampler's slerp path) are refused rather than desynced. The staged players' scales and width ratios are the creator's values, which the anti-cheat checks against the records (since 2026-10-20). The live runs had the computer at both pads (--bot) on one PC over 127.0.0.1. 2026-10-20 (the online pass's last gaps): the anti-cheat checks the staged players' scales and width ratios against the records beside the gait profiles (roster::check_staged: the record's height scale, halved alike by the tiny players' code, and its width over height, bit for bit); the staged plans' freezes carry their word 12 (GBC8, in the digest); snapshot VERSION 61, protocol 13. 2026-10-21 (item 7): snapshot VERSION 64 and protocol 14 (the story weight, the fills, game+0x4c0, a gamebreaker basket's dunk); the disc digest unchanged. 2026-10-21 (item 8 pass): snapshot VERSION 67 and protocol 17 (the sides' teams, the inputs' off-screen bits, the loose ball's words); the disc digest unchanged. 2026-10-22 evening: Snapshot71/protocol21 carry the passout kind through network state with exhaustive validation; disc tables/digest are unchanged. 2026-10-22 late: Snapshot72/protocol22 preserve and validate the head defender through the release wait; disc tables and digest are unchanged. Last re-pinned 2026-10-31 after steady delay (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "The comparison is the rewrite's match online against the rewrite's match alone (the original has no online play), whose parity with the original is the other cases'. The digest covers the tables as the simulation holds them, so builds that compute them differently (another platform's maths, should a staged clip ever take the clip sampler's slerp path) are refused rather than desynced. The staged players' scales and width ratios are the creator's values, which the anti-cheat checks against the records (since 2026-10-20). The live runs had the computer at both pads (--bot) on one PC over 127.0.0.1. 2026-10-20 (the online pass's last gaps): the anti-cheat checks the staged players' scales and width ratios against the records beside the gait profiles (roster::check_staged: the record's height scale, halved alike by the tiny players' code, and its width over height, bit for bit); the staged plans' freezes carry their word 12 (GBC8, in the digest); snapshot VERSION 61, protocol 13. 2026-10-21 (item 7): snapshot VERSION 64 and protocol 14 (the story weight, the fills, game+0x4c0, a gamebreaker basket's dunk); the disc digest unchanged. 2026-10-21 (item 8 pass): snapshot VERSION 67 and protocol 17 (the sides' teams, the inputs' off-screen bits, the loose ball's words); the disc digest unchanged. 2026-10-22 evening: Snapshot71/protocol21 carry the passout kind through network state with exhaustive validation; disc tables/digest are unchanged. 2026-10-22 late: Snapshot72/protocol22 preserve and validate the head defender through the release wait; disc tables and digest are unchanged. Last re-pinned 2026-10-31 after watching host (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A run between two PCs over a real network.",
           "disposition": "active",
-          "effective_status": "matched",
+          "effective_status": "untested",
           "missing_evidence": [],
-          "changed_evidence": []
+          "changed_evidence": [
+            "crates/street-server/src/main.rs"
+          ]
         },
         {
           "id": "gameplay.game_class_virtuals",
@@ -13369,7 +13371,7 @@
               "path": "crates/street-game/src/main.rs",
               "locator": "Screen::Boot; the start state",
               "note": "The boot before the movies.",
-              "sha256": "4281745ade46bcd70dd4bb6ad9b1e06007094bba93624637cf4bd7b373eeb7d5"
+              "sha256": "aa555dedb894d79f3359b6a92c57b86064cae268dd104418efffbd2940b93e89"
             },
             {
               "path": "$EVIDENCE/street-card-orig/boot_unformatted/log.json",
@@ -13475,7 +13477,7 @@
             }
           ],
           "tolerance": "The picture and bar at their places within 5 of the Difficulty baseline; the bar's width at each moment within 2 pixels of the measured fill; the picture's time within 0.15 s of the runtime's; the card's messages as presentation.ui_game_data_file_saves; no press taken.",
-          "limitations": "Known difference, accepted by Vj 2026-10-21: the loading screens are quick by default (the boot's picture 1.0 s, its bar filling across it, crate::pace); the measured hold below is kept behind --original-load-times. The time and fill are the runtime's boot (three boots agree within 0.15 s); a console's drive may load at another pace. xldfrscn.bin, a French console's (FUN_00342088 = 2), is not shown: the rewrite runs in English. The boot shows when the movies would (not in scripted, screenshot or quick runs; --intro forces it). Last re-pinned 2026-10-31 after steady delay (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Known difference, accepted by Vj 2026-10-21: the loading screens are quick by default (the boot's picture 1.0 s, its bar filling across it, crate::pace); the measured hold below is kept behind --original-load-times. The time and fill are the runtime's boot (three boots agree within 0.15 s); a console's drive may load at another pace. xldfrscn.bin, a French console's (FUN_00342088 = 2), is not shown: the rewrite runs in English. The boot shows when the movies would (not in scripted, screenshot or quick runs; --intro forces it). Last re-pinned 2026-10-31 after watching host (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None.",
           "disposition": "active",
           "effective_status": "mismatched",
@@ -14029,7 +14031,7 @@
               "path": "crates/street-game/src/main.rs",
               "locator": "--demo-delay; attract::AttractPlugin",
               "note": "The wait for a run.",
-              "sha256": "4281745ade46bcd70dd4bb6ad9b1e06007094bba93624637cf4bd7b373eeb7d5"
+              "sha256": "aa555dedb894d79f3359b6a92c57b86064cae268dd104418efffbd2940b93e89"
             },
             {
               "path": "$EVIDENCE/street-idle-orig/INDEX.md",
@@ -14201,7 +14203,7 @@
             }
           ],
           "tolerance": "The demo when, and as, the original starts it: the timer's 120 s within a frame, Main's restarts, the 4 s, the turns, the picks drawn as FUN_001db7f8 draws them on the session's generator, the ways back; the title again's transition within 110 ms of the two measured; the screens within 5 of the Difficulty baseline (10.9).",
-          "limitations": "The rewrite's load into the demo stands as long as its other loads (the original's 7.2 to 13 s follow its disc's reads). The game's end goes to the load back 0.97 s after the won basket's replay, as after Start (the runtime's 1.3 s, within half a second). Main's timer pausing under the Help overlay follows the code (FUN_002d7ad8), not a measurement. The command line's --demo keeps the rewrite's own pause and boards. Superseded: until 2026-10-20 the rewrite waited on the title and Main forever. 2026-10-20 (the movies pass): the title's turn plays TITLE_REEL through the movie task's chain (presentation.ui_boot_movies); its Start check stays armed until a Start is taken (+0x70), so a Start during the zoom with none before plays the zoom again; the model 0.10 and 0.14 s short of the two turns. Last re-pinned 2026-10-31 after steady delay (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "The rewrite's load into the demo stands as long as its other loads (the original's 7.2 to 13 s follow its disc's reads). The game's end goes to the load back 0.97 s after the won basket's replay, as after Start (the runtime's 1.3 s, within half a second). Main's timer pausing under the Help overlay follows the code (FUN_002d7ad8), not a measurement. The command line's --demo keeps the rewrite's own pause and boards. Superseded: until 2026-10-20 the rewrite waited on the title and Main forever. 2026-10-20 (the movies pass): the title's turn plays TITLE_REEL through the movie task's chain (presentation.ui_boot_movies); its Start check stays armed until a Start is taken (+0x70), so a Start during the zoom with none before plays the zoom again; the model 0.10 and 0.14 s short of the two turns. Last re-pinned 2026-10-31 after watching host (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None.",
           "disposition": "active",
           "effective_status": "matched",
@@ -15171,7 +15173,7 @@
               "path": "crates/street-net/src/server.rs",
               "locator": "Server::run (the linger from the won replay's end); ServerConfig::default (linger 120 s); tests::a_finished_match_lingers_from_the_end_of_its_won_replay",
               "note": "A finished match waits for its won replay.",
-              "sha256": "d28ac1634debf86079473344a2e806f8513ec810e44e5bda20f7bcabdc85ea32"
+              "sha256": "28d2f2973922a74df70574ca5a4fa656c9f9d681f252040ae12d7d92a17d8b0d"
             },
             {
               "path": "crates/street-net/tests/disc_determinism.rs",
@@ -15217,7 +15219,7 @@
             }
           ],
           "tolerance": "The same replays at the same match ticks on every machine; no confirmed state differing; the game's replay tests passing unchanged with the control moved.",
-          "limitations": "The frames a replay shows are each machine's own drawing of the updates: a remote pad that arrived late can leave a tick or two of a guess among them (the match itself is never affected), and where a machine stepped two ticks in one frame a tick shows the frame before. The staged Level 2 gamebreaker's rerun is presentation.online_staged_rerun. The replays' behaviour against the original is presentation.effects_and_replay_runtime's. 2026-10-20 (the online pass's last gaps): the staged Level 2's rerun is a replay too, mode 7 (presentation.online_staged_rerun); the match holds the world through it and through its script's own end update (Replays::holds_world); the determinism test counts the staged reruns at the referee's ticks on every machine. 2026-10-23: the match's snapshot and checksum carry the burst hold too (protocol 23). Last re-pinned 2026-10-30 after online grace (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "The frames a replay shows are each machine's own drawing of the updates: a remote pad that arrived late can leave a tick or two of a guess among them (the match itself is never affected), and where a machine stepped two ticks in one frame a tick shows the frame before. The staged Level 2 gamebreaker's rerun is presentation.online_staged_rerun. The replays' behaviour against the original is presentation.effects_and_replay_runtime's. 2026-10-20 (the online pass's last gaps): the staged Level 2's rerun is a replay too, mode 7 (presentation.online_staged_rerun); the match holds the world through it and through its script's own end update (Replays::holds_world); the determinism test counts the staged reruns at the referee's ticks on every machine. 2026-10-23: the match's snapshot and checksum carry the burst hold too (protocol 23). Last re-pinned 2026-10-31 after watching host (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None.",
           "disposition": "active",
           "effective_status": "matched",
@@ -15401,7 +15403,7 @@
               "path": "crates/street-game/src/online.rs",
               "locator": "the creator's looks (city, nickname)",
               "note": "The creator sends its records' names.",
-              "sha256": "f056208e0b56ceb63d3b795ca07c0042056ab2ee8365f98f68689ec0b4638dfc"
+              "sha256": "a44c561b25e22e1a074aa4410a9e8bebd12656d1c1f5da627e1742b41d187b16"
             },
             {
               "path": "crates/street-game/src/boards.rs",
@@ -15441,7 +15443,7 @@
             }
           ],
           "tolerance": "The same city and nickname elements on every machine, as a match alone draws them.",
-          "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-31 after steady delay (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-10-31 after watching host (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "None.",
           "disposition": "active",
           "effective_status": "matched",
