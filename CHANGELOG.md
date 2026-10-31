@@ -24,6 +24,11 @@ its version's part.
   the court's intro, then the away side's. Everyone sees the same intros
   at the same time, and anyone pressing Cross skips them for everyone.
   (Online needs everyone on this version.)
+- **Fixed: static in the menu music.** The game now plays music and movies
+  at the original's levels, measured from the original's own output. The
+  menu songs had been about 5.5 dB louder than the original, so any sound
+  on top of them clipped. The volume sliders now work like the original's
+  (half the slider is half the volume).
 
 ## v0.1.4-beta
 

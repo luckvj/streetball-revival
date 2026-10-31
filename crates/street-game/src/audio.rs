@@ -259,10 +259,13 @@ impl Default for AudioSettings {
     }
 }
 
-/// A 0..10 level as a gain (squared, which sounds even).
+/// A 0..10 level as a share of the part's full level: straight, as the
+/// original's are (the music manager's volume is the level × 10, scaled by
+/// its part's maximum, `0x1aba18`; a stream's mixer level is its dry level
+/// × that / 100, `FUN_00344350`; the I/O chip's mixer gain is the level ×
+/// 258, `SNDIOP_setiopvoicevol`).
 pub(crate) fn gain(level: u8) -> f32 {
-    let x = level.min(10) as f32 / 10.0;
-    x * x
+    level.min(10) as f32 / 10.0
 }
 
 /// Which part of the mix a playing sound belongs to.
@@ -274,14 +277,29 @@ pub(crate) enum Part {
     /// The match's scripted effects and crowd (`sfx.rs`), whose scripts set
     /// their own levels from the effects volume.
     Scripted,
+    /// A movie's soundtrack at the music's level (`play_movie`).
+    Movie,
 }
 
-/// The in-match share of the music: under the crowd and the commentary.
-const MATCH_MUSIC: f32 = 0.55;
+/// The front end's songs at the full music level, as the original's output
+/// has them: measured against a capture of its main menu (Pete Rock's song,
+/// seven half-second stretches at 0.527..0.536 of the decoded stream).
+const MENU_MUSIC: f32 = 0.533;
+/// The match's song at the full music level: the front end's scaled from
+/// the front end manager's maximum (87, `0x3ea210`) to the path manager's
+/// (98, `0x3ea214`) through the same stream mixer.
+const MATCH_MUSIC: f32 = MENU_MUSIC * 98.0 / 87.0;
+/// A movie's soundtrack at the full music level (the title's, measured
+/// against the capture: 0.908..0.929).
+const MOVIE_MUSIC: f32 = 0.915;
+/// The logos the movie player leaves at its own level (SPORTS BIG's,
+/// measured: 0.917).
+const LOGO_LEVEL: f32 = 0.917;
 
 fn part_gain(part: Part, s: &AudioSettings, in_match: bool) -> f32 {
     match part {
-        Part::Music => gain(s.music) * if in_match { MATCH_MUSIC } else { 1.0 },
+        Part::Music => gain(s.music) * if in_match { MATCH_MUSIC } else { MENU_MUSIC },
+        Part::Movie => gain(s.music) * MOVIE_MUSIC,
         Part::Effect => gain(s.effects),
         Part::Speech => gain(s.speech),
         Part::Scripted => 1.0,
@@ -2222,7 +2240,7 @@ fn pause_audio(
         }
     }
     for (entity, mut sink, part, voice) in &mut sinks {
-        if *part == Part::Music {
+        if matches!(*part, Part::Music | Part::Movie) {
             continue;
         }
         if voice {
@@ -2253,11 +2271,11 @@ pub fn play_once(
     commands.spawn((
         AudioPlayer(pcm.add(Pcm::from(clip))),
         PlaybackSettings::DESPAWN.with_volume(Volume::Linear(part_gain(
-            Part::Music,
+            Part::Movie,
             settings,
             false,
         ))),
-        Part::Music,
+        Part::Movie,
         tag,
     ));
 }
@@ -2279,7 +2297,7 @@ pub fn play_movie(
     }
     commands.spawn((
         AudioPlayer(pcm.add(Pcm::from(clip))),
-        PlaybackSettings::DESPAWN,
+        PlaybackSettings::DESPAWN.with_volume(Volume::Linear(LOGO_LEVEL)),
         tag,
     ));
 }
@@ -2307,6 +2325,18 @@ fn apply_volumes(
 #[cfg(test)]
 mod rotation_tests {
     use super::*;
+
+    #[test]
+    fn the_mix_plays_the_originals_levels() {
+        let full = AudioSettings::default();
+        assert_eq!(part_gain(Part::Music, &full, false), MENU_MUSIC);
+        assert!((part_gain(Part::Music, &full, true) - 0.6).abs() < 0.001);
+        assert_eq!(part_gain(Part::Movie, &full, false), MOVIE_MUSIC);
+        // The sliders are straight: half the level, half the gain.
+        let half = AudioSettings { music: 5, ..full };
+        assert_eq!(part_gain(Part::Music, &half, false), MENU_MUSIC / 2.0);
+        assert_eq!(gain(0), 0.0);
+    }
 
     #[test]
     fn playlist_rotation_skips_disabled_tracks_and_wraps_in_disc_order() {

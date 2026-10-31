@@ -13731,3 +13731,37 @@ A court's `DRIFT` line builds a manager (`FUN_001f4248`): its pieces, 0x60 bytes
 - Not settled: whether the catch (`FUN_0014cb28`) keeps a pass's spin in
   the hands; the rewrite's catch clears it, so a held ball turns only on
   the floor clips.
+
+## The mix's levels, measured (2026-10-30)
+
+Players heard static in rhythm with the menu music. The rewrite played every
+part at full scale at the default settings (and squared the 0..10 sliders),
+so the menu songs sat 5.5 dB over the original's and any sound on top of them
+clipped.
+
+The original's output was captured from the project's PCSX2 (its audio-only
+capture to a wav, 48 kHz, 16-bit, with sound output off), on a hidden desktop,
+from a fresh boot with an unformatted card (every option at its default), and
+each part fitted against the rewrite's own decode in half-second stretches,
+each aligned on its own (the console's mixer resamples the 44.1 kHz streams,
+so the alignment drifts over longer ones):
+
+- The main menu's song (Pete Rock's, `PETEROCK.ASF`): 0.533 of the decoded
+  stream (seven clean stretches, 0.527..0.536). The menu never clips.
+- The title movie (`xmt0018.nfx`, at the music's level): 0.915 (0.908..0.929).
+- The publisher's logo (`xmt0017.nfx`, the movie player's own level): 0.917.
+- In a match (save state 1) the whole mix runs at 0.25..0.3 RMS and clips
+  0.04% of its samples, in runs of at most 1 ms; the song under the crowd and
+  the commentator could not be fitted cleanly, and the pause menu is silent.
+
+The code gives the curve. The music manager stores its volume as the level
+× 10 (`0x1aba18`); the path manager hands a stream the volume × its maximum
+/ 100 (98, `0x3ea214`; the front end manager's is 87, `0x3ea210`, and 69 at
+`0x3ea218`), clamped to 100 (`FUN_00346390`); a stream's mixer level is its
+dry level (127, or a 0..100 level × 1.27, `0x3443a0`) × that / 100
+(`FUN_00344350`); and the sound driver on the I/O chip (`SNDDRV.IRX`, EA's
+software mixer, whose symbols name `SNDIOP_setiopvoicevol` and
+`SNDMIX_setdrygain`) sets a voice's dry gain to the level × 258 in Q15. Every
+step is straight, so the sliders are: `audio::gain` is now the level / 10.
+The match's song is the menu's measured level scaled from 87 to 98 (0.60;
+it had been a 0.55 stand-in).
