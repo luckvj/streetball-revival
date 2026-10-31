@@ -16,8 +16,14 @@
 //!
 //! Each list plays every entry before repeating (`FUN_001851f0`, the used
 //! counts living in `.data` for the session). The intros only draw: the
-//! simulation waits until they end. They are left out online (both
-//! machines must step together) and in scripted runs.
+//! simulation waits until they end. They are left out in scripted runs.
+//!
+//! Online every machine plays them too: each draws the picks from the
+//! match's seed ([`Variety::seeded`]), the creator sends how many updates
+//! they last ([`ticks`]), and the match holds play that long on every
+//! machine (`street-net`'s `Match::intro_hold`), a fresh Cross from anyone
+//! skipping them for all. The shown frame follows the match's updates
+//! ([`MatchIntro::follow`]) rather than this machine's clock.
 //!
 //! A script's own commands shape its playing: it stops at its stop command
 //! (most intros end short of their last frame), a freeze holds it while
@@ -95,6 +101,15 @@ impl Default for Variety {
 }
 
 impl Variety {
+    /// A fresh session's counts with dice from `seed`: an online match's,
+    /// which every machine draws alike.
+    pub fn seeded(seed: u32) -> Self {
+        Self {
+            used: HashSet::new(),
+            rng: crate::progression_trace::NativeRandom::new(seed | 1),
+        }
+    }
+
     /// One of `choices` not played yet; when all have, they all count
     /// again.
     fn pick(&mut self, choices: &[usize]) -> Option<usize> {
@@ -204,6 +219,8 @@ pub struct MatchIntro {
     /// The part's freeze and replay have played.
     held: bool,
     replayed: bool,
+    /// Updates run since the intro began (online, [`MatchIntro::follow`]).
+    ticks: u32,
 }
 
 impl MatchIntro {
@@ -234,6 +251,21 @@ impl MatchIntro {
     /// A replay is on screen.
     pub fn replaying(&self) -> bool {
         matches!(self.phase, Phase::Replay(_)) && self.current.is_some()
+    }
+
+    /// Online: run on to `elapsed` updates since the intro began, one
+    /// staged frame an update (the match's clock is the network's).
+    pub fn follow(&mut self, elapsed: u32) {
+        while self.ticks < elapsed && self.current.is_some() {
+            self.advance(1.0);
+            self.ticks += 1;
+        }
+    }
+
+    /// The rest skipped.
+    pub fn end(&mut self) {
+        self.queue.clear();
+        self.next();
     }
 
     fn next(&mut self) {
@@ -294,7 +326,9 @@ pub fn finished(intro: Option<Res<MatchIntro>>) -> bool {
     intro.is_none_or(|i| i.current.is_none())
 }
 
-/// Queue the match's intro (on entering a match).
+/// Queue the match's intro (on entering a match). Online the picks are the
+/// seed's, and the match says how long they hold (an intro the creator
+/// left out ends at once, [`MatchIntro::follow`]'s caller).
 pub fn start(
     mut commands: Commands,
     enabled: Option<Res<Enabled>>,
@@ -308,18 +342,57 @@ pub fn start(
     commands.insert_resource(MatchIntro::default());
     // Street School's game opens on its lesson menu, with no intro.
     let school = running.is_some_and(|r| matches!(r.0, Some(crate::story::Run::School(_))));
-    if setup.online || school || !enabled.is_some_and(|e| e.0) {
+    if school || (!setup.online && !enabled.is_some_and(|e| e.0)) {
         return;
     }
+    let queue = if setup.online {
+        parts(
+            &setup,
+            &sim.world,
+            &disc,
+            &clips,
+            &mut Variety::seeded(setup.seed),
+        )
+    } else {
+        parts(&setup, &sim.world, &disc, &clips, &mut variety)
+    };
+    let mut intro = MatchIntro { queue, ..default() };
+    intro.next();
+    commands.insert_resource(intro);
+}
+
+/// How many updates `parts` play for, one staged frame an update.
+pub fn ticks(parts: VecDeque<Part>) -> u32 {
+    let mut intro = MatchIntro {
+        queue: parts,
+        ..default()
+    };
+    intro.next();
+    let mut n = 0;
+    while intro.current.is_some() {
+        intro.advance(1.0);
+        n += 1;
+    }
+    n
+}
+
+/// The match's intro: the court's script, then the away side's, each bound
+/// to its cast.
+pub fn parts(
+    setup: &MatchSetup,
+    w: &street_sim::World,
+    disc: &Disc,
+    clips: &GameClips,
+    variety: &mut Variety,
+) -> VecDeque<Part> {
     let Some(court) = disc
         .courts
         .iter()
         .find(|c| c.id.eq_ignore_ascii_case(&setup.court))
         .map(|c| c.index)
     else {
-        return;
+        return VecDeque::new();
     };
-    let w = &sim.world;
     let side = |team: usize| -> Vec<usize> {
         (0..w.players.len())
             .filter(|&i| w.team_of(i) == team)
@@ -330,7 +403,7 @@ pub fn start(
         .iter()
         .map(|&r| (r, disc.players.get(r).map_or(-1, |p| p.team)))
         .collect();
-    let (first, second) = choose(court, &records, &mut variety);
+    let (first, second) = choose(court, &records, variety);
     let mut queue = VecDeque::new();
     let mut add = |script: usize, featured: Option<usize>| {
         let Some(timeline) = clips.timeline.scripts.get(script) else {
@@ -375,30 +448,38 @@ pub fn start(
     if let Some((script, featured)) = second {
         add(script, featured);
     }
-    let mut intro = MatchIntro { queue, ..default() };
-    intro.next();
-    commands.insert_resource(intro);
+    queue
 }
 
-/// Run the intro's clock; a button skips the rest.
+/// Run the intro's clock; a button skips the rest. Online the match runs
+/// it (`online::net_step`).
 pub fn step(
     time: Res<Time>,
     input: MenuInput,
     intro: Option<ResMut<MatchIntro>>,
     paused: Res<crate::game::Paused>,
+    setup: Res<MatchSetup>,
 ) {
     let Some(mut intro) = intro else {
         return;
     };
-    if intro.current.is_none() || paused.on {
+    if intro.current.is_none() || paused.on || setup.online {
         return;
     }
     if input.confirm() || input.pause() {
-        intro.queue.clear();
-        intro.next();
+        intro.end();
         return;
     }
     intro.advance(time.delta_secs() * FPS);
+}
+
+/// The match's gate: play waits for the intro played alone. Online the
+/// match holds its own world through the intro, and the network runs on.
+pub fn finished_or_online(
+    intro: Option<Res<MatchIntro>>,
+    online: Option<Res<crate::online::Online>>,
+) -> bool {
+    online.is_some() || intro.is_none_or(|i| i.current.is_none())
 }
 
 #[cfg(test)]
@@ -468,6 +549,36 @@ mod tests {
         assert_eq!(replayed, 40);
         assert!(seen.iter().all(|s| s.0 < 80.0));
         assert!(intro.current.is_none());
+    }
+
+    #[test]
+    fn online_the_intro_ends_on_the_update_the_match_holds_it_for() {
+        use street_sim::gamebreaker::{Controls, Hold};
+        let controls = Controls {
+            stop: Some(70),
+            hold: Some(Hold {
+                frame: 10,
+                duration: 15,
+                camera: 1,
+                holds_replays: true,
+            }),
+            rerun: None,
+        };
+        let parts = || VecDeque::from([part(controls), part(Controls::default())]);
+        let n = ticks(parts());
+        let mut intro = MatchIntro {
+            queue: parts(),
+            ..default()
+        };
+        intro.next();
+        intro.follow(n - 1);
+        assert!(intro.current.is_some());
+        intro.follow(n);
+        assert!(intro.current.is_none());
+        // The same seed draws the same picks on every machine.
+        let a = choose(3, &[(200, 36)], &mut Variety::seeded(77));
+        let b = choose(3, &[(200, 36)], &mut Variety::seeded(77));
+        assert_eq!(a, b);
     }
 
     #[test]

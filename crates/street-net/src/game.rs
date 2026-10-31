@@ -27,6 +27,12 @@
 //! the frames. Every machine steps the same replays on the same frames, so
 //! every machine holds the same updates; each shows its own drawing of
 //! them.
+//!
+//! The match opens on its intros, as a match played alone does: the
+//! court's staged script, then the away side's, over a world that waits
+//! ([`Match::intro_hold`], the length the setup says). A fresh Cross from
+//! anyone skips the rest for everyone, as any controller's button skips
+//! them played alone.
 
 use street_sim::replay::{Press, Replays};
 use street_sim::{Input, World, ai};
@@ -39,6 +45,9 @@ pub const MAX_SEATS: usize = 6;
 /// begins its wipe (`FUN_002bb818`), the banner's 32nd update counting the
 /// one it shows on (`street-game`'s `banner.rs`, which checks this).
 pub const LEVEL2_BURST_HOLD: u16 = 31;
+
+/// The longest the opening intros may hold a match: a minute.
+pub const MAX_INTRO: u16 = 3600;
 
 /// One tick of input for the whole match: each seat's pad, or `None` for a
 /// seat nobody occupies (its player, if any, goes to the computer).
@@ -72,6 +81,9 @@ pub struct Match {
     /// Updates a staged Level 2's burst still holds the game
     /// ([`LEVEL2_BURST_HOLD`]).
     pub burst_hold: u16,
+    /// Updates the opening intros still hold the game (0 once they are
+    /// over or skipped).
+    pub intro_hold: u16,
 }
 
 impl Match {
@@ -118,7 +130,15 @@ impl Match {
             }),
             replays: Replays::default(),
             burst_hold: 0,
+            intro_hold: 0,
         }
+    }
+
+    /// The match opening on `ticks` updates of intros (at most
+    /// [`MAX_INTRO`]).
+    pub fn with_intro(mut self, ticks: u16) -> Self {
+        self.intro_hold = ticks.min(MAX_INTRO);
+        self
     }
 
     /// The frame about to be stepped (the network's tick).
@@ -140,6 +160,20 @@ impl Match {
     /// world its events are none. A staged Level 2 holds it too, as a match
     /// alone does for GB2's burst (`game.rs`'s `step_sim`).
     pub fn step(&mut self, frame: &Frame) {
+        if self.intro_hold > 0 {
+            // The intros: the world waits; a fresh Cross from anyone ends
+            // them for everyone.
+            let skip = (0..MAX_SEATS).any(|k| {
+                frame.seats[k].is_some_and(|pad| {
+                    pad.buttons & !self.seats[k].pad.buttons & street_sim::button::PASS != 0
+                })
+            });
+            self.inputs(frame);
+            self.intro_hold = if skip { 0 } else { self.intro_hold - 1 };
+            self.world.events.clear();
+            self.tick += 1;
+            return;
+        }
         // Each person's fresh presses, against the pad of the tick before.
         let presses: Vec<Press> = (0..MAX_SEATS)
             .filter_map(|k| {
@@ -251,6 +285,10 @@ impl Match {
             .to_le_bytes()
             .into_iter()
             .for_each(&mut feed);
+        self.intro_hold
+            .to_le_bytes()
+            .into_iter()
+            .for_each(&mut feed);
         hash
     }
 
@@ -268,6 +306,7 @@ impl Match {
         w.bytes(&self.replays.encode());
         w.uv(self.tick);
         w.uv(u64::from(self.burst_hold));
+        w.uv(u64::from(self.intro_hold));
         w.0
     }
 
@@ -293,6 +332,10 @@ impl Match {
             .ok()
             .filter(|&h| h <= LEVEL2_BURST_HOLD)
             .ok_or(DecodeError::Bad("burst hold"))?;
+        let intro_hold = u16::try_from(r.uv()?)
+            .ok()
+            .filter(|&h| h <= MAX_INTRO)
+            .ok_or(DecodeError::Bad("intro hold"))?;
         if !r.done() {
             return Err(DecodeError::Bad("match snapshot length"));
         }
@@ -302,6 +345,7 @@ impl Match {
             replays,
             tick,
             burst_hold,
+            intro_hold,
         };
         state.validate()?;
         Ok(state)
@@ -337,6 +381,40 @@ mod tests {
         m.step(&f);
         assert_eq!(m.seats[2].player, None);
         assert_eq!(m.seat_of(p2.into()), None);
+    }
+
+    #[test]
+    fn the_intros_hold_the_world_until_over_or_a_cross_skips_them() {
+        let mut setup = MatchSetup::standard(Default::default(), 3);
+        setup.intro = 90;
+        let mut m = setup.start();
+        let world_tick = m.world.tick;
+        let mut f = Frame::default();
+        f.seats[0] = pad([1.0, 0.0], 0);
+        for _ in 0..40 {
+            m.step(&f);
+        }
+        // Held: the world stands, the match's clock runs, the seats sit.
+        assert_eq!(m.world.tick, world_tick);
+        assert_eq!((m.tick, m.intro_hold), (world_tick + 40, 50));
+        assert!(m.seats[0].player.is_some());
+        let back = Match::from_snapshot(&m.to_snapshot()).unwrap();
+        assert_eq!(back, m);
+        // A held Cross is not a fresh press; pressing it is, and skips.
+        f.seats[1] = pad([0.0, 0.0], button::PASS);
+        m.step(&f);
+        assert_eq!(m.intro_hold, 0);
+        m.step(&f);
+        assert_eq!(m.world.tick, world_tick + 1, "play goes on");
+        // Run out, they end on their own.
+        setup.intro = 5;
+        let mut m = setup.start();
+        for _ in 0..5 {
+            m.step(&Frame::default());
+        }
+        assert_eq!(m.world.tick, world_tick);
+        m.step(&Frame::default());
+        assert_eq!(m.world.tick, world_tick + 1);
     }
 
     #[test]

@@ -20,7 +20,7 @@ use std::time::Duration;
 
 use street_sim::{Input, Player, Rules, World};
 
-use crate::game::{Frame, MAX_SEATS};
+use crate::game::{Frame, MAX_SEATS, Match};
 use crate::wire::{DecodeError, Reader, Result, Writer};
 
 /// First byte of every datagram: `'S'`.
@@ -41,8 +41,9 @@ pub const MAGIC: u8 = 0x53;
 /// 20: the separate rebound event, snapshot 70; 21: passout identity through
 /// the catch, snapshot 71; 22: the head passout's defender and release
 /// wait, snapshot 72; 23: the lobby before the match, people choosing a
-/// side, each seat's pick, the creator's final setup and its generation).
-pub const VERSION: u8 = 23;
+/// side, each seat's pick, the creator's final setup and its generation;
+/// 24: the match's opening intros in its setup and its state).
+pub const VERSION: u8 = 24;
 /// The largest datagram sent; longer messages are split into parts. This
 /// leaves room under a 1280-byte IPv6 MTU for a relay's sealing.
 pub const MAX_DATAGRAM: usize = 1200;
@@ -103,6 +104,11 @@ pub struct MatchSetup {
     /// Every client plays it, and the server checks it and the world
     /// against it ([`crate::roster::check_setup`]).
     pub roster_data: Vec<u8>,
+    /// The updates the match's opening intros hold play for (the game's
+    /// `intro.rs`: the court's script, then the away side's), at most
+    /// [`crate::game::MAX_INTRO`]; 0 for none. Every machine draws them
+    /// from the seed and holds the game as long ([`Match::intro_hold`]).
+    pub intro: u16,
 }
 
 impl MatchSetup {
@@ -132,7 +138,14 @@ impl MatchSetup {
             world: World::new(hoops, players, rules, seed),
             extra: Vec::new(),
             roster_data: Vec::new(),
+            intro: 0,
         }
+    }
+
+    /// The match at its start: the world at tick 0, every seat empty, the
+    /// intros holding play.
+    pub fn start(&self) -> Match {
+        Match::new(self.world.clone(), self.seat_teams).with_intro(self.intro)
     }
 
     /// The match's rules (they travel inside the world).
@@ -865,6 +878,7 @@ fn setup(w: &mut Writer, s: &MatchSetup) {
     w.bytes(&s.world.to_snapshot());
     w.bytes(&s.extra);
     w.bytes(&s.roster_data);
+    w.u16(s.intro);
 }
 
 fn setup_in(r: &mut Reader) -> Result<MatchSetup> {
@@ -893,6 +907,10 @@ fn setup_in(r: &mut Reader) -> Result<MatchSetup> {
     }
     let extra = r.bytes(1 << 16)?.to_vec();
     let roster_data = r.bytes(street_assets::roster_share::MAX_PACKED)?.to_vec();
+    let intro = r.u16()?;
+    if intro > crate::game::MAX_INTRO {
+        return Err(DecodeError::Bad("setup intro"));
+    }
     Ok(MatchSetup {
         court,
         teams,
@@ -902,6 +920,7 @@ fn setup_in(r: &mut Reader) -> Result<MatchSetup> {
         world,
         extra,
         roster_data,
+        intro,
     })
 }
 
@@ -1029,6 +1048,7 @@ mod tests {
             roster: vec![1, 2, 3, 4, 5, 6],
             extra: vec![9, 8, 7],
             roster_data: b"RSTZ roster".to_vec(),
+            intro: 1234,
             ..MatchSetup::standard(Rules::default(), 77)
         };
         let mut f1 = Frame::default();

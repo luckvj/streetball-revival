@@ -235,7 +235,7 @@ impl Host {
     /// installed; refused if they don't fit it.
     fn new(name: String, mut setup: MatchSetup, disc: &Disc) -> Result<Self, String> {
         disc.install(&mut setup.world)?;
-        let state = Match::new(setup.world.clone(), setup.seat_teams);
+        let state = setup.start();
         let first_sum = state.checksum();
         let tick = state.tick();
         Ok(Self {
@@ -910,7 +910,7 @@ impl Server {
             && host.round < u32::MAX
         {
             host.round += 1;
-            host.state = Match::new(host.setup.world.clone(), host.setup.seat_teams);
+            host.state = host.setup.start();
             host.started_at = None;
             host.ticks_run = 0;
             host.history.clear();

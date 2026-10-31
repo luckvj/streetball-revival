@@ -695,6 +695,7 @@ fn net_setup(
         world: world.clone(),
         extra: looks.encode(),
         roster_data,
+        intro: 0,
     }
 }
 
@@ -1109,6 +1110,7 @@ fn closed(r: CloseReason) -> &'static str {
 /// The match this game creates, as the server takes it: the loaded
 /// `world` made plain, the roster as data, the looks, checked as a server
 /// would check it (saying why not).
+#[allow(clippy::too_many_arguments)]
 fn creation(
     setup: &setup::MatchSetup,
     world: &street_sim::World,
@@ -1117,6 +1119,7 @@ fn creation(
     save: &crate::story::Save,
     cheats: &crate::cheats::Settings,
     options: Option<&crate::options::Options>,
+    intros: Option<&crate::setup::GameClips>,
 ) -> Result<street_net::MatchSetup, String> {
     let looks = crate::net_looks::NetLooks {
         cheats: cheats.clone(),
@@ -1152,7 +1155,20 @@ fn creation(
     // The match plays its creator's Replays option, as its rules (every
     // machine runs the replays: street-net's `Match`).
     world.replays = options.map_or(1, |o| o.0.replays);
-    let net = net_setup(setup, &world, teams, &looks, roster_data);
+    let mut net = net_setup(setup, &world, teams, &looks, roster_data);
+    // The intros every machine plays, drawn from the seed: how long the
+    // match holds for them.
+    if let Some(clips) = intros {
+        let parts = crate::intro::parts(
+            setup,
+            &world,
+            disc,
+            clips,
+            &mut crate::intro::Variety::seeded(setup.seed),
+        );
+        net.intro = crate::intro::ticks(parts).min(u32::from(street_net::game::MAX_INTRO)) as u16;
+        info!("online: the intros hold the match {} updates", net.intro);
+    }
     // What a server would refuse is refused here, saying why.
     street_net::roster::check_setup(&net, &original.0)
         .map_err(|why| crate::roster::refusal(&why.reasons()))?;
@@ -1173,6 +1189,10 @@ fn lobby(
         Option<Res<crate::options::Options>>,
     ),
     sim: Option<ResMut<Sim>>,
+    (clips, intros_on): (
+        Option<Res<crate::setup::GameClips>>,
+        Option<Res<crate::intro::Enabled>>,
+    ),
     mut stats: Option<ResMut<crate::game::Stats>>,
     mut running: ResMut<crate::story::Running>,
     input: MenuInput,
@@ -1190,6 +1210,8 @@ fn lobby(
         )>,
     ),
 ) {
+    // The intros go along unless this game leaves them out (scripted runs).
+    let intros = clips.as_deref().filter(|_| intros_on.is_some_and(|e| e.0));
     // Join: the creator brings its loaded match along.
     if online.client.is_none() {
         let create = match (&sim, online.create) {
@@ -1202,6 +1224,7 @@ fn lobby(
                     &save,
                     &cheats,
                     options.as_deref(),
+                    intros,
                 ) {
                     Ok(net) => {
                         online.sent = Some(net.clone());
@@ -1273,6 +1296,7 @@ fn lobby(
             &mut next,
             sim.as_deref().map(|s| &s.world),
             (&mut disc, &original, &save, &cheats, options.as_deref()),
+            intros,
             view,
         ) {
             Ok(pieces) => crate::look::show(&mut commands, &mut slots, &pieces, Screen::Lobby),
@@ -1487,6 +1511,7 @@ fn decide(
         &crate::cheats::Settings,
         Option<&crate::options::Options>,
     ),
+    intros: Option<&crate::setup::GameClips>,
     view: LobbyView,
 ) -> Result<Vec<crate::look::Piece>, String> {
     use crate::lobby::{self, SidePick, Stage};
@@ -1574,7 +1599,7 @@ fn decide(
         && let Some(world) = world
         && online.loaded.as_ref() == Some(&key(setup))
     {
-        let net = creation(setup, world, disc, original, save, cheats, options)?;
+        let net = creation(setup, world, disc, original, save, cheats, options, intros)?;
         online.sent = Some(net.clone());
         if let Some(client) = online.client.as_mut() {
             client.propose_setup(net);
@@ -1745,6 +1770,7 @@ pub fn net_step(
     mut stats: ResMut<Stats>,
     names: Res<PlayerNames>,
     teams: Res<TeamNames>,
+    intro: Option<ResMut<crate::intro::MatchIntro>>,
 ) {
     tick_events.events.clear();
     tick_events.replay = false;
@@ -1789,6 +1815,18 @@ pub fn net_step(
     let Some(m) = client.session().map(|s| s.current()) else {
         return;
     };
+    // The intro shows the updates the match has held for it; it ends when
+    // the match's hold does (run out, or someone's Cross).
+    if let Some(mut intro) = intro
+        && intro.current.is_some()
+    {
+        let length = client.setup().map_or(0, |s| s.intro);
+        if m.intro_hold == 0 {
+            intro.end();
+        } else {
+            intro.follow(u32::from(length - m.intro_hold.min(length)));
+        }
+    }
     sim.world = m.world.clone();
     // A replay holds the gameplay (the match's, on every machine), and a
     // staged script's end after its replay.
