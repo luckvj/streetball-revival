@@ -2,15 +2,15 @@
   "whole_game_accuracy_percent": null,
   "scope": "Version 1 selected obligations; inventory completeness is not certified.",
   "active_counts": {
-    "matched": 168,
+    "matched": 169,
     "mismatched": 24,
-    "untested": 19
+    "untested": 18
   },
   "active_total": 211,
   "matched_acceptance": {
     "exact": 23,
     "numerical": 19,
-    "structural": 126
+    "structural": 127
   },
   "deferred": 1,
   "out_of_scope": 0,
@@ -5327,7 +5327,7 @@
               "path": "crates/street-server/src/main.rs",
               "locator": "module docs; USAGE; NO_DISC; read_disc; known; main; tests::the_server_refuses_to_host_without_the_disc",
               "note": "street-server needs --vol2.",
-              "sha256": "68822a4ab9a939470fe1d778d9c22bdd0f4f4bbd7ed04064ea2e49d84d05c6ff"
+              "sha256": "8062504273a7c692992fc62b7ee92a2cde19ad309f245e4e84e1137326772229"
             },
             {
               "path": "crates/street-net/tests/disc_determinism.rs",
@@ -5385,14 +5385,12 @@
             }
           ],
           "tolerance": "Every confirmed tick's checksum the referee's (no resync, no drift) through 15,000-tick matches with rollbacks; the same confirmed events and the same Rundown on both machines in live runs.",
-          "limitations": "The comparison is the rewrite's match online against the rewrite's match alone (the original has no online play), whose parity with the original is the other cases'. The digest covers the tables as the simulation holds them, so builds that compute them differently (another platform's maths, should a staged clip ever take the clip sampler's slerp path) are refused rather than desynced. The staged players' scales and width ratios are the creator's values, which the anti-cheat checks against the records (since 2026-10-20). The live runs had the computer at both pads (--bot) on one PC over 127.0.0.1. 2026-10-20 (the online pass's last gaps): the anti-cheat checks the staged players' scales and width ratios against the records beside the gait profiles (roster::check_staged: the record's height scale, halved alike by the tiny players' code, and its width over height, bit for bit); the staged plans' freezes carry their word 12 (GBC8, in the digest); snapshot VERSION 61, protocol 13. 2026-10-21 (item 7): snapshot VERSION 64 and protocol 14 (the story weight, the fills, game+0x4c0, a gamebreaker basket's dunk); the disc digest unchanged. 2026-10-21 (item 8 pass): snapshot VERSION 67 and protocol 17 (the sides' teams, the inputs' off-screen bits, the loose ball's words); the disc digest unchanged. 2026-10-22 evening: Snapshot71/protocol21 carry the passout kind through network state with exhaustive validation; disc tables/digest are unchanged. 2026-10-22 late: Snapshot72/protocol22 preserve and validate the head defender through the release wait; disc tables and digest are unchanged. Last re-pinned 2026-10-31 after watching host (re-pins that leave the cited region unchanged replace this line).",
+          "limitations": "The comparison is the rewrite's match online against the rewrite's match alone (the original has no online play), whose parity with the original is the other cases'. The digest covers the tables as the simulation holds them, so builds that compute them differently (another platform's maths, should a staged clip ever take the clip sampler's slerp path) are refused rather than desynced. The staged players' scales and width ratios are the creator's values, which the anti-cheat checks against the records (since 2026-10-20). The live runs had the computer at both pads (--bot) on one PC over 127.0.0.1. 2026-10-20 (the online pass's last gaps): the anti-cheat checks the staged players' scales and width ratios against the records beside the gait profiles (roster::check_staged: the record's height scale, halved alike by the tiny players' code, and its width over height, bit for bit); the staged plans' freezes carry their word 12 (GBC8, in the digest); snapshot VERSION 61, protocol 13. 2026-10-21 (item 7): snapshot VERSION 64 and protocol 14 (the story weight, the fills, game+0x4c0, a gamebreaker basket's dunk); the disc digest unchanged. 2026-10-21 (item 8 pass): snapshot VERSION 67 and protocol 17 (the sides' teams, the inputs' off-screen bits, the loose ball's words); the disc digest unchanged. 2026-10-22 evening: Snapshot71/protocol21 carry the passout kind through network state with exhaustive validation; disc tables/digest are unchanged. 2026-10-22 late: Snapshot72/protocol22 preserve and validate the head defender through the release wait; disc tables and digest are unchanged. Last re-pinned 2026-10-31 after the dedicated server's 10 s timeout (re-pins that leave the cited region unchanged replace this line).",
           "next_probe": "A run between two PCs over a real network.",
           "disposition": "active",
-          "effective_status": "untested",
+          "effective_status": "matched",
           "missing_evidence": [],
-          "changed_evidence": [
-            "crates/street-server/src/main.rs"
-          ]
+          "changed_evidence": []
         },
         {
           "id": "gameplay.game_class_virtuals",
