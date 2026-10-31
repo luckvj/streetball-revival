@@ -45,9 +45,15 @@ pub struct ClientConfig {
     pub target_lead: i16,
     /// The most the lead aimed for grows to over a jittery connection.
     pub max_lead: i16,
-    /// The most input delay a long round trip is given (half the round
-    /// trip in ticks, from [`SessionConfig::input_delay`] up to this).
+    /// The most input delay a long round trip is given (from
+    /// [`SessionConfig::input_delay`] up to this).
     pub max_input_delay: u32,
+    /// Steady: the input delay covers the whole round trip, so the others'
+    /// pads are in before their ticks are drawn and hardly a guess is made
+    /// (lockstep's feel, with a rollback instead of a freeze when a pad is
+    /// late). Otherwise half the round trip: quicker to the press, more
+    /// guessed and corrected.
+    pub steady: bool,
     /// Give up after hearing nothing from the server for this long.
     pub timeout: Duration,
     /// Resend the join this often until answered.
@@ -62,7 +68,8 @@ impl Default for ClientConfig {
             session: SessionConfig::default(),
             target_lead: 2,
             max_lead: 12,
-            max_input_delay: 6,
+            max_input_delay: 15,
+            steady: true,
             timeout: Duration::from_secs(5),
             join_retry: Duration::from_millis(250),
             ping_every: Duration::from_millis(500),
@@ -138,6 +145,8 @@ const LEAD_ROOM: i16 = 3;
 const RAISE_AFTER: u64 = 90;
 /// Round trips kept for the input delay (ten seconds of pings).
 const RTT_KEPT: usize = 20;
+/// Ticks between steps of the input delay once the match is under way.
+const DELAY_STEP: u64 = 120;
 
 /// A connection to a match on a server.
 pub struct Client {
@@ -183,6 +192,8 @@ pub struct Client {
     /// Lead reports are ignored until the prediction reaches this tick
     /// (they describe pads sent before the last jump).
     lead_guard: u64,
+    /// No step of the input delay before the prediction reaches this tick.
+    delay_guard: u64,
     /// The lead aimed for now, from [`ClientConfig::target_lead`] up to
     /// [`ClientConfig::max_lead`].
     lead_target: i16,
@@ -242,6 +253,7 @@ impl Client {
             part_id: 0,
             lead: None,
             lead_guard: 0,
+            delay_guard: 0,
             lead_target: cfg.target_lead,
             raise_guard: 0,
             lead_lowest: i16::MAX,
@@ -792,6 +804,7 @@ impl Client {
                 let now = Duration::from_millis(u64::from(self.now.as_millis() as u32));
                 if now >= sent {
                     self.sample_rtt(now - sent);
+                    self.adapt_delay();
                 }
             }
             Message::Closed { reason } => self.end(ClientEvent::Closed(reason)),
@@ -901,17 +914,55 @@ impl Client {
         })
     }
 
-    /// The input delay for a match starting now: half the least recent
-    /// round trip in ticks, within the config's least and most. The least,
-    /// as a frame that stalls (loading the match) only ever adds to a
-    /// round trip: the smoothed one would hand a whole match a delay the
-    /// connection never needed.
+    /// The input delay for a match starting now, from the least recent
+    /// round trip in ticks (the least, as a frame that stalls, loading the
+    /// match, only ever adds to a round trip): steady, the round trip and
+    /// the lead aimed for less one, which leaves the prediction a tick
+    /// ahead of the confirmations (a delay past that would put it behind
+    /// them, drawn as each frame lands); else half the round trip. Within
+    /// the config's least and most.
     fn input_delay(&self) -> u32 {
         let least = self.cfg.session.input_delay;
-        let half = self.rtts.iter().min().map_or(0, |r| {
-            ((r.as_secs_f64() * f64::from(street_sim::TICK_HZ)).ceil() as u32).div_ceil(2)
+        let delay = self.rtts.iter().min().map_or(0, |r| {
+            let rtt = (r.as_secs_f64() * f64::from(street_sim::TICK_HZ)).ceil() as u32;
+            if self.cfg.steady {
+                rtt + self.cfg.target_lead.max(1) as u32 - 1
+            } else {
+                rtt.div_ceil(2)
+            }
         });
-        half.clamp(least, self.cfg.max_input_delay.max(least))
+        delay.clamp(least, self.cfg.max_input_delay.max(least))
+    }
+
+    /// Move the input delay toward the one the round trips now ask for: at
+    /// once while the intros hold the world (the match's start, when
+    /// loading has just inflated the round trips), else a tick at a time
+    /// every [`DELAY_STEP`] ticks. The clock moves by the change, so the
+    /// pads still reach the server as early as before.
+    fn adapt_delay(&mut self) {
+        let want = self.input_delay();
+        let Some(s) = &mut self.session else {
+            return;
+        };
+        let have = s.config().input_delay;
+        let tick = s.tick();
+        let next = if s.current().intro_hold > 0 {
+            want
+        } else if tick >= self.delay_guard {
+            match want.cmp(&have) {
+                std::cmp::Ordering::Greater => have + 1,
+                std::cmp::Ordering::Less => have - 1,
+                std::cmp::Ordering::Equal => have,
+            }
+        } else {
+            have
+        };
+        if next == have {
+            return;
+        }
+        s.set_input_delay(next);
+        self.budget += f64::from(have) - f64::from(next);
+        self.delay_guard = tick + DELAY_STEP;
     }
 
     /// Ticks for a clock change to show in the server's lead reports.

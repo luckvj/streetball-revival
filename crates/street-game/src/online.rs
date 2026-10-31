@@ -79,6 +79,9 @@ pub struct OnlineArgs {
     /// Pads like a person's, made up (for testing the netcode: the
     /// computer's pad never changes, so it never proves a guess wrong).
     pub mash: bool,
+    /// Half the round trip of input delay instead of all of it
+    /// ([`ClientConfig::steady`]).
+    pub responsive: bool,
     pub spectate: bool,
     /// People a hosted match seats: 2 or 6.
     pub people: u8,
@@ -98,6 +101,7 @@ impl Default for OnlineArgs {
             ready: false,
             bot: false,
             mash: false,
+            responsive: false,
             spectate: false,
             people: 6,
         }
@@ -512,6 +516,7 @@ pub struct Online {
     auto_ready: bool,
     bot: bool,
     mash: bool,
+    responsive: bool,
     /// What the client reported since the last look.
     events: Vec<ClientEvent>,
     /// This machine voted to replay the finished round.
@@ -551,6 +556,9 @@ impl Online {
                 let server = Server::new(
                     Box::new(transport),
                     ServerConfig {
+                        // As patient as the clients (loading can stall a
+                        // game for seconds).
+                        timeout: Duration::from_secs(10),
                         seats_per_side: usize::from(args.people / 2).clamp(1, 3),
                         rosters: original.map(|o| o.for_server()).unwrap_or_default(),
                         ..ServerConfig::default()
@@ -593,6 +601,7 @@ impl Online {
             auto_ready: args.ready,
             bot: args.bot,
             mash: args.mash,
+            responsive: args.responsive,
             events: Vec::new(),
             rematch: false,
             people: args.people,
@@ -924,6 +933,13 @@ fn pump(mut online: ResMut<Online>) {
         let events = client.update(now);
         for e in &events {
             info!("online: {e:?}");
+            if matches!(e, ClientEvent::Started { .. }) {
+                info!(
+                    "online: input delay {}, round trip {:?}",
+                    client.session().map_or(0, |s| s.config().input_delay),
+                    client.rtt()
+                );
+            }
         }
         online.events.extend(events);
     }
@@ -1279,6 +1295,7 @@ fn lobby(
                 // Loading and a first frame's shaders can stall a game for
                 // seconds; be patient before calling the server gone.
                 timeout: Duration::from_secs(10),
+                steady: !online.responsive,
                 ..ClientConfig::default()
             },
             online.disc.clone(),

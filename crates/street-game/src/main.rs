@@ -407,6 +407,7 @@ fn parse_args() -> Result<Args, String> {
             "--ready" => args.online.get_or_insert_with(Default::default).ready = true,
             "--bot" => args.online.get_or_insert_with(Default::default).bot = true,
             "--mash" => args.online.get_or_insert_with(Default::default).mash = true,
+            "--responsive" => args.online.get_or_insert_with(Default::default).responsive = true,
             "--players" => {
                 args.online.get_or_insert_with(Default::default).people = match value()?.as_str() {
                     "2" => 2,
@@ -433,7 +434,7 @@ fn parse_args() -> Result<Args, String> {
             o.side = o.side.or(Some(0));
         } else if o.server.is_none() {
             return Err(
-                "--match, --name, --side, --ready, --bot and --mash go with --host or --join"
+                "--match, --name, --side, --ready, --bot, --mash and --responsive go with --host or --join"
                     .into(),
             );
         }
