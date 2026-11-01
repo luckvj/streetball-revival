@@ -323,6 +323,7 @@ mod tests {
             Vec::new(),
             street_sim::Rules::default(),
             session.generator(),
+            street_sim::UPTOWN_SPECTATORS,
         );
         assert_ne!(world.generator(), &session.generator());
         session.carry_on(world.generator());
@@ -333,6 +334,7 @@ mod tests {
             Vec::new(),
             street_sim::Rules::default(),
             session.generator(),
+            street_sim::UPTOWN_SPECTATORS,
         );
         let mut expect = session.generator();
         for _ in 0..street_sim::CONSTRUCTION_DRAWS {

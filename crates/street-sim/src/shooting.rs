@@ -1741,7 +1741,13 @@ mod tests {
         // the constructor drew 2 and 17, and update 0 holds these words.
         let built = |rules: Rules, rng: crate::rng::Rng| {
             let players = catch_up_world(rules).players;
-            World::from_generator(crate::Hoop::native(), players, rules, rng)
+            World::from_generator(
+                crate::Hoop::native(),
+                players,
+                rules,
+                rng,
+                crate::UPTOWN_SPECTATORS,
+            )
         };
         let w = built(Rules::default(), crate::rng::Rng::new(13_943));
         assert_eq!(w.stage_bounds, [2, 17]);

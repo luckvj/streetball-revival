@@ -13919,3 +13919,73 @@ streamers, trails, fire, steam, breath) already gave the GS's values and now
 draw as the original's. The players' gloss (`gloss.wesl`) works in those
 values without converting. The street-viewer's camera does not wear
 `display_camera`, so its textures show undecoded.
+
+## The game's construction, draw by draw (2026-10-31)
+
+Every call of the shared generator (`FUN_003a16b8`), logged live with its
+caller. The project's PCSX2 runtime ran the attract on a hidden desktop.
+Over PINE, a hook went into EE RAM at `0xa0000`, which is zero in every
+save state: each patched entry jumps to a stub that appends its `ra` to a
+ring at `0xc0004`, then runs the two displaced instructions and jumps back.
+The patched entries are the shared generator, `rand` (`FUN_003b42a0`), the
+seed routine (`FUN_003a1790`, which logs its count), the crowd object
+(`FUN_0030a9e0`), the spectators' loader (`FUN_0030b9b8`) and the game
+update (`FUN_0013d868`). The tool is the session's `drawlog.py`. The `rand`
+hook logged nothing in any run; why is not traced.
+
+**From the reseed to the pair.** `FUN_002f3000` builds the crowd first. Its
+spectators' loader draws one height a seat (`0x30c478`). The School skips
+the loader: its front-end mode is 1, and `0x30ac08` tests
+`FUN_001e0bc0()+0x78 == 1`. So the original's School has no crowd, and the
+rewrite now loads none there (the "crowd at the wall" difference noted
+under "The finishing body's lift"). Then come the two teams
+(`FUN_00189cf0`, three players each):
+- each player's standing clip (`FUN_001563a8`, `0x1566f4`, `r % 5` of
+  `0x3d65c0`) and its blend's heading (`FUN_00196698`);
+- before both, for every player after the first, his insert into the
+  update order (`FUN_0033cf98`, `0x33d0d4`, `r % (k + 1)` among the k
+  players in);
+- the team's pick (`FUN_0018b490`): `r % n` among its players whose ids
+  fall in 145..183, else `r % 3`, made only when game+0x9a + side is 0;
+- the three placements (`FUN_00189bc0`): `FUN_00156ab0`'s clip and its
+  heading each.
+
+Then `FUN_0012e798`'s pair. That is seats + 29 + 2 when the team picks are
+made. The pick reads game+0x9a before `FUN_0013cf58` writes it (the
+constructor calls `FUN_00189280` at `0x13c684` and `FUN_0013cf58` at
+`0x13c6a0`), so it sees whatever the new object's memory held.
+
+| Game | Seats | Picks | Before the pair |
+|---|---|---|---|
+| attract, Broad Street (no crowd), logged | 0 | none | 29 |
+| attract, Uptown (`FOREST`), logged | 15 | both | 46 |
+| fresh boot's Pick Up, Uptown (`street-played-fresh-9`) | 15 | both | 46 |
+| story game, NYC Rec Center (`street-played-legend-1`) | 18 | both | 49 |
+
+The rewrite's rule is that both teams pick when the court built
+spectators, and neither when it built none. It fits all four games.
+`World::from_generator` now takes the seat count (`construction_draws`,
+`order_draws`). For the second logged attract, its inserts gave
+(0, 3, 5, 1, 4, 2), the registry's order read live (registry objects are
+the team arrays' actors; actor k is the k-th built). From their reseeds,
+the model gives save state 1's (5, 0, 4, 3, 1, 2), Uptown at 18,061, pair
+(2, 16), and save state 9's (4, 0, 5, 3, 1, 2), the 18-seat court at
+20,445. The old fit (draws 26..38, three apart) matched save state 1
+alone.
+
+**In a match.** Each frame, the game update and the actors make their
+draws first: in a sample of 10,000 updates, the gait selector
+`FUN_00168b30` 3.2, `FUN_00107ae0` 2.4, the guards' gait `FUN_00163d40`
+1.7 and `FUN_0015da28` an update. Then the court's vents draw (the
+object manager `FUN_00320e10`, after the task list), about 74 an update
+on Broad Street. The drifting litter (`FUN_001f4248`) draws two a piece
+when it is built, just after the pair. The vents draw every frame,
+through replays and through the loading screen as well (7,546 times
+before the logged attract's first update). The generator at a game's
+update 0 therefore turns on its load time. The rewrite's vents
+(`steam.rs`) make the original's draws in its order, but from a
+generator of their own. Until they draw from the sim's (inside the step,
+for online play), the gameplay draws within a match follow the
+original's only up to the first vent frame. A rematch's construction
+starts from the generator its last match left, without the end screens'
+vents.

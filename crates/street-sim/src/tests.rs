@@ -5039,6 +5039,35 @@ fn the_opening_toss_survives_a_snapshot() {
 }
 
 #[test]
+fn the_construction_orders_the_actors_as_the_originals_matches_ran() {
+    // Each built straight after its reseed: save state 1's match (Uptown,
+    // 15 seats, reseeded at the count 18,061) and save state 9's (NYC Rec
+    // Center, 18 seats, 20,445), whose registries hold these orders, and an
+    // attract match on Uptown logged live (reseeded at 20,455; docs/TRACE.md
+    // "The game's construction, draw by draw").
+    for (count, seats, order, pair) in [
+        (18_061, UPTOWN_SPECTATORS, [5, 0, 4, 3, 1, 2], [2, 16]),
+        (20_445, 18, [4, 0, 5, 3, 1, 2], [5, 15]),
+        (20_455, UPTOWN_SPECTATORS, [0, 3, 5, 1, 4, 2], [5, 15]),
+    ] {
+        let w = World::from_generator(
+            hoops(),
+            Vec::new(),
+            Rules::default(),
+            rng::Rng::new(count),
+            seats,
+        );
+        assert_eq!(w.update_order, order, "count {count}");
+        assert_eq!(w.stage_bounds, pair, "count {count}");
+    }
+    // The fresh boot's Pick Up game on Uptown drew 46 before its pair; a
+    // court without spectators, 29 (the attract match on Broad Street).
+    assert_eq!(CONSTRUCTION_DRAWS, 46);
+    assert_eq!(construction_draws(0), 29);
+    assert_eq!(order_draws(0), [3, 6, 15, 18, 21]);
+}
+
+#[test]
 fn a_game_on_the_sessions_generator_draws_its_update_order() {
     // `FUN_0033cf98` puts actor 0 in first and each next one at `rand() %
     // (k + 1)` among the k in: five of the construction's draws, which
@@ -5055,7 +5084,13 @@ fn a_game_on_the_sessions_generator_draws_its_update_order() {
         for _ in 0..1000 + seed % 977 {
             g.next_u32();
         }
-        let w = World::from_generator(hoops(), Vec::new(), Rules::default(), g.clone());
+        let w = World::from_generator(
+            hoops(),
+            Vec::new(),
+            Rules::default(),
+            g.clone(),
+            crate::UPTOWN_SPECTATORS,
+        );
         let mut sorted = w.update_order;
         sorted.sort_unstable();
         assert_eq!(sorted, [0, 1, 2, 3, 4, 5]);

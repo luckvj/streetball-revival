@@ -2039,7 +2039,13 @@ fn the_points_games_draw_their_stage_bounds_from_the_shared_generator_once_a_gam
         let mut drawn = None;
         if !school && first.frame() == 0 {
             let before = undone(state.clone(), crate::CONSTRUCTION_DRAWS + 2);
-            let w = World::from_generator(Hoop::native(), lined_up(), Rules::default(), before);
+            let w = World::from_generator(
+                Hoop::native(),
+                lined_up(),
+                Rules::default(),
+                before,
+                crate::UPTOWN_SPECTATORS,
+            );
             assert_eq!(w.generator(), &state, "{}", cap.name);
             let built = w.stage_bounds.map(i64::from);
             assert_eq!(built, pair, "{}", cap.name);

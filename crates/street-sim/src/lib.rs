@@ -640,15 +640,54 @@ pub struct Catch {
 /// rewrite's own, the highest index first.
 pub const HIGHEST_FIRST: [u8; 6] = [5, 4, 3, 2, 1, 0];
 
-/// Which of the construction's draws ([`CONSTRUCTION_DRAWS`], counted from
-/// one) place actors 1 to 5 in the update order (`FUN_0033cf98`, actor 0
-/// going in first without one): save state 1's match comes out of the
-/// draws 26, 29, 32, 35 and 38 after its reseed with three draws to each
-/// actor's construction. Not confirmed: the draws sit elsewhere in other
-/// matches (save states 4 and 13 fit no fixed spacing), so a given game's
-/// order is the original's only in kind, each of the 720 as likely
-/// (docs/TRACE.md "The actors' update order").
-pub const ORDER_DRAWS: [u32; 5] = [26, 29, 32, 35, 38];
+/// The construction's draws that place actors 1 to 5 in the update order
+/// (`FUN_0033cf98`, each AIPhysPlayer after the first at a random place
+/// among those in, `r % (k + 1)`), counted from one after the reseed's
+/// state, for a court of `spectators` seats ([`construction_draws`]):
+/// the first team's second and third players' inserts, then the second
+/// team's three. Logged live in the original (every shared draw's caller,
+/// docs/TRACE.md "The game's construction, draw by draw"): it reproduces
+/// save state 1's order (5, 0, 4, 3, 1, 2, Uptown) and save state 9's (4,
+/// 0, 5, 3, 1, 2, NYC Rec Center) from their reseeds, and two attract
+/// matches' registries.
+pub fn order_draws(spectators: u32) -> [u32; 5] {
+    let s = spectators;
+    let t = team_draw(spectators);
+    [s + 3, s + 6, s + 15 + t, s + 18 + t, s + 21 + t]
+}
+
+/// Whether each team's construction makes `FUN_0018b490`'s draw (its
+/// pick among the team's players, `r % n` or `r % 3`): only for a side
+/// whose person count (game+0x9a + side) is 0, which `FUN_0013cf58`
+/// writes after the teams are built, so the draw reads whatever the
+/// game object's memory held. Every game logged or captured with
+/// spectators drew it for both teams (two attract matches, the fresh
+/// boot's Pick Up game, a story game, save states 1 and 9); the attract
+/// match on Broad Street, which has none, drew it for neither. The
+/// rewrite's own rule from those: both teams draw when the court built
+/// spectators, neither when it built none.
+fn team_draw(spectators: u32) -> u32 {
+    u32::from(spectators > 0)
+}
+
+/// The shared generator's draws from the reseed to `FUN_0012e798`'s pair
+/// when the game is built straight after it (`FUN_002f3000`): the crowd's
+/// one height a seat (`FUN_0030b9b8`, `0x30c478`; no spectators on Broad
+/// Street, nor in the School, whose front-end mode 1 skips them at
+/// `0x30ac08`), then the two teams (`FUN_00189cf0`): each player's
+/// standing clip (`FUN_001563a8`, `r % 5`) and his blend's heading
+/// (`FUN_00196698`), after the first player an insert into the update
+/// order ([`order_draws`]), the team's pick ([`team_draw`]), and the
+/// three players' placements (`FUN_00189bc0`: `FUN_00156ab0`'s clip and
+/// its heading each). 29 draws for the teams.
+pub const fn construction_draws(spectators: u32) -> u32 {
+    let t = if spectators > 0 { 1 } else { 0 };
+    spectators + 29 + 2 * t
+}
+
+/// Uptown's seats (`FOREST`'s plan): the fresh boot's Pick Up game and
+/// save state 1's court.
+pub const UPTOWN_SPECTATORS: u32 = 15;
 
 /// [`World::stage_bounds`] of a world made by [`World::new`]: the
 /// rewrite's own pair for the two draws of `FUN_0012e798` (`rand() % 6`,
@@ -662,22 +701,9 @@ pub const ORDER_DRAWS: [u32; 5] = [26, 29, 32, 35, 38];
 /// a wrap (docs/TRACE.md "The session's generator").
 pub const STAGE_BOUNDS: [u32; 2] = [2, 16];
 
-/// The draws the original makes between the last reseed of the shared
-/// generator (`FUN_001dbe30`, a team set for a side no person holds) and
-/// `FUN_0012e798`'s pair, which [`World::from_generator`] makes and
-/// discards before the pair: 46 in both captured first games after a
-/// reseed, the fresh boot's Pick Up game (Choose Team's commit, then
-/// Choose Players, Uptown, My Rules and the loading) and the first attract
-/// match (`FUN_001db7f8`'s team picks, then straight to the loading). The
-/// two front ends differ, so the draws belong to the loading and the
-/// game's construction (`FUN_002f3000`, the base constructor
-/// `FUN_0013c4e8`); which calls make them is not traced (the crowd's
-/// spectators `FUN_0030b9b8` and the actors' `FUN_001563a8`/`FUN_00156ab0`
-/// reach the generator), nor whether every court and mode makes the same
-/// number (the second attract capture's update 0 came 30 draws after its
-/// reseed, mid-construction, and its update 1 8,763, so its count is not
-/// read). The rewrite's own count for every game, from those two.
-pub const CONSTRUCTION_DRAWS: u32 = 46;
+/// [`construction_draws`] on Uptown: 46, as the fresh boot's Pick Up game
+/// drew from Choose Team's reseed to its pair.
+pub const CONSTRUCTION_DRAWS: u32 = construction_draws(UPTOWN_SPECTATORS);
 
 /// [`World::side_teams`] for a side whose team the game doesn't name.
 pub const NO_TEAM: u16 = u16::MAX;
@@ -1263,27 +1289,30 @@ impl World {
     }
 
     /// A game built on the session's generator, as the original builds its
-    /// game object on the shared one (`FUN_002f3000`): the loading's and
-    /// the construction's [`CONSTRUCTION_DRAWS`], then, for a points game
-    /// (`FUN_0012e750`, which the factory uses for every game but the
-    /// trick-point and Gamebreaker Wins ones, `config+0xe8` 1 and 6),
-    /// `FUN_0012e798`'s pair into [`World::stage_bounds`]. Five of the
-    /// construction's draws place the actors in the update order
-    /// ([`ORDER_DRAWS`], [`World::update_order`]). The game runs on from
-    /// that state; [`World::generator`] hands it back when the match is
-    /// over, for the next.
+    /// game object on the shared one (`FUN_002f3000`) on a court whose
+    /// crowd has `spectators` seats: the construction's
+    /// [`construction_draws`], then, for a points game (`FUN_0012e750`,
+    /// which the factory uses for every game but the trick-point and
+    /// Gamebreaker Wins ones, `config+0xe8` 1 and 6), `FUN_0012e798`'s pair
+    /// into [`World::stage_bounds`]. Five of the construction's draws place
+    /// the actors in the update order ([`order_draws`],
+    /// [`World::update_order`]). The game runs on from that state;
+    /// [`World::generator`] hands it back when the match is over, for the
+    /// next.
     pub fn from_generator(
         hoops: [Hoop; 2],
         players: Vec<Player>,
         rules: Rules,
         generator: rng::Rng,
+        spectators: u32,
     ) -> Self {
         let mut world = Self::new(hoops, players, rules, 0);
         world.rng = generator;
         let mut order = vec![0u8];
-        for draw in 1..=CONSTRUCTION_DRAWS {
+        let inserts = order_draws(spectators);
+        for draw in 1..=construction_draws(spectators) {
             let r = world.rng.next_u32();
-            if let Some(k) = ORDER_DRAWS.iter().position(|&d| d == draw) {
+            if let Some(k) = inserts.iter().position(|&d| d == draw) {
                 let at = (r % (k as u32 + 2)) as usize;
                 order.insert(at, k as u8 + 1);
             }

@@ -559,6 +559,14 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     let mut libc = world
         .get_resource::<crate::session::Session>()
         .map(|s| s.libc());
+    // The School's front-end mode (1) builds no spectators (`FUN_0030a9e0`,
+    // `0x30ac08`).
+    let school = matches!(
+        world
+            .get_resource::<crate::story::Running>()
+            .and_then(|r| r.0),
+        Some(crate::story::Run::School(_))
+    );
     let mut disc = world.resource_mut::<Disc>();
     disc.ball = court::ball(&mut disc.iso, ball_suffix)?;
     let court = court::load(&mut disc.iso, &setup.court)?;
@@ -571,15 +579,19 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     // A court without an effects script gets the game's defaults.
     let fx = courtfx::CourtFx::read(&mut disc.iso, &setup.court).unwrap_or_default();
     let ambience = crate::ambience::AmbientAssets::load(&mut disc.iso, &fx);
-    // Broad Street has no crowd; any other failure leaves the stands empty.
+    // Broad Street has no crowd, nor the School; any other failure leaves
+    // the stands empty.
     let crowd = match street_assets::crowd::load(&mut disc.iso, &setup.court) {
-        Ok(c) => Some(c),
-        Err(street_assets::Error::NotFound(_)) => None,
+        Ok(c) if !school => Some(c),
+        Ok(_) | Err(street_assets::Error::NotFound(_)) => None,
         Err(e) => {
             bevy::log::warn!("crowd: {e}");
             None
         }
     };
+    // Each seat draws its height from the shared generator before the
+    // teams are built (`FUN_0030b9b8`).
+    let spectators = crowd.as_ref().map_or(0, |c| c.seats.len() as u32);
     let referee = match PlayerAssets::referee(&mut disc.iso) {
         Ok(referee) => Some(referee),
         Err(e) => {
@@ -707,7 +719,8 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
         world.insert_resource(crate::session::Session::pinned(setup.seed));
     }
     let generator = world.resource::<crate::session::Session>().generator();
-    let mut sim = street_sim::World::from_generator(hoops, sim_players, rules, generator);
+    let mut sim =
+        street_sim::World::from_generator(hoops, sim_players, rules, generator, spectators);
     sim.rim_rigs = rim_rigs;
     if let Some(tricks) = native_tricks {
         for (state, tricks) in sim.players.iter_mut().zip(tricks) {
@@ -1065,6 +1078,9 @@ mod tests {
         };
         let disc = Disc::load(Iso::open(path).unwrap()).unwrap();
         let setup = MatchSetup::new(&disc, 0, 1);
+        let mut iso = Iso::open(std::env::var_os("STREET_ISO").unwrap()).unwrap();
+        let seats =
+            street_assets::crowd::load(&mut iso, &setup.court).map_or(0, |c| c.seats.len() as u32);
         let mut world = World::new();
         world.insert_resource(disc);
         world.insert_resource(setup);
@@ -1074,7 +1090,13 @@ mod tests {
         // (`World::from_generator`): its pair, and the match runs on from
         // the state after it.
         let built = |rng: street_sim::Rng| {
-            street_sim::World::from_generator(Hoop::native(), Vec::new(), Rules::default(), rng)
+            street_sim::World::from_generator(
+                Hoop::native(),
+                Vec::new(),
+                Rules::default(),
+                rng,
+                seats,
+            )
         };
         load_match(&mut world).unwrap();
         let first = built(street_sim::Rng::new(2002));
