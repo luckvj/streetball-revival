@@ -5,6 +5,12 @@ its version's part.
 
 ## Unreleased
 
+- Street School's games have no spectators, as on the PS2 (the stands
+  were full behind the lessons).
+- Each match lines its six players up in the original's update order,
+  drawn as the PS2 draws it while building the game, so who reacts first
+  within a frame (a lob's leaper, a pass's receiver) follows the
+  original's.
 - Players look as they do on the PS2: no lighting on the first pass, then
   the original's gloss from each court's own specular maps (skin and
   clothes), so shoulders and arms catch the highlight as they should. The
