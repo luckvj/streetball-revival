@@ -19,7 +19,9 @@
 //! from 0.237 toward 1.586, going out at 2.55 of alpha a frame, the second
 //! at 200 going at 2.
 //!
-//! The draws are the rewrite's own generator (the game's shared one).
+//! The draws are the game's shared generator's ([`crate::draws`]).
+
+use crate::draws::Draws;
 
 const FPS: f32 = 60.0;
 /// The particles, and those that are flames (`0x3ee3c8`); the rest are
@@ -66,31 +68,16 @@ pub struct Fire {
     rim: [f32; 3],
     burn: i32,
     lit: Option<f32>,
-    rng: u32,
 }
 
 impl Fire {
-    pub fn new(seed: u32) -> Self {
+    pub fn new() -> Self {
         Fire {
             particles: [Particle::default(); PARTICLES],
             rim: [0.0; 3],
             burn: 0,
             lit: None,
-            rng: seed | 1,
         }
-    }
-
-    fn next(&mut self) -> u32 {
-        let mut x = self.rng;
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        self.rng = x;
-        x
-    }
-
-    fn unit(&mut self) -> f32 {
-        (self.next() & 0x7fff_ffff) as f32 * f32::from_bits(0x3000_0000)
     }
 
     /// Slot 26 (`FUN_001f6d98`): a basket lit it, the ball at `ball_x`.
@@ -106,15 +93,15 @@ impl Fire {
     }
 
     /// One frame of `FUN_001f7178` in `wind` ([`crate::steam::court_wind`]).
-    pub fn step(&mut self, wind: [f32; 3]) {
+    pub fn step(&mut self, wind: [f32; 3], d: &mut impl Draws) {
         if let Some(x) = self.lit.take() {
-            self.ignite(x);
+            self.ignite(x, d);
         }
         // `0x1f7684..0x1f7980`: a flame pair a frame while it burns.
         if self.burn > 0 {
             self.burn -= 1;
             if self.burn != 0 {
-                self.flame();
+                self.flame(d);
             }
         }
         // `0x1f798c..0x1f7a20`: the flames.
@@ -164,13 +151,13 @@ impl Fire {
             p.wink -= 1;
             if p.wink == 0 {
                 p.colour[3] = 0.0;
-                p.wink = WINK + (self.next() % WINK_SPREAD) as i32;
+                p.wink = WINK + (d.shared() % WINK_SPREAD) as i32;
             } else {
                 p.colour[3] = 255.0;
             }
             if p.life < SPARK_LATE {
                 let y = p.velocity[1];
-                let k = self.unit() * f32::from_bits(0x3ba3_d70b);
+                let k = d.unit() * f32::from_bits(0x3ba3_d70b);
                 for (v, w) in p.velocity.iter_mut().zip(wind) {
                     *v += (w - *v) * k;
                 }
@@ -183,7 +170,7 @@ impl Fire {
 
     /// `0x1f71ec..0x1f7680`: the rim on the ball's side, 20 frames of
     /// flames, and the sparks.
-    fn ignite(&mut self, ball_x: f32) {
+    fn ignite(&mut self, ball_x: f32, d: &mut impl Draws) {
         self.rim = [
             if 0.0 < ball_x { 36.75 } else { -36.75 },
             f32::from_bits(0x413f_4ef3),
@@ -193,16 +180,16 @@ impl Fire {
         let (mut blue, mut thrown) = (0u32, 0u32);
         for i in FLAMES..PARTICLES {
             let mut p = Particle {
-                life: SPARK_LIFE + (self.next() % SPARK_SPREAD) as i32,
+                life: SPARK_LIFE + (d.shared() % SPARK_SPREAD) as i32,
                 position: self.rim,
                 ..Particle::default()
             };
-            let mut way = [self.unit() - 0.5, self.unit(), self.unit() - 0.5];
+            let mut way = [d.unit() - 0.5, d.unit(), d.unit() - 0.5];
             if len3(way) < f32::from_bits(0x3a83_126f) {
                 way[1] = f32::from_bits(0x3dcc_cccd);
             }
             let l = len3(way);
-            let speed = self.unit() * mph(10.0);
+            let speed = d.unit() * mph(10.0);
             p.velocity = way.map(|c| c / l * speed);
             // Three in four blue: the share so far under 0.76 (none yet
             // reads as over it, the EE's 0 / 0).
@@ -217,7 +204,7 @@ impl Fire {
             } else {
                 [128.0, 128.0, 128.0, 255.0]
             };
-            let k = self.unit() * 0.25 + 0.75;
+            let k = d.unit() * 0.25 + 0.75;
             let end = [36.0 * k, 50.0 * k, 128.0 * k, 255.0 * k];
             let n = p.life as f32;
             for ((d, e), c) in p.fade.iter_mut().zip(end).zip(p.colour).take(3) {
@@ -225,21 +212,21 @@ impl Fire {
             }
             p.fade[3] = 0.0;
             p.size = f32::from_bits(0x3ecc_cccd);
-            p.wink = WINK + (self.next() % WINK_SPREAD) as i32;
+            p.wink = WINK + (d.shared() % WINK_SPREAD) as i32;
             thrown += 1;
             self.particles[i] = p;
         }
     }
 
     /// `0x1f76e8..0x1f797c`: the first free flame and the one after it.
-    fn flame(&mut self) {
+    fn flame(&mut self, d: &mut impl Draws) {
         let Some(i) = (0..FLAMES).find(|&i| self.particles[i].life == 0) else {
             return;
         };
         let small = f32::from_bits(0x3e72_4a6b);
         let big = f32::from_bits(0x3fcb_10cb);
-        let v = [self.unit() - 0.5, self.unit() - 0.5, self.unit() - 0.5].map(|c| c * 0.75);
-        let grow = (big - small) / FLAME_LIFE as f32 * self.unit();
+        let v = [d.unit() - 0.5, d.unit() - 0.5, d.unit() - 0.5].map(|c| c * 0.75);
+        let grow = (big - small) / FLAME_LIFE as f32 * d.unit();
         self.particles[i] = Particle {
             position: self.rim,
             velocity: v,
@@ -284,9 +271,10 @@ mod tests {
 
     #[test]
     fn a_winning_basket_throws_46_sparks_and_20_frames_of_flames() {
-        let mut f = Fire::new(3);
+        let mut f = Fire::new();
+        let mut d = crate::draws::Own(3);
         f.light(20.0);
-        f.step([0.0; 3]);
+        f.step([0.0; 3], &mut d);
         let sparks: Vec<&Particle> = f.particles[FLAMES..]
             .iter()
             .filter(|p| p.life > 0)
@@ -299,13 +287,13 @@ mod tests {
         }
         // Flames come in pairs for 19 more frames.
         for _ in 0..30 {
-            f.step([0.0; 3]);
+            f.step([0.0; 3], &mut d);
         }
         let flames = f.particles[..FLAMES].iter().filter(|p| p.life > 0).count();
         assert!((36..=40).contains(&flames), "{flames}");
         // Sparks never sink through the floor, and all are gone in time.
         for _ in 0..200 {
-            f.step([0.0; 3]);
+            f.step([0.0; 3], &mut d);
             for p in &f.particles[FLAMES..] {
                 if p.life > 0 {
                     assert!(p.position[1] >= p.size - 0.6);
@@ -317,9 +305,10 @@ mod tests {
 
     #[test]
     fn the_reset_puts_it_out() {
-        let mut f = Fire::new(5);
+        let mut f = Fire::new();
+        let mut d = crate::draws::Own(3);
         f.light(-3.0);
-        f.step([0.0; 3]);
+        f.step([0.0; 3], &mut d);
         f.out();
         assert!(f.particles.iter().all(|p| p.life == 0));
     }

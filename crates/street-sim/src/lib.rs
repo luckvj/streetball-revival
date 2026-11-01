@@ -1332,6 +1332,21 @@ impl World {
         &self.rng
     }
 
+    /// One value of the shared generator (`FUN_003a16b8`) for the game's
+    /// presentation: the court's effects and the crowd take theirs from it
+    /// after each update's gameplay, as the original's do (docs/TRACE.md
+    /// "The game's construction, draw by draw").
+    pub fn shared_draw(&mut self) -> u32 {
+        self.rng.next_u32()
+    }
+
+    /// One `rand()` of the C library's generator (`FUN_003b42a0`, the word
+    /// [`World::libc`]) for the presentation: the litter's.
+    pub fn libc_rand(&mut self) -> i32 {
+        self.libc = self.libc.wrapping_mul(1_103_515_245).wrapping_add(12_345);
+        (self.libc & 0x7fff_ffff) as i32
+    }
+
     /// The player holding the ball.
     pub fn handler(&self) -> Option<usize> {
         match self.ball.state {

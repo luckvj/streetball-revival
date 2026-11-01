@@ -396,6 +396,17 @@ impl Director {
     /// `FUN_0030ca10`: `trunc(groups * fraction)` distinct groups, at
     /// random, want a cheer or a gasp next.
     pub fn react(&mut self, reaction: Reaction) {
+        let mut random = self.random;
+        self.react_drawing(reaction, &mut || {
+            random = random.wrapping_mul(1_103_515_245).wrapping_add(12_345);
+            random & 0x7fff_ffff
+        });
+        self.random = random;
+    }
+
+    /// [`Director::react`] with the shared generator's values (`0x30ca88`:
+    /// `(r + left) % left`, the r unsigned and whole).
+    pub fn react_drawing(&mut self, reaction: Reaction, draw: &mut dyn FnMut() -> u32) {
         let count = self.groups.len();
         // cvt.w.s truncates.
         let picks = (count as f32 * reaction.fraction) as i32;
@@ -405,7 +416,7 @@ impl Director {
             if left == 0 {
                 break;
             }
-            let k = self.draw().wrapping_add(left) % left;
+            let k = draw().wrapping_add(left) % left;
             let Some(g) = (0..count).filter(|&g| !taken[g]).nth(k as usize) else {
                 break;
             };
@@ -539,9 +550,13 @@ fn mesh(model: &Model, size: [f32; 2]) -> (Mesh, Vec<u16>) {
 }
 
 /// Spawns the crowd; returns its root (despawn it to remove the crowd).
+/// `heights` are the shared generator's draws for the seats' heights, one a
+/// seat in the plan's order (the game's construction's first; the
+/// rewrite's own stand in for any missing).
 pub fn spawn(
     commands: &mut Commands,
     crowd: &Crowd,
+    heights: &[u32],
     meshes: &mut Assets<Mesh>,
     materials: &mut Assets<StandardMaterial>,
     images: &mut Assets<Image>,
@@ -610,12 +625,15 @@ pub fn spawn(
             Visibility::default(),
         ))
         .id();
-    // The heights' draws (the original's come from `FUN_003a16b8`).
+    // The heights' draws (`FUN_003a16b8`'s, given), else the rewrite's.
     let mut random = 0x2545_f491u32;
     let mut walkers: Vec<(Entity, usize, Transform)> = Vec::new();
     let mut walking = vec![false; groups];
-    for seat in &crowd.seats {
-        random = random.wrapping_mul(1_103_515_245).wrapping_add(12_345);
+    for (k, seat) in crowd.seats.iter().enumerate() {
+        random = match heights.get(k) {
+            Some(&r) => r,
+            None => random.wrapping_mul(1_103_515_245).wrapping_add(12_345),
+        };
         let (lo, hi) = if matches!(seat.head, 2 | 3) {
             (5.25, 5.916_666_5)
         } else {
@@ -703,6 +721,22 @@ pub fn step(mut reactions: ResMut<CrowdReactions>, mut rigs: Query<&mut CrowdRig
     for mut rig in &mut rigs {
         for &call in &calls {
             rig.director.react(call);
+        }
+        rig.director.tick();
+    }
+}
+
+/// [`step`] with the calls' group picks from `draw` (the game's shared
+/// generator, which the original's calls take them from).
+pub fn step_drawing(
+    reactions: &mut CrowdReactions,
+    rigs: &mut Query<&mut CrowdRig>,
+    draw: &mut dyn FnMut() -> u32,
+) {
+    let calls = std::mem::take(&mut reactions.0);
+    for mut rig in rigs.iter_mut() {
+        for &call in &calls {
+            rig.director.react_drawing(call, draw);
         }
         rig.director.tick();
     }
@@ -810,6 +844,7 @@ mod tests {
         let root = spawn(
             &mut world.commands(),
             &crowd,
+            &[],
             &mut Assets::<Mesh>::default(),
             &mut materials,
             &mut Assets::<Image>::default(),

@@ -102,6 +102,11 @@ impl Tape {
         self.live.as_ref()
     }
 
+    /// [`Tape::live`], to change.
+    pub fn live_mut(&mut self) -> Option<&mut SimWorld> {
+        self.live.as_mut()
+    }
+
     /// The frame drawn at `tick`, or failing that the newest before it
     /// (online, a tick the game stepped past without drawing).
     fn frame(&self, tick: u64) -> Option<&Frame> {

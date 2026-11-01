@@ -7,6 +7,11 @@ its version's part.
 
 - Street School's games have no spectators, as on the PS2 (the stands
   were full behind the lessons).
+- The court's effects (steam, litter, breath, the hoop's fire, the
+  gamebreaker ball's sparks) and the crowd take their random numbers from
+  the game's own, after each frame's play, as the PS2 does, so the
+  computer's later choices in a match follow the original's sequence. The
+  sparks now start, drift and blink as the original's do.
 - Each match lines its six players up in the original's update order,
   drawn as the PS2 draws it while building the game, so who reacts first
   within a frame (a lob's leaper, a pass's receiver) follows the

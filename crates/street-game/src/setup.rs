@@ -359,6 +359,9 @@ pub struct Scene {
     pub fx: courtfx::CourtFx,
     /// The court's crowd, if it has one.
     pub crowd: Option<street_assets::crowd::Crowd>,
+    /// Its seats' heights' draws: the shared generator's first values of
+    /// the game's construction, one a seat (`0x30c478`).
+    pub crowd_draws: Vec<u32>,
     /// Its litter, steam and breath ([`crate::ambience`]).
     pub ambience: crate::ambience::AmbientAssets,
 }
@@ -719,6 +722,10 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
         world.insert_resource(crate::session::Session::pinned(setup.seed));
     }
     let generator = world.resource::<crate::session::Session>().generator();
+    let crowd_draws: Vec<u32> = {
+        let mut g = generator.clone();
+        (0..spectators).map(|_| g.next_u32()).collect()
+    };
     let mut sim =
         street_sim::World::from_generator(hoops, sim_players, rules, generator, spectators);
     sim.rim_rigs = rim_rigs;
@@ -831,6 +838,7 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
         referee,
         fx,
         crowd,
+        crowd_draws,
         ambience,
     });
     Ok(())

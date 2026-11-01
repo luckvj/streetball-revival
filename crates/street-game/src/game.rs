@@ -431,7 +431,7 @@ impl Plugin for GamePlugin {
             // skips it while `DAT_00405388` is set).
             .add_systems(
                 FixedUpdate,
-                street_render::crowd::step
+                crowd_step
                     .after(crowd_reactions)
                     .run_if(in_state(Screen::Playing))
                     .run_if(|p: Res<Paused>| !p.on),
@@ -977,6 +977,7 @@ fn spawn_scene(
         let root = street_render::crowd::spawn(
             &mut commands,
             crowd,
+            &scene.crowd_draws,
             &mut meshes,
             &mut materials,
             &mut images,
@@ -1132,6 +1133,19 @@ fn crowd_reactions(
 /// `FUN_001a75a8`'s share of the crowd: `FUN_001a7748`'s lead over the
 /// points to win, read as `song.rs` reads the same pair for `0x1a3b10`.
 /// The floor-contact call (`sfx.rs`, slot 76) shares it.
+/// The crowd's tick, its calls' group picks from the match's shared
+/// generator (`FUN_0030ca10` draws them from `FUN_003a16b8`), before the
+/// court's effects draw theirs (`crate::draws`).
+pub(crate) fn crowd_step(
+    mut reactions: ResMut<street_render::crowd::CrowdReactions>,
+    mut rigs: Query<&mut street_render::crowd::CrowdRig>,
+    mut sim: ResMut<Sim>,
+    mut tape: Option<ResMut<crate::tape::Tape>>,
+) {
+    let w = crate::draws::live(&mut sim, tape.as_deref_mut());
+    street_render::crowd::step_drawing(&mut reactions, &mut rigs, &mut || w.shared_draw());
+}
+
 pub(crate) fn crowd_fraction(w: &street_sim::World) -> f32 {
     let (lead, to_win) = match w.rules.goal {
         Goal::Points(n) => (w.score[0].max(w.score[1]), n),

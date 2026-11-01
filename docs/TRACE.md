@@ -13989,3 +13989,36 @@ for online play), the gameplay draws within a match follow the
 original's only up to the first vent frame. A rematch's construction
 starts from the generator its last match left, without the end screens'
 vents.
+
+**The effects on the game's generator (ported the same day).** Each frame
+after the gameplay, the rewrite now draws from the match's own shared
+generator (`crate::draws`; the live world while a replay shows a recorded
+one), in the order the court script builds the effects. That order is
+the five standing managers (glow, sparks `0x1ef3e8`, fire `0x1f7178`,
+streamer, trail: only the sparks and the fire draw), then the script's
+lines: litter (`0x1f4950`, with `rand()` from the C library's word), the
+vents (`0x20a5c8`), and the six breathers (`0x1f07c0`). The logged
+frames show it: gameplay, sparks, drift, vents. The steps run whether or
+not visual effects are shown, as the original has no such option. The
+sparks were the rewrite's own approximation. They are now `0x1ef3e8`:
+- every glowing frame draws the share of a third spark (30 a second over
+  a 15-frame life gives a whole 2 and a share of 0, so always two);
+- each new spark makes six draws: a direction, a place back along the
+  ball's move, a depth inside the ball, a speed;
+- a blink draws `5 + r % 6` the frame its count runs out.
+
+The constants come from `0x1efaa8`. Building the litter draws each
+piece's place, and the breathers their first waits, right after the
+pair, as the log shows (`FUN_001f4248` ten times on Broad Street's five
+pieces). The crowd's reaction picks (`FUN_0030ca10`, `(r + left) % left`
+on the whole 32-bit value) and the seats' heights (the construction's
+first draws) now come from the game's generator too.
+
+The model has limits. A vent's draws per frame match the log's rates
+within 3% (`steam.rs`). The litter's come-back test reads the camera's
+view, so its draws follow the rewrite's camera. The crowd's calls draw
+after the update rather than at their event inside it. The crowd's tick
+picks and its loader's runs keep the rewrite's own `rand()`, because
+the `rand` hook logged nothing. Online, the effects draw from the
+client's copy of the match, which changes nothing the match keeps; a
+peer's camera can't decide a shared draw.

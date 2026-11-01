@@ -29,7 +29,9 @@
 //! opacity to nothing; `flag.ssh` runs along it, scrolling one repeat every
 //! 0.6 seconds. Normal alpha blending (GS ALPHA 0x44).
 //!
-//! None of these shows in replays.
+//! None of these shows in replays. The sparks' update runs once a frame
+//! after the gameplay and draws from the game's shared generator in the
+//! original's order ([`sparks`], `crate::draws`), shown or not.
 
 use bevy::{
     asset::RenderAssetUsages,
@@ -41,6 +43,7 @@ use street_sim::{Action, BallState, PassStyle, ball::RADIUS};
 
 use crate::{
     Screen,
+    draws::Draws,
     game::{Paused, Replay, Sim},
     setup::Scene,
     view::{BallView, SidelineCamera},
@@ -115,16 +118,95 @@ pub fn trailing(w: &street_sim::World, pass_style: &[PassStyle]) -> bool {
     special || oop
 }
 
-/// One spark of the pool.
-#[derive(Component)]
+/// One spark of the pool (the engine's particle: +0 place, +0x10
+/// velocity, +0x2c alpha, +0x40 size, +0x44 frames to a blink, +0x48 life).
+#[derive(Clone, Copy, Default)]
 struct Spark {
+    position: Vec3,
+    velocity: Vec3,
+    /// 0 for a frame it blinks out, else 255.
+    alpha: u8,
+    size: f32,
+    blink: u32,
     /// Frames left; 0 is free.
     life: u32,
-    /// Frames to the next blink.
-    blink: u32,
-    size: f32,
-    velocity: Vec3,
+    /// Started in a gamebreaker (white), else light blue.
+    white: bool,
 }
+
+/// The sparks' manager (type 0xc): its pool and the ball's last place.
+#[derive(Resource)]
+pub(crate) struct Sparks {
+    pool: [Spark; POOL],
+    last: Option<Vec3>,
+}
+
+impl Default for Sparks {
+    fn default() -> Self {
+        Sparks {
+            pool: [Spark::default(); POOL],
+            last: None,
+        }
+    }
+}
+
+impl Sparks {
+    /// One frame of `0x1ef3e8`: `glow` the ball's +0x1a0, the ball at
+    /// `at` having come `moved` this frame (+0x30, +0x40), `radius` its
+    /// +0x11c.
+    fn step(&mut self, glow: Glow, at: Vec3, moved: Vec3, radius: f32, d: &mut impl Draws) {
+        // `0x1ef480..0x1ef4fc`: two a frame while the ball glows (the
+        // whole and the share of 30 a second over a 15-frame life); the
+        // share's draw is made all the same.
+        let mut due = 0;
+        if glow != Glow::None {
+            due = PER_FRAME;
+            if d.unit() < 0.0 {
+                due += 1;
+            }
+        }
+        for p in &mut self.pool {
+            if p.life > 0 {
+                p.life -= 1;
+                if p.life > 0 {
+                    p.position += p.velocity;
+                    p.blink -= 1;
+                    if p.blink == 0 {
+                        p.alpha = 0;
+                        p.blink = 5 + d.shared() % 6;
+                    } else {
+                        p.alpha = 255;
+                    }
+                    p.size -= SHRINK;
+                }
+            }
+            // `0x1ef5fc..0x1ef9d4`: a free spark takes one due.
+            if due > 0 && p.life == 0 {
+                due -= 1;
+                p.life = LIFE;
+                let mut v = Vec3::new(d.unit() - 0.5, d.unit() - 0.5, d.unit() - 0.5);
+                if v.length() < f32::from_bits(0x3a83_126f) {
+                    v.y = 0.1;
+                }
+                let v = v.normalize_or(Vec3::Y);
+                let back = at - moved * d.unit();
+                p.position = back + v * (d.unit() * (radius - START_SIZE));
+                p.velocity = v * (0.5 * MPH * d.unit());
+                if moved.length() > f32::from_bits(0x3a83_126f) {
+                    p.velocity -= moved.normalize() * MPH;
+                }
+                p.white = glow == Glow::Gamebreaker;
+                p.alpha = 0;
+                p.blink = 1;
+                p.size = START_SIZE;
+            }
+        }
+    }
+}
+
+/// A spark of the pool on screen.
+#[derive(Component)]
+struct SparkSprite(usize);
 
 #[derive(Component)]
 struct Trail {
@@ -143,19 +225,6 @@ struct Streamer {
 struct BallFx {
     clock: f32,
     last: Option<Vec3>,
-    rng: u32,
-}
-
-impl BallFx {
-    /// 0..1.
-    fn roll(&mut self) -> f32 {
-        let mut x = self.rng.max(1);
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        self.rng = x;
-        (x >> 8) as f32 / (1u32 << 24) as f32
-    }
 }
 
 pub struct BallFxPlugin;
@@ -163,6 +232,8 @@ pub struct BallFxPlugin;
 impl Plugin for BallFxPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<BallFx>()
+            .init_resource::<Sparks>()
+            .add_systems(OnEnter(Screen::Playing), reset)
             .add_systems(
                 OnEnter(Screen::Playing),
                 spawn.run_if(crate::options::effects_on),
@@ -177,6 +248,31 @@ impl Plugin for BallFxPlugin {
     }
 }
 
+/// A new match's sparks: none out.
+fn reset(mut sparks: ResMut<Sparks>) {
+    *sparks = Sparks::default();
+}
+
+/// One frame of the sparks after the gameplay, from the ball on screen, its
+/// glow the live game's (`0x1ef3e8`). The pool runs through replays too.
+pub(crate) fn sparks(
+    mut sim: ResMut<Sim>,
+    mut tape: Option<ResMut<crate::tape::Tape>>,
+    mut sparks: ResMut<Sparks>,
+    ball: Query<&Transform, With<BallView>>,
+) {
+    let at = ball
+        .single()
+        .map(|t| t.translation)
+        .unwrap_or(Vec3::from_array(sim.world.ball.position));
+    let moved = sparks.last.map_or(Vec3::ZERO, |l| at - l);
+    sparks.last = Some(at);
+    let w = crate::draws::live(&mut sim, tape.as_deref_mut());
+    let glow = glow(w);
+    let radius = w.ball.radius;
+    sparks.step(glow, at, moved, radius, w);
+}
+
 fn spawn(
     mut commands: Commands,
     scene: Res<Scene>,
@@ -185,10 +281,7 @@ fn spawn(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
 ) {
-    *fx = BallFx {
-        rng: 0x5eed_0c0c,
-        ..default()
-    };
+    *fx = BallFx::default();
     let a = &scene.ambience;
     let image = |t: Option<&street_assets::ssh::Texture>, images: &mut Assets<Image>| {
         t.map(|t| images.add(street_render::convert::display_image(t)))
@@ -197,7 +290,7 @@ fn spawn(
     let motion = image(a.motion.as_ref(), &mut images);
     let flag = image(a.flag.as_ref(), &mut images);
     let quad = meshes.add(Rectangle::new(2.0, 2.0));
-    for _ in 0..POOL {
+    for i in 0..POOL {
         let material = materials.add(StandardMaterial {
             base_color: Color::WHITE,
             base_color_texture: spark.clone(),
@@ -211,12 +304,7 @@ fn spawn(
             MeshMaterial3d(material),
             Transform::default(),
             Visibility::Hidden,
-            Spark {
-                life: 0,
-                blink: 0,
-                size: 0.0,
-                velocity: Vec3::ZERO,
-            },
+            SparkSprite(i),
             DespawnOnExit(Screen::Playing),
         ));
     }
@@ -262,24 +350,28 @@ fn spawn(
 fn step(
     time: Res<Time>,
     mut fx: ResMut<BallFx>,
+    pool: Res<Sparks>,
     sim: Res<Sim>,
     replay: Res<Replay>,
     cheats: Res<crate::setup::MatchCheats>,
-    ball: Query<&Transform, (With<BallView>, Without<Spark>)>,
+    ball: Query<&Transform, (With<BallView>, Without<SparkSprite>)>,
     camera: Query<&GlobalTransform, With<SidelineCamera>>,
     mut sparks: Query<
         (
-            &mut Spark,
+            &SparkSprite,
             &mut Transform,
             &mut Visibility,
             &MeshMaterial3d<StandardMaterial>,
         ),
         Without<Trail>,
     >,
-    mut trail: Query<(&mut Trail, &Mesh3d, &mut Visibility), (Without<Spark>, Without<Streamer>)>,
+    mut trail: Query<
+        (&mut Trail, &Mesh3d, &mut Visibility),
+        (Without<SparkSprite>, Without<Streamer>),
+    >,
     mut streamers: Query<
         (&mut Streamer, &Mesh3d, &mut Visibility),
-        (Without<Spark>, Without<Trail>),
+        (Without<SparkSprite>, Without<Trail>),
     >,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -305,54 +397,6 @@ fn step(
         // The ball's way this frame.
         let moved = fx.last.map_or(Vec3::ZERO, |l| at - l);
         fx.last = Some(at);
-        let mut starts = if glow == Glow::None { 0 } else { PER_FRAME };
-        for (mut s, mut t, mut vis, material) in &mut sparks {
-            if s.life > 0 {
-                s.life -= 1;
-                t.translation += s.velocity;
-                s.size -= SHRINK;
-                s.blink = s.blink.saturating_sub(1);
-                let shown = s.life > 0 && s.blink > 0;
-                if s.blink == 0 {
-                    s.blink = 5 + (fx.roll() * 6.0) as u32;
-                }
-                *vis = if shown {
-                    Visibility::Inherited
-                } else {
-                    Visibility::Hidden
-                };
-            } else if starts > 0 {
-                starts -= 1;
-                // A direction out of the ball, somewhere inside it, along
-                // this frame's way.
-                let d = Vec3::new(fx.roll() - 0.5, fx.roll() - 0.5, fx.roll() - 0.5)
-                    .try_normalize()
-                    .unwrap_or(Vec3::Y);
-                let inside = d * fx.roll() * (RADIUS - START_SIZE).max(0.0);
-                t.translation = at - moved * fx.roll() + inside;
-                let mut v = d * 0.5 * MPH * fx.roll();
-                if let Some(way) = moved.try_normalize() {
-                    v -= way * MPH;
-                }
-                s.velocity = v;
-                s.life = LIFE;
-                s.blink = 1;
-                s.size = START_SIZE;
-                let [r, g, b] = if glow == Glow::Gamebreaker {
-                    GAMEBREAKER_COLOUR
-                } else {
-                    METER_FULL_COLOUR
-                };
-                if let Some(mut m) = materials.get_mut(&material.0) {
-                    // 255 is twice the PS2's full intensity, added over the
-                    // scene.
-                    m.base_color = Color::linear_rgb(r / 128.0, g / 128.0, b / 128.0);
-                }
-                *vis = Visibility::Hidden;
-            }
-            t.rotation = facing;
-            t.scale = Vec3::splat(s.size.max(0.0));
-        }
         // The streamer keeps the ball's way whether it shows or not.
         for (mut s, _, _) in &mut streamers {
             if moved.length() > 1e-4 {
@@ -370,6 +414,30 @@ fn step(
             } else {
                 trail.past.clear();
             }
+        }
+    }
+    for (sprite, mut t, mut vis, material) in &mut sparks {
+        let p = pool.pool[sprite.0];
+        let shown = !replaying && p.life > 0 && p.alpha > 0;
+        *vis = if shown {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
+        if !shown {
+            continue;
+        }
+        t.translation = p.position;
+        t.rotation = facing;
+        t.scale = Vec3::splat(p.size.max(0.0));
+        let [r, g, b] = if p.white {
+            GAMEBREAKER_COLOUR
+        } else {
+            METER_FULL_COLOUR
+        };
+        if let Some(mut m) = materials.get_mut(&material.0) {
+            // 255 is twice the PS2's full intensity, added over the scene.
+            m.base_color = Color::linear_rgb(r / 128.0, g / 128.0, b / 128.0);
         }
     }
     for (s, mesh, mut vis) in &mut streamers {

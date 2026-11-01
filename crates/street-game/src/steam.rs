@@ -10,7 +10,9 @@
 //! court's wind (`WIND`, `0x3f4fec`/`0x3f4ff0`) at a random share up to
 //! 0.8 a second. A vent lets out one puff a frame at odds of 40 in 270.
 //!
-//! The draws are the rewrite's own generator (the game's shared one).
+//! The draws are the game's shared generator's ([`crate::draws`]).
+
+use crate::draws::Draws;
 
 /// The frames a second the game's tuning is made for.
 const FPS: f32 = 60.0;
@@ -76,35 +78,20 @@ pub struct Vent {
     at: [f32; 3],
     way: [f32; 3],
     pub puffs: [Puff; PUFFS],
-    rng: u32,
 }
 
 impl Vent {
-    pub fn new(at: [f32; 3], way: [f32; 3], seed: u32) -> Self {
+    pub fn new(at: [f32; 3], way: [f32; 3]) -> Self {
         Vent {
             at,
             way,
             puffs: [Puff::default(); PUFFS],
-            rng: seed | 1,
         }
     }
 
-    fn next(&mut self) -> u32 {
-        let mut x = self.rng;
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        self.rng = x;
-        x
-    }
-
-    fn unit(&mut self) -> f32 {
-        (self.next() & 0x7fff_ffff) as f32 * f32::from_bits(0x3000_0000)
-    }
-
     /// One frame of `FUN_0020a5c8` in `wind` ([`court_wind`]).
-    pub fn step(&mut self, wind: [f32; 3]) {
-        let mut due = u32::from(self.unit() < odds());
+    pub fn step(&mut self, wind: [f32; 3], d: &mut impl Draws) {
+        let mut due = u32::from(d.unit() < odds());
         for i in 0..PUFFS {
             let mut p = self.puffs[i];
             if p.life > 0 {
@@ -113,18 +100,18 @@ impl Vent {
                     p.position = add(p.position, p.velocity);
                     p.nudge = p.nudge.saturating_sub(1);
                     if p.nudge == 0 {
-                        let x = (self.unit() - 0.5) * nudge();
-                        let z = (self.unit() - 0.5) * nudge();
+                        let x = (d.unit() - 0.5) * nudge();
+                        let z = (d.unit() - 0.5) * nudge();
                         p.velocity[0] += x;
                         p.velocity[2] += z;
-                        p.nudge = self.next() % NUDGE_WAIT + 1;
+                        p.nudge = d.shared() % NUDGE_WAIT + 1;
                     }
                     let share = if GOING < p.life {
                         (LIFE - p.life) as f32 * (1.0 / 90.0)
                     } else {
                         // Going out it leans into the wind, across only.
                         let y = p.velocity[1];
-                        let k = self.unit() * lean();
+                        let k = d.unit() * lean();
                         for (v, w) in p.velocity.iter_mut().zip(wind) {
                             *v += (w - *v) * k;
                         }
@@ -139,13 +126,13 @@ impl Vent {
                 due -= 1;
                 p.life = LIFE;
                 let mouth = add(self.way.map(|c| c * 0.5), self.at);
-                let x = (self.unit() - 0.5) * 8.0;
-                let _ = self.unit();
-                let z = (self.unit() - 0.5) * 8.0;
+                let x = (d.unit() - 0.5) * 8.0;
+                let _ = d.unit();
+                let z = (d.unit() - 0.5) * 8.0;
                 p.position = add(mouth, [x, 0.0, z]);
                 p.velocity = add([0.0, mph(1.0) + mph(1.0), 0.0], self.way);
                 p.alpha = 0.0;
-                p.nudge = self.next() % NUDGE_WAIT + 1;
+                p.nudge = d.shared() % NUDGE_WAIT + 1;
             }
             self.puffs[i] = p;
         }
@@ -173,11 +160,12 @@ mod tests {
 
     #[test]
     fn puffs_rise_come_in_and_go_out_over_270_frames() {
-        let mut v = Vent::new([67.98, 1.0, 31.82], [0.0; 3], 5);
+        let mut v = Vent::new([67.98, 1.0, 31.82], [0.0; 3]);
+        let mut d = crate::draws::Own(5);
         let mut most_alpha: f32 = 0.0;
         let mut alive = 0;
         for frame in 0..2000 {
-            v.step(court_wind(15.0, -1.0, 1.0));
+            v.step(court_wind(15.0, -1.0, 1.0), &mut d);
             for p in &v.puffs {
                 if p.life > 0 {
                     most_alpha = most_alpha.max(p.alpha);
@@ -194,5 +182,49 @@ mod tests {
         // 40 / 270 a frame for 270 frames: about 40 alive, never more.
         let mean = alive as f32 / 499.0;
         assert!((25.0..=40.0).contains(&mean), "{mean}");
+    }
+
+    /// Counts the draws by the order they come in a frame.
+    struct Counted {
+        own: crate::draws::Own,
+        draws: u64,
+    }
+
+    impl Draws for Counted {
+        fn shared(&mut self) -> u32 {
+            self.draws += 1;
+            self.own.shared()
+        }
+
+        fn rand(&mut self) -> i32 {
+            self.own.rand()
+        }
+    }
+
+    #[test]
+    fn a_vent_draws_as_often_as_the_originals() {
+        // The original's two vents on Broad Street, logged live over 22,856
+        // updates (docs/TRACE.md "The game's construction, draw by draw"):
+        // per vent and frame 1 odds draw, 0.133 new puffs (four draws
+        // each), 3.362 nudges (three) and 23.92 leans (one), 35.5 in all.
+        let mut v = Vent::new([0.0; 3], [0.0; 3]);
+        let mut d = Counted {
+            own: crate::draws::Own(17),
+            draws: 0,
+        };
+        for _ in 0..2000 {
+            v.step(court_wind(15.0, -1.0, 1.0), &mut d);
+        }
+        d.draws = 0;
+        let frames = 40_000;
+        for _ in 0..frames {
+            v.step(court_wind(15.0, -1.0, 1.0), &mut d);
+        }
+        let per_frame = d.draws as f64 / f64::from(frames);
+        let original = 1.0 + 0.133 * 4.0 + 3.362 * 3.0 + 23.92;
+        assert!(
+            (per_frame - original).abs() < original * 0.03,
+            "{per_frame} vs {original}"
+        );
     }
 }

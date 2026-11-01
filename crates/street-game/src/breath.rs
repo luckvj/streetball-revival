@@ -16,7 +16,9 @@
 //! enabled word, 1 from its constructor (`0x156168`) and changed only
 //! through the setter `FUN_00156188` (the actor's, ball's and AI's virtual
 //! overrides), so every player on court breathes, as here. The draws are
-//! the rewrite's own generator (the game's shared one).
+//! the game's shared generator's ([`crate::draws`]).
+
+use crate::draws::Draws;
 
 const FPS: f32 = 60.0;
 /// `0x4c7e6c`: a puff's life.
@@ -63,39 +65,24 @@ pub struct Breather {
     /// +0x70: breathing out this frame; +0x90 frames to the next breath.
     out: bool,
     wait: i32,
-    rng: u32,
 }
 
 impl Breather {
     /// `FUN_001f06a0`: the first breath `WAIT + r % 181` frames off.
-    pub fn new(seed: u32) -> Self {
+    pub fn new(d: &mut impl Draws) -> Self {
         let mut b = Breather {
             puffs: [Puff::default(); PUFFS],
             out: false,
             wait: 0,
-            rng: seed | 1,
         };
-        b.wait = WAIT + (b.next() % WAIT_SPREAD) as i32;
+        b.wait = WAIT + (d.shared() % WAIT_SPREAD) as i32;
         b
-    }
-
-    fn next(&mut self) -> u32 {
-        let mut x = self.rng;
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        self.rng = x;
-        x
-    }
-
-    fn unit(&mut self) -> f32 {
-        (self.next() & 0x7fff_ffff) as f32 * f32::from_bits(0x3000_0000)
     }
 
     /// One frame of `FUN_001f07c0`: `head` the head bone's place and its
     /// up axis turned (`FUN_002f7430` of `(0, 1, 0)` by its rotation),
     /// `wind` the court's ([`crate::steam::court_wind`]).
-    pub fn step(&mut self, head: [f32; 3], up: [f32; 3], wind: [f32; 3]) {
+    pub fn step(&mut self, head: [f32; 3], up: [f32; 3], wind: [f32; 3], d: &mut impl Draws) {
         let mut due = 0;
         if !self.out && self.wait == 0 {
             self.out = true;
@@ -104,7 +91,7 @@ impl Breather {
         if self.out {
             if self.wait == 0 {
                 self.out = false;
-                self.wait = WAIT + (self.next() % WAIT_SPREAD) as i32;
+                self.wait = WAIT + (d.shared() % WAIT_SPREAD) as i32;
             } else {
                 due = PUFFS;
             }
@@ -123,11 +110,11 @@ impl Breather {
                 if p.life > 0 {
                     p.nudge = p.nudge.saturating_sub(1);
                     if p.nudge == 0 {
-                        let x = (self.unit() - 0.5) * NUDGE;
-                        let z = (self.unit() - 0.5) * NUDGE;
+                        let x = (d.unit() - 0.5) * NUDGE;
+                        let z = (d.unit() - 0.5) * NUDGE;
                         p.velocity[0] += x;
                         p.velocity[2] += z;
-                        p.nudge = self.next() % NUDGE_WAIT + 1;
+                        p.nudge = d.shared() % NUDGE_WAIT + 1;
                     }
                     let share = if FREE < p.life {
                         // Keeping to the mouth.
@@ -137,7 +124,7 @@ impl Breather {
                     } else {
                         p.position = add(p.position, p.velocity);
                         let y = p.velocity[1];
-                        let k = self.unit() * f32::from_bits(0x3ba3_d70b);
+                        let k = d.unit() * f32::from_bits(0x3ba3_d70b);
                         for (v, w) in p.velocity.iter_mut().zip(wind) {
                             *v += (w - *v) * k;
                         }
@@ -152,14 +139,14 @@ impl Breather {
                 p.life = LIFE;
                 let s = 0.6;
                 p.offset = [
-                    (self.unit() - 0.5) * s,
-                    (self.unit() - 0.5) * s,
-                    (self.unit() - 0.5) * s,
+                    (d.unit() - 0.5) * s,
+                    (d.unit() - 0.5) * s,
+                    (d.unit() - 0.5) * s,
                 ];
                 p.position = add(mouth, p.offset);
                 p.velocity = [0.0, mph(1.0) * f32::from_bits(0x3e99_999a), 0.0];
                 p.alpha = 0.0;
-                p.nudge = self.next() % NUDGE_WAIT + 1;
+                p.nudge = d.shared() % NUDGE_WAIT + 1;
             }
             self.puffs[i] = p;
         }
@@ -179,14 +166,15 @@ mod tests {
 
     #[test]
     fn a_breath_lets_out_ten_puffs_that_keep_to_the_mouth_then_drift() {
-        let mut b = Breather::new(9);
+        let mut d = crate::draws::Own(9);
+        let mut b = Breather::new(&mut d);
         let head = [10.0, 6.0, 0.0];
         let up = [0.0, 0.0, 2.0];
         let mut breaths = 0;
         let mut most_alpha: f32 = 0.0;
         let mut was_out = false;
         for _ in 0..2000 {
-            b.step(head, up, [0.0; 3]);
+            b.step(head, up, [0.0; 3], &mut d);
             let alive = b.puffs.iter().filter(|p| p.life > 0).count();
             let fresh = b.puffs.iter().filter(|p| p.life == LIFE).count();
             if fresh > 0 {

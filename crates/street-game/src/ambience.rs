@@ -124,20 +124,27 @@ pub struct AmbiencePlugin;
 
 impl Plugin for AmbiencePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            OnEnter(Screen::Playing),
-            spawn_ambience.run_if(crate::options::effects_on),
-        )
-        .add_systems(
-            FixedUpdate,
-            (
-                light_hoop,
-                (blow_litter, vent_steam, breathe, burn).run_if(|p: Res<Paused>| !p.on),
-            )
-                .after(crate::game::SimStep)
-                .run_if(in_state(Screen::Playing))
-                .run_if(crate::options::effects_on),
-        );
+        // The effects' logic runs whether or not they are shown: the
+        // original's draws from the shared generator after each frame's
+        // gameplay (`crate::draws`), in the order its court script builds
+        // the effects: the ball's sparks, the hoop's fire, then the
+        // script's litter, vents and breath.
+        app.add_systems(OnEnter(Screen::Playing), spawn_ambience)
+            .add_systems(
+                FixedUpdate,
+                (
+                    crate::ballfx::sparks,
+                    light_hoop,
+                    burn,
+                    blow_litter,
+                    vent_steam,
+                    breathe,
+                )
+                    .chain()
+                    .after(crate::game::crowd_step)
+                    .run_if(in_state(Screen::Playing))
+                    .run_if(|p: Res<Paused>| !p.on),
+            );
     }
 }
 
@@ -149,13 +156,9 @@ struct Litter(crate::drift::Drift);
 #[derive(Component)]
 struct LitterPiece(usize);
 
-/// A vent, emitting at its own rate.
+/// One of a vent's puffs on screen: its vent's index and its own.
 #[derive(Component)]
-struct Vent(crate::steam::Vent);
-
-/// One of a vent's puffs on screen: its vent and index.
-#[derive(Component)]
-struct SteamPuff(Entity, usize);
+struct SteamPuff(usize, usize);
 
 /// One of a player's breath puffs on screen: the player and index.
 #[derive(Component)]
@@ -177,17 +180,21 @@ struct Puffs {
     court_wind: [f32; 3],
     /// A breather a player (`0x2f45ec..0x2f462c`), in the cold.
     breathers: Vec<crate::breath::Breather>,
-    rng: u32,
+    /// The vents, in the script's order (`PS_STEAM`).
+    vents: Vec<crate::steam::Vent>,
 }
 
 fn spawn_ambience(
     mut commands: Commands,
     scene: Res<Scene>,
+    mut sim: ResMut<crate::game::Sim>,
+    options: Option<Res<crate::options::Options>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
 ) {
     let a = &scene.ambience;
+    let shown = options.is_none_or(|o| o.0.visual_effects);
     let scoped = DespawnOnExit(Screen::Playing);
     let mut puffs = Puffs {
         quad: meshes.add(Rectangle::new(1.0, 1.0)),
@@ -199,37 +206,19 @@ fn spawn_ambience(
             .fire
             .as_ref()
             .map(|t| images.add(street_render::convert::display_image(t))),
-        flames: crate::fire::Fire::new(0x001f_6fc8 ^ scene.court.id.len() as u32),
+        flames: crate::fire::Fire::new(),
         court_wind: a.wind.map_or([0.0; 3], |w| {
             crate::steam::court_wind(w.speed, w.direction[0], w.direction[1])
         }),
         breathers: Vec::new(),
-        rng: 0x002f_3b30 ^ scene.court.id.len() as u32,
+        vents: a
+            .steam
+            .iter()
+            .map(|steam| crate::steam::Vent::new(steam.at, steam.blow))
+            .collect(),
     };
-    if a.cold {
-        for k in 0..6 {
-            let seed = puffs.rng ^ (k as u32 + 7).wrapping_mul(0x85eb_ca6b);
-            puffs.breathers.push(crate::breath::Breather::new(seed));
-            for i in 0..crate::breath::PUFFS {
-                let material = materials.add(StandardMaterial {
-                    base_color: Color::linear_rgba(1.0, 1.0, 1.0, 0.0),
-                    base_color_texture: puffs.image.clone(),
-                    alpha_mode: AlphaMode::Blend,
-                    unlit: true,
-                    cull_mode: None,
-                    ..default()
-                });
-                commands.spawn((
-                    Mesh3d(puffs.quad.clone()),
-                    MeshMaterial3d(material),
-                    Transform::from_scale(Vec3::splat(crate::breath::SIZE)),
-                    Visibility::Hidden,
-                    BreathPuff(k, i),
-                    scoped.clone(),
-                ));
-            }
-        }
-    }
+    // The script's litter first (`FUN_001f4248` draws each piece's place),
+    // its breathers at its end (`FUN_001f06a0` draws each one's first wait).
     let count = |second: bool| {
         a.litter
             .iter()
@@ -237,7 +226,39 @@ fn spawn_ambience(
             .map(|l| l.2)
             .sum::<u32>()
     };
-    let drift = crate::drift::Drift::new(count(false), count(true), a.half, puffs.rng);
+    let drift = crate::drift::Drift::new(count(false), count(true), a.half, &mut sim.world);
+    if a.cold {
+        for _ in 0..6 {
+            puffs
+                .breathers
+                .push(crate::breath::Breather::new(&mut sim.world));
+        }
+    }
+    if !shown {
+        commands.insert_resource(Litter(drift));
+        commands.insert_resource(puffs);
+        return;
+    }
+    for k in 0..puffs.breathers.len() {
+        for i in 0..crate::breath::PUFFS {
+            let material = materials.add(StandardMaterial {
+                base_color: Color::linear_rgba(1.0, 1.0, 1.0, 0.0),
+                base_color_texture: puffs.image.clone(),
+                alpha_mode: AlphaMode::Blend,
+                unlit: true,
+                cull_mode: None,
+                ..default()
+            });
+            commands.spawn((
+                Mesh3d(puffs.quad.clone()),
+                MeshMaterial3d(material),
+                Transform::from_scale(Vec3::splat(crate::breath::SIZE)),
+                Visibility::Hidden,
+                BreathPuff(k, i),
+                scoped.clone(),
+            ));
+        }
+    }
     for (i, piece) in drift.pieces.iter().enumerate() {
         let Some((model, textures, _, _, scale)) = a.litter.iter().find(|l| l.3 == piece.trash)
         else {
@@ -277,17 +298,6 @@ fn spawn_ambience(
         ));
     }
     for (k, steam) in a.steam.iter().enumerate() {
-        let vent = commands
-            .spawn((
-                Vent(crate::steam::Vent::new(
-                    steam.at,
-                    steam.blow,
-                    puffs.rng ^ (k as u32 + 1).wrapping_mul(0x9e37_79b9),
-                )),
-                Transform::from_translation(Vec3::from_array(steam.at)),
-                scoped.clone(),
-            ))
-            .id();
         for i in 0..crate::steam::PUFFS {
             let material = materials.add(StandardMaterial {
                 base_color: Color::linear_rgba(1.0, 1.0, 1.0, 0.0),
@@ -303,7 +313,7 @@ fn spawn_ambience(
                 Transform::from_translation(Vec3::from_array(steam.at))
                     .with_scale(Vec3::splat(crate::steam::SIZE)),
                 Visibility::Hidden,
-                SteamPuff(vent, i),
+                SteamPuff(k, i),
                 scoped.clone(),
             ));
         }
@@ -314,6 +324,8 @@ fn spawn_ambience(
 /// One frame of the litter (`FUN_001f4950`), the court's camera as the
 /// one whose view a piece may not come back in.
 fn blow_litter(
+    mut sim: ResMut<crate::game::Sim>,
+    mut tape: Option<ResMut<crate::tape::Tape>>,
     litter: Option<ResMut<Litter>>,
     camera: Query<(&GlobalTransform, &Projection), With<SidelineCamera>>,
     mut pieces: Query<(&LitterPiece, &mut Transform)>,
@@ -336,7 +348,8 @@ fn blow_litter(
             far,
         }
     });
-    litter.0.step(camera.as_ref());
+    let w = crate::draws::live(&mut sim, tape.as_deref_mut());
+    litter.0.step(camera.as_ref(), w);
     for (piece, mut t) in &mut pieces {
         if let Some(p) = litter.0.pieces.get(piece.0) {
             t.translation = Vec3::from_array(p.position);
@@ -349,9 +362,10 @@ fn blow_litter(
 /// puffs drawn where it puts them: white, the engine's alpha (128 is 1),
 /// turned to the camera.
 fn vent_steam(
-    puffs: Option<Res<Puffs>>,
+    mut sim: ResMut<crate::game::Sim>,
+    mut tape: Option<ResMut<crate::tape::Tape>>,
+    puffs: Option<ResMut<Puffs>>,
     camera: Query<&GlobalTransform, With<SidelineCamera>>,
-    mut vents: Query<&mut Vent>,
     mut sprites: Query<(
         &SteamPuff,
         &mut Transform,
@@ -360,17 +374,17 @@ fn vent_steam(
     )>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let Some(puffs) = puffs else { return };
+    let Some(mut puffs) = puffs else { return };
     let wind = puffs.court_wind;
-    for mut vent in &mut vents {
-        vent.0.step(wind);
+    let w = crate::draws::live(&mut sim, tape.as_deref_mut());
+    for vent in &mut puffs.vents {
+        vent.step(wind, w);
     }
     let facing = camera.single().map(|c| c.rotation()).unwrap_or_default();
     for (sprite, mut t, mut shown, material) in &mut sprites {
-        let Ok(vent) = vents.get(sprite.0) else {
+        let Some(p) = puffs.vents.get(sprite.0).map(|v| v.puffs[sprite.1]) else {
             continue;
         };
-        let p = vent.0.puffs[sprite.1];
         if p.life == 0 {
             *shown = Visibility::Hidden;
             continue;
@@ -389,6 +403,8 @@ fn vent_steam(
 /// drawn where it puts them, white, the engine's alpha (128 is 1), turned
 /// to the camera.
 fn breathe(
+    mut sim: ResMut<crate::game::Sim>,
+    mut tape: Option<ResMut<crate::tape::Tape>>,
     puffs: Option<ResMut<Puffs>>,
     players: Query<(&SimPlayer, &Rig)>,
     joints: Query<&GlobalTransform>,
@@ -406,6 +422,9 @@ fn breathe(
         return;
     }
     let wind = puffs.court_wind;
+    // Each breather in turn, player by player; one whose head is not posed
+    // breathes from where it stands (its draws are the same).
+    let mut heads = vec![([0.0; 3], [0.0, 1.0, 0.0]); puffs.breathers.len()];
     for (player, rig) in &players {
         let Some(head) = rig
             .joints
@@ -414,11 +433,16 @@ fn breathe(
         else {
             continue;
         };
-        let at = head.translation().to_array();
-        let up = (head.rotation() * Vec3::Y).to_array();
-        if let Some(b) = puffs.breathers.get_mut(player.0) {
-            b.step(at, up, wind);
+        if let Some(h) = heads.get_mut(player.0) {
+            *h = (
+                head.translation().to_array(),
+                (head.rotation() * Vec3::Y).to_array(),
+            );
         }
+    }
+    let w = crate::draws::live(&mut sim, tape.as_deref_mut());
+    for (b, (at, up)) in puffs.breathers.iter_mut().zip(heads) {
+        b.step(at, up, wind, w);
     }
     let facing = camera.single().map(|c| c.rotation()).unwrap_or_default();
     for (sprite, mut t, mut shown, material) in &mut sprites {
@@ -480,6 +504,8 @@ pub fn hoop_burst(won: bool, explosive_rims: bool) -> bool {
 /// One frame of the fireworks (`FUN_001f7178`) in the court's wind, drawn
 /// added: the engine's colour and alpha, 128 is 1.
 fn burn(
+    mut sim: ResMut<crate::game::Sim>,
+    mut tape: Option<ResMut<crate::tape::Tape>>,
     puffs: Option<ResMut<Puffs>>,
     camera: Query<&GlobalTransform, With<SidelineCamera>>,
     mut sprites: Query<(
@@ -492,7 +518,9 @@ fn burn(
 ) {
     let Some(mut puffs) = puffs else { return };
     let wind = puffs.court_wind;
-    puffs.flames.step(wind);
+    puffs
+        .flames
+        .step(wind, crate::draws::live(&mut sim, tape.as_deref_mut()));
     let facing = camera.single().map(|c| c.rotation()).unwrap_or_default();
     for (piece, mut t, mut shown, material) in &mut sprites {
         let p = puffs.flames.particles[piece.0];

@@ -18,10 +18,12 @@
 //! spot it would come back at, comes back in somewhere in the box (a leaf
 //! up to 11.5 high, already blown along).
 //!
-//! The draws are the rewrite's own generator: the game takes them from its
-//! shared one (`FUN_003a16b8`) and the C library's `rand()`.
+//! The draws are the game's: its shared generator (`FUN_003a16b8`) and the
+//! C library's `rand()` ([`crate::draws`]).
 
 use street_sim::{head::qmul, rim::sin_cos};
+
+use crate::draws::Draws;
 
 /// The frames a second the game's tuning is made for.
 const FPS: f32 = 60.0;
@@ -129,24 +131,22 @@ pub struct Piece {
 pub struct Drift {
     pub pieces: Vec<Piece>,
     half: [f32; 2],
-    rng: u32,
 }
 
 impl Drift {
     /// `FUN_001f4248`: `leaves` of the first kind then `trash` of the
     /// second, each at rest at its height somewhere in the box, facing up.
-    pub fn new(leaves: u32, trash: u32, half: [f32; 2], seed: u32) -> Self {
-        let mut d = Drift {
+    pub fn new(leaves: u32, trash: u32, half: [f32; 2], d: &mut impl Draws) -> Self {
+        let mut drift = Drift {
             pieces: Vec::new(),
             half,
-            rng: seed | 1,
         };
         for k in 0..leaves + trash {
             let trash = k >= leaves;
             let height = if trash { 0.375 } else { 0.25 };
             let x = (d.unit() - 0.5) * (half[0] + half[0]);
             let z = (d.unit() - 0.5) * (half[1] + half[1]);
-            d.pieces.push(Piece {
+            drift.pieces.push(Piece {
                 rotation: [0.0, 0.0, 0.0, 1.0],
                 position: [x, height, z],
                 velocity: [0.0; 3],
@@ -158,39 +158,19 @@ impl Drift {
                 trash,
             });
         }
-        d
-    }
-
-    fn next(&mut self) -> u32 {
-        let mut x = self.rng;
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        self.rng = x;
-        x
-    }
-
-    /// A draw of the shared generator as the update takes it: its low 31
-    /// bits over 2³¹.
-    fn unit(&mut self) -> f32 {
-        (self.next() & 0x7fff_ffff) as f32 * f32::from_bits(0x3000_0000)
-    }
-
-    /// `rand()`.
-    fn rand(&mut self) -> i32 {
-        (self.next() >> 1) as i32
+        drift
     }
 
     /// One frame of `FUN_001f4950`. Gusts come but in a court with
     /// precipitation and no cold (+0x3f4fe0, +0x3f4fe4; no court has
     /// any).
-    pub fn step(&mut self, camera: Option<&Camera>) {
+    pub fn step(&mut self, camera: Option<&Camera>, d: &mut impl Draws) {
         for i in 0..self.pieces.len() {
             let mut p = self.pieces[i];
             if p.rest > 0 {
                 p.rest -= 1;
                 if p.rest == 0 {
-                    self.gust(&mut p);
+                    self.gust(&mut p, d);
                 }
             }
             // `0x1f50c4..0x1f521c`: a leaf in the air falls, at rest it
@@ -213,13 +193,13 @@ impl Drift {
             p.position = add(p.position, p.velocity);
             // `0x1f527c..0x1f5410`: down, it rests a while.
             if p.rest == 0 && p.position[1] <= p.height {
-                p.rest = self.rand() % REST;
+                p.rest = d.rand() % REST;
                 p.position[1] = p.height;
                 p.velocity[1] = 0.0;
                 if p.trash {
                     roll(&mut p);
                 } else {
-                    p.axis = self.up_or_down();
+                    p.axis = up_or_down(d);
                 }
             }
             // `0x1f5414..0x1f5490`: it turns by its spin (`FUN_002f6828`
@@ -229,25 +209,16 @@ impl Drift {
             let q = normalize4([p.axis[0] * s, p.axis[1] * s, p.axis[2] * s, c]);
             p.rotation = normalize4(qmul(q, p.rotation));
             if !p.inside && calm() < wind_speed() {
-                self.respawn(&mut p, camera);
+                self.respawn(&mut p, camera, d);
             }
             self.pieces[i] = p;
         }
     }
 
-    /// The axis a leaf spins flat about: up or down, even odds.
-    fn up_or_down(&mut self) -> [f32; 3] {
-        if self.unit() < 0.5 {
-            UP
-        } else {
-            [0.0, -1.0, 0.0]
-        }
-    }
-
     /// `0x1f4ac0..0x1f50c0`: a gust, the wind turned up to 45° either way
     /// (`FUN_002f7700` about up).
-    fn gust(&mut self, p: &mut Piece) {
-        let a = (self.unit() - 0.5) * f32::from_bits(0x3fc9_0fdb);
+    fn gust(&mut self, p: &mut Piece, d: &mut impl Draws) {
+        let a = (d.unit() - 0.5) * f32::from_bits(0x3fc9_0fdb);
         let way = turn_up(WIND_WAY, a);
         if p.trash {
             let k = wind_speed() * f32::from_bits(0x3f4c_cccd);
@@ -260,49 +231,49 @@ impl Drift {
         p.velocity[1] = lift();
         // Up and down again at a fifth of gravity: its frames.
         let up = lift() * (1.0 / fall());
-        self.tumble(p, ceil(up + up));
+        self.tumble(p, ceil(up + up), d);
     }
 
     /// `0x1f4be8..0x1f4f9c`: over `n` frames in the air, a leaf turns a
     /// whole number of half turns: one about a level axis, or an even
     /// number about any; a short flight just spins it flat.
-    fn tumble(&mut self, p: &mut Piece, n: f32) {
+    fn tumble(&mut self, p: &mut Piece, n: f32, d: &mut impl Draws) {
         let span = n * turn();
         if PI < span {
             let most = (span * f32::from_bits(0x3ea2_f983)) as i32;
-            let r = self.rand() % most.max(1);
+            let r = d.rand() % most.max(1);
             let mut k = r + 1;
             if k % 2 == 1 && k >= 2 {
                 k = r;
             }
             p.spin = k as f32 * PI / n;
             if k & 1 != 0 {
-                let a = (self.unit() - 0.5) * f32::from_bits(0x40c9_0fdb);
+                let a = (d.unit() - 0.5) * f32::from_bits(0x40c9_0fdb);
                 p.axis = normalize3(turn_up([0.0, 0.0, 1.0], a));
             } else {
-                let mut v = [self.unit() - 0.5, self.unit() - 0.5, self.unit() - 0.5];
+                let mut v = [d.unit() - 0.5, d.unit() - 0.5, d.unit() - 0.5];
                 if v[1].abs() <= f32::from_bits(0x38d1_b717) {
                     v[1] = f32::from_bits(0x3dcc_cccd);
                 }
                 p.axis = normalize3(v);
             }
         } else {
-            p.axis = self.up_or_down();
-            p.spin = self.unit() * turn();
+            p.axis = up_or_down(d);
+            p.spin = d.unit() * turn();
         }
     }
 
     /// `0x1f5494..0x1f5c48`: a piece outside the box comes back in where
     /// the camera sees neither it nor that spot.
-    fn respawn(&mut self, p: &mut Piece, camera: Option<&Camera>) {
+    fn respawn(&mut self, p: &mut Piece, camera: Option<&Camera>, d: &mut impl Draws) {
         if camera.is_some_and(|c| c.sees(p.position, p.height)) {
             return;
         }
-        let x = (self.unit() - 0.5) * (self.half[0] + self.half[0]);
-        let z = (self.unit() - 0.5) * (self.half[1] + self.half[1]);
+        let x = (d.unit() - 0.5) * (self.half[0] + self.half[0]);
+        let z = (d.unit() - 0.5) * (self.half[1] + self.half[1]);
         let mut at = [x, p.height, z];
         if !p.trash {
-            at[1] += self.unit() * 11.5;
+            at[1] += d.unit() * 11.5;
         }
         if camera.is_some_and(|c| c.sees(at, p.height)) {
             return;
@@ -318,8 +289,13 @@ impl Drift {
         p.velocity = wind().map(|c| c * f32::from_bits(0x3f66_6666));
         // Down from where it came back in: its frames.
         let drop = (at[1] - p.height) * (1.0 / fall());
-        self.tumble(p, ceil((drop + drop).sqrt()));
+        self.tumble(p, ceil((drop + drop).sqrt()), d);
     }
+}
+
+/// The axis a leaf spins flat about: up or down, even odds.
+fn up_or_down(d: &mut impl Draws) -> [f32; 3] {
+    if d.unit() < 0.5 { UP } else { [0.0, -1.0, 0.0] }
 }
 
 /// `0x1f50ec..0x1f5218`: trash rolls about the axis across its way, its
@@ -399,11 +375,12 @@ mod tests {
 
     #[test]
     fn leaves_rest_then_gusts_lift_and_tumble_them_back_down() {
-        let mut d = Drift::new(5, 0, [55.0, 32.8], 7);
+        let mut r = crate::draws::Own(7);
+        let mut d = Drift::new(5, 0, [55.0, 32.8], &mut r);
         let mut lifted = 0;
         let mut highest: f32 = 0.0;
         for _ in 0..3000 {
-            d.step(None);
+            d.step(None, &mut r);
             for p in &d.pieces {
                 if p.position[1] > p.height + 0.01 {
                     lifted += 1;
@@ -422,12 +399,13 @@ mod tests {
 
     #[test]
     fn trash_rolls_downwind_and_comes_back_in() {
-        let mut d = Drift::new(0, 5, [55.0, 32.8], 11);
+        let mut r = crate::draws::Own(7);
+        let mut d = Drift::new(0, 5, [55.0, 32.8], &mut r);
         let start: Vec<[f32; 3]> = d.pieces.iter().map(|p| p.position).collect();
         let mut came_back = 0;
         for _ in 0..6000 {
             let before: Vec<[f32; 3]> = d.pieces.iter().map(|p| p.position).collect();
-            d.step(None);
+            d.step(None, &mut r);
             for (p, was) in d.pieces.iter().zip(&before) {
                 assert_eq!(p.position[1], p.height);
                 // Out of the box it comes back in at once, elsewhere.
@@ -457,10 +435,11 @@ mod tests {
             near: 0.5,
             far: 4000.0,
         };
-        let mut d = Drift::new(0, 5, [10.0, 10.0], 3);
+        let mut r = crate::draws::Own(7);
+        let mut d = Drift::new(0, 5, [10.0, 10.0], &mut r);
         for _ in 0..6000 {
             let before: Vec<bool> = d.pieces.iter().map(|p| p.inside).collect();
-            d.step(Some(&camera));
+            d.step(Some(&camera), &mut r);
             for (p, &was) in d.pieces.iter().zip(&before) {
                 assert!(was || !p.inside, "came back in in view");
             }
