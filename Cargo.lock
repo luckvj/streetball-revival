@@ -6393,6 +6393,7 @@ dependencies = [
  "street-render",
  "street-sim",
  "street-video",
+ "windows 0.62.2",
 ]
 
 [[package]]

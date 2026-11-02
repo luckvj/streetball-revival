@@ -95,6 +95,8 @@ pub mod setup;
 pub mod sfx;
 mod smooth;
 pub mod song;
+#[cfg(windows)]
+mod sony_hid;
 pub mod squeak;
 pub mod staged;
 mod steam;
@@ -723,6 +725,9 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             portraits::start,
         ),
     );
+    // PlayStation pads Windows.Gaming.Input does not hand over.
+    #[cfg(windows)]
+    app.add_plugins(sony_hid::SonyHidPlugin);
     if args.speed != 1.0 {
         let speed = args.speed;
         app.add_systems(Startup, move |mut time: ResMut<Time<Virtual>>| {
