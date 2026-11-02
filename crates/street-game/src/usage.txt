@@ -26,6 +26,7 @@ usage: street-game [--iso <path>] [--court <ID>] [--teams <home>,<away>] [--seed
   --court       court archive ID, e.g. RUCKER, PHILLY, NYCAGE. Default RUCKER.
   --teams       the home team (yours, in its home uniform) and the visitors, by nickname,
                 city or full name, e.g. Lakers,76ers (the default), Kings,Spurs.
+                #n picks the team at database index n, e.g. #15,#14.
                 The first three on each roster play.
   --seed        seed for the game's dice (shots, steals, blocks, the catch-up stages):
                 one stream for the whole run from this seed. Without it the dice are

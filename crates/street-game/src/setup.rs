@@ -121,6 +121,16 @@ impl Disc {
 
     /// The team whose name, nickname, city or full name is `name`.
     pub fn find_team(&self, name: &str) -> Result<usize, String> {
+        // `#n`: the team at database index n (as the attract draws them).
+        if let Some(index) = name.strip_prefix('#') {
+            let index: usize = index.parse().map_err(|e| format!("team {name:?}: {e}"))?;
+            return self
+                .teams
+                .iter()
+                .find(|t| t.index == index && t.roster.len() >= TEAM_SIZE)
+                .map(|t| t.index)
+                .ok_or_else(|| format!("no team {index} with three players"));
+        }
         let wanted = name.to_ascii_lowercase();
         self.teams
             .iter()
