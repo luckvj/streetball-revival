@@ -5,6 +5,8 @@ its version's part.
 
 ## Unreleased
 
+- The match intros' ball follows the scripts again (in the players'
+  hands, passed and shot) instead of sitting at centre court.
 - PlayStation controllers (DualSense, DualSense Edge, DualShock 4) now
   connect on Windows even when Windows' own game-controller layer doesn't
   hand them to the game: they're read straight from the pad, over USB or

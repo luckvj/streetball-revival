@@ -4369,17 +4369,6 @@ pub fn sync_ball(
         return;
     }
     let ball = &sim.world.ball;
-    // The referee holds it until his toss (FUN_00141fd8's FUN_0014cb28):
-    // in his hands as his clip's flags say, as a player's held ball.
-    if matches!(sim.world.opening_toss, street_sim::OpeningToss::Waiting(_))
-        && let Ok((animator, rig)) = referee.single()
-        && let Some(at) = referee_hold(animator, rig, &joints, hand.0, ball.radius)
-    {
-        for mut transform in &mut balls {
-            transform.translation = at;
-        }
-        return;
-    }
     if sim.world.sequence.is_some() {
         for mut transform in &mut balls {
             transform.translation = Vec3::from_array(ball.position);
@@ -4392,7 +4381,20 @@ pub fn sync_ball(
             .find(|(p, _, _)| p.0 == i)
             .and_then(|(_, _, rig)| Some(joints.get(rig.joints[hand.0]).ok()?.translation()))
     };
+    // The intro's scripts carry their own ball (the toss waits behind
+    // them, so this comes before the referee's hold).
     if let Some(at) = staging(&sim.world, intro.as_deref()).map(|s| s.ball(&sim.world, hand_of)) {
+        for mut transform in &mut balls {
+            transform.translation = at;
+        }
+        return;
+    }
+    // The referee holds it until his toss (FUN_00141fd8's FUN_0014cb28):
+    // in his hands as his clip's flags say, as a player's held ball.
+    if matches!(sim.world.opening_toss, street_sim::OpeningToss::Waiting(_))
+        && let Ok((animator, rig)) = referee.single()
+        && let Some(at) = referee_hold(animator, rig, &joints, hand.0, ball.radius)
+    {
         for mut transform in &mut balls {
             transform.translation = at;
         }
