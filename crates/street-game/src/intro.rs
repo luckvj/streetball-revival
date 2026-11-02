@@ -5,11 +5,10 @@
 //!
 //! The picks (`FUN_00184ed8`, `FUN_00184f20`, `FUN_00185138`):
 //! - the court's pair at `0x3db318` (`IntCourt1a`/`1b` .. `11a`/`11b`, by
-//!   the court record), side 1 taking its first roles (the loader's third
-//!   argument, 1);
+//!   the court record), loaded with team 1 (the loader's third argument);
 //! - then one about side 0 (`FUN_00184f20(task, 0)` reads the setup's slot
-//!   1, `config + 0x9c + 12`: side 0's records; side 0 takes the first
-//!   roles). For the first of its players who has one: a streetball legend
+//!   1, `config + 0x9c + 12`: side 0's records), loaded with team 0. For
+//!   the first of its players who has one: a streetball legend
 //!   (team 29, records 145..) their boss intro (`0x3db3c8`, two per
 //!   record; record 146 on court 9 always `IntBoss05`), an legend
 //!   (teams 30..35, records 158..) theirs (`0x3db498`);
@@ -211,6 +210,74 @@ pub struct Part {
     pub hoop: usize,
     /// An intro shows its cast alone.
     pub cast_only: bool,
+    /// What its actors draw on the world, by the part's frame.
+    pub draws: Vec<(u32, Draw)>,
+}
+
+/// A draw an intro's actors make on the world's generator. The original
+/// runs them as actors under the script manager: an opcode-1 cue hands one
+/// to a finishing body (`FUN_00334178`), whose callbacks draw as in play.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Draw {
+    /// The body's `9e` on a dunker (`FUN_001988b0`, `0x19981c`): the
+    /// face's kind, then the face for `updates` (`FUN_00159190`).
+    TakeOff { player: usize, updates: i32 },
+    /// Its callback 21's roll (`FUN_001729f8`, `0x1731a8`).
+    Release,
+    /// The crowd's cheer at the basket, the update after a made release
+    /// (the listener's call through `FUN_0030d618`).
+    Cheer,
+}
+
+/// The draws of `plan`'s finishing bodies with `actors` cast, by frame:
+/// the attract's log (Uptown's intro, script 18's cue at its frame 52 on
+/// body `0x448be3`) drew the take-off at update 493 and the release at
+/// 530, 16 and 53 updates in, the cheer's five at 531.
+fn finisher_draws(
+    plan: &SequencePlan,
+    actors: &[Option<usize>; 7],
+    bank: &street_assets::timeline::ScriptBank,
+) -> Vec<(u32, Draw)> {
+    let mut draws = Vec::new();
+    for cue in plan.ball_cues.iter().filter(|c| c.opcode() == 1) {
+        let Ok(slot) = usize::try_from(cue.source()) else {
+            continue;
+        };
+        let (Some(Some(pose)), Some(&Some(player))) = (
+            plan.pose_at(cue.frame as f32).get(slot).copied(),
+            actors.get(slot),
+        ) else {
+            continue;
+        };
+        let Some(body) = bank
+            .all_finishers
+            .iter()
+            .find(|f| f.animation == pose.animation)
+        else {
+            continue;
+        };
+        // `0x1997e8..0x199800`: only a dunker (state bit 7) or an
+        // alley-oop dunker (15) draws.
+        if let Some(aim) = body.aim.filter(|a| a.bits & 0x8080 != 0) {
+            draws.push((
+                cue.frame + aim.tick,
+                Draw::TakeOff {
+                    player,
+                    updates: aim.updates as i32,
+                },
+            ));
+        }
+        if let Some(release) = body.release_clock {
+            draws.push((cue.frame + release, Draw::Release));
+            // `FUN_00334178` sets the roll's odds to 100 for a cue whose
+            // word 8 is 0 (the made basket), else 0.
+            if cue.word(8) == Some(0) {
+                draws.push((cue.frame + release + 1, Draw::Cheer));
+            }
+        }
+    }
+    draws.sort_by_key(|&(frame, _)| frame);
+    draws
 }
 
 /// Where a part is.
@@ -238,6 +305,11 @@ pub struct MatchIntro {
     replayed: bool,
     /// Updates run since the intro began (online, [`MatchIntro::follow`]).
     ticks: u32,
+    /// The current part's draws made so far, and those the world is still
+    /// to take ([`take_draws`]); online none (the match holds its world).
+    drawn: usize,
+    pub pending: Vec<Draw>,
+    live: bool,
 }
 
 impl MatchIntro {
@@ -285,7 +357,24 @@ impl MatchIntro {
         self.next();
     }
 
+    /// The current part's draws up to `frame`.
+    fn draw_to(&mut self, frame: f32) {
+        let Some(part) = self.current.as_ref() else {
+            return;
+        };
+        while let Some(&(at, draw)) = part.draws.get(self.drawn) {
+            if at as f32 > frame {
+                break;
+            }
+            if self.live {
+                self.pending.push(draw);
+            }
+            self.drawn += 1;
+        }
+    }
+
     fn next(&mut self) {
+        self.drawn = 0;
         self.current = self.queue.pop_front();
         self.frame = 0.0;
         self.phase = Phase::Play;
@@ -310,10 +399,12 @@ impl MatchIntro {
                     self.frame = r.to as f32;
                     self.phase = Phase::Replay(r.from as f32);
                 } else if next >= last {
+                    self.draw_to(last);
                     self.next();
                 } else {
                     self.frame = next;
                 }
+                self.draw_to(self.frame);
             }
             Phase::Hold(t) => {
                 let t = t + frames;
@@ -379,7 +470,11 @@ pub fn start(
         picked.0, picked.1
     );
     let queue = parts(&setup, &sim.world, &clips, picked);
-    let mut intro = MatchIntro { queue, ..default() };
+    let mut intro = MatchIntro {
+        queue,
+        live: !setup.online,
+        ..default()
+    };
     intro.next();
     commands.insert_resource(intro);
 }
@@ -424,7 +519,13 @@ pub fn parts(
             warn!("intro playback: {error}");
             return;
         }
-        let lead = if team == 0 { &home } else { &away };
+        // A fixed cast (kind 0, every court and generic script) keeps actor
+        // k in slot k for the loader's team 1 and swaps the sides for team
+        // 0 (`0x337cc8`'s table `0x49d0c0`: 3, 4, 5, 0, 1, 2), side 1 in
+        // slots 0..2; the others look the featured record up on the
+        // loader's team (`FUN_00140920`).
+        let side = if plan.kind == 0 { 1 - team } else { team };
+        let lead = if side == 0 { &home } else { &away };
         // The featured legend leads (role 0); else that side's first.
         let shooter = featured
             .and_then(|record| {
@@ -436,6 +537,7 @@ pub fn parts(
             return;
         };
         let actors = bind(&w.players, shooter, plan.kind, plan.initial_positions());
+        let draws = finisher_draws(&plan, &actors, &clips.timeline);
         queue.push_back(Part {
             script,
             plan,
@@ -443,9 +545,10 @@ pub fn parts(
             mirrored: false,
             hoop: 0,
             cast_only: true,
+            draws,
         });
     };
-    // The court's script casts side 1 first, side 0's script side 0.
+    // The loader's team: the court's script 1, side 0's 0.
     if let Some(script) = first {
         add(script, None, 1);
     }
@@ -475,6 +578,39 @@ pub fn step(
         return;
     }
     intro.advance(time.delta_secs() * FPS);
+}
+
+/// The world takes the intro's draws as its actors make them (offline):
+/// nothing else of the game draws while the script manager runs it.
+pub fn take_draws(
+    intro: Option<ResMut<MatchIntro>>,
+    mut sim: ResMut<Sim>,
+    reactions: Option<ResMut<street_render::crowd::CrowdReactions>>,
+) {
+    let Some(mut intro) = intro else {
+        return;
+    };
+    if intro.pending.is_empty() {
+        return;
+    }
+    let mut reactions = reactions;
+    for draw in std::mem::take(&mut intro.pending) {
+        match draw {
+            Draw::TakeOff { player, updates } => sim.world.staged_take_off(player, updates),
+            Draw::Release => {
+                sim.world.staged_release_roll();
+            }
+            Draw::Cheer => {
+                if let Some(reactions) = reactions.as_mut() {
+                    let fraction = crate::game::crowd_fraction(&sim.world);
+                    reactions.0.push(street_render::crowd::Reaction {
+                        fraction,
+                        cheer: true,
+                    });
+                }
+            }
+        }
+    }
 }
 
 /// The match's gate: play waits for the intro played alone. Online the
@@ -511,6 +647,7 @@ mod tests {
             mirrored: false,
             hoop: 0,
             cast_only: true,
+            draws: Vec::new(),
         }
     }
 

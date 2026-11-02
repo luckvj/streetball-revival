@@ -931,10 +931,10 @@ texts confirm Select, `overlays.txt` #54..56) and strategy on R3.
   the label 33 below its meter). Built: `street-game/src/choose.rs`.
 - **Match intros** (the intro task `FUN_00184bb8`): two staged scripts
   from `SCRIPTS.BIN` before tip-off. First the court's (`FUN_00184ed8`:
-  the pair at `0x3db318 + court*16`, `IntCourt<n>a`/`b`, started with team
-  1 in the first roles), then one queued about side 0
-  (`FUN_00184f20(task, 0)`, the setup's slot 1 at `rec+0x9c+12`, which is
-  side 0, team 0 in the first roles): the first
+  the pair at `0x3db318 + court*16`, `IntCourt<n>a`/`b`, loaded with
+  team 1), then one queued about side 0 (`FUN_00184f20(task, 0)`, the
+  setup's slot 1 at `rec+0x9c+12`, which is side 0; loaded with team 0):
+  the first
   streetball legend (record field 3 = 29) plays their boss intro
   (`0x3db3c8 + (record-145)*16`; record 146 on court 9 is `IntBoss05`
   itself), the first legend (field 3 30..35) theirs
@@ -943,8 +943,14 @@ texts confirm Select, `overlays.txt` #54..56) and strategy on R3.
   on the side (`FUN_00185138`), else all thirteen. Every list is a run of
   (offset, used) pairs in `.data`: `FUN_001851f0` draws among the unused
   ones and clears them all once each has played. The loader's third
-  argument (`+0x40` of the script player) is the team taking roles 0..2
-  (-1 none). Built: `street-game/src/intro.rs`.
+  argument (`+0x40` of the script player) is a team: a fixed cast (kind 0,
+  every court and generic script; `0x337be0`) keeps actor k in slot k for
+  team 1 or -1 and swaps the sides for team 0 (`0x337cc8`, table
+  `0x49d0c0`: slots 3, 4, 5, 0, 1, 2), so side 0 plays the court's slots
+  0..2 and side 1 the generic script's (the attract's log: the generic
+  script's slot-1 dunker was actor 4); the boss and legend intros (kind 2)
+  find the featured record on that team (`0x337df0`, `FUN_00140920`).
+  Built: `street-game/src/intro.rs`.
 - **Staged scripts' control and replay commands.** The script manager
   (`FUN_00335708`, task group 4) hands each category-1 record to one of
   seven listeners by byte 0x21 (`FUN_00335370` builds them; `FUN_003355c8`
@@ -14072,8 +14078,7 @@ matches, update for update, through 815, when the tip's pass is caught:
 Still differing before 616: the intro's own draws. `FUN_001851f0` picks
 the two intro scripts from the shared generator at update 0 (the rewrite
 used its own C-library generator; since 2026-11-01 `intro::start` draws
-them from the built world, and casts side 0 in the second script, side 1
-in the court's, where it had them the other way round). The intro's actors then play move
+them from the built world). The intro's actors then play move
 scripts whose callbacks draw: in this match, a jump's face (`9e`,
 `FUN_001988b0`, `r & 1` and the face's clip, 40 updates long) at 493, a
 shot's release roll (callback 21, `FUN_001729f8`) at 530, and the crowd's

@@ -1093,10 +1093,15 @@ mod tests {
         // drawlog-attract3: Uptown, teams 15 and 22 by the computer's
         // picks, built from the reseed 20455 (48 draws); `FUN_001851f0`'s
         // two draws at update 0 (4032659251, 3950801831): Uptown's second
-        // script (42) and side 0's third generic one (18).
+        // script (42) and side 0's third generic one (18). Script 42 stops
+        // at 425; 18's cue at its frame 52 hands actor 4 the body
+        // `0x448be3`, whose take-off drew at 493 (its face, 40 updates
+        // long, kept into the match), its release at 530 and the cheer at
+        // 531.
         let Some(path) = std::env::var_os("STREET_ISO") else {
             return;
         };
+        let clips = load_clips(&mut Iso::open(&path).unwrap()).unwrap();
         let disc = Disc::load(Iso::open(path).unwrap()).unwrap();
         let mut setup = MatchSetup::new(&disc, 15, 22);
         setup.court = disc.courts[6].id.clone();
@@ -1134,6 +1139,32 @@ mod tests {
         );
         assert_eq!(taken, [4_032_659_251, 3_950_801_831]);
         assert_eq!(picks, (Some(42), Some((18, None))));
+        let sim = &world.resource::<game::Sim>().world;
+        let mut parts = crate::intro::parts(&setup, sim, &clips, picks);
+        assert_eq!(parts.len(), 2);
+        let first = parts.pop_front().unwrap();
+        let start = crate::intro::ticks(std::collections::VecDeque::from([first]));
+        assert_eq!(start, 425);
+        let at: Vec<_> = parts[0]
+            .draws
+            .iter()
+            .map(|&(frame, draw)| (start + frame, draw))
+            .collect();
+        use crate::intro::Draw::*;
+        assert_eq!(
+            at,
+            [
+                (
+                    493,
+                    TakeOff {
+                        player: 4,
+                        updates: 40
+                    }
+                ),
+                (530, Release),
+                (531, Cheer)
+            ]
+        );
     }
 
     #[test]

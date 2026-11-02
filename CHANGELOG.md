@@ -6,9 +6,11 @@ its version's part.
 ## Unreleased
 
 - The match intros pick their scripts as the PS2 does, from the game's
-  own random numbers, and the second intro is about the side the PS2
-  features (it had shown the other team), with the court's intro casting
-  the other side first.
+  own random numbers, and a streetball legend's own intro plays for the
+  same side's legend the PS2 picks it for. The intros' dunks take their
+  random numbers from the game's too (the dunker's face, the make roll,
+  the crowd's cheer), so a match's choices follow the original's from the
+  first update.
 - The match intros' ball follows the scripts again (in the players'
   hands, passed and shot) instead of sitting at centre court.
 - PlayStation controllers (DualSense, DualSense Edge, DualShock 4) now

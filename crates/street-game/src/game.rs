@@ -440,7 +440,7 @@ impl Plugin for GamePlugin {
                 Update,
                 (
                     controls::read,
-                    crate::intro::step,
+                    (crate::intro::step, crate::intro::take_draws).chain(),
                     (
                         view::sync_players,
                         view::sync_hands,
@@ -2729,6 +2729,7 @@ mod tests {
             mirrored: false,
             hoop: 0,
             cast_only: true,
+            draws: Vec::new(),
         };
         app.insert_resource(crate::intro::MatchIntro::showing(part));
         app.update();

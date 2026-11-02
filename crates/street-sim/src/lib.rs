@@ -2860,6 +2860,21 @@ impl World {
         self.rng.next_u32();
     }
 
+    /// A match intro's finishing body aiming `i`'s dunk (`FUN_00334178`
+    /// hands him the body; its `9e`, `FUN_001988b0` `0x19981c`): `r & 1`
+    /// for the face's kind, then the face for `updates`. The intro runs
+    /// under the script manager, so the face keeps its time into the match.
+    pub fn staged_take_off(&mut self, i: usize, updates: i32) {
+        self.rng.next_u32();
+        self.face(i, updates);
+    }
+
+    /// The body's callback 21 (`FUN_001729f8`, `0x1731a8`): the make
+    /// roll's draw, `r % 100` against odds of 100 or 0 the cue set.
+    pub fn staged_release_roll(&mut self) -> u32 {
+        self.rng.next_u32() % 100
+    }
+
     /// `FUN_00159240` (the actor's update after his side's, `0x157270`;
     /// none under the script manager): his face's time counts down, and at
     /// 0 the idle face (kind 0) for `fps + r % fps` updates, its clip drawn.

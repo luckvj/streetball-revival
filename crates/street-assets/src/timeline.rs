@@ -21,6 +21,9 @@ pub struct ScriptBank {
     pub scripts: Vec<Timeline>,
     pub animations: Vec<Animation>,
     pub finishers: Vec<crate::scripts::Finisher>,
+    /// Every opcode-1 body (`FUN_00334178`'s two tables), the intros'
+    /// under animation 900 with the gamebreakers'.
+    pub all_finishers: Vec<crate::scripts::Finisher>,
     /// The 13 four-entry variant groups at 0x3db110: empty group 0,
     /// long shots 1..4, short shots 5..8, paired dunk sequences 9..12.
     pub gamebreakers: [[Option<usize>; 4]; 13],
@@ -89,6 +92,7 @@ impl ScriptBank {
             scripts,
             animations,
             finishers: crate::scripts::finishers_from_executable(executable)?,
+            all_finishers: crate::scripts::finisher_bodies(executable, 0..1144)?,
             gamebreakers,
             gamebreaker_regions,
             staged_loop_distances: staged_loop_distances(&elf)?,

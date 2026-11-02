@@ -95,6 +95,21 @@ pub struct Finisher {
     /// it, which replaces the word (0 with none). The launcher reads bits 7
     /// (a dunk) and 15 (the alley-oop leap) for its dunk path.
     pub release_bits: u32,
+    /// Callback 21's update after the opcode-1 start counting the blends'
+    /// updates (`8e`) with the waits': the attract's intro body `0x448be3`
+    /// (an 8-update blend, then an 8-update wait) released 53 updates in.
+    pub release_clock: Option<u32>,
+    /// The body's `9e` before callback 21 (the dunk's aimed jump,
+    /// `FUN_001988b0`): its update on the same clock, its updates to the
+    /// meet (the face's length) and the state word then.
+    pub aim: Option<FinisherAim>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FinisherAim {
+    pub tick: u32,
+    pub updates: u32,
+    pub bits: u32,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -162,6 +177,13 @@ pub fn self_toss_timing(data: &[u8], address: u32) -> Result<Option<SelfTossTimi
 }
 
 pub fn finishers_from_executable(data: &[u8]) -> Result<Vec<Finisher>> {
+    finisher_bodies(data, 900..1144)
+}
+
+/// [`finishers_from_executable`] for the rows whose animation is in
+/// `animations`: the match intros' bodies too (`IntGen` cues on animations
+/// under 900, e.g. 805's `0x448be3`).
+pub fn finisher_bodies(data: &[u8], animations: std::ops::Range<u32>) -> Result<Vec<Finisher>> {
     let elf = Executable::new(data)?;
     let mut registry = BTreeMap::new();
     for i in 0..632 {
@@ -182,7 +204,7 @@ pub fn finishers_from_executable(data: &[u8]) -> Result<Vec<Finisher>> {
     for (table, count) in [(0x415740, 22), (0x414df0, 119)] {
         for i in 0..count {
             let animation = elf.word(table + i * 20)?;
-            if !(900..1144).contains(&animation)
+            if !animations.contains(&animation)
                 || result
                     .iter()
                     .any(|f: &Finisher| u32::from(f.animation) == animation)
@@ -215,19 +237,47 @@ pub fn finishers_from_executable(data: &[u8]) -> Result<Vec<Finisher>> {
             let (mut tick, mut frame) = (0, 0);
             let mut release_tick = None;
             let mut release_bits = 0;
+            let (mut clock, mut release_clock, mut aim) = (0, None, None);
             for (&pc, instruction) in &visited {
                 let opcode = elf.byte(pc)?;
                 if opcode == 0x83 && elf.word(pc + 1)? == 21 {
                     release_tick = Some(tick);
+                    release_clock = Some(clock);
                     break;
                 }
                 if opcode == 0x9b {
                     release_bits = elf.word(pc + 1)?;
                 }
+                if opcode == 0x9e && aim.is_none() {
+                    // The operands as `FUN_001988b0` reads them: a one-hand
+                    // pick (0x85, 0x86), else the second bones (0x83) and
+                    // the midpoint (0x84); a selector of 0x80 or more puts
+                    // the direction byte before the updates.
+                    let p = pc + 1;
+                    let mut sel = elf.byte(p)?;
+                    let mut n = 1;
+                    if sel != 0x85 && sel != 0x86 {
+                        if sel == 0x83 {
+                            sel = elf.byte(p + n)?;
+                            n += 1;
+                        }
+                        if sel == 0x84 {
+                            sel = elf.byte(p + n)?;
+                            n += 1;
+                        }
+                    }
+                    let updates = elf.word(p + n + u32::from(sel >= 0x80))?;
+                    aim = Some(FinisherAim {
+                        tick: clock,
+                        updates,
+                        bits: release_bits,
+                    });
+                }
                 if opcode == 0x8e
                     && let Some(blend) = &instruction.blend
                 {
                     frame = blend.start_frame;
+                    clock += u32::from(blend.frames.max(0) as u8);
                 }
                 if opcode == 0x8d {
                     if elf.byte(pc + 1)? != 0xee || elf.byte(pc + 3)? as i8 <= 0 {
@@ -242,6 +292,7 @@ pub fn finishers_from_executable(data: &[u8]) -> Result<Vec<Finisher>> {
                         to_frame,
                     });
                     tick += duration;
+                    clock += duration;
                     frame = to_frame;
                 }
             }
@@ -251,6 +302,8 @@ pub fn finishers_from_executable(data: &[u8]) -> Result<Vec<Finisher>> {
                 spans,
                 release_tick,
                 release_bits,
+                release_clock,
+                aim,
             });
         }
     }
