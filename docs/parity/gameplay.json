@@ -648,7 +648,7 @@
           "path": "crates/street-game/src/view.rs",
           "locator": "native_held_attachment; native_held_attachment_matches_captured_pine_sample",
           "note": "Production sync_ball invokes native_held_attachment implementing FUN_0014da20 branch 0; unit test verifies captured PINE sample within 1e-6 tolerance.",
-          "sha256": "623ac4d8a0534ba8f8ae953c8b09a1a27564b2cc76d4b0fcad346bbe3aba3fbf"
+          "sha256": "e582f3c31db8770af2e6a79785478e9fb4fe132c0970b199e387495cec024ba8"
         },
         {
           "path": "tools/self_toss_oracle.py",
@@ -724,7 +724,7 @@
         }
       ],
       "tolerance": "Position error <= 1e-4 on unblended single-hand frames; native VU float32 precision.",
-      "limitations": "Notes dated 2026-10-14 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): the pose bank read through Bank::arc (gameplay.online_rules_equal_local); the rules unchanged. 2026-10-24: the planted-foot opcodes run on the stand scripts (95/96 and 98's record test compiled; World::stand_tick plants on the previous update's model and holds the point, jump::World::plant_point shared with the move scripts); the stand path sets no velocity, the plant carries the stop. 2026-10-25: the view draws the simulation's held ball on every channel, the gait's dribble included (view.rs sync_ball); the renderer's bounce stands in only without the disc's animations. Last re-pinned 2026-11-01 after after the opening's draws and the PlayStation pads (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Notes dated 2026-10-14 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): the pose bank read through Bank::arc (gameplay.online_rules_equal_local); the rules unchanged. 2026-10-24: the planted-foot opcodes run on the stand scripts (95/96 and 98's record test compiled; World::stand_tick plants on the previous update's model and holds the point, jump::World::plant_point shared with the move scripts); the stand path sets no velocity, the plant carries the stop. 2026-10-25: the view draws the simulation's held ball on every channel, the gait's dribble included (view.rs sync_ball); the renderer's bounce stands in only without the disc's animations. Last re-pinned 2026-11-01 after after the intros' ball (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Draw the standing dribble on the simulation's gait channel and the gait channel's own blends; put the rebound, block and tip jumps' scripts on World::channel; the catch rows' planted points.",
       "match_type": "structural",
       "audit_review": {
@@ -2452,7 +2452,7 @@
           "path": "crates/street-game/src/view.rs",
           "locator": "sync_players: the channel branch",
           "note": "The scripted actions, passes and catches draw the channel's pose; the stretched stopwatch lengths are gone from the view.",
-          "sha256": "623ac4d8a0534ba8f8ae953c8b09a1a27564b2cc76d4b0fcad346bbe3aba3fbf"
+          "sha256": "e582f3c31db8770af2e6a79785478e9fb4fe132c0970b199e387495cec024ba8"
         },
         {
           "path": "crates/street-sim/src/player.rs",
@@ -2516,7 +2516,7 @@
         }
       ],
       "tolerance": "Exact native discrete state, event order and tick boundary; output tolerance must be declared before paired measurement.",
-      "limitations": "Notes dated 2026-10-15 to 2026-10-19 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. Last re-pinned 2026-11-01 after after the opening's draws and the PlayStation pads (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Notes dated 2026-10-15 to 2026-10-19 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. Last re-pinned 2026-11-01 after after the intros' ball (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the original's channel (+0x50 record, +0x64 frame, +0x54/+0x70/+0x6c during blends) per update through a shot, a dunk, a pass and a catch with tools/pine_ai_capture.py and compare pose_at's record, frame and weight at the same script update; then the airtime wait from FUN_0019bed8 with the sim's jump.",
       "audit_review": {
         "date": "2026-10-14",
