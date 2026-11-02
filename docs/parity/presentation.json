@@ -789,11 +789,11 @@
           "path": "crates/street-game/src/setup.rs",
           "locator": "load_match (the staged players' scales and width ratios; World::set_match_values)",
           "note": "Each player's scale and width ratio, the match's own values.",
-          "sha256": "08f4a955046cfd9527939e62775ecc40d738ed96050379c85fd7d46bcc012084"
+          "sha256": "ef5e98bea3cd2d13f8c77292794442304a59b411068d8b11f624b09730bee199"
         }
       ],
       "tolerance": "Per-axis morphed hand tracking matching rendered joints within 1e-5 court units across all database players.",
-      "limitations": "Staged hand tracking matches morphed player joint geometry for all league database players. Continuous interactive live-gameplay ball handoffs remain separate. Re-pinned 2026-10-16 after the court's frame pass: staged.rs's disc tests and fixture mirror team 0's scripts; the cited tests `authoritative_staged_hands_use_each_database_players_native_body_geometry` pass on their scenes mirrored into the original's frame. 2026-10-20 (online on the disc): attach_hands moved to street-net's disc and builds the disc's hand tracks alone (bit for bit the same); each player's model scale and width ratio, which it used to set, are the match's own values setup.rs's load_match sets (World::set_match_values). Last re-pinned 2026-11-01 after after the opening's draws and the PlayStation pads (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Staged hand tracking matches morphed player joint geometry for all league database players. Continuous interactive live-gameplay ball handoffs remain separate. Re-pinned 2026-10-16 after the court's frame pass: staged.rs's disc tests and fixture mirror team 0's scripts; the cited tests `authoritative_staged_hands_use_each_database_players_native_body_geometry` pass on their scenes mirrored into the original's frame. 2026-10-20 (online on the disc): attach_hands moved to street-net's disc and builds the disc's hand tracks alone (bit for bit the same); each player's model scale and width ratio, which it used to set, are the match's own values setup.rs's load_match sets (World::set_match_values). Last re-pinned 2026-11-01 after after the team index option (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture native live-rendered player joint positions and compare against hand_position in staged gamebreaker sequences."
     },
     {
@@ -6766,7 +6766,7 @@
           "path": "crates/street-game/src/setup.rs",
           "locator": "TeamNames; team_names; load_match; tests::every_machine_names_the_teams_as_a_match_alone_does",
           "note": "One naming for every machine.",
-          "sha256": "08f4a955046cfd9527939e62775ecc40d738ed96050379c85fd7d46bcc012084"
+          "sha256": "ef5e98bea3cd2d13f8c77292794442304a59b411068d8b11f624b09730bee199"
         },
         {
           "path": "crates/street-game/src/net_looks.rs",
@@ -6818,7 +6818,7 @@
         }
       ],
       "tolerance": "The same city and nickname elements on every machine, as a match alone draws them.",
-      "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-11-01 after after the opening's draws and the PlayStation pads (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Compared on the disc's league teams; a created team's names were checked in the unit test, not in a live run. Be A Legend's special names on the Rundown (FUN_002c7b48's mode 5 branches) are not online. Last re-pinned 2026-11-01 after after the team index option (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None."
     },
     {
