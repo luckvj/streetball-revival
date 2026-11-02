@@ -182,6 +182,9 @@ impl Referee {
         let before = (self.part, self.frame);
         let mut moving = Vec3::ZERO;
         match toss_state {
+            // The tip starts (FUN_0017cf28 places him) once the intro's
+            // end has run its pregame updates.
+            OpeningToss::Waiting(left) if left > toss::WAIT_UPDATES => {}
             OpeningToss::Waiting(left) => {
                 let placed = !self.on_court || self.launched;
                 if placed {
@@ -495,7 +498,7 @@ mod tests {
         let mut r = Referee::default();
         let clip = |part: Part| clips.get(part.clip());
         let mut parts = Vec::new();
-        for _ in 0..toss::WAIT_UPDATES {
+        for _ in 0..toss::OPENING_UPDATES {
             w.step(&[street_sim::Input::default(); 6]);
             r.step(w.opening_toss, clip);
             parts.push(r.part);
@@ -506,7 +509,12 @@ mod tests {
             (r.part, r.frame),
             (Part::Toss, TOSS_FRAME + AFTER_TOSS_RATE)
         );
-        let cradled = parts.iter().filter(|&&p| p == Part::Cradle).count();
+        // He is placed with the tip, after the pregame updates.
+        let cradled = parts
+            .iter()
+            .skip(usize::from(toss::PREGAME_UPDATES))
+            .filter(|&&p| p == Part::Cradle)
+            .count();
         // The first update after the intro is the first counted (elapsed
         // 1); the toss script starts its 8-update blend 58 before the launch.
         assert_eq!(

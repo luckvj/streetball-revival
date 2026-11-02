@@ -468,14 +468,15 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
     // side with the ball stopped at once off a pass, seed 14's none once
     // the pass filter measured on its flight estimate, seed 15's none
     // once the post man's call posted him, seed 16's none once the
-    // distance tables kept actor order within a unit).
+    // distance tables kept actor order within a unit, seed 17's and 18's none
+    // once the opening's pregame updates, stands and faces drew).
     let tables = disc().unwrap();
     let teams: Vec<usize> = (0..tables.tables().teams.len())
         .filter(|&t| tables.tables().teams[t].roster.len() >= 3)
         .collect();
     disc_match(
         [teams[12], teams[20]],
-        17,
+        19,
         15_000,
         Conditions {
             loss: 0.10,

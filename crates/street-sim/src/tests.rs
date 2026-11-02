@@ -4258,23 +4258,29 @@ fn the_opening_toss_waits_at_the_tip_off_spots_then_goes_up_like_fun_0014c858() 
         let to_centre = normalize2([-p.position[0], -p.position[1]]);
         assert!(fx * to_centre[0] + fz * to_centre[1] > 0.999, "{p:?}");
     }
-    assert_eq!(w.opening_toss, OpeningToss::Waiting(toss::WAIT_UPDATES));
+    assert_eq!(w.opening_toss, OpeningToss::Waiting(toss::OPENING_UPDATES));
     assert_eq!(w.phase, Phase::Live);
     // Nothing moves and no button counts while the referee holds it.
-    let before = w.players.clone();
+    let place = |w: &World| -> Vec<_> {
+        w.players
+            .iter()
+            .map(|p| (p.position, p.heading, p.height, p.action))
+            .collect()
+    };
+    let before = place(&w);
     let push = Input::moving([1.0, 0.0]).with(button::SHOOT | button::JUMP);
-    for _ in 1..toss::WAIT_UPDATES {
+    for _ in 1..toss::OPENING_UPDATES {
         w.step(&[push; 6]);
         assert!(w.events.is_empty());
     }
-    assert_eq!(w.players, before);
+    assert_eq!(place(&w), before);
     assert_eq!(w.ball.position, toss::RELEASE);
     assert_eq!(w.opening_toss, OpeningToss::Waiting(1));
     // The last update of the wait launches it: up to the apex and back
     // down on the centre spot. The retained attract capture's ball one
     // update after its launch (sample 584), per update:
     w.step(&[Input::default(); 6]);
-    assert_eq!(w.tick, u64::from(toss::WAIT_UPDATES));
+    assert_eq!(w.tick, u64::from(toss::OPENING_UPDATES));
     assert_eq!(w.opening_toss, OpeningToss::Flight);
     assert_eq!(w.ball.state, BallState::Loose);
     let observed_velocity = [0.002_974_642_7, 0.542_546_15, 0.007_225_262_5];
@@ -4314,10 +4320,52 @@ fn the_opening_toss_waits_at_the_tip_off_spots_then_goes_up_like_fun_0014c858() 
 }
 
 #[test]
+fn the_opening_waits_two_pregame_updates_and_takes_its_stands_like_the_attracts_log() {
+    // A live log of the attract's draws: the intro's end runs the AI and
+    // the actors one update (615), the next starts the tip and the six
+    // take their stands (616: the jumpers `r & 1`, the others `r % 6`),
+    // the launch 118 updates on (734), and the faces count down from the
+    // actors' reset through the wait (five drew at 674).
+    let mut w = three_on_three(5);
+    w.start_opening_toss();
+    let people = [Input::default(); 6];
+    w.step(&people);
+    assert_eq!(
+        w.opening_toss,
+        OpeningToss::Waiting(toss::OPENING_UPDATES - 1)
+    );
+    let mut rng = w.rng.clone();
+    let draws: Vec<u32> = (0..6).map(|_| rng.next_u32()).collect();
+    w.step(&people);
+    assert_eq!(w.rng, rng, "six draws, one a player");
+    assert_eq!(w.opening_toss, OpeningToss::Waiting(toss::WAIT_UPDATES));
+    for (i, d) in draws.iter().enumerate() {
+        let want = if i == 0 || i == 3 {
+            Some(stand::TIP_JUMPER[(d & 1) as usize])
+        } else {
+            stand::TIP_OTHERS[(d % 6) as usize]
+        };
+        assert_eq!(w.players[i].stand.map(|s| s.script), want, "{i}");
+    }
+    // The faces' first draws: each face's time from the reset, counted
+    // from the first pregame update.
+    let mut first = None;
+    for k in 2..toss::OPENING_UPDATES {
+        let before = w.rng.clone();
+        w.step(&people);
+        if first.is_none() && w.rng != before {
+            first = Some(k);
+        }
+    }
+    assert_eq!(first, Some(TICK_HZ as u16 - 1));
+    assert_eq!(w.opening_toss, OpeningToss::Flight);
+}
+
+#[test]
 fn the_opening_toss_spins_about_a_random_axis_like_fun_0014c858() {
     let mut w = three_on_three(5);
     w.start_opening_toss();
-    for _ in 1..toss::WAIT_UPDATES {
+    for _ in 1..toss::OPENING_UPDATES {
         w.step(&[Input::default(); 6]);
     }
     // The three draws the launch takes from the shared generator
@@ -4873,7 +4921,7 @@ fn the_jumpers_jump_and_the_winner_tips_the_toss_to_the_man_behind_him() {
     for seed in [9, 10, 21] {
         let mut w = three_on_three(seed);
         w.start_opening_toss();
-        for _ in 0..toss::WAIT_UPDATES {
+        for _ in 0..toss::OPENING_UPDATES {
             ai_step(&mut w);
         }
         assert_eq!(w.opening_toss, OpeningToss::Flight);
@@ -4963,7 +5011,7 @@ fn a_person_times_the_jump_with_shoot_near_the_toss_apex() {
     w.start_opening_toss();
     // Team 1 is a person's; its jumper presses shoot near the apex.
     let mut inputs = vec![Input::computer(); 6];
-    for _ in 0..toss::WAIT_UPDATES {
+    for _ in 0..toss::OPENING_UPDATES {
         w.step(&inputs);
     }
     let mut pressed = false;
@@ -4987,7 +5035,7 @@ fn a_person_times_the_jump_with_shoot_near_the_toss_apex() {
     w.start_opening_toss();
     let mut inputs = vec![Input::computer(); 6];
     inputs[0..3].fill(Input::default());
-    for _ in 0..toss::WAIT_UPDATES + 120 {
+    for _ in 0..toss::OPENING_UPDATES + 120 {
         w.step(&inputs);
     }
     assert_eq!(w.tip.timing[0], 1);
@@ -5021,7 +5069,7 @@ fn the_opening_toss_survives_a_snapshot() {
     let back = World::from_snapshot(&w.to_snapshot()).expect("snapshot");
     assert_eq!(
         back.opening_toss,
-        OpeningToss::Waiting(toss::WAIT_UPDATES - 40)
+        OpeningToss::Waiting(toss::OPENING_UPDATES - 40)
     );
     let mut a = w.clone();
     let mut b = back;
@@ -5034,7 +5082,7 @@ fn the_opening_toss_survives_a_snapshot() {
     bad.opening_toss = OpeningToss::Waiting(0);
     assert!(bad.validate().is_err());
     assert!(World::from_snapshot(&bad.to_snapshot()).is_err());
-    bad.opening_toss = OpeningToss::Waiting(toss::WAIT_UPDATES + 1);
+    bad.opening_toss = OpeningToss::Waiting(toss::OPENING_UPDATES + 1);
     assert!(bad.validate().is_err());
 }
 
@@ -5842,7 +5890,7 @@ fn a_persons_press_scores_by_how_near_the_apex_it_falls() {
         w.start_opening_toss();
         let mut inputs = vec![Input::computer(); 6];
         inputs[0] = Input::default();
-        for _ in 0..toss::WAIT_UPDATES {
+        for _ in 0..toss::OPENING_UPDATES {
             w.step(&inputs);
         }
         let mut left = presses.to_vec();
@@ -5865,10 +5913,12 @@ fn a_persons_press_scores_by_how_near_the_apex_it_falls() {
     assert_eq!(run(&[30]).0, 1);
     assert_eq!(run(&[20]).0, 9);
     assert_eq!(run(&[15]).0, 14);
-    assert_eq!(run(&[10]), (18, 0));
+    // Who wins at 18 turns on the computer side's `r % 20 + 1`; 20 wins
+    // whatever it draws (a tie goes to team 0).
+    assert_eq!(run(&[10]).0, 18);
     assert_eq!(run(&[2]), (20, 0));
     // A press below the window does not use up the side's timing.
-    assert_eq!(run(&[45, 10]), (18, 0));
+    assert_eq!(run(&[45, 10]).0, 18);
 }
 
 #[test]

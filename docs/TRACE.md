@@ -14022,3 +14022,70 @@ picks and its loader's runs keep the rewrite's own `rand()`, because
 the `rand` hook logged nothing. Online, the effects draw from the
 client's copy of the match, which changes nothing the match keeps; a
 peer's camera can't decide a shared draw.
+
+## The opening, draw for draw against a logged attract (2026-11-01)
+
+The second session's draw log (`drawlog-attract3`: Uptown, teams 15 and
+22, the construction from seed 20,455) was set against the rewrite's own
+match built from the same seed and stepped headless, every draw tagged
+with its caller (a temporary probe: `#[track_caller]` on the generator).
+The construction's 48 draws already matched. The rest of the opening now
+matches, update for update, through 815, when the tip's pass is caught:
+
+- **Two pregame updates.** The original's first update after the intro
+  (615) runs the AI and the actors: both teams' timers draw (`0x18aa5c`,
+  `r % (fps × 0.15) + fps × 0.15`) and the faces start counting. The next
+  (616) runs the intro task's end (`FUN_001855c8`), which starts the tip
+  (game vt+0x15c, `FUN_00141fd8`). The launch comes 118 updates after
+  that (734). `toss::PREGAME_UPDATES` is 2, and the wait
+  `start_opening_toss` starts is `toss::OPENING_UPDATES`, 120. The referee
+  is placed with the tip (`FUN_0017cf28`), so his scripts still count from
+  118.
+- **The tip's stands.** `FUN_0018af20`, side 0's team then side 1's, gives
+  each player a stand at his spot (`FUN_00170608`). The jumpers (actor+0x27c
+  0 or 3) get one of the two tip-off stances, `0x4579d7` and `0x4579f5`
+  (records 376 and 378), by `r & 1` (`0x43f0e0`). The others get one of six
+  by `r % 6` (`0x3d9060`): the warm-up, the ready stand, the warm-up, the
+  stretch, the relaxed stand and the placement script `0x4574e2`. The
+  rewrite plays the last as no stand. `stand::TIP_JUMPER`,
+  `stand::TIP_OTHERS`; the two stances are now stand scripts 52 and 53,
+  and the flair's moved up two (snapshot version 106).
+- **The actors through the wait.** They update frozen (actor+0x298): the
+  face counts down (`FUN_00159240`, its idle face and its clip drawn at 0)
+  and the stand plays. The launch's update runs them once, before the
+  referee's callback 44 launches the toss: the face's draws come before
+  the toss's three.
+- **The tip's pass.** It is the pass start (`FUN_0015f930(actor, 0)`): the
+  release at once (`FUN_001611d8` draws the catch row), then the passer's
+  face (`0x1610ec`: `r & 1` for the kind, the face's clip). The receiver's
+  catch face follows.
+- **The stand path's role.** Actor+0x194, set in each actor's update
+  (`0x157068..0x157124`), is 0 while the game is in phase 0 or 1, else 1
+  on offence and 2 on defence (3 for the actor at `DAT_003d65ac`, 4 in
+  front-end modes 3..7 or with game+0x9c 5). The stand path does nothing
+  for role 0. The rewrite had kept it still until the tip's pass was
+  caught. The tip's catch moves the game to phase 4 at once (slot 24), so
+  the players updated after the jumper already take their stands' draws
+  in that update.
+
+Still differing before 616: the intro's own draws. `FUN_001851f0` picks
+the two intro scripts from the shared generator at update 0 (the rewrite
+uses its own C-library generator). The intro's actors then play move
+scripts whose callbacks draw: in this match, a jump's face (`9e`,
+`FUN_001988b0`, `r & 1` and the face's clip, 40 updates long) at 493, a
+shot's release roll (callback 21, `FUN_001729f8`) at 530, and the crowd's
+cheer (`FUN_0030ca10`, five draws) at 531. With those ten draws stood in
+(and the jump's face on actor 4), the probe matched every draw through
+815. At 815 the crowd's five draws come at the start of the game update,
+before the actors, where the rewrite's crowd step after the previous update
+also puts them.
+
+The first difference after that is at 816. The fast break's first update
+(`FUN_0010a828`) sends a runner past half court (`side × x` at least 4) to
+a spot (`FUN_00180f80`, its draws), and others down their lanes. The
+rewrite's actor 4 had drifted to x = -4.045 during the toss's flight, so
+it drew a spot; the original drew none. Attract capture 1 shows the same
+man drifting to -4.05..-4.12 over the same flight, so the line falls
+within hundredths. Its generator and positions per update make it the next
+comparison: capture 1 is the seed-20,445 attract, 46 draws after its seed
+at its first sample.

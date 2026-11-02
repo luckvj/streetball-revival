@@ -112,8 +112,9 @@ use crate::{
 /// 100: the inbound walk ([`Event::InboundWalk`], the AI game's
 /// `inbound_walk`); 101: the team's passout value (team +0x5c); 102: the
 /// swing ([`Event::Swing`], actor+0x1d8); 103: the pick's call
-/// ([`Event::PickCall`], the AI game's `pick_call`).
-const VERSION: u8 = 105;
+/// ([`Event::PickCall`], the AI game's `pick_call`); 106: the tip-off's
+/// stances among the stands, the flair's moved up two.
+const VERSION: u8 = 106;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).

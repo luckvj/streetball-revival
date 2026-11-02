@@ -1035,7 +1035,7 @@ impl World {
         )?;
         if let crate::OpeningToss::Waiting(left) = *opening_toss {
             require(
-                (1..=crate::toss::WAIT_UPDATES).contains(&left),
+                (1..=crate::toss::OPENING_UPDATES).contains(&left),
                 "opening toss wait",
             )?;
         }

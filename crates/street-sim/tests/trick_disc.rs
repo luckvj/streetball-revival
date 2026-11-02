@@ -1095,6 +1095,14 @@ fn the_stand_scripts_are_the_executables() {
     assert_eq!(rows(0x3d7978, 22), stand::DEFENCE_ROWS);
     assert_eq!(rows(0x43f0a0, 7), stand::FLAIR_PLAYING);
     assert_eq!(words(0x3d7a08, 6), scripts(&stand::HELD_STANDS));
+    // The tip-off's stands (`FUN_00170608`): the jumpers' pair, the
+    // others' six, the last the placement script.
+    assert_eq!(words(0x43f0e0, 2), scripts(&stand::TIP_JUMPER));
+    let others: Vec<u32> = stand::TIP_OTHERS
+        .iter()
+        .map(|k| k.map_or(0x4574e2, |k| STAND_ADDRESSES[usize::from(k)]))
+        .collect();
+    assert_eq!(words(0x3d9060, 6), others);
     assert_eq!(rows(0x3d79e0, 9), stand::HELD_ROWS);
     let dribble: Vec<u8> = (0..11).map(|k| stand::DRIBBLE_FIRST + k).collect();
     assert_eq!(words(0x3d7ad0, 11), scripts(&dribble));

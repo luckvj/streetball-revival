@@ -659,7 +659,9 @@ fn the_opening_toss_and_tip_follow_the_captured_original() {
         .and_then(|(records, _)| rostered_match(1, records))
         .unwrap_or_else(|| demo_match(1));
     w.start_opening_toss();
-    // The wait: the launch is the 118th update after the opening's.
+    // The wait: the launch is the 118th update after the opening's (the
+    // capture's phase 1 starts in the second of the rewrite's pregame
+    // updates, `toss::PREGAME_UPDATES`).
     let mut launched_after = None;
     for k in 1..=200_i64 {
         step_computer(&mut w);
@@ -668,7 +670,11 @@ fn the_opening_toss_and_tip_follow_the_captured_original() {
             break;
         }
     }
-    assert_eq!(launched_after, Some(launch - start), "launch update");
+    assert_eq!(
+        launched_after,
+        Some(launch - start + i64::from(crate::toss::PREGAME_UPDATES)),
+        "launch update"
+    );
     // The flight, update by update, until the contest is decided; on the
     // deciding update the generator and both team timers are the
     // capture's, so the update's draws must be the original's.
@@ -843,6 +849,15 @@ fn opening_draws_are_the_team_timers_in_the_originals_order() {
     let start = m.iter().position(|u| u.phase() == 1).unwrap();
     let mut w = three_on_three(1);
     w.start_opening_toss();
+    // Past the pregame updates to the capture's phase 1, the tip's stands
+    // taken; the faces' times, which the capture's intro set, kept out
+    // (they are the update's other draws here).
+    for _ in 0..crate::toss::PREGAME_UPDATES {
+        step_computer(&mut w);
+    }
+    for p in &mut w.players {
+        p.face_wait = i32::MAX;
+    }
     let (mut agree, mut differ, mut extra, mut ahead) = (0u32, Vec::new(), 0, 0u32);
     let mut timers = m[start].timers();
     for pair in m[start..].windows(2) {

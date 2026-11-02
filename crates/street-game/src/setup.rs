@@ -1157,7 +1157,7 @@ mod tests {
         // the referee, the toss on its way; no inbound.
         assert_eq!(
             sim.opening_toss,
-            street_sim::OpeningToss::Waiting(street_sim::toss::WAIT_UPDATES)
+            street_sim::OpeningToss::Waiting(street_sim::toss::OPENING_UPDATES)
         );
         assert_eq!(sim.ball.state, street_sim::BallState::Loose);
         assert_eq!(sim.ball.position, street_sim::toss::RELEASE);

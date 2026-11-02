@@ -983,6 +983,15 @@ pub mod toss {
     /// 60 + 8 + 50. A retained attract capture puts the launch 118 updates
     /// (within 2) after the intro cut.
     pub const WAIT_UPDATES: u16 = 118;
+    /// Updates before that from the intro's end: the AI and the actors
+    /// run one (their first draws, the teams' timers), then the intro
+    /// task's end (`FUN_001855c8`) starts the tip (game vt+0x15c,
+    /// `FUN_00141fd8`) and the six take their stands (`FUN_0018af20`,
+    /// [`World::tip_stands`]). A live log of the attract's draws (615,
+    /// 616, the launch at 734).
+    pub const PREGAME_UPDATES: u16 = 2;
+    /// The whole wait [`World::start_opening_toss`] starts.
+    pub const OPENING_UPDATES: u16 = WAIT_UPDATES + PREGAME_UPDATES;
     /// The toss's apex (`FUN_0014c858`: 20.0).
     pub const APEX: f32 = 20.0;
     /// The tip-off spots by slot (`0x3cfbb0`, `FUN_0012e418`): x, times the
@@ -1457,17 +1466,30 @@ impl World {
         // The AI's frame up to the players' ([`ai`]); each computer
         // player's own runs at the start of his actor's update below.
         let frame = self.ai_begin(&inputs, &off);
+        // The launch's update has run the actors frozen already.
+        let mut frozen = false;
         // The opening toss: until the referee lets go, the players stand
         // frozen at their spots (`FUN_00140880` clears `actor+0x298` only
         // once the ball is in state 7) and no button counts.
         if self.phase == Phase::Live
             && let OpeningToss::Waiting(left) = self.opening_toss
         {
-            self.ai_players(frame.as_ref(), &mut inputs, &self.actor_order());
+            let order = self.actor_order();
+            self.ai_players(frame.as_ref(), &mut inputs, &order);
             for (i, previous) in self.previous_inputs.iter_mut().enumerate() {
                 *previous = inputs.get(i).copied().unwrap_or_default();
             }
             self.remember_pads(pads);
+            // The actors update frozen (`actor+0x298`): the face counts
+            // (`FUN_00159240`) and the stand plays on his channel.
+            for &i in &order {
+                self.idle_face(i);
+                self.stand_tick(i);
+            }
+            if left == toss::WAIT_UPDATES + 1 {
+                self.tip_stands();
+            }
+            frozen = true;
             if left > 1 {
                 self.opening_toss = OpeningToss::Waiting(left - 1);
                 self.tick += 1;
@@ -1685,7 +1707,9 @@ impl World {
             };
             self.select_gait(i, &walk, held, stance);
             self.stand_path(i, &input);
-            self.idle_face(i);
+            if !frozen {
+                self.idle_face(i);
+            }
             let input = walk;
             // A backdown move holds his walk until it ends (its `91`'s 0x2:
             // the locomotion is not called, `0x15b084`), as does the post
@@ -1700,7 +1724,9 @@ impl World {
             };
             let ended = self.trick_tick(i, &input, held);
             self.reaction_tick(i);
-            self.stand_tick(i);
+            if !frozen {
+                self.stand_tick(i);
+            }
             self.counter_tick(i);
             self.scoop_tick(i);
             let before = self.players[i].position;
@@ -3173,7 +3199,7 @@ impl World {
     /// The original's opening (`FUN_00141fd8`, game phase 1): every player
     /// at his tip-off spot facing the centre ([`toss::SPOTS`], the k-th
     /// player of a team in slot k), the ball in the referee's hand
-    /// ([`toss::RELEASE`]), and his toss [`toss::WAIT_UPDATES`] updates
+    /// ([`toss::RELEASE`]), and his toss [`toss::OPENING_UPDATES`] updates
     /// away. Play is live but nothing moves until the toss
     /// ([`World::step`]); an inbound or a formation restart cancels it.
     pub fn start_opening_toss(&mut self) {
@@ -3201,7 +3227,7 @@ impl World {
         self.possession = 0;
         self.shot_clock = self.rules.shot_clock.unwrap_or(0.0);
         self.give_and_go = None;
-        self.opening_toss = OpeningToss::Waiting(toss::WAIT_UPDATES);
+        self.opening_toss = OpeningToss::Waiting(toss::OPENING_UPDATES);
         // The actors' reset for the match (`FUN_00156870`): game+0x94 too
         // (`0x1569c0`).
         self.fresh_take = false;
@@ -3338,6 +3364,10 @@ impl World {
             let aim = self.pass_aim(i, to);
             let start = self.floor_positions();
             self.launch(i, to, PassStyle::Normal, aim, &start, Some(from));
+            // The pass start's end (`0x1610ec..0x161110`): the passer's
+            // face, `r & 1 ? 1 : 2`, for two seconds.
+            self.rng.next_u32();
+            self.face(i, 2 * TICK_HZ as i32);
             self.events.push(Event::Pass {
                 from: i,
                 to,
@@ -3479,6 +3509,30 @@ impl World {
     /// generator (`FUN_003a16b8`), each `(d & 0x7fffffff) * 2^-31 - 0.5`,
     /// normalized by the VU0 (here in plain float arithmetic), or
     /// [`toss::SPIN_FALLBACK`] when the vector's length is at most 1e-4.
+    /// `FUN_0018af20` for side 0's team, then side 1's (game+0x184,
+    /// +0x188): each of its three in turn takes a stand at his tip-off
+    /// spot (`FUN_00170608`), the jumpers (actor+0x27c 0 or 3) one of
+    /// their two stances by `r & 1` ([`stand::TIP_JUMPER`]), the others
+    /// one of six by `r % 6` ([`stand::TIP_OTHERS`]).
+    fn tip_stands(&mut self) {
+        for team in 0..2 {
+            for i in 0..self.players.len() {
+                if self.players[i].team.min(1) != team {
+                    continue;
+                }
+                let script = if i == 0 || i == 3 {
+                    Some(stand::TIP_JUMPER[(self.rng.next_u32() & 1) as usize])
+                } else {
+                    stand::TIP_OTHERS[(self.rng.next_u32() % 6) as usize]
+                };
+                match script {
+                    Some(s) => self.start_stand(i, s),
+                    None => self.players[i].stand = None,
+                }
+            }
+        }
+    }
+
     fn launch_opening_toss(&mut self) {
         let g = GRAVITY * TICK_SECONDS * TICK_SECONDS;
         let [x, y, z] = self.ball.position;

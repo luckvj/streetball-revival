@@ -5,6 +5,15 @@ its version's part.
 
 ## Unreleased
 
+- PlayStation controllers (DualSense, DualSense Edge, DualShock 4) now
+  connect on Windows even when Windows' own game-controller layer doesn't
+  hand them to the game: they're read straight from the pad, over USB or
+  Bluetooth, with PlayStation button names and vibration over USB.
+- The opening tip runs as the PS2's does: the players take their own
+  standing poses at their spots (the jumpers one of the two tip-off
+  stances), their faces keep time through the referee's wait, and the
+  others start reacting the moment the tip is caught. A match's random
+  choices now follow the original's through the whole tip.
 - Street School's games have no spectators, as on the PS2 (the stands
   were full behind the lessons).
 - The court's effects (steam, litter, breath, the hoop's fire, the

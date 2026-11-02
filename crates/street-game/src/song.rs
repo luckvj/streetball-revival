@@ -771,7 +771,7 @@ mod tests {
         let mut w = world_at(0);
         w.start_opening_toss();
         // The referee holds the ball: nothing yet, however long he waits.
-        for _ in 1..street_sim::toss::WAIT_UPDATES {
+        for _ in 1..street_sim::toss::OPENING_UPDATES {
             w.step(&[street_sim::Input::default(); 6]);
             tip_off(&mut link, &w);
         }
