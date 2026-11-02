@@ -932,8 +932,9 @@ texts confirm Select, `overlays.txt` #54..56) and strategy on R3.
 - **Match intros** (the intro task `FUN_00184bb8`): two staged scripts
   from `SCRIPTS.BIN` before tip-off. First the court's (`FUN_00184ed8`:
   the pair at `0x3db318 + court*16`, `IntCourt<n>a`/`b`, started with team
-  1 in the first roles), then one queued about the away side
-  (`FUN_00184f20`, the side's three records at `rec+0x9c+12`): the first
+  1 in the first roles), then one queued about side 0
+  (`FUN_00184f20(task, 0)`, the setup's slot 1 at `rec+0x9c+12`, which is
+  side 0, team 0 in the first roles): the first
   streetball legend (record field 3 = 29) plays their boss intro
   (`0x3db3c8 + (record-145)*16`; record 146 on court 9 is `IntBoss05`
   itself), the first legend (field 3 30..35) theirs
@@ -14070,7 +14071,9 @@ matches, update for update, through 815, when the tip's pass is caught:
 
 Still differing before 616: the intro's own draws. `FUN_001851f0` picks
 the two intro scripts from the shared generator at update 0 (the rewrite
-uses its own C-library generator). The intro's actors then play move
+used its own C-library generator; since 2026-11-01 `intro::start` draws
+them from the built world, and casts side 0 in the second script, side 1
+in the court's, where it had them the other way round). The intro's actors then play move
 scripts whose callbacks draw: in this match, a jump's face (`9e`,
 `FUN_001988b0`, `r & 1` and the face's clip, 40 updates long) at 493, a
 shot's release roll (callback 21, `FUN_001729f8`) at 530, and the crowd's

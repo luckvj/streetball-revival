@@ -1216,13 +1216,13 @@ fn creation(
     // The intros every machine plays, drawn from the seed: how long the
     // match holds for them.
     if let Some(clips) = intros {
-        let parts = crate::intro::parts(
+        let picks = crate::intro::picks(
             setup,
-            &world,
             disc,
-            clips,
-            &mut crate::intro::Variety::seeded(setup.seed),
+            &mut crate::intro::Variety::default(),
+            &mut crate::intro::seeded(setup.seed),
         );
+        let parts = crate::intro::parts(setup, &world, clips, picks);
         net.intro = crate::intro::ticks(parts).min(u32::from(street_net::game::MAX_INTRO)) as u16;
         info!("online: the intros hold the match {} updates", net.intro);
     }

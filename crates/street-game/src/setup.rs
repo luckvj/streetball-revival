@@ -1089,6 +1089,54 @@ mod tests {
     }
 
     #[test]
+    fn the_intros_take_the_built_worlds_next_two_draws_as_the_attract_did() {
+        // drawlog-attract3: Uptown, teams 15 and 22 by the computer's
+        // picks, built from the reseed 20455 (48 draws); `FUN_001851f0`'s
+        // two draws at update 0 (4032659251, 3950801831): Uptown's second
+        // script (42) and side 0's third generic one (18).
+        let Some(path) = std::env::var_os("STREET_ISO") else {
+            return;
+        };
+        let disc = Disc::load(Iso::open(path).unwrap()).unwrap();
+        let mut setup = MatchSetup::new(&disc, 15, 22);
+        setup.court = disc.courts[6].id.clone();
+        setup.demo = true;
+        setup.watch = true;
+        setup.seats.clear();
+        setup.users.clear();
+        let story = street_sim::story::Story::default();
+        for side in [1, 0] {
+            crate::menu::computer_three(None, &mut setup, side, &disc, &story);
+        }
+        let mut world = World::new();
+        world.insert_resource(disc);
+        world.insert_resource(setup);
+        world.insert_resource(crate::session::Session::pinned(20455));
+        world.insert_resource(Time::<Virtual>::default());
+        load_match(&mut world).unwrap();
+        let mut from = street_sim::Rng::new(20455);
+        for _ in 0..48 {
+            from.next_u32();
+        }
+        assert_eq!(&from, world.resource::<game::Sim>().world.generator());
+        let setup = world.resource::<MatchSetup>().clone();
+        let disc = world.resource::<Disc>();
+        let mut taken = Vec::new();
+        let picks = crate::intro::picks(
+            &setup,
+            disc,
+            &mut crate::intro::Variety::default(),
+            &mut || {
+                let r = from.next_u32();
+                taken.push(r);
+                r
+            },
+        );
+        assert_eq!(taken, [4_032_659_251, 3_950_801_831]);
+        assert_eq!(picks, (Some(42), Some((18, None))));
+    }
+
+    #[test]
     fn a_rematch_is_built_on_the_generator_the_last_match_left() {
         use bevy::ecs::system::RunSystemOnce;
         let Some(path) = std::env::var_os("STREET_ISO") else {

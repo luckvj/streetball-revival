@@ -1,12 +1,15 @@
 //! The match intros: before tip-off the game plays two staged scripts from
 //! `SCRIPTS.BIN` (the intro task `FUN_00184bb8`), the court's own and then
-//! one about the away side's players, on the scripts' own cameras. A
-//! button skips them.
+//! one about side 0's players, on the scripts' own cameras. A button skips
+//! them.
 //!
 //! The picks (`FUN_00184ed8`, `FUN_00184f20`, `FUN_00185138`):
 //! - the court's pair at `0x3db318` (`IntCourt1a`/`1b` .. `11a`/`11b`, by
-//!   the court record);
-//! - then, for the first away player who has one: a streetball legend
+//!   the court record), side 1 taking its first roles (the loader's third
+//!   argument, 1);
+//! - then one about side 0 (`FUN_00184f20(task, 0)` reads the setup's slot
+//!   1, `config + 0x9c + 12`: side 0's records; side 0 takes the first
+//!   roles). For the first of its players who has one: a streetball legend
 //!   (team 29, records 145..) their boss intro (`0x3db3c8`, two per
 //!   record; record 146 on court 9 always `IntBoss05`), an legend
 //!   (teams 30..35, records 158..) theirs (`0x3db498`);
@@ -15,11 +18,14 @@
 //!   all thirteen with `IntGen11`..`14`.
 //!
 //! Each list plays every entry before repeating (`FUN_001851f0`, the used
-//! counts living in `.data` for the session). The intros only draw: the
-//! simulation waits until they end. They are left out in scripted runs.
+//! counts living in `.data` for the session), its draw the shared
+//! generator's (`FUN_003a16b8`, `r % unused`): the match's first two draws
+//! after the world is built, the attract's log at update 0. The intros only
+//! draw: the simulation waits until they end. They are left out in
+//! scripted runs.
 //!
 //! Online every machine plays them too: each draws the picks from the
-//! match's seed ([`Variety::seeded`]), the creator sends how many updates
+//! match's seed ([`seeded`]), the creator sends how many updates
 //! they last ([`ticks`]), and the match holds play that long on every
 //! machine (`street-net`'s `Match::intro_hold`), a fresh Cross from anyone
 //! skipping them for all. The shown frame follows the match's updates
@@ -80,39 +86,27 @@ const LEGEND: [(usize, usize); 8] = [
 #[derive(Resource, Clone, Copy)]
 pub struct Enabled(pub bool);
 
-/// Which intros have played this session (`FUN_001851f0`'s used counts),
-/// and the dice.
-#[derive(Resource)]
+/// Which intros have played this session (`FUN_001851f0`'s used counts).
+#[derive(Resource, Default)]
 pub struct Variety {
     used: HashSet<usize>,
-    rng: crate::progression_trace::NativeRandom,
 }
 
-impl Default for Variety {
-    fn default() -> Self {
-        let seed = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(1, |d| d.subsec_nanos() | 1);
-        Self {
-            used: HashSet::new(),
-            rng: crate::progression_trace::NativeRandom::new(seed),
-        }
-    }
+/// Dice from `seed`: an online match's, which every machine draws alike
+/// (with a fresh [`Variety`]).
+pub fn seeded(seed: u32) -> impl FnMut() -> u32 {
+    let mut rng = crate::progression_trace::NativeRandom::new(seed | 1);
+    move || rng.draw()
 }
+
+/// The two scripts' picks: the court's, then side 0's (with the player it
+/// features, for a legend's own).
+pub type Picks = (Option<usize>, Option<(usize, Option<usize>)>);
 
 impl Variety {
-    /// A fresh session's counts with dice from `seed`: an online match's,
-    /// which every machine draws alike.
-    pub fn seeded(seed: u32) -> Self {
-        Self {
-            used: HashSet::new(),
-            rng: crate::progression_trace::NativeRandom::new(seed | 1),
-        }
-    }
-
     /// One of `choices` not played yet; when all have, they all count
     /// again.
-    fn pick(&mut self, choices: &[usize]) -> Option<usize> {
+    fn pick(&mut self, choices: &[usize], draw: &mut dyn FnMut() -> u32) -> Option<usize> {
         if choices.is_empty() {
             return None;
         }
@@ -127,30 +121,31 @@ impl Variety {
             }
             free = choices.to_vec();
         }
-        let chosen = free[self.rng.draw() as usize % free.len()];
+        let chosen = free[(draw() % free.len() as u32) as usize];
         self.used.insert(chosen);
         Some(chosen)
     }
 }
 
-/// The two scripts a match opens with: the court's, then the away side's
-/// (with the player it features, for a legend's own).
+/// The two scripts a match opens with, for the court and side 0's records
+/// (with their database teams).
 pub fn choose(
     court: usize,
-    away: &[(usize, i16)],
+    side: &[(usize, i16)],
     variety: &mut Variety,
-) -> (Option<usize>, Option<(usize, Option<usize>)>) {
+    draw: &mut dyn FnMut() -> u32,
+) -> Picks {
     let first = (court < 11).then(|| {
         let pair = [COURT_FIRST + 2 * court, COURT_FIRST + 2 * court + 1];
-        variety.pick(&pair)
+        variety.pick(&pair, draw)
     });
     let mut second = None;
-    for &(record, team) in away.iter().take(3) {
+    for &(record, team) in side.iter().take(3) {
         let pick = if (30..36).contains(&team) {
             LEGEND
                 .iter()
                 .find(|&&(r, _)| r == record)
-                .and_then(|&(_, s)| variety.pick(&[s]))
+                .and_then(|&(_, s)| variety.pick(&[s], draw))
         } else if team == 29 {
             if (record, court) == (BOSS_SPECIAL.0, BOSS_SPECIAL.1) {
                 Some(BOSS_SPECIAL.2)
@@ -160,7 +155,7 @@ pub fn choose(
                     .and_then(|k| BOSS.get(k))
                     .and_then(|pair| {
                         let choices: Vec<usize> = pair.iter().flatten().copied().collect();
-                        variety.pick(&choices)
+                        variety.pick(&choices, draw)
                     })
             }
         } else {
@@ -172,15 +167,37 @@ pub fn choose(
         }
     }
     if second.is_none() {
-        let crew = away.iter().take(3).any(|&(_, team)| team == 36);
+        let crew = side.iter().take(3).any(|&(_, team)| team == 36);
         let pool = if crew {
             &GENERIC[..GENERIC_CREW]
         } else {
             &GENERIC[..]
         };
-        second = variety.pick(pool).map(|s| (s, None));
+        second = variety.pick(pool, draw).map(|s| (s, None));
     }
     (first.flatten(), second)
+}
+
+/// The match's picks (none off the court list).
+pub fn picks(
+    setup: &MatchSetup,
+    disc: &Disc,
+    variety: &mut Variety,
+    draw: &mut dyn FnMut() -> u32,
+) -> Picks {
+    let Some(court) = disc
+        .courts
+        .iter()
+        .find(|c| c.id.eq_ignore_ascii_case(&setup.court))
+        .map(|c| c.index)
+    else {
+        return (None, None);
+    };
+    let records: Vec<(usize, i16)> = setup.lineups[0]
+        .iter()
+        .map(|&r| (r, disc.players.get(r).map_or(-1, |p| p.team)))
+        .collect();
+    choose(court, &records, variety, draw)
 }
 
 /// One staged script playing: its plan, who plays its roles, and how.
@@ -332,7 +349,7 @@ pub fn finished(intro: Option<Res<MatchIntro>>) -> bool {
 pub fn start(
     mut commands: Commands,
     enabled: Option<Res<Enabled>>,
-    sim: Res<Sim>,
+    mut sim: ResMut<Sim>,
     setup: Res<MatchSetup>,
     disc: Res<Disc>,
     clips: Res<GameClips>,
@@ -345,17 +362,23 @@ pub fn start(
     if school || (!setup.online && !enabled.is_some_and(|e| e.0)) {
         return;
     }
-    let queue = if setup.online {
-        parts(
+    let picked = if setup.online {
+        picks(
             &setup,
-            &sim.world,
             &disc,
-            &clips,
-            &mut Variety::seeded(setup.seed),
+            &mut Variety::default(),
+            &mut seeded(setup.seed),
         )
     } else {
-        parts(&setup, &sim.world, &disc, &clips, &mut variety)
+        // The built world's next draws, before its first update.
+        let world = &mut sim.world;
+        picks(&setup, &disc, &mut variety, &mut || world.shared_draw())
     };
+    info!(
+        "intro: the court's script {:?}, side 0's {:?}",
+        picked.0, picked.1
+    );
+    let queue = parts(&setup, &sim.world, &clips, picked);
     let mut intro = MatchIntro { queue, ..default() };
     intro.next();
     commands.insert_resource(intro);
@@ -376,36 +399,22 @@ pub fn ticks(parts: VecDeque<Part>) -> u32 {
     n
 }
 
-/// The match's intro: the court's script, then the away side's, each bound
-/// to its cast.
+/// The match's intro: the court's script, then side 0's, each bound to its
+/// cast.
 pub fn parts(
     setup: &MatchSetup,
     w: &street_sim::World,
-    disc: &Disc,
     clips: &GameClips,
-    variety: &mut Variety,
+    (first, second): Picks,
 ) -> VecDeque<Part> {
-    let Some(court) = disc
-        .courts
-        .iter()
-        .find(|c| c.id.eq_ignore_ascii_case(&setup.court))
-        .map(|c| c.index)
-    else {
-        return VecDeque::new();
-    };
     let side = |team: usize| -> Vec<usize> {
         (0..w.players.len())
             .filter(|&i| w.team_of(i) == team)
             .collect()
     };
     let (home, away) = (side(0), side(1));
-    let records: Vec<(usize, i16)> = setup.lineups[1]
-        .iter()
-        .map(|&r| (r, disc.players.get(r).map_or(-1, |p| p.team)))
-        .collect();
-    let (first, second) = choose(court, &records, variety);
     let mut queue = VecDeque::new();
-    let mut add = |script: usize, featured: Option<usize>| {
+    let mut add = |script: usize, featured: Option<usize>, team: usize| {
         let Some(timeline) = clips.timeline.scripts.get(script) else {
             return;
         };
@@ -415,18 +424,12 @@ pub fn parts(
             warn!("intro playback: {error}");
             return;
         }
-        let lead = if featured.is_some() {
-            &away
-        } else if queue.is_empty() {
-            &home
-        } else {
-            &away
-        };
+        let lead = if team == 0 { &home } else { &away };
         // The featured legend leads (role 0); else that side's first.
         let shooter = featured
             .and_then(|record| {
-                let k = setup.lineups[1].iter().position(|&r| r == record)?;
-                away.get(k).copied()
+                let k = setup.lineups[0].iter().position(|&r| r == record)?;
+                home.get(k).copied()
             })
             .or_else(|| lead.first().copied());
         let Some(shooter) = shooter else {
@@ -442,11 +445,12 @@ pub fn parts(
             cast_only: true,
         });
     };
+    // The court's script casts side 1 first, side 0's script side 0.
     if let Some(script) = first {
-        add(script, None);
+        add(script, None, 1);
     }
     if let Some((script, featured)) = second {
-        add(script, featured);
+        add(script, featured, 0);
     }
     queue
 }
@@ -486,11 +490,8 @@ pub fn finished_or_online(
 mod tests {
     use super::*;
 
-    fn variety() -> Variety {
-        Variety {
-            used: HashSet::new(),
-            rng: crate::progression_trace::NativeRandom::new(1),
-        }
+    fn variety() -> (Variety, impl FnMut() -> u32) {
+        (Variety::default(), seeded(1))
     }
 
     fn part(controls: street_sim::gamebreaker::Controls) -> Part {
@@ -576,32 +577,57 @@ mod tests {
         intro.follow(n);
         assert!(intro.current.is_none());
         // The same seed draws the same picks on every machine.
-        let a = choose(3, &[(200, 36)], &mut Variety::seeded(77));
-        let b = choose(3, &[(200, 36)], &mut Variety::seeded(77));
+        let a = choose(3, &[(200, 36)], &mut Variety::default(), &mut seeded(77));
+        let b = choose(3, &[(200, 36)], &mut Variety::default(), &mut seeded(77));
         assert_eq!(a, b);
     }
 
     #[test]
+    fn each_pick_takes_one_draw_modulo_the_unused() {
+        // FUN_001851f0: `r % unused`, the unused in list order; the court's
+        // then side 0's, the shared generator's two draws at update 0.
+        let mut v = Variety::default();
+        let mut draws = [5u32, 7, 4, 9].into_iter();
+        let mut taken = 0;
+        {
+            let mut draw = || {
+                taken += 1;
+                draws.next().unwrap()
+            };
+            assert_eq!(
+                choose(0, &[(1, 5)], &mut v, &mut draw),
+                (Some(30), Some((23, None)))
+            );
+            // Court 0's pair has 29 left: any draw takes it.
+            assert_eq!(choose(0, &[(1, 5)], &mut v, &mut draw).0, Some(29));
+        }
+        assert_eq!(taken, 4);
+    }
+
+    #[test]
     fn the_court_pair_plays_both_before_repeating() {
-        let mut v = variety();
-        let a = choose(0, &[], &mut v).0.unwrap();
-        let b = choose(0, &[], &mut v).0.unwrap();
+        let (mut v, mut d) = variety();
+        let a = choose(0, &[], &mut v, &mut d).0.unwrap();
+        let b = choose(0, &[], &mut v, &mut d).0.unwrap();
         assert_eq!([a.min(b), a.max(b)], [29, 30]);
-        assert_eq!(choose(10, &[], &mut v).0.map(|s| s >= 49), Some(true));
+        assert_eq!(
+            choose(10, &[], &mut v, &mut d).0.map(|s| s >= 49),
+            Some(true)
+        );
     }
 
     #[test]
     fn legends_get_their_own_intro_and_crews_the_short_generic_list() {
-        let mut v = variety();
-        // An legend on the away side: their own.
-        let (_, second) = choose(0, &[(1, 5), (166, 31)], &mut v);
+        let (mut v, mut d) = variety();
+        // A legend on side 0: their own.
+        let (_, second) = choose(0, &[(1, 5), (166, 31)], &mut v, &mut d);
         assert_eq!(second, Some((64, Some(166))));
         // Record 146 at court 9: IntBoss05.
-        let (_, second) = choose(9, &[(146, 29)], &mut v);
+        let (_, second) = choose(9, &[(146, 29)], &mut v, &mut d);
         assert_eq!(second, Some((58, Some(146))));
         // A generic crew player: only IntGen01..05 and their halves.
         for _ in 0..30 {
-            let (_, second) = choose(2, &[(200, 36)], &mut v);
+            let (_, second) = choose(2, &[(200, 36)], &mut v, &mut d);
             let (script, featured) = second.unwrap();
             assert!((16..25).contains(&script) && featured.is_none());
         }

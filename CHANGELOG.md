@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- The match intros pick their scripts as the PS2 does, from the game's
+  own random numbers, and the second intro is about the side the PS2
+  features (it had shown the other team), with the court's intro casting
+  the other side first.
 - The match intros' ball follows the scripts again (in the players'
   hands, passed and shot) instead of sitting at centre court.
 - PlayStation controllers (DualSense, DualSense Edge, DualShock 4) now
