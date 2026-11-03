@@ -1122,6 +1122,11 @@ fn the_persons_passes_release_at_their_rows_callback_38() {
                     continue;
                 }
                 let press = u.frame();
+                // A press in a pass's windup (the ball already in state 4)
+                // is the same pass (the re-made passes-1's 943 in 913's).
+                if cap.get(press - 1).is_some_and(|x| x.ball_state() == 4) {
+                    continue;
+                }
                 let Some(row) = cap.get(press + 1).and_then(|x| pass_row_at(x.pc(k))) else {
                     continue;
                 };
@@ -2210,17 +2215,20 @@ fn the_games_of_a_boot_run_on_from_one_reseed_of_the_shared_generator() {
         .unwrap();
     let mut by_update: std::collections::BTreeMap<i64, std::collections::BTreeSet<u32>> =
         Default::default();
-    for g in saved.iter().filter(|g| g.1 != 0) {
+    // A game's opening starts at update 0 or 1 (a read inside the
+    // construction dropped); the loaders start mid-match.
+    let opening = |g: &&(String, i64, u32)| g.1 <= 1;
+    for g in saved.iter().filter(|g| !opening(g)) {
         by_update.entry(g.1).or_default().insert(g.2);
     }
     assert!(by_update.values().all(|s| s.len() == 1), "{saved:?}");
     let loaded = by_update.values().flatten().max().copied().unwrap_or(0);
-    let mut later: Vec<u32> = saved.iter().filter(|g| g.1 == 0).map(|g| g.2).collect();
+    let mut later: Vec<u32> = saved.iter().filter(opening).map(|g| g.2).collect();
     later.sort_unstable();
     later.dedup();
     assert_eq!(
         later.len(),
-        saved.iter().filter(|g| g.1 == 0).count(),
+        saved.iter().filter(opening).count(),
         "{saved:?}"
     );
     assert!(later.iter().all(|&s| s > loaded), "{saved:?}");

@@ -14196,3 +14196,59 @@ one update on: none.
 - The holder's stop slides 0.69 in the rewrite against 1.16 in the first
   re-capture (0.77..0.84 in the other matches): the rewrite's holder
   slides less than the original's in every match, a lead.
+
+**The played captures re-made.** The played set was played again in the
+project's runtime by `play.py` (in the project's `work` folder, out of
+git): keys posted to PCSX2's display window on the hidden desktop, the
+person steered by heading = pad angle + the camera's yaw in units
+(`trunc(yaw × 162.97 + 0.5)`; the D-pad's pad angles 0 down, 128 per
+eighth, 512 up), and `tools/pine_played_capture.py`'s Recorder sampling.
+From save state 1 (Pick Up, Uptown, Got Game, options 0x102c):
+
+- `pads-1`, `pads-2`: drives, trick moves, shots held 0..1.6 s, passes;
+  on defence the holder chased, steals, blocks, switches.
+- `fades-1`: a spot 18..22 from the rim, then a run 80° off the way to
+  the rim (inside either side band, and still toward the basket so the
+  stick doesn't fade the shot away), Circle (pad bit 0x80) pressed after
+  0.9 s of the run and held 1.3, 1.6 or 2.0 s. Side fades and stick-away
+  fadeaways both come out of it.
+- `passes-1`, `passes-2`: the D-pad's eight directions, the left stick,
+  at rest, the right stick, two turbos at rest and on a drive, the kick
+  pass (the pass with L3 held: the kick rows), drives with a shoot press.
+- `defence-1`: the holder chased on the D-pad, Cross every 0.6..1.6 s
+  while the other side has the ball or it is loose; with it a long shot
+  or a pass.
+- `fresh-1` .. `-8`: eight REMATCH openings from the pause menu (ten
+  rows that wrap: nine downs to Quit Game, Cross, Down to REMATCH, Cross,
+  Cross on the rules' Continue). A rematch builds its game at the same
+  addresses and the counter restarts at once, with no loading. The
+  recorder is set up on the paused game and keeps nothing until the
+  counter drops. An update-0 read can fall inside the construction (the
+  counter resets early, the stage bounds are drawn last), so a first
+  sample whose pair differs from the next update's is dropped (fresh-1
+  and fresh-5 start at update 1).
+- `fresh-9`: the fresh boot's single game, a fresh boot's first attract
+  at Uptown (capture 1's setup by `tools/attract_patch.py`), its update 0
+  read once the generator stands still. It is not a Pick Up game, but it
+  is built the same way.
+- `legend-1`: save state 3 (Update Team after the first NYC win): No to
+  the update, No to the card save, Cross on the map, then Cross every
+  1.2 s through the match.
+
+The driver acts as a person would: it waits 45 updates after a catch,
+lets a trick move end (bit 10) before shooting or passing, and lets a
+pass leave the hands before the next press. (Presses inside a trick or
+inside a pass's windup start nothing; the tests now leave them out.)
+
+**Open on the re-made played set** (`cargo test -p street-sim --lib
+played_capture`, 25 of 37 pass): the held side fades (none held past 45
+yet: the driver's side-fade rate is low, about 4 in 20 presses); the
+catch holds (3 of the standing catches off by 1..3); the catch rows'
+sectors (529 of 557, under the 48-in-50 bar); one control move in
+defence-1 at 16122; the heave's pump-fake and release an update off (3
+presses); one lob 0.53 off its point (the median 0.084); the presses'
+shots (107 agreeing of the shoot presses); the side shots' facing band;
+the trick moves' root (1771 of 2262); a dunk's rise 0.946; the swipes'
+strips on time (5 of 9; the swipe is the rewrite's own, not ported);
+and the holder's stop slide. The School's seven captures are not
+re-made yet (its tests skip without them).
