@@ -425,6 +425,8 @@ def main():
     parser.add_argument("--wait", type=float, default=0.0,
                         help="seconds to wait for a match before giving up (at most 3600)")
     parser.add_argument("--out", type=Path, required=True, help="JSON lines output")
+    parser.add_argument("--one", action="store_true",
+                        help="stop when the first match recorded ends (one attract match a file)")
     args = parser.parse_args()
     if not 0 < args.seconds <= 1800 or not 0 <= args.wait <= 3600:
         parser.error("seconds must be in (0, 1800], wait in [0, 3600]")
@@ -454,9 +456,26 @@ def main():
             last_frame = None
             layout = first_layout(ptr)
             while time.monotonic() < end:
+                # Wait on the update counter alone (two words a poll), so the
+                # sample's batches are read right after it counts: a read
+                # later in the frame can meet the next update's AI teams,
+                # which run before the counter counts.
+                if last_frame is not None:
+                    root, frame = pine.words([GAME_ROOT, ptr["game"] + 0x128])
+                    if root == ptr["game"] and frame == last_frame:
+                        repeats += 1
+                        continue
+                # The generator and the teams' timers first, in one small
+                # batch bracketed by the counter: the next update's AI
+                # teams redraw both before it counts.
+                game = ptr["game"]
+                quick = pine.words([game + 0x128] + [RNG + 4 * k for k in range(6)]
+                                   + [t + 0xb8 for t in ptr["teams"]] + [game + 0x128])
                 words = pine.words(layout.addresses)
                 first = layout.decode(words)
                 if first["game_root"] != ptr["game"]:
+                    if args.one and kept:
+                        break
                     ptr = discover(pine)
                     if ptr is None:
                         out.write(json.dumps({"event": "no_match",
@@ -489,6 +508,10 @@ def main():
                 sample = dict(first)
                 sample.update(second)
                 sample.update(third)
+                if quick[0] == quick[-1] == first["frame"]:
+                    sample["rng"] = quick[1:7]
+                    for k in range(2):
+                        sample[f"t{k}_timer"] = signed(quick[7 + k])
                 sample["torn"] = not (first["frame"] == second["frame_after_pointers"]
                                       == third["frame_end"])
                 for key in ("frame_after_pointers", "frame_end", "game_root", "context",

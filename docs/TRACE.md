@@ -14097,3 +14097,100 @@ man drifting to -4.05..-4.12 over the same flight, so the line falls
 within hundredths. Its generator and positions per update make it the next
 comparison: capture 1 is the seed-20,445 attract, 46 draws after its seed
 at its first sample.
+
+## The attract captures re-made (2026-11-03)
+
+On 2026-11-03 Windows' Storage Sense emptied %TEMP%, and every capture and
+evidence file kept there went with it. The three attract captures were
+made again in the project's PCSX2 runtime, as the same matches where the
+original allows it. `tools/attract_patch.py` writes code into emulated RAM
+over PINE at boot (the disc, the runtime and its cards are untouched):
+
+- `FUN_001db7f8` draws the attract's court (`r % 10`, `0x1db818`) and slot
+  0's team (`r % 28`, `0x1db880`, the game's side 1) before any reseed.
+  They follow the boot's clock seed, so each boot picks its own match. Each
+  draw becomes `addiu v0, zero, value`. Slot 1's team (`0x1db8b8`, side 0)
+  is drawn after slot 0's set reseeded. It is the first draw of
+  `Rng::new(count)` modulo 28, and it changes with every count (+6 modulo
+  28). The rosters draw nothing from the shared generator.
+- `FUN_001dbe30`'s timer read (`jal FUN_003998c0`, `0x1dbeec`) becomes a
+  call to a stub. The stub returns the capture's reseed count and also
+  stores it in the timer itself (`0x4b32e4`).
+- `--extra N` adds N shared draws at the game update's first call (a
+  one-shot stub on `FUN_0013d868`). That stands in for a longer loading
+  screen: Broad Street's vents draw on every loading frame, and a later
+  attract of a long boot loads longer than a fresh boot's first.
+- `--intro A J` marks every intro script but the court's A and the generic
+  J as played (the lists' used words, `0x3db318 + court*16` and `0x3db2b0`,
+  +4). `FUN_001851f0` always draws, so the draw count stays the same.
+
+The team ids run alphabetically by city (2002-03): the Lakers 11,
+Portland 22, Indiana 9, San Antonio 24, Sacramento 23, Seattle 25.
+
+| Capture | Court | Side 1 (drawn first) | Side 0 | Count | Check |
+|---|---|---|---|---|---|
+| 1 | Uptown (6) | Portland | the Lakers | 20,445 | first sample 46 draws past the count, the 2026-10-15 capture's generator; tip 18/13 to side 0 at 170 |
+| 3 | Broad Street (1) | San Antonio | Indiana | 20,468 | records 45, 47, 46 / 121, 120, 122 in actor order; tip 17/1; jump peaks 4.016661 and 4.236816 exactly |
+| 2 | Broad Street (1) | Seattle | Sacramento | 128,793, extra 1,289 | update 1 at 8,763 draws; jump peaks 4.229124 and 3.896611 exactly; tip differs (below) |
+
+Capture 3's count is the one the fresh boot of 2026-11-01 gave. The
+candidates come from the side-0 team (counts ≡ 0 modulo 14 near a fresh
+boot's 20,445..20,468), and the tip-off then settles which. Capture 2's
+first-drawn team was found by side 1's jump peak (exact on Seattle) across
+probes of all 28. They ran unthrottled (`[Framerate] NominalScalar = 0`),
+which plays the same match, at 71 s a probe.
+
+**Where they part from the 2026-10 captures.** Our runs are deterministic:
+two captures of the same setup agree on the generator at every update,
+except reads that fall inside an update. Even setting the timer to the
+reseed's count changes nothing. But the original's 2026-10 runs diverge
+from ours after the opening. Capture 1 differs from update 394 (its first
+holder held the ball 22 updates longer here). Capture 3 is identical
+through its first restart (update 904, to the last digit) and differs
+after. Capture 2's intro ran 6,600 draws longer (63,613 at update 2), and
+no pair of intro scripts gives that: its litter carries `rand()` state
+through the loading frames (each piece rests `rand() % 480` frames and
+then gusts on shared draws), and 18 more loading frames can't be added
+from outside. Whatever the earlier runs held that ours don't (their
+cards' options, or a later attract's state) is gone with them. So the
+re-made files hold the matches' openings and then the original's own play
+of those teams. The attract tests' bounds were set again on them by the
+rule (gap + 3 se, a bound kept where it still holds). Capture 2 records
+its rosters now and has its own bounds (`SECOND_BOUNDS`). Captures 1 and 2
+are known by the reseed their first sample walks back to, wherever the
+poller first read.
+
+**The poller.** On this runtime the old loop read a large batch at a time
+and caught 45 of 117 opening samples with the next update's AI teams (the
+AI teams run before the counter counts). `tools/pine_ai_capture.py` now
+waits on the counter alone. It then reads the generator and both teams'
+timers in one small batch first, and the rest after. Opening samples read
+one update on: none.
+
+**What the new samples showed** (each settled in its test):
+
+- Portland's third man in capture 1 is record 112, not 113 (the 2026-10-18
+  inference from his jukes). 112's Handles 90 and Dunks 0 give, by the
+  ported `FUN_0015f098` and `FUN_00182280`, juke level 4 and lay-ups where
+  the original's man showed neither. Those ports or the ratings they read
+  differ for him: a lead.
+- A spot pass to a receiver cutting back flew 21 + 5 = 26 updates. The
+  test now allows the grown flight beside the rule.
+- Jump shots released at 10.79..10.98 and one at 14.84, on whole flights:
+  the height band is now 10.5..15.0.
+- A press made during a move the tables don't list (`0x456d21`) was read
+  as a runner's: `script_at` now stays within a script's span.
+- The strategy's last play is its word +0x90 as the update before the
+  start left it. Its start (`FUN_00127318`) clears it, and side 0 chose a
+  pen and kick right after one it dropped.
+- A post-up suited the star against a defender other than his slot's: the
+  matchups aren't recorded, so the play test tries every pairing.
+- The referee task's first update reads count 60 with no flags up yet.
+- One inbound let go at 19, its whole hand path an update late (the
+  script began an update after the press).
+- Two play starts tied on the star's weights within a thousandth. The AI
+  reads the on-court counts before the actors' update and the sample
+  after it, so the capture can't resolve such a tie.
+- The holder's stop slides 0.69 in the rewrite against 1.16 in the first
+  re-capture (0.77..0.84 in the other matches): the rewrite's holder
+  slides less than the original's in every match, a lead.
