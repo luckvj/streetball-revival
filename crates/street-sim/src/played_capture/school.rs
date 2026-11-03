@@ -446,9 +446,16 @@ fn the_gamebreaker_tasks_end_as_fun_00144ef8() {
     let Some(captures) = load() else {
         return;
     };
+    // The School's captures only (a played game's tasks show their replays).
+    if captures.iter().all(|c| c.school.is_empty()) {
+        return;
+    }
     let mut rows = Vec::new();
     let mut checked = [0usize; 2];
     for cap in captures {
+        if cap.school.is_empty() {
+            continue;
+        }
         let task = |u: &Update| u.0["gb_task"].as_u64().unwrap_or(0) != 0;
         let words = |u: &Update| -> Vec<i64> {
             (0..7)
@@ -553,6 +560,10 @@ fn the_staged_level_2s_replay_command_plays_as_the_games_replay() {
     let Some(captures) = load() else {
         return;
     };
+    // The School's captures only.
+    if captures.iter().all(|c| c.school.is_empty()) {
+        return;
+    }
     let Some(path) = std::env::var_os("STREET_ISO") else {
         return;
     };
@@ -564,6 +575,9 @@ fn the_staged_level_2s_replay_command_plays_as_the_games_replay() {
     let replay = |u: &Update, k: usize| u.0["replay_words"][k].as_u64().unwrap_or(0) as u32;
     let mut rows = Vec::new();
     for cap in captures {
+        if cap.school.is_empty() {
+            continue;
+        }
         for k in 1..cap.updates.len() {
             let (before, u) = (&cap.updates[k - 1], &cap.updates[k]);
             if script(u, 8) != 5 || script(before, 8) != 3 {
@@ -673,9 +687,16 @@ fn a_lessons_gamebreaker_replays_play_on_the_wall_clock() {
     let Some(captures) = load() else {
         return;
     };
+    // The School's captures only: a played game's replays run slowed (the re-made pads-1's 329 shown in 8.6 s).
+    if captures.iter().all(|c| c.school.is_empty()) {
+        return;
+    }
     let replay = |u: &Update| u.0["replay_words"][5].as_u64().unwrap_or(0);
     let mut rows = Vec::new();
     for cap in captures {
+        if cap.school.is_empty() {
+            continue;
+        }
         for k in 1..cap.updates.len() {
             let (before, u) = (&cap.updates[k - 1], &cap.updates[k]);
             let (a, b) = (replay(before), replay(u));

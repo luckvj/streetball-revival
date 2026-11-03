@@ -437,13 +437,11 @@ impl Own {
 /// re-capture of 2026-11-03 (the same match: the attract's picks and
 /// reseed count forced, the first sample's generator the same) records
 /// those six. Actor 5 is 112: the 2026-10-18 pass (docs/TRACE.md "The
-/// person's presses") took him for 113 by his jukes (17 combo jukes of
-/// levels 2 and 3, none 4, where `FUN_0015f098` gives 112's Handles 90
-/// level 4 a third of his combos) and his three level-2 slot dunks in the
-/// dunk window (112's Dunks 0, dunk level 0 by `FUN_00182280` raw
-/// `0x1825b8`, takes a combo one press in five at most), so those ports or
-/// the ratings they read differ from the original's for him. None for any
-/// other capture without records.
+/// person's presses") took him for 113 by his jukes, read as levels 2 and
+/// 3 only; the re-capture's actor 5, 112 by his record (Handles 90 in
+/// memory), makes combo jukes of levels 2, 3 and 4 nine, seven and eight
+/// times, as `FUN_0015f098` and the level's uniform draw give. None for
+/// any other capture without records.
 fn captured_rosters(matches: &[Vec<Update>]) -> Option<([usize; 6], Own)> {
     let first = matches.first()?.first()?;
     let actors = first.actors();

@@ -14170,10 +14170,12 @@ one update on: none.
 **What the new samples showed** (each settled in its test):
 
 - Portland's third man in capture 1 is record 112, not 113 (the 2026-10-18
-  inference from his jukes). 112's Handles 90 and Dunks 0 give, by the
-  ported `FUN_0015f098` and `FUN_00182280`, juke level 4 and lay-ups where
-  the original's man showed neither. Those ports or the ratings they read
-  differ for him: a lead.
+  inference from his jukes). His ratings in memory (actor+0x288's record,
+  as `FUN_00171670` reads them; `FUN_001d7d00` only overrides them for the
+  cheats' slots at `0x4b6fb0`) are Handles 90 and Dunks 0, and the
+  re-capture's actor 5 makes combo jukes of levels 2, 3 and 4 nine, seven
+  and eight times: the ported `FUN_0015f098` and the level's uniform draw
+  (`0x18240c`) give that. The earlier reading of his jukes was wrong.
 - A spot pass to a receiver cutting back flew 21 + 5 = 26 updates. The
   test now allows the grown flight beside the rule.
 - Jump shots released at 10.79..10.98 and one at 14.84, on whole flights:

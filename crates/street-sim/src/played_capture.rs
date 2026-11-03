@@ -351,6 +351,9 @@ struct Shot {
     /// Updates from the press to the ball's state 5 with this shooter,
     /// before his next press.
     release: Option<i64>,
+    /// The ball left his hands before any release: knocked loose or
+    /// passed out of the shot.
+    lost: bool,
     /// Updates from the press to actor+0x1d0 rising (callback 20).
     fake_at: Option<i64>,
     /// Updates from the press to actor+0x1e4 turning 8 (callback 17).
@@ -417,6 +420,7 @@ fn human_shots(captures: &[Capture]) -> Vec<Shot> {
                     }
                 }
                 let mut release = None;
+                let mut lost = false;
                 let mut f = press;
                 while let Some(x) = cap.get(f) {
                     if f > press && x.word(k, "pressed") & 0x80 != 0 {
@@ -429,6 +433,7 @@ fn human_shots(captures: &[Capture]) -> Vec<Shot> {
                         break;
                     }
                     if x.holder() != cap.actors[k] && x.ball_state() != 5 {
+                        lost = true;
                         break;
                     }
                     if f - press > 150 {
@@ -488,6 +493,7 @@ fn human_shots(captures: &[Capture]) -> Vec<Shot> {
                     script,
                     started,
                     release,
+                    lost,
                     fake_at,
                     fade_at,
                     stick,
@@ -584,6 +590,12 @@ fn the_persons_shots_leave_at_the_scripts_moment_or_the_buttons_release() {
         let Some((release, fake, fade)) = expected(shot) else {
             continue;
         };
+        // A shot the ball left before its release, knocked loose or passed
+        // out of (the re-made pads-1's 7961 and 31034), has no release to
+        // time.
+        if shot.lost && shot.release.is_none() {
+            continue;
+        }
         let s = &timing::SHOT_SCRIPTS[script];
         checked += 1;
         let got = (shot.release, shot.fake_at, shot.fade_at);
@@ -1514,8 +1526,10 @@ fn the_persons_switches_go_to_fun_0012fd60s_pick() {
     );
     if switches > 0 {
         // (2026-10-21, the 23 captures: 78 of 372 decided, 76 exact; of
-        // the 294 the camera may decide, 249 exact and 45 the other.)
-        assert!(decided * 5 >= switches, "{decided} of {switches} decided");
+        // the 294 the camera may decide, 249 exact and 45 the other. The
+        // re-made defence capture: 56 of 339 decided, 54 exact; 303 exact
+        // in all, 34 off the screen, 2 unexplained.)
+        assert!(decided * 7 >= switches, "{decided} of {switches} decided");
         assert!(decided_exact + 3 >= decided, "{decided_exact} of {decided}");
         // The camera follows the play, so the winner, nearer it, is mostly
         // on the screen.
@@ -2186,17 +2200,30 @@ fn the_games_of_a_boot_run_on_from_one_reseed_of_the_shared_generator() {
         .unwrap();
     assert_eq!(fresh[0].1, 0);
     assert_eq!(fresh[0].2, crate::CONSTRUCTION_DRAWS + 2);
-    // The save state's boot: the three captures that load it start at the
-    // same state, and each later game (and each pass capture, from later
-    // updates of that match) further on.
+    // The save state's boot: the captures that load it and start at the
+    // same update start at the same state (the 2026-10 set's pads and
+    // fades at 196; the re-made set's six loaders wherever each first
+    // read), and each later game further on.
     let saved = boots
         .values()
         .find(|games| games.len() == played - 1 && !of_school(games) && !of_story(games))
         .unwrap();
-    let mut since: Vec<u32> = saved.iter().map(|g| g.2).collect();
-    since.sort_unstable();
-    since.dedup();
-    assert_eq!(since.len(), saved.len() - 2, "{saved:?}");
+    let mut by_update: std::collections::BTreeMap<i64, std::collections::BTreeSet<u32>> =
+        Default::default();
+    for g in saved.iter().filter(|g| g.1 != 0) {
+        by_update.entry(g.1).or_default().insert(g.2);
+    }
+    assert!(by_update.values().all(|s| s.len() == 1), "{saved:?}");
+    let loaded = by_update.values().flatten().max().copied().unwrap_or(0);
+    let mut later: Vec<u32> = saved.iter().filter(|g| g.1 == 0).map(|g| g.2).collect();
+    later.sort_unstable();
+    later.dedup();
+    assert_eq!(
+        later.len(),
+        saved.iter().filter(|g| g.1 == 0).count(),
+        "{saved:?}"
+    );
+    assert!(later.iter().all(|&s| s > loaded), "{saved:?}");
 }
 
 #[test]
@@ -3829,9 +3856,10 @@ fn the_guards_move_along_their_sticks_and_face_the_holder_in_play() {
     // original's does, 94%.
     assert!(agreed > 0.95, "{agree:?}");
     // On, +0xb0 at the holder within 32 units: 91.5% of the 9,429 updates
-    // that carry it (91.2% of the fifteen's 7,389; 85% before).
+    // that carry it (91.2% of the fifteen's 7,389; 85% before); the
+    // re-made set's original 87.7% of 11,112.
     if facing > 0 {
-        assert!(share(at_holder, facing) > 0.9, "{at_holder} of {facing}");
+        assert!(share(at_holder, facing) > 0.85, "{at_holder} of {facing}");
     }
 }
 
@@ -5676,7 +5704,7 @@ fn the_persons_presses_choose_the_originals_moves() {
     };
     let mut rows = Vec::new();
     let (mut shots, mut passes, mut air, mut aims) = ([0usize; 3], [0usize; 3], 0usize, 0usize);
-    let mut staged = 0usize;
+    let (mut staged, mut tricking) = (0usize, 0usize);
     let mut advanced = [0usize; 2];
     // Passes to a leaping teammate: the presses, the original's target the
     // leaper.
@@ -5725,6 +5753,15 @@ fn the_persons_presses_choose_the_originals_moves() {
                 if height > 0.0 || before.word(k, "bits") & 0x2108 != 0 {
                     air += 1;
                     rows.push(json!({"capture": cap.name, "press": press, "air": true,
+                        "original": original.name()}));
+                    continue;
+                }
+                // A shoot press in a trick move (bit 10) is the busy
+                // buttons' (`World::busy_buttons`): the re-made pads
+                // captures' 82 presses there started nothing.
+                if shoot && before.word(k, "bits") & 0x400 != 0 {
+                    tricking += 1;
+                    rows.push(json!({"capture": cap.name, "press": press, "trick": true,
                         "original": original.name()}));
                     continue;
                 }
@@ -5888,7 +5925,7 @@ fn the_persons_presses_choose_the_originals_moves() {
             "passes_at_rest_with_the_yaw": {"presses": at_rest[0], "agree": at_rest[1]},
             "passes_to_a_leaper": {"presses": leapers[0], "to_the_leaper": leapers[1]},
             "passes_the_bonuses_decide": {"presses": close[0], "agree": close[1]},
-            "in_the_air": air, "right_stick_presses": aims,
+            "in_the_air": air, "in_a_trick_move": tricking, "right_stick_presses": aims,
             "in_a_staged_sequence": staged,
             "advanced_dunks": {"presses": advanced[0], "named_by_the_port": advanced[1]},
             "presses_listed": rows}),
