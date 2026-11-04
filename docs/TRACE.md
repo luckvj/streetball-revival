@@ -14241,7 +14241,7 @@ pass leave the hands before the next press. (Presses inside a trick or
 inside a pass's windup start nothing; the tests now leave them out.)
 
 **Open on the re-made played set** (`cargo test -p street-sim --lib
-played_capture` with the disc, 33 of 37 pass). Settled: `catch_stand_5` plays record 572
+played_capture` with the disc, 34 of 37 pass). Settled: `catch_stand_5` plays record 572
 out (`8c 1.25` from frame 6 of 16 frames: a tail of 12, not
 `catch_stand_1`'s 9; the tail is ceil((last - frame) × x)); a press
 inside a trick move or a reaction script (bit 10, or the pc inside one,
@@ -14250,12 +14250,20 @@ lost before its release is no shot; the heave's release and pump-fake
 move by an update between presses (3 of the 13 heaves; its `8e f2 08`
 opening), reported apart as a known difference.
 
-The recorder's first read of an update lands as the counter ticks,
-before the update's later work: a repeated read (kept as `repeat` when
-it differs) shows the update's own phase and possession. The pad moves
-off a person's scored alley-oop (defence-1 16122 and 4478, legend-1
-5107) on those, so the control test reads the action tap's phase and
-possession from the repeat where there is one.
+The update counter moves after the actors' updates, so a read can
+catch the next update part-way. A later read of the same count (kept as
+`repeat` when it differs) holds the phase and possession the next
+update set before its pad moved: the pad leaves a person's scored
+alley-oop (defence-1 16122 and 4478, legend-1 5107) on those, and the
+control test reads them there. A read taken after the next update's
+actors moved shows a mover's place an update early, and the next sample
+repeats it exactly (defence-1 25752's runner at 24): the jumps test
+leaves those out of the rise. Two computer lay-ups (pads-2 26392,
+passes-1 23823) step their old clip in the press's update and begin
+their script after it, its first tick the next update's (they lift and
+land an update after the same scripts elsewhere); the jumps test starts
+those runs there. Where the original starts a lay-up after the channel's
+step is not found yet (both presses stay pressed two updates).
 
 The press's stick is the press update's, as the pad builder read it.
 Only where it reads at rest on the same heading after a moving update
@@ -14271,8 +14279,8 @@ start from the update before the press (the press update has run the
 original's pick: pads-1 10189's runner had already left the floor) and
 stop a shooter whose stick was let go then and at the press.
 
-Still open: legend-1's lobs (one 0.53 off its point, the median 0.084:
-the story crew's bodies); a running lay-up's rise 0.918; the trick
-moves' root (1866 of 2379); the swipes' strips on time (4 of 5; the
-swipe is the rewrite's own); the holder's stop slide. The School's seven
-captures are not re-made yet (its tests skip without them).
+Still open: the lobs' points (legend-1's 0.53 off, the median 0.084,
+five more over 0.3, several to a falling leaper); the trick moves' root
+(1866 of 2379); the swipes' strips on time (4 of 5; the swipe is the
+rewrite's own); the holder's stop slide. The School's seven captures are
+not re-made yet (its tests skip without them).

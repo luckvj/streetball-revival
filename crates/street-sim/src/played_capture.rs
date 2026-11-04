@@ -226,12 +226,15 @@ fn read_captures() -> Option<Vec<Capture>> {
                 if let Some(sample) = SchoolSample::of(&value) {
                     school.push(sample);
                 }
-                // An update's sample is its first read, as the counter
-                // ticks (the update's later work not yet run: the tests'
-                // timings stand on it). A repeated read keeps its phase as
-                // the update's `late_phase`: the phase the next update's
-                // action tap sees (defence-1's 16121 read phase 5, its
-                // repeat the shot's 3).
+                // An update's sample is its first read once the counter
+                // shows it. The counter moves after the actors' updates,
+                // so a later read of the same count (a `repeat`, kept when
+                // it differs) has caught the next update part-way: its
+                // phase and possession, kept as `late_phase` and
+                // `late_possession`, are what that update set before its
+                // pad moved (defence-1 16121 phase 5, its repeat the
+                // shot's 3; 4477 possession 0, its repeat the made
+                // basket's 1).
                 if value["repeat"].as_bool() == Some(true) {
                     if let Some(last) = updates.last_mut()
                         && last.frame() == value["frame"].as_i64().unwrap_or(-1)
@@ -5195,11 +5198,23 @@ fn jump_runs(captures: &[Capture]) -> Vec<JumpRun> {
                 {
                     m += 1;
                 }
+                // The old clip stepped in the press's update (its float
+                // frame moved): the script began after the channel's step,
+                // and its first tick is the next update's (pads-2 26392,
+                // passes-1 23823 lift and land an update after their
+                // scripts' others).
+                let clip_time = |x: &Update| x.actor(k)["channels"][0]["float_frame"].as_f64();
+                let layup = row.is_some_and(|r| timing::MOVE_ROWS[r].family == 2);
+                let first = if layup && clip_time(u) != clip_time(&cap.updates[n - 1]) && m > n {
+                    n + 1
+                } else {
+                    n
+                };
                 out.push(JumpRun {
                     capture: c,
                     actor: k,
-                    press: u.frame(),
-                    len: m - n + 1,
+                    press: cap.updates[first].frame(),
+                    len: m - first + 1,
                     shot,
                     row,
                 });
@@ -5379,8 +5394,13 @@ fn replay_jump(cap: &Capture, run: &JumpRun) -> Option<JumpReplay> {
             }
         } else {
             out.height.push((p.height - y).abs());
+            // A read taken as the next update ran (its actors moved, the
+            // counter not yet): the next sample repeats his place exactly.
+            let torn = cap
+                .get(run.press + n + 1)
+                .is_some_and(|next| y > 0.0 && next.actor(k)["position"] == x.actor(k)["position"]);
             out.offset
-                .push((p.height > 0.0 && y > 0.0).then_some(p.height - y));
+                .push((p.height > 0.0 && y > 0.0 && !torn).then_some(p.height - y));
             out.travel.push(travel);
         }
         out.top = [out.top[0].max(p.height), out.top[1].max(y)];
