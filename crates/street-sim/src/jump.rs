@@ -175,6 +175,11 @@ pub struct Flight {
     /// State bit 14 (`FUN_0016ea50`): his hands planted on the rim, set by
     /// the hang's `9b 0x4080` and cleared by its `9c 0x4000`.
     pub hung: bool,
+    /// State bit 2: set by the scripts' `9b 0x4` as they play their
+    /// landing out (the dunks', lay-ups', shots', passes'), cleared by the
+    /// `9c 0x4` before their end; the camera's busy test reads it
+    /// (`0x7ffdc`).
+    pub recover: bool,
 }
 
 impl Flight {
@@ -762,6 +767,12 @@ impl World {
             }
             if m.ran.clear_bits & 0x4000 != 0 {
                 f.hung = false;
+            }
+            if m.ran.set_bits & 0x4 != 0 {
+                f.recover = true;
+            }
+            if m.ran.clear_bits & 0x4 != 0 {
+                f.recover = false;
             }
             // Callback 27 (`FUN_001720a8`, slot 44, `FUN_00141e98`): after
             // the slam the pole sways by 3 on his side when he is the

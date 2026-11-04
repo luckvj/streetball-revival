@@ -1122,6 +1122,7 @@ impl World {
             return 0;
         };
         let mut bits = 0;
+        let scripted = jump::scripted(&p.action);
         let mut set = |bit: u32, on: bool| {
             if on {
                 bits |= 1 << bit;
@@ -1136,6 +1137,8 @@ impl World {
                     | Action::Dunking { layup: true, .. }
             ),
         );
+        // Bit 2: a move's script playing its landing out ([`jump::Flight::recover`]).
+        set(2, scripted && p.flight.recover);
         set(4, matches!(p.action, Action::Passing { .. }));
         set(
             6,

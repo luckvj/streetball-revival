@@ -9442,7 +9442,9 @@ while the clip's root carries him, else his locomotion's speed along his
 course). The busy test is the actor's state bits inside `0x7ffdc` as the
 simulation's actions show them (`World::actor_state_bits`, the bits the
 computer players read: 3, 4, 7, 8, 9, 10, 12, 13, 15, 16; 2, 6, 11, 14,
-17 and 18 are not modelled). `FUN_00300b98` (raw `0x300b98..0x300bf0`)
+17 and 18 are not modelled). (2026-11-04: all of them are now; bit 2 is
+the move scripts' landing play-out, `9b 0x4` to `9c 0x4` in 357 steps of
+the held tables, `jump::Flight::recover`.) `FUN_00300b98` (raw `0x300b98..0x300bf0`)
 is ported: channel 0's record `+0x50` in 46, 47, 174, 175, 176 or 177
 (`RunToStandDribble_L`, `jogdribblestop02_r`, `jogdribblestop_r`) keeps
 the stationary gate off; the simulation's gait row stands for the
@@ -14119,7 +14121,13 @@ first draws) now come from the game's generator too.
 The model has limits. A vent's draws per frame match the log's rates
 within 3% (`steam.rs`). The litter's come-back test reads the camera's
 view, so its draws follow the rewrite's camera. The crowd's calls draw
-after the update rather than at their event inside it. The crowd's tick
+after the update rather than at their event inside it. (Measured
+2026-11-04 on `drawlog-attract3`: 40 of the 65 reaction picks,
+`0x30ca90`, are followed in the same update by gameplay draws, the
+catch rows', the faces', the gait's, so each such call hands the later
+draws other values than the original's. Moving them into the step needs
+the crowd rig's free groups and their timers in the simulation, since
+they decide how many draws a call makes.) The crowd's tick
 picks and its loader's runs keep the rewrite's own `rand()`, because
 the `rand` hook logged nothing. Online, the effects draw from the
 client's copy of the match, which changes nothing the match keeps; a

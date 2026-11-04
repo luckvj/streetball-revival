@@ -117,7 +117,7 @@ use crate::{
 /// stops among the stands (the flair's up three), a stand's coast and the
 /// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324); 109:
 /// the advanced dunk's toss and finish ([`crate::advanced`]).
-const VERSION: u8 = 112;
+const VERSION: u8 = 113;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1414,6 +1414,7 @@ fn flight_out(w: &mut Writer, f: &crate::jump::Flight) {
     w.uv(u64::from(f.air));
     w.uv(u64::from(f.aloft));
     w.bool(f.hung);
+    w.bool(f.recover);
 }
 
 fn flight_in(r: &mut Reader) -> Result<crate::jump::Flight, String> {
@@ -1436,6 +1437,7 @@ fn flight_in(r: &mut Reader) -> Result<crate::jump::Flight, String> {
         air: u16::try_from(r.uv()?).map_err(|_| "invalid flight airtime")?,
         aloft: u16::try_from(r.uv()?).map_err(|_| "invalid flight updates aloft")?,
         hung: r.bool()?,
+        recover: r.bool()?,
     })
 }
 
