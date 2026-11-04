@@ -1148,9 +1148,8 @@ impl Defense {
     /// handler 5 less when one of his computer teammates sets a pick
     /// (front behaviour type 1) within 10 of the defender; else the gap is
     /// at most his distance from the rim.
-    ///
-    /// The actor's dribble state (`FUN_00181750`, actor+0x1a0 not
-    /// negative) is taken as true: the sim keeps no picked-up dribble.
+    /// The 6.8 off a man with the ball also needs him not out of a dribble
+    /// he faked (`FUN_00181750`, actor+0x1a0 not negative, `0x1087ac`).
     pub(super) fn spot(&mut self, ctx: &Ctx, i: usize, man: usize) -> [f32; 2] {
         let team = ctx.team(i);
         let own = ctx.goal(1 - team);
@@ -1239,6 +1238,7 @@ impl Defense {
                     }
                 } else if !(press && !ctx.w.players[man].moving())
                     && 0.2 <= turbo
+                    && ctx.w.players[man].dribble >= 0
                     && 11.0 < ctx.hoop_dist(man)
                 {
                     least = 6.8;

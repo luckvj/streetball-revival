@@ -1468,7 +1468,15 @@ impl World {
             Via::Direct | Via::Floor if crate::touch::bone_catch(self, &pass) => {
                 // The receiver's tests catch it ([`crate::touch`]); at the
                 // end of its timer (flight + 5, `FUN_0014d1f8`'s 4 to 1) it
-                // is loose.
+                // is loose. With the flight flown (the timer at fps / 12,
+                // `DAT_004b84b0`, `0x14d7e0..0x14d81c`) to a receiver still
+                // in his leap (state bit 15, `FUN_0016e9e0`) its speed
+                // halves for the tail.
+                if self.ball.flown_ticks() == self.ball.flight_ticks()
+                    && crate::leap::leaping(&self.players[pass.to].action)
+                {
+                    self.ball.velocity = self.ball.velocity.map(|c| c * 0.5);
+                }
                 if self.ball.flown_ticks() >= self.ball.flight_ticks() + crate::touch::PASS_TAIL {
                     self.catching = None;
                     self.ball.drop_loose();

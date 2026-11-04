@@ -5,6 +5,15 @@ its version's part.
 
 ## Unreleased
 
+- An alley-oop lob the leaper hasn't caught by the end of its flight
+  slows to half speed for its last few updates as on the PS2, instead of
+  flying on at full speed.
+- The commentator calls an advanced dunk's finish a dunk, as on the PS2,
+  not an alley-oop.
+- Computer players read a dribble picked up by a pump fake as the PS2's
+  do: the ball handler no longer steers off the baseline out of it, and
+  a defender no longer backs off him as from a live dribbler.
+
 - The running forward pass picks up the passer's stride as on the PS2:
   its animation starts on the frame that matches the step he was in,
   instead of always from its first frame.

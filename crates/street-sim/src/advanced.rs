@@ -231,6 +231,22 @@ impl World {
         })
     }
 
+    /// `i`'s dunk id (actor+0x1e8) for his dunk row: the row's, but an
+    /// advanced finish's is his slot-0 dunk id (callback 32,
+    /// `0x1773f4..0x177410`, whatever finish it picked). None off a dunk.
+    pub fn dunk_id(&self, i: usize) -> Option<u8> {
+        let p = self.players.get(i)?;
+        let crate::Action::Dunking { row, .. } = p.action else {
+            return None;
+        };
+        if (timing::ADVANCED_FIRST..timing::ADVANCED_FIRST + timing::ADVANCED_ROWS.len() as u8)
+            .contains(&row)
+        {
+            return Some(p.shooter.map_or(timing::DUNK_SLOTS[0], |s| s.dunks[0]));
+        }
+        timing::move_row(row).map(|r| r.id)
+    }
+
     /// `i`'s hand on `record` at `frame`, posed at his place facing his
     /// facing; none without the disc's animations.
     pub(crate) fn hand_on(&self, i: usize, record: u16, frame: f32) -> Option<[f32; 3]> {

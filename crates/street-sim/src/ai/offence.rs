@@ -719,7 +719,9 @@ impl Shoot {
             self.first = true;
             return;
         }
-        if self.first && on_baseline(ctx, i, -2.0, 80.0) {
+        // `0x101010..0x101044`: not out of a dribble he faked
+        // (`FUN_00181750`), the first update, on the baseline.
+        if ctx.w.players[i].dribble >= 0 && self.first && on_baseline(ctx, i, -2.0, 80.0) {
             b.steer(ctx, i, off_baseline(ctx, i), 3, 1, None);
             return;
         }
@@ -1957,9 +1959,9 @@ impl PostUp {
                 b.move_to(ctx, i, rim, 3, self.avoid);
                 return;
             }
-            // `FUN_00181750` (actor+0x1a0 ≥ 0): taken as set, as in the
-            // juke test.
-            if on_baseline(ctx, i, -2.0, 80.0) {
+            // `FUN_00181750` (actor+0x1a0 ≥ 0, `0x115848`): not out of a
+            // dribble he faked.
+            if ctx.w.players[i].dribble >= 0 && on_baseline(ctx, i, -2.0, 80.0) {
                 self.near = 20.0;
                 b.steer(ctx, i, off_baseline(ctx, i), 3, 1, None);
                 return;

@@ -2759,6 +2759,63 @@ fn the_dribblers_stops_coast_into_their_stands_as_the_original() {
 }
 
 #[test]
+fn a_pass_to_a_leaper_halves_its_speed_for_the_tail() {
+    // `FUN_0014d1f8` (`0x14d7e0..0x14d81c`): a pass's timer is its flight
+    // and fps / 12 more; as it comes down to fps / 12 (the flight flown)
+    // its speed halves when the target is in his leap (state bit 15),
+    // which `World::carry_pass` does. Every such update in the captures:
+    // halved exactly when the target's bit 15 is set.
+    let Some(captures) = load() else {
+        return;
+    };
+    let (mut agree, mut halved, mut checked) = (0, 0, 0);
+    let mut off = Vec::new();
+    for cap in captures {
+        for (n, u) in cap.updates.iter().enumerate() {
+            if n == 0 {
+                continue;
+            }
+            let a = &cap.updates[n - 1];
+            let (b0, b1) = (a.ball(), u.ball());
+            let word = |b: &Value, key: &str| b[key].as_i64().unwrap_or(-1);
+            if a.frame() + 1 != u.frame()
+                || a.ball_state() != 4
+                || u.ball_state() != 4
+                || word(b0, "timer") != i64::from(crate::touch::PASS_TAIL) + 1
+                || word(b1, "timer") != i64::from(crate::touch::PASS_TAIL)
+                || word(b1, "flight_updates") <= 0
+            {
+                continue;
+            }
+            let Some(k) = b1["target_player"].as_u64().and_then(|p| cap.actor_of(p)) else {
+                continue;
+            };
+            let v = |b: &Value, q: usize| b["velocity"][q].as_f64().unwrap_or(0.0);
+            if v(b0, 0).abs() + v(b0, 2).abs() <= 0.01 {
+                continue;
+            }
+            let half = (v(b1, 0) - 0.5 * v(b0, 0)).abs() < 0.002
+                && (v(b1, 2) - 0.5 * v(b0, 2)).abs() < 0.002;
+            let leaping = u.word(k, "bits") & 0x8000 != 0;
+            checked += 1;
+            halved += usize::from(half);
+            if half == leaping {
+                agree += 1;
+            } else {
+                off.push((cap.name.clone(), u.frame(), k, leaping));
+            }
+        }
+    }
+    report(
+        "pass_tail_halving",
+        json!({"checked": checked, "halved": halved, "agree": agree}),
+    );
+    eprintln!("pass tails {checked}: halved {halved}, rule agrees {agree}; off {off:?}");
+    assert!(checked >= 20 || captures.len() < 3, "{checked}");
+    assert_eq!(agree, checked, "{off:?}");
+}
+
+#[test]
 fn step_matched_blends_start_on_the_originals_frame() {
     // Every blend into `pass_fwd_right_run_1`'s records (483, 484: the
     // running forward pass, whose `8e` starts at `-9`): the clip and frame

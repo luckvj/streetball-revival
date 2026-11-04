@@ -1192,9 +1192,9 @@ pub struct SpeechManager {
 
 /// What a shot left the hands as: the ball's kind (`ball+0x184`, set by
 /// the shot release `0x14aaf8`): 2 a jump shot, 5 a lay-up, 4 a dunk
-/// (the dunker's +0xa4 bit 7), 3 an alley-oop's finish (bit 15). The
-/// rewrite's own reading: the move flag 0x800 that makes any dunk 4 is not
-/// consulted, as in `tape.rs`.
+/// (the dunker's +0xa4 bit 7, or his dunk id's flag 0x800 at `0x43f5f0`,
+/// `0x14ad14..0x14ad3c`: an advanced dunk's finish), 3 an alley-oop's
+/// finish (bit 15).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ShotKind {
     Jumper,
@@ -1231,7 +1231,13 @@ impl ShotKind {
             Event::Shot { player, .. } => Some((player, ShotKind::Jumper)),
             Event::Layup { player } => Some((player, ShotKind::Layup)),
             Event::Slam { player, .. } => {
-                let oop = world.players.get(player).is_some_and(|p| p.leaping());
+                // A leap (bit 15, bit 7 not yet set at the release) is an
+                // alley-oop's finish unless its dunk id is an advanced
+                // dunk's (flag 0x800).
+                let advanced = world
+                    .dunk_id(player)
+                    .is_some_and(|id| street_sim::timing::ADVANCED_DUNKS.contains(&id));
+                let oop = !advanced && world.players.get(player).is_some_and(|p| p.leaping());
                 Some((
                     player,
                     if oop {
@@ -2088,13 +2094,14 @@ fn match_sounds(
                     ));
                 }
             }
-            // The rewrite's own: a goaltend as a block of an unknown shooter.
-            Event::Goaltend { player, .. } => {
+            // The disc-free stand-in's goaltend (the original's swat is the
+            // block test's, a block): called as a block of its shooter.
+            Event::Goaltend { player, shooter } => {
                 if let Some(blocker) = female(player) {
                     packets.push((
                         speech::block_packet(
                             alias(player, save.story.nickname_pending),
-                            None,
+                            female(shooter),
                             blocker,
                         ),
                         false,

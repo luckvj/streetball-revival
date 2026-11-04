@@ -10722,6 +10722,27 @@ ball at 6.9, which is why the zone reads the ball. His stick let go at
 the press, a dribble stop plays on channel 0 under the toss: a quarter of
 his speed for five updates, as captured.)
 
+**Three closed gaps** (2026-11-04).
+- A pass's timer is its flight plus fps / 12 (`DAT_004b84b0`, set at
+  `0x153fa0` to `fps / 12`, added at `0x14c2f0`); as it comes down to fps
+  / 12 (`0x14d7e0..0x14d81c`), the flight flown, the ball's velocity halves
+  (a VU0 multiply of +0x40 by 0.5) when the target is in his leap (state
+  bit 15, `FUN_0016e9e0`). `World::carry_pass` does it on the bone catch's
+  tail. All 75 such updates in the played captures agree (9 halved), test
+  `a_pass_to_a_leaper_halves_its_speed_for_the_tail`.
+- The shot release's ball kind (`0x14ad14..0x14ad3c`): 4 for bit 7, else 4
+  when the dunk id's flag word (`0x43f5f0`, `FUN_00171de8`) has 0x800,
+  else 3. Callback 32 sets the id (+0x1e8) to the slot-0 dunk id
+  (`0x1773f4..0x177410`) and the finish sets bit 7 only after callback
+  21, so an advanced finish leaves as a dunk. `World::dunk_id` gives the
+  slot-0 id for the advanced finishes (the take-off's id read 0 for the
+  `0x447bbe` finish), and the commentary's `ShotKind::released` reads it.
+- `FUN_00181750` (actor+0x1a0 ≥ 0) has three AI callers besides the juke
+  test: the shoot behaviour's first-update baseline steer (`0x101010`),
+  post up's baseline branch (`0x115848`) and the defence spot's 6.8 off
+  a man with the ball more than 11 out (`0x1087ac`, after the turbo test).
+  All three read the sim's picked-up dribble (−1 from callback 20) now.
+
 **The step-matched blend start** (2026-11-04). `8e`'s start byte has
 codes beside a frame: `-2001` the preset frame (+0x24, the celebrations'
 and the flair's), `-7` the outgoing frame scaled to the incoming clip's

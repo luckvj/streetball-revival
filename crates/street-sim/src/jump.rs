@@ -1136,10 +1136,7 @@ impl World {
                 // (slot 4).
                 let p = &self.players[i];
                 if p.height == 0.0 {
-                    let id = match p.action {
-                        Action::Dunking { row, .. } => timing::move_row(row).map(|r| r.id),
-                        _ => None,
-                    };
+                    let id = self.dunk_id(i);
                     let finish = crate::shooting::dunk_move_level(p.action_buttons).clamp(0, 4);
                     self.events.push(crate::Event::TakeOff {
                         player: i,
