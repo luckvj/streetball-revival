@@ -211,14 +211,19 @@ pub fn walks(flags: u32) -> bool {
     flags & 0x2 == 0 || flags & 0x10 != 0
 }
 
-/// The facing turn of `FUN_00168ea8` for his move, units an update.
+/// The facing turn of `FUN_00168ea8` for his move, units an update: 34
+/// with planted points, 23 in a dunk or a lay-up (state bit 7,
+/// `FUN_0016e9d0`; bit 13, `FUN_0016ea40`), else the walk's 46. A leap
+/// for an alley-oop (bit 15) turns at 46 until its slam sets bit 7: the
+/// played captures' leapers turn 46 an update toward the rim.
 pub fn turn_rate(action: &Action, flags: u32) -> i32 {
     if flags & PLANTED != 0 {
         return 34;
     }
-    match action {
-        Action::Dunking { .. } | Action::Layup { .. } => 23,
-        _ => crate::guard::TURN,
+    if crate::block::holder_bits(action) & 0x2080 != 0 {
+        23
+    } else {
+        crate::guard::TURN
     }
 }
 

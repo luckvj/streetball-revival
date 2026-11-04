@@ -4790,8 +4790,17 @@ fn the_lobs_to_leapers_are_timed_and_aimed_as_fun_00162aa8() {
     let mut rows = Vec::new();
     let mut flights_exact = 0;
     let mut offsets = Vec::new();
-    // Per capture without a known order, the pairs a lob's flight orders.
+    // Per capture without a known order, the pairs (first, second) a lob's
+    // flight orders.
     let mut orders: HashMap<usize, Vec<(usize, usize)>> = HashMap::new();
+    let off_of = |lob: &Lob, point: &[f32; 3]| {
+        ((point[0] - lob.point[0]).powi(2)
+            + (point[1] - lob.point[1]).powi(2)
+            + (point[2] - lob.point[2]).powi(2))
+        .sqrt()
+    };
+    // Each lob's launches on either order (or the known one).
+    let mut tried = Vec::new();
     for lob in &lobs {
         let cap = &captures[lob.run.capture];
         let Some(start) = cap.get(lob.release - 1) else {
@@ -4812,19 +4821,77 @@ fn the_lobs_to_leapers_are_timed_and_aimed_as_fun_00162aa8() {
                 Some((n, point, first))
             })
             .collect();
+        let hits = launches
+            .iter()
+            .filter(|l| i64::from(l.0) == lob.flight)
+            .count();
+        // Only a lob whose flight the order decides (the span's, one
+        // update apart) orders the pair.
+        if !order_known(cap) && hits == 1 && launches.len() == 2 {
+            let first = launches
+                .iter()
+                .find(|l| i64::from(l.0) == lob.flight)
+                .unwrap()
+                .2;
+            let pair = if first { (k, passer) } else { (passer, k) };
+            orders.entry(lob.run.capture).or_default().push(pair);
+        }
+        tried.push((lob, launches));
+    }
+    // `a` updates before `b` by the pairs the flights ordered.
+    let before_by = |pairs: &[(usize, usize)], a: usize, b: usize| {
+        let mut seen = [false; 6];
+        let mut todo = vec![a];
+        while let Some(x) = todo.pop() {
+            for &(p, q) in pairs {
+                if p == x && !seen[q] {
+                    seen[q] = true;
+                    todo.push(q);
+                }
+            }
+        }
+        seen[b]
+    };
+    for (lob, launches) in &tried {
+        let cap = &captures[lob.run.capture];
+        let (k, passer) = (lob.run.actor, lob.passer);
         let hits: Vec<&(i32, [f32; 3], bool)> = launches
             .iter()
             .filter(|l| i64::from(l.0) == lob.flight)
             .collect();
-        let Some(&(n, point, first)) = hits.first().copied().or(launches.first()) else {
+        // Both orders give the flight: the match's order where its other
+        // lobs' flights tell it, else the point where it is plain (one
+        // within 0.1, the other three times as far and 0.1 farther), which
+        // then orders the pair too (all of a match's pairs must still make
+        // one order of the six); else the nearer, ordering nothing.
+        let chosen = if hits.len() == 2 {
+            let pairs = orders.get(&lob.run.capture).cloned().unwrap_or_default();
+            let known = if before_by(&pairs, k, passer) {
+                Some(true)
+            } else if before_by(&pairs, passer, k) {
+                Some(false)
+            } else {
+                None
+            };
+            let mut by_point = hits.clone();
+            by_point.sort_by(|a, b| off_of(lob, &a.1).total_cmp(&off_of(lob, &b.1)));
+            let (near, far) = (off_of(lob, &by_point[0].1), off_of(lob, &by_point[1].1));
+            match known {
+                Some(first) => hits.iter().copied().find(|l| l.2 == first),
+                None if near < 0.1 && far >= 3.0 * near && far - near >= 0.1 => {
+                    let first = by_point[0].2;
+                    let pair = if first { (k, passer) } else { (passer, k) };
+                    orders.entry(lob.run.capture).or_default().push(pair);
+                    Some(by_point[0])
+                }
+                None => Some(by_point[0]),
+            }
+        } else {
+            hits.first().copied()
+        };
+        let Some(&(n, point, _)) = chosen.or(launches.first()) else {
             continue;
         };
-        // Only a lob whose flight the order decides (the span's, one
-        // update apart) orders the pair.
-        if !order_known(cap) && hits.len() == 1 && launches.len() == 2 {
-            let pair = if first { (k, passer) } else { (passer, k) };
-            orders.entry(lob.run.capture).or_default().push(pair);
-        }
         flights_exact += usize::from(i64::from(n) == lob.flight);
         let d = ((point[0] - lob.point[0]).powi(2)
             + (point[1] - lob.point[1]).powi(2)

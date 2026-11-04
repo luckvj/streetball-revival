@@ -14241,7 +14241,7 @@ pass leave the hands before the next press. (Presses inside a trick or
 inside a pass's windup start nothing; the tests now leave them out.)
 
 **Open on the re-made played set** (`cargo test -p street-sim --lib
-played_capture` with the disc, 34 of 37 pass). Settled: `catch_stand_5` plays record 572
+played_capture` with the disc, 35 of 37 pass). Settled: `catch_stand_5` plays record 572
 out (`8c 1.25` from frame 6 of 16 frames: a tail of 12, not
 `catch_stand_1`'s 9; the tail is ceil((last - frame) × x)); a press
 inside a trick move or a reaction script (bit 10, or the pc inside one,
@@ -14279,8 +14279,17 @@ start from the update before the press (the press update has run the
 original's pick: pads-1 10189's runner had already left the floor) and
 stop a shooter whose stick was let go then and at the press.
 
-Still open: the lobs' points (legend-1's 0.53 off, the median 0.084,
-five more over 0.3, several to a falling leaper); the trick moves' root
-(1866 of 2379); the swipes' strips on time (4 of 5; the swipe is the
+An alley-oop leaper turns at `FUN_00168ea8`'s 46 an update: its 23 is
+for state bit 7 (a dunk, `FUN_0016e9d0`) and bit 13 (a lay-up,
+`FUN_0016ea40`), and a leap carries bit 15 until its slam. The port had
+turned every dunk row at 23, so a leaper's run-up (his `91 02 00 01 00`
+lets the clip's root carry him along his facing) went off toward
+another heading: legend-1 35209 ended 1.75 off. The lobs' points now
+sit within 0.15 of the original's (median 0.045, from 0.084). Where both
+update orders give a lob's flight, the order the match's other lobs'
+flights set is used, else the point where it is plain (one within 0.1,
+the other three times as far); every match's pairs still make one order.
+
+Still open: the trick moves' root (1866 of 2379); the swipes' strips on time (4 of 5; the swipe is the
 rewrite's own); the holder's stop slide. The School's seven captures are
 not re-made yet (its tests skip without them).

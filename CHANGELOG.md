@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A player leaping for an alley-oop turns toward the rim as fast as on
+  the PS2 (twice the old rate), so his run-up and the lob to him land
+  where the original's do.
 - A standing catch that plays its clip out to the end (`catch_stand_5`)
   now holds the catch for its own clip's length (12 updates) instead of
   another catch's (9), as on the PS2.
