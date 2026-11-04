@@ -543,6 +543,7 @@ impl World {
                 stand,
                 stand_count: _,
                 stick_run: _,
+                on_court: _,
                 boxing: _,
                 boxed: _,
                 posting: _,

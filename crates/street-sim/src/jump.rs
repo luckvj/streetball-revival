@@ -1066,7 +1066,11 @@ impl World {
             Step::Dive { speed, rise } => {
                 let p = &self.players[i];
                 let at = [p.position[0], p.height, p.position[1]];
-                let root = self.root_height(shown.record, shown.frame).unwrap_or(0.0);
+                // The model's root as the scaled skeleton holds it (the
+                // clip's root times his height scale, `FUN_0019cd48`): the
+                // re-made School's dives hop at the original's speed.
+                let root =
+                    self.root_height(shown.record, shown.frame).unwrap_or(0.0) * p.body().height;
                 let (v, word) = crate::dive::dive_hop(
                     speed,
                     rise,

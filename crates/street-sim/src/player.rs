@@ -574,6 +574,9 @@ pub struct Player {
     /// (`FUN_001587d8`, `0x1589d0..0x1589e8`: reset below 16), as the
     /// stand path reads it ([`crate::stand`]'s dribble stops).
     pub stick_run: u16,
+    /// Actor+0x324: he has been on the court since the last restart
+    /// ([`crate::World::contain`]).
+    pub on_court: bool,
     /// State bit 17 (`FUN_0016e970`): boxing out ([`crate::stand::BOX_OUT`]).
     pub boxing: bool,
     /// State bit 11 (`FUN_0016ea20`): posting up, set by the backdown's
@@ -653,6 +656,7 @@ impl Player {
             stand: None,
             stand_count: 0,
             stick_run: 0,
+            on_court: false,
             boxing: false,
             posting: false,
             restart_walk: false,

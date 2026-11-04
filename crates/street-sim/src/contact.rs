@@ -362,7 +362,7 @@ impl World {
         if moved {
             if !matches!(self.players[i].action, Action::Passing { .. }) {
                 self.players[i].position = at;
-                self.contain(i, before);
+                self.contain(i);
                 at = self.players[i].position;
             }
             let d = [at[0] - before[0], at[1] - before[1]];

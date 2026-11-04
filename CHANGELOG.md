@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A diving player hops at the original's speed (a tall player's dive was
+  about 7% too fast) and stays on the court in the air as on the PS2.
+- Level 2 gamebreaker replays end on exactly the original's frame.
 - Online matches no longer stop with an "invalid state" fault when a
   Level 2 gamebreaker ends in a dunk.
 - A dribbler who stops now slides into his stance as on the PS2: a

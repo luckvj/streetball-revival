@@ -1751,7 +1751,6 @@ impl World {
             }
             self.counter_tick(i);
             self.scoop_tick(i);
-            let before = self.players[i].position;
             let facing = self.players[i].heading;
             self.catching_coast(i);
             // The swipe's test (`FUN_0015da28` after its presses, while bit
@@ -1771,7 +1770,7 @@ impl World {
                 Some(player::Moment::LayupRelease(hoop)) => self.release_layup(i, hoop),
                 None => {}
             }
-            self.contain(i, before);
+            self.contain(i);
             if let Some(script) = rebound
                 && self.players[i].action == Action::None
             {
@@ -1791,7 +1790,7 @@ impl World {
             // bound again.
             let before = self.players[i].position;
             self.flight_tick(i, start.get(i).copied().unwrap_or(before));
-            self.contain(i, before);
+            self.contain(i);
             // The head's look ([`look`], `0x157d9c`).
             self.head_look(i);
             self.previous_inputs[i] = input;

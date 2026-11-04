@@ -115,8 +115,8 @@ use crate::{
 /// ([`Event::PickCall`], the AI game's `pick_call`); 106: the tip-off's
 /// stances among the stands, the flair's moved up two; 107: the dribble
 /// stops among the stands (the flair's up three), a stand's coast and the
-/// stick's run (actor+0xa0).
-const VERSION: u8 = 107;
+/// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324).
+const VERSION: u8 = 108;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1064,6 +1064,7 @@ fn player(w: &mut Writer, p: &Player) {
         stand,
         stand_count,
         stick_run,
+        on_court,
         boxing,
         posting,
         restart_walk,
@@ -1191,6 +1192,7 @@ fn player(w: &mut Writer, p: &Player) {
     }
     w.uv(u64::from(*stand_count));
     w.uv(u64::from(*stick_run));
+    w.bool(*on_court);
     w.bool(*boxing);
     w.bool(*posting);
     w.bool(*restart_walk);
@@ -1692,6 +1694,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
         },
         stand_count: u16::try_from(r.uv()?).map_err(|_| "invalid stand count")?,
         stick_run: u16::try_from(r.uv()?).map_err(|_| "invalid stick run")?,
+        on_court: r.bool()?,
         boxing: r.bool()?,
         posting: r.bool()?,
         restart_walk: r.bool()?,

@@ -14315,6 +14315,42 @@ stops; the new played test replays 214 such stops: the stop or stand
 the original chose in every one, and the coast within 0.02 an update in
 1168 of 1284 updates (the rest beside another player's contacts).
 
+**The School's captures re-made.** `school.py` (in the project's `work`
+folder) drives the in-game lesson menu from save state 41 (24 of 26
+lessons already passed on that profile): each of seven parts loads the
+state again, walks a category (L1 steps Advanced, Defense, Offense; Down
+the list; Cross opens the page, Cross plays) and plays each lesson with
+its recipe until the manager commits (up to six runs for make-or-miss
+lessons). 66 runs, 44 passes, every lesson passed but Long Range in the
+final set (it passed in a trial). With them beside the played set, all
+38 played tests pass. What they found:
+
+- The replay manager's frames left and position step by the EE's
+  chopping `add.s` (`math::ee_add`): Level 2's 0.4 a step, which a float
+  cannot hold, counted down 204 ulps off with the host's add; now bit for
+  bit (`GamDN1b`, 378 updates).
+- A dive's hop speed is held to (distance less reach) over the time to
+  the catch height, and that time reads the model's root as the scaled
+  skeleton holds it (the clip's root times the body's height scale): the
+  two dives' steps were 7% fast, now within 0.001.
+- The court's bound (`World::contain`) keeps the original's on-court
+  flag (actor+0x324, set once `FUN_0016f530` finds him inside ±40.5 by
+  ±25 after his move, cleared in the restart): a diver in the air past
+  25 is held at 25 + 0.4 y, which the old "inside before this move"
+  stand-in let him leave.
+- A failed lesson the profile had already passed keeps its nibble 8
+  (`FUN_001eecd8` returns when `FUN_001eebb8` finds it passed).
+- The lesson launch plans against the last restart's order: the test
+  carries it from launch to launch, and a loose-ball launch tries the six
+  orders (the game's own restarts between launches set it); one relaunch
+  off a ball resting on the rim gave it to the man under the rim,
+  counted apart.
+- The prompt test reads the dribble from state bits 5 or 10 (the dribble
+  stands, the dribbling gait, a trick), not any movement since the take
+  (a held stand's sway): 99.84% of 53,791 looks.
+- The four-turbo slot's shot (`jumpshot_5`) and behind-board fades are
+  the chooser's too (the tests had left them out).
+
 Still open: where the original starts a lay-up after the channel's
-step. The School's seven captures are not
-re-made yet (its tests skip without them).
+step; a lob released mid-blend into the leap's clip (school-4 40860,
+0.30 high); the relaunch off a ball resting on the rim.

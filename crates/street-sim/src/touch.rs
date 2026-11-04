@@ -1048,23 +1048,29 @@ impl World {
         }
     }
 
-    /// `FUN_0016f900(actor, 0)` from the actor's update (`0x1579d8..
+    /// `FUN_0016f900(actor, 0)` from the actor's update (`0x157958..
     /// 0x157a08`): in live play an actor who has been on the court
-    /// (actor+0x324, set while `FUN_0016f530` finds him within ±40.5 by
-    /// ±25, cleared in the restart's phase 6) is kept within ±(40.5 + 0.4
-    /// y) by ±(25 + 0.4 y), y his height. The rewrite reads "has been on
-    /// the court" from where he stood before this update's move, which is
-    /// the same once the bound holds him. With the disc's animations only
-    /// (the rules that read bones need it: a coasting receiver's lead
-    /// assumes it); without them the rewrite's wider court stands.
-    pub(crate) fn contain(&mut self, i: usize, before: [f32; 2]) {
+    /// (actor+0x324: set once `FUN_0016f530` finds him within ±40.5 by
+    /// ±25 after his move, cleared in the restart's phase 6) is kept within
+    /// ±(40.5 + 0.4 y) by ±(25 + 0.4 y), y his height: a diver in the air
+    /// past 25 is held at 25 + 0.4 y (the re-made School's dive). With the
+    /// disc's animations only (the rules that read bones need it: a
+    /// coasting receiver's lead assumes it); without them the rewrite's
+    /// wider court stands.
+    pub(crate) fn contain(&mut self, i: usize) {
+        if self.game_phase.phase == crate::game_phase::phase::RESTART {
+            self.players[i].on_court = false;
+        }
         if self.poses.get().is_none() || self.phase != Phase::Live {
             return;
         }
-        if before[0].abs() > 40.5 || before[1].abs() > 25.0 {
+        let p = &mut self.players[i];
+        if !p.on_court {
+            p.on_court = p.position[0].abs() <= 40.5 && p.position[1].abs() <= 25.0;
+        }
+        if !p.on_court {
             return;
         }
-        let p = &mut self.players[i];
         let margin = p.height * 0.4;
         p.position[0] = p.position[0].clamp(-40.5 - margin, 40.5 + margin);
         p.position[1] = p.position[1].clamp(-25.0 - margin, 25.0 + margin);

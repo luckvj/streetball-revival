@@ -631,14 +631,14 @@ impl Manager {
                     }
                     return;
                 }
-                self.remaining -= self.speed;
+                // The EE's `sub.s`/`add.s` chop ([`crate::math::ee_add`]):
+                // a speed a float cannot hold (Level 2's 0.4) counts down
+                // as the original's, bit for bit.
+                self.remaining = crate::math::ee_add(self.remaining, -self.speed);
                 // FUN_003290d0: on by the speed, never past the newest.
                 let newest = self.slots.len() as f32 - 1.0;
-                self.position = if self.position + self.speed < newest + 1.0 {
-                    self.position + self.speed
-                } else {
-                    newest
-                };
+                let on = crate::math::ee_add(self.position, self.speed);
+                self.position = if on < newest + 1.0 { on } else { newest };
                 self.show(director, gates);
                 if self.offer && self.prompt_wait > 0 {
                     self.prompt_wait -= 1;

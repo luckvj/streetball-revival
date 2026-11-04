@@ -81,7 +81,7 @@ fn the_lessons_commit_their_results_after_the_managers_delay() {
     // `FUN_0018eec0` counts it down an update at a time (holding it at 1
     // while a script plays) and commits: +0x4cc back to -1 the update the
     // count reaches 0, the user's nibble 8 for a pass (12 after a failure),
-    // 4 for a failure (`FUN_001eecd8`). The game's update raises the
+    // 4 for a failure (`FUN_001eecd8`, unless already passed). The game's update raises the
     // counter, then runs the shot clock, the meters and this manager, then
     // the actors and the ball post theirs: a sample read after the
     // update's manager shows `commit - frame` left, one read before it
@@ -123,7 +123,17 @@ fn the_lessons_commit_their_results_after_the_managers_delay() {
             .map(|s| at - s.frame - s.words[4])
             .collect();
         let steady = lags.iter().all(|&g| (-1..=0).contains(&g));
-        let nibble_ok = nib.is_some_and(|n| if passed { n & 8 != 0 } else { n == 4 });
+        // A lesson already passed keeps its nibble (`FUN_001eecd8` returns
+        // at once when `FUN_001eebb8` finds its 8): the re-made set's
+        // profile has passed most of them, so their failures leave 8 (or
+        // 12).
+        let nibble_ok = nib.is_some_and(|n| {
+            if passed {
+                n & 8 != 0
+            } else {
+                n == 4 || n & 8 != 0
+            }
+        });
         rows.push(json!({
             "capture": cap.name, "lesson": l.lesson, "launch": l.launch, "start": l.start,
             "first_read": [set, first], "commit": at, "passed": passed, "nibble": nib,
@@ -192,6 +202,13 @@ fn the_lessons_launch_into_their_restart_spots_as_fun_0018ec28() {
     }
     let mut rows = Vec::new();
     let (mut placed, mut checked) = (0, 0);
+    // The restart strategies' globals (`DAT_003ce9b8`, `DAT_004e7408..`)
+    // are never cleared: a launch plans against the last restart's order,
+    // so each capture's launches run on from the one before (a relaunch
+    // with the ball loose places its others by it).
+    let mut carried: Option<(usize, World)> = None;
+    let mut by_order = 0;
+    let mut rim_rests = 0;
     for l in &runs {
         let cap = &captures[l.capture];
         // The menu holds the game: the launch's update is the held one, the
@@ -204,23 +221,69 @@ fn the_lessons_launch_into_their_restart_spots_as_fun_0018ec28() {
         let (Some(before), Some(after)) = (cap.get(l.launch), next.and_then(|f| cap.get(f))) else {
             continue;
         };
-        let mut w = world_at(cap, before);
+        let w = world_at(cap, before);
         let Some(person) = school::persons_actor(&w) else {
             continue;
         };
         let side = school::expected_side(l.lesson, w.team_of(person));
-        w.launch_lesson(l.lesson as u8, side, false, &[]);
-        let far: Vec<f32> = (0..6)
-            .map(|j| {
-                let a = w.players[j].position;
-                let b = after.floor(j);
-                ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2)).sqrt()
-            })
-            .collect();
+        let prior = carried
+            .as_ref()
+            .filter(|(c, _)| *c == l.capture)
+            .map(|(_, last)| last.ai.game.restart);
         let holder = cap.actor_of(after.holder());
-        let worst = far.iter().copied().fold(0.0_f32, f32::max);
+        let launch = |order: Option<[i32; 3]>| {
+            let mut w = world_at(cap, before);
+            if let Some(mut r) = prior {
+                if let Some(o) = order {
+                    r.order = o;
+                }
+                w.ai.game.restart = r;
+            } else if let Some(o) = order {
+                w.ai.game.restart.order = o;
+            }
+            w.launch_lesson(l.lesson as u8, side, false, &[]);
+            let far: Vec<f32> = (0..6)
+                .map(|j| {
+                    let a = w.players[j].position;
+                    let b = after.floor(j);
+                    ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2)).sqrt()
+                })
+                .collect();
+            let worst = far.iter().copied().fold(0.0_f32, f32::max);
+            let ok = worst < 0.5 && holder == w.handler();
+            (w, far, ok)
+        };
+        let (mut w, mut far, mut ok) = launch(None);
+        // With the ball loose the launch's others go by the last restart's
+        // order, which the game's own restarts since the last launch set
+        // and the capture does not keep: any of the six orders may be it.
+        if !ok && cap.actor_of(before.holder()).is_none() {
+            const ORDERS: [[i32; 3]; 6] = [
+                [0, 1, 2],
+                [0, 2, 1],
+                [1, 0, 2],
+                [1, 2, 0],
+                [2, 0, 1],
+                [2, 1, 0],
+            ];
+            if let Some(found) = ORDERS.iter().map(|&o| launch(Some(o))).find(|t| t.2) {
+                (w, far, ok) = found;
+                by_order += 1;
+            }
+        }
+        carried = Some((l.capture, w.clone()));
+        // A relaunch with the ball resting on the rim (state 0, above 10)
+        // and nobody holding it: the original gave it to the man under the
+        // rim, not the nearest; counted apart (school-1's Steal at 29634).
+        let on_rim = before.ball_state() == 0
+            && before.0["ball"]["position"][1].as_f64().unwrap_or(0.0) > 10.0
+            && cap.actor_of(before.holder()).is_none();
+        if on_rim && !ok {
+            rim_rests += 1;
+            continue;
+        }
         checked += 1;
-        placed += usize::from(worst < 0.5 && holder == w.handler());
+        placed += usize::from(ok);
         rows.push(json!({
             "capture": cap.name, "lesson": l.lesson, "frame": after.frame(),
             "phase": after.phase(), "off": far, "holder": [holder, w.handler()],
@@ -234,9 +297,15 @@ fn the_lessons_launch_into_their_restart_spots_as_fun_0018ec28() {
     }
     report(
         "school_launches",
-        json!({"checked": checked, "placed": placed, "rows": rows}),
+        json!({"checked": checked, "placed": placed, "by_order": by_order,
+            "rim_rests": rim_rests, "rows": rows}),
     );
+    assert!(rim_rests <= 1, "{rim_rests} launches off a ball on the rim");
     assert_eq!(placed, checked, "{rows:?}");
+    assert!(
+        by_order * 10 <= checked,
+        "{by_order} of {checked} needed another order"
+    );
 }
 
 /// A sample as the manager's readiness checks read it (`school::Court`):
@@ -368,7 +437,10 @@ fn the_prompt_follows_the_readiness_checks_as_fun_0018f740() {
                 && u.word(*h, "bits") & 0x200 == 0
             {
                 let (p, q) = (u.floor(*h), prev.floor(*h));
-                *moved = (p[0] - q[0]).abs() + (p[1] - q[1]).abs() > 1e-4;
+                // A locomotion step (0.09 an update and more), not a held
+                // stand's sway (about 0.01: the re-made Heezay and
+                // Advanced Dunk runs' holders on their held stands).
+                *moved = (p[0] - q[0]).abs() + (p[1] - q[1]).abs() > 0.05;
             }
             let Some(next) = cap.get(b.frame) else {
                 continue;
@@ -387,7 +459,11 @@ fn the_prompt_follows_the_readiness_checks_as_fun_0018f740() {
                 u,
                 tables: next,
                 world: world_at(cap, u),
-                dribbling: taken.and_then(|(h, moved)| moved.then_some(h)),
+                // Picked up again (a held stand, state bits 5 and 10 clear:
+                // the dribble stands and the dribbling gait set 5, a trick
+                // move 10), he no longer dribbles.
+                dribbling: taken
+                    .and_then(|(h, moved)| (moved && u.word(h, "bits") & 0x420 != 0).then_some(h)),
             };
             let Some(person) = school::Court::person(&sample) else {
                 continue;
