@@ -2759,6 +2759,76 @@ fn the_dribblers_stops_coast_into_their_stands_as_the_original() {
 }
 
 #[test]
+fn step_matched_blends_start_on_the_originals_frame() {
+    // Every blend into `pass_fwd_right_run_1`'s records (483, 484: the
+    // running forward pass, whose `8e` starts at `-9`): the clip and frame
+    // channel 0 left as the blend began (+0x50, +0x5c), and the frame the
+    // incoming clip shows once the blend has ended, against
+    // [`crate::held::foot_sync`].
+    let Some(captures) = load() else {
+        return;
+    };
+    let bank = crate::pose::disc_bank();
+    let Some(poses) = bank.get() else {
+        return;
+    };
+    let channel = |u: &Update, k: usize| {
+        let c = &u.actor(k)["channels"][0];
+        let w = |key: &str| c[key].as_i64().unwrap_or(-1);
+        (w("record"), w("target"), w("frame"), w("pc"))
+    };
+    let (mut checked, mut exact) = (0, 0);
+    let mut rows = Vec::new();
+    for cap in captures {
+        for (n, u) in cap.updates.iter().enumerate() {
+            if n == 0 {
+                continue;
+            }
+            let a = &cap.updates[n - 1];
+            if a.frame() + 1 != u.frame() {
+                continue;
+            }
+            for k in 0..6 {
+                let (r0, t0, _, _) = channel(a, k);
+                let (r, t, f, _) = channel(u, k);
+                if !matches!(t, 483 | 484) || t0 == t || r != r0 || !(0..2000).contains(&r) {
+                    continue;
+                }
+                // The blend's six updates on, the incoming clip shown: the
+                // update it ends runs the script on into `Wait { to: 45,
+                // n: 40 }`, whose first step is already taken, so the
+                // start s shows as s + (45 − s) / 40.
+                let Some(end) = (1..12).find_map(|d| {
+                    let x = cap.get(u.frame() + d)?;
+                    let c = &x.actor(k)["channels"][0];
+                    let shown = c["float_frame"].as_f64()?;
+                    (c["record"].as_i64() == Some(t))
+                        .then_some((d, ((40.0 * shown - 45.0) / 39.0).round() as i64))
+                }) else {
+                    continue;
+                };
+                let ours = crate::held::foot_sync(poses, (r as u16, f as i32), t as u16);
+                checked += 1;
+                exact += usize::from(i64::from(ours) == end.1);
+                rows.push(json!({"capture": cap.name, "frame": u.frame(), "actor": k,
+                    "from": [r, f], "to": t, "original": end.1, "after": end.0,
+                    "ours": ours}));
+            }
+        }
+    }
+    report(
+        "step_matched_blends",
+        json!({"checked": checked, "exact": exact, "rows": rows}),
+    );
+    eprintln!("step-matched blends {checked}, exact {exact}: {rows:?}");
+    assert!(
+        checked > 0 || captures.len() < 3,
+        "no running forward pass captured"
+    );
+    assert_eq!(exact, checked, "{rows:?}");
+}
+
+#[test]
 fn the_advanced_dunks_toss_and_finish_as_the_original() {
     // Every advanced dunk press of the person's (state bits 0x90 set: the
     // four-turbo slot's advanced id from 8.5 or more out, `bbpass_1`): the

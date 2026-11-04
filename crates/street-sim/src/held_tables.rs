@@ -4386,7 +4386,7 @@ const S454F5C: &[Step] = &[
     Unplant,
     Flags(0x820002),
     Bits(0x10),
-    Blend { n: 6, start: 0, records: [484, 483] },
+    Blend { n: 6, start: FOOT_SYNC, records: [484, 483] },
     Stop,
     Wait { to: 45, n: 40 },
     Call(38),

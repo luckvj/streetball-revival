@@ -341,7 +341,14 @@ pub struct Run {
     /// The record the channel played as the script started, which
     /// [`Step::OnRecord`] reads before the first blend.
     pub before: Option<u16>,
+    /// The start frame of a [`FOOT_SYNC`] blend, matched to the clip the
+    /// channel showed as the script started ([`crate::held::foot_sync`]).
+    pub foot: u8,
 }
+
+/// A blend's start `-9` (`0x198098..0x1983dc`): the frame of the incoming
+/// clip whose step matches the outgoing clip's ([`Run::foot`]).
+pub const FOOT_SYNC: u8 = 0xf7;
 
 /// A span the channel carries (a blend, a wait or a play-out).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -432,6 +439,7 @@ impl Run {
             hang: None,
             asked: false,
             before: None,
+            foot: 0,
         }
     }
 
@@ -442,6 +450,11 @@ impl Run {
             side,
             ..self
         }
+    }
+
+    /// The [`FOOT_SYNC`] blends' start ([`Run::foot`]).
+    pub fn footed(self, foot: u8) -> Self {
+        Self { foot, ..self }
     }
 
     /// A blend under way: its counter (`+0x70`, 1 on the update it
@@ -521,8 +534,10 @@ impl Run {
     }
 
     /// `8e` (`FUN_001978b0`): the span to `record` at `start` over `n`
-    /// updates ([`CURRENT`] the record on the channel).
+    /// updates ([`CURRENT`] the record on the channel; [`FOOT_SYNC`] the
+    /// start [`Run::foot`] matched to the outgoing clip's step).
     fn blend(&mut self, n: u8, start: u8, record: u16) -> bool {
+        let start = if start == FOOT_SYNC { self.foot } else { start };
         let to_record = if record == CURRENT {
             self.record
         } else {

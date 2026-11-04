@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- The running forward pass picks up the passer's stride as on the PS2:
+  its animation starts on the frame that matches the step he was in,
+  instead of always from its first frame.
+
 - A player who passes or switches to a lay-up in mid-air loses half his
   speed as on the PS2, so he drifts and lands where the original's does.
 

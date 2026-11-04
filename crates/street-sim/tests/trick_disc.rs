@@ -784,7 +784,12 @@ impl Disc {
                         .map_or(primary, |k| alternates[k]);
                     out.push(Step::Blend {
                         n: frames,
-                        start: start.max(0) as u8,
+                        // `-9`: the step-matched start.
+                        start: if start == -9 {
+                            trick::FOOT_SYNC
+                        } else {
+                            start.max(0) as u8
+                        },
                         records: [current(primary), current(left)],
                     });
                 }
@@ -1547,7 +1552,12 @@ fn spelled(s: &Step) -> String {
         Step::Bits(w) => format!("Bits({w:#x})"),
         Step::Clear(w) => format!("Clear({w:#x})"),
         Step::Blend { n, start, records } => format!(
-            "Blend {{ n: {n}, start: {start}, records: [{}, {}] }}",
+            "Blend {{ n: {n}, start: {}, records: [{}, {}] }}",
+            if start == trick::FOOT_SYNC {
+                "FOOT_SYNC".to_string()
+            } else {
+                start.to_string()
+            },
             r(records[0]),
             r(records[1])
         ),

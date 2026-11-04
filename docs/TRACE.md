@@ -10722,6 +10722,22 @@ ball at 6.9, which is why the zone reads the ball. His stick let go at
 the press, a dribble stop plays on channel 0 under the toss: a quarter of
 his speed for five updates, as captured.)
 
+**The step-matched blend start** (2026-11-04). `8e`'s start byte has
+codes beside a frame: `-2001` the preset frame (+0x24, the celebrations'
+and the flair's), `-7` the outgoing frame scaled to the incoming clip's
+length, `-19` the outgoing frame plus the rate times the blend, and `-9`
+(`0x198098..0x1983dc`), used once, by `pass_fwd_right_run_1` (pass rows
+24 and 25, `0x454f5c`): on a frame with a foot's flags (state 0xfc0) the
+first frame of the incoming clip with them; else the last foot frame
+back from the outgoing frame (+0x5c of +0x50), how many frames past it,
+over the frames to the next flags of its group (bits 0xe00 or 0x1c0 not
+set there; none on a plant, 0x900), and that share of the incoming
+clip's step on from its frame with the same flags (truncated; 0 when no
+frame matches). `held::foot_sync`, read through `trick::FOOT_SYNC`; the
+step tables had clamped it to 0. The played passes hold two: clip 79 at
+38 starts 484 at 16, clip 198 at 1 starts it at 0 (the frame the blend's
+end shows has taken the next wait's first step, s + (45 − s) / 40).
+
 **`ae` in the move scripts** (2026-11-04). `ae k` (`FUN_00194960`)
 multiplies the actor's velocity (+0x40, all three parts, a VU0 multiply)
 by `k` and times the landing again (`FUN_0019bed8` into +0x64). Beside the

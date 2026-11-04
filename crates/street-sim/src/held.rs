@@ -45,12 +45,12 @@
 //! a `98` record test over its two branches picks one by the channel's
 //! record. The rewrite's own, labelled: `a9` (the glass aim) and the
 //! planted points' correction (`93`..`95` only set their flags) are not
-//! modelled; a blend's foot-synced start (`-9`, one pass row, `0x454f5c`)
-//! starts at frame 0. The gait channel's own blends (a change of row over
+//! modelled. A blend's step-matched start (`-9`, one pass row, `0x454f5c`)
+//! is [`foot_sync`]'s. The gait channel's own blends (a change of row over
 //! 6 updates) show through [`World::channel`] too.
 
 use crate::pose;
-use crate::trick::{self, Run, Shown, Step};
+use crate::trick::{self, FOOT_SYNC, Run, Shown, Step};
 use crate::{Action, BallState, Player, World, timing};
 
 use crate::jump;
@@ -265,7 +265,23 @@ fn replay(
     hang: Option<bool>,
     flight: impl Fn(i32) -> u8,
 ) -> (Run, trick::Ran) {
-    let mut run = Run::new(left, 0).picking(handed, side);
+    replay_footed(steps, updates, left, handed, side, land_at, hang, flight, 0)
+}
+
+/// [`replay`] with the [`FOOT_SYNC`] blends' start `foot`.
+#[allow(clippy::too_many_arguments)]
+fn replay_footed(
+    steps: &'static [Step],
+    updates: i32,
+    left: bool,
+    handed: bool,
+    side: bool,
+    land_at: i16,
+    hang: Option<bool>,
+    flight: impl Fn(i32) -> u8,
+    foot: u8,
+) -> (Run, trick::Ran) {
+    let mut run = Run::new(left, 0).picking(handed, side).footed(foot);
     run.land_at = land_at;
     run.hang = hang;
     let mut ran = trick::Ran::default();
@@ -323,6 +339,28 @@ impl World {
         }
     }
 
+    /// The [`FOOT_SYNC`] start for `steps` begun from the clip `from` with
+    /// the live left hand `left` ([`foot_sync`]); 0 without one.
+    fn foot_of(&self, steps: &[Step], from: Option<(u16, f32)>, left: bool) -> u8 {
+        let Some(poses) = self.poses.get() else {
+            return 0;
+        };
+        let Some((record, frame)) = from else {
+            return 0;
+        };
+        steps
+            .iter()
+            .find_map(|s| match *s {
+                Step::Blend {
+                    start: FOOT_SYNC,
+                    records,
+                    ..
+                } => Some(records[usize::from(left)]),
+                _ => None,
+            })
+            .map_or(0, |to| foot_sync(poses, (record, frame as i32), to))
+    }
+
     /// `i`'s scripted move's channel as the last update left it: its run
     /// replayed to now (the leaper's span the lob reads, [`crate::leap`]).
     pub(crate) fn move_run(&self, i: usize) -> Option<Run> {
@@ -332,7 +370,8 @@ impl World {
         let (left, side) = first.map_or((p.gait_channel.hand == 2, other_side(p)), |x| {
             (x.left, x.side)
         });
-        let (run, _) = replay(
+        let foot = self.foot_of(s.steps, first.and_then(|x| x.from), left);
+        let (run, _) = replay_footed(
             s.steps,
             s.updates,
             left,
@@ -341,6 +380,7 @@ impl World {
             p.flight.landing,
             s.hang,
             |_| 0,
+            foot,
         );
         Some(run)
     }
@@ -355,7 +395,8 @@ impl World {
         let (left, side) = first.map_or((p.gait_channel.hand == 2, other_side(p)), |x| {
             (x.left, x.side)
         });
-        let (run, _) = replay(
+        let foot = self.foot_of(s.steps, first.and_then(|x| x.from), left);
+        let (run, _) = replay_footed(
             s.steps,
             s.updates + ahead,
             left,
@@ -364,6 +405,7 @@ impl World {
             p.flight.landing,
             s.hang,
             |_| 0,
+            foot,
         );
         Some(run.shown())
     }
@@ -448,7 +490,8 @@ impl World {
             }
             .or_else(gait);
             let landing = p.flight.landing;
-            let (run, _) = replay(
+            let foot = self.foot_of(s.steps, first.and_then(|x| x.from), left);
+            let (run, _) = replay_footed(
                 s.steps,
                 s.updates,
                 left,
@@ -457,6 +500,7 @@ impl World {
                 landing,
                 s.hang,
                 |_| 0,
+                foot,
             );
             if run.done {
                 return Some(self.gait_channel_shown(i));
@@ -509,7 +553,8 @@ impl World {
         } else {
             tick.saturating_add(i16::from(timing::airtime(p.flight.velocity[1], p.height)))
         };
-        let (after, ran) = replay(
+        let foot = self.foot_of(s.steps, first.and_then(|x| x.from), left);
+        let (after, ran) = replay_footed(
             s.steps,
             s.updates,
             left,
@@ -518,9 +563,10 @@ impl World {
             land_at,
             s.hang,
             |_| 0,
+            foot,
         );
         let before = (s.updates > 1).then(|| {
-            replay(
+            replay_footed(
                 s.steps,
                 s.updates - 1,
                 left,
@@ -529,6 +575,7 @@ impl World {
                 land_at,
                 s.hang,
                 |_| 0,
+                foot,
             )
             .0
             .shown()
@@ -746,4 +793,114 @@ impl World {
             });
         }
     }
+}
+
+/// The blend's step-matched start (`8e` with start `-9`,
+/// `0x198098..0x1983dc`): the outgoing clip `from` (record and frame, the
+/// script's +0x50 and +0x5c) and the incoming record `to`. On a frame
+/// with a foot's flags (state 0xfc0) the first frame of `to` from 0 with
+/// the same flags; else the last foot frame back from `from`, how far
+/// past it he is over that step's length (to the frame with the next
+/// flags of its group, none when it is a plant, 0x900), and the same
+/// share of `to`'s step from its frame with those flags. 0 when no frame
+/// matches.
+pub fn foot_sync(poses: &pose::Poses, from: (u16, i32), to: u16) -> u8 {
+    let (r0, f0) = from;
+    let state0 = |f: i32| poses.state(r0, f);
+    let state1 = |f: i32| poses.state(to, f);
+    let n0 = poses.frames(r0).unwrap_or(1).max(1) as i32;
+    let n1 = poses.frames(to).unwrap_or(1).max(1) as i32;
+    let next = |f: i32, last: i32| if f != last { f + 1 } else { 0 };
+    let start = f0;
+    let st = state0(f0);
+    let on = st & 0xfc0;
+    if on != 0 {
+        // `0x19835c`: the first frame of `to` with his foot's flags.
+        let mut s1 = 0;
+        if state1(0) & on == 0 {
+            loop {
+                s1 = next(s1, n1 - 1);
+                if state1(s1) & on != 0 || s1 == 0 {
+                    break;
+                }
+            }
+        }
+        return s1.clamp(0, 255) as u8;
+    }
+    // Back to the last foot frame (`0x1980f0`), counting the frames.
+    let mut s1 = f0;
+    let mut back = 0;
+    let mut a0;
+    loop {
+        s1 = if s1 == 0 { n0 - 1 } else { s1 - 1 };
+        a0 = state0(s1);
+        back += 1;
+        if a0 & 0xfc0 != 0 {
+            break;
+        }
+        if s1 == start {
+            return 0;
+        }
+    }
+    let s7 = a0 & 0xfc0;
+    let s3 = if s7 & 0xe00 != 0 {
+        !s7 & 0xe00
+    } else {
+        !s7 & 0x1c0
+    };
+    // The share of the step (`0x19817c`): none on a plant (0x900).
+    let mut share = 0.0f32;
+    if a0 & 0x900 == 0 {
+        let mut s5 = 0;
+        let mut s0 = s1;
+        if state0(s1) & s3 == 0 {
+            loop {
+                s0 = next(s0, n0 - 1);
+                s5 += 1;
+                if state0(s0) & s3 != 0 || s0 == s1 {
+                    break;
+                }
+            }
+        }
+        share = back as f32 / s5 as f32;
+    }
+    // `to`'s frame with the same flags (`0x1981fc`).
+    let mut t1 = 0;
+    let mut a = state1(0);
+    if a & s7 == 0 {
+        loop {
+            t1 = next(t1, n1 - 1);
+            a = state1(t1);
+            if a & s7 != 0 || t1 == 0 {
+                break;
+            }
+        }
+    }
+    if a & 0xfc0 == 0 {
+        return 0;
+    }
+    if share == 0.0 {
+        return t1.clamp(0, 255) as u8;
+    }
+    // Its step's length to the next flags (`0x198294`), and the share of
+    // it on from there (`0x198314`).
+    let mut s5 = 0;
+    let mut s0 = t1;
+    if state1(t1) & s3 == 0 {
+        loop {
+            s0 = next(s0, n1 - 1);
+            s5 += 1;
+            if state1(s0) & s3 != 0 || s0 == t1 {
+                break;
+            }
+        }
+    }
+    // (A whole number of laps changes nothing: the EE's saturated
+    // conversion comes round to the same frame.)
+    let ahead = ((s5 as f32 * share) as i32).rem_euclid(n1);
+    let mut f = t1;
+    for _ in 0..ahead {
+        f = next(f, n1 - 1);
+    }
+    f.clamp(0, 255) as u8
 }

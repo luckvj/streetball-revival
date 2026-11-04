@@ -117,7 +117,7 @@ use crate::{
 /// stops among the stands (the flair's up three), a stand's coast and the
 /// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324); 109:
 /// the advanced dunk's toss and finish ([`crate::advanced`]).
-const VERSION: u8 = 109;
+const VERSION: u8 = 110;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1867,6 +1867,7 @@ fn run_out(w: &mut Writer, run: &crate::trick::Run) {
     });
     w.bool(run.asked);
     w.uv(run.before.map_or(0, |r| u64::from(r) + 1));
+    w.u8(run.foot);
 }
 
 fn run_in(r: &mut Reader) -> Result<crate::trick::Run, String> {
@@ -1931,6 +1932,7 @@ fn run_in(r: &mut Reader) -> Result<crate::trick::Run, String> {
         },
         asked: r.bool()?,
         before: record(r.uv()?)?,
+        foot: r.u8()?,
     })
 }
 
