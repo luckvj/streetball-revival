@@ -20,8 +20,17 @@
 //!   restart for the other side (vt+0x14c, `FUN_001406b8`), or, with the
 //!   holder in a pass (bit 4), a wait (+0x19c) for his pass to end.
 //!
-//! Not modelled: the singleton's +0x74 (never set in play) and slot 48's
-//! per-second post (the HUD and the crowd read the clock themselves).
+//! - It runs `n × 1.5 / fps` an update (`FUN_00131308(timer, 1)`,
+//!   [`CLOCK_STEP`]): its 24 shown seconds last 16; save state 12's clock
+//!   reads 24 less 191 steps, bit for bit.
+//! - Each update it runs, its whole seconds (`FUN_00131378`: `trunc(t) %
+//!   60`), when they change from the last posted (`DAT_003d30c8`), go out
+//!   as slot 48 with one more (`0x13f598..0x13f5e0`). The sound listener's
+//!   handler draws `rand()` when that is 21 (`0x1a5cac`, the C library's
+//!   generator, [`World::libc_rand`]): its
+//!   coin calls the defence ([`Event::ShotClockCall`]).
+//!
+//! Not modelled: the singleton's +0x74 (never set in play).
 
 use crate::{Action, Event, World, game_phase::ball};
 
@@ -39,7 +48,12 @@ pub struct ShotClock {
     pub pass: bool,
     /// Game+0x1a4: run out while the holder shoots.
     pub shot: bool,
+    /// `DAT_003d30c8`: the whole seconds slot 48 last posted.
+    pub shown: i32,
 }
+
+/// `FUN_00131308(timer, 1)`: the clock's step an update, `1 × 1.5 / fps`.
+pub const CLOCK_STEP: f32 = 1.5 / crate::TICK_HZ as f32;
 
 impl Default for ShotClock {
     fn default() -> Self {
@@ -49,6 +63,7 @@ impl Default for ShotClock {
             loose: false,
             pass: false,
             shot: false,
+            shown: 0,
         }
     }
 }
@@ -163,7 +178,19 @@ impl World {
         {
             return;
         }
-        self.shot_clock = (self.shot_clock - crate::TICK_SECONDS).max(0.0);
+        self.shot_clock = (self.shot_clock - CLOCK_STEP).max(0.0);
+        // Slot 48: its whole seconds, when they change; the sound
+        // listener's coin at 21.
+        let seconds = (self.shot_clock as i32) % 60;
+        if seconds != self.clock.shown {
+            if seconds + 1 == 21 {
+                // The C library's `rand()` ([`World::libc_rand`]), not
+                // the shared generator.
+                let coin = self.libc_rand() & 1 != 0;
+                self.events.push(Event::ShotClockCall { coin });
+            }
+            self.clock.shown = seconds;
+        }
         if self.shot_clock > 0.0 {
             return;
         }
@@ -180,5 +207,21 @@ impl World {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CLOCK_STEP;
+
+    #[test]
+    fn the_clock_runs_at_the_originals_step() {
+        // Save state 12's clock (its timer +4, from a full 24): 0x4199ccf3,
+        // 19.225, 191 steps of 1.5 / 60 on.
+        let mut t = 24.0f32;
+        for _ in 0..191 {
+            t = (t - CLOCK_STEP).max(0.0);
+        }
+        assert_eq!(t.to_bits(), 0x4199_ccf3);
     }
 }

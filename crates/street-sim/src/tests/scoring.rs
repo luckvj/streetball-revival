@@ -470,13 +470,13 @@ fn clocked() -> World {
 fn the_shot_clock_runs_in_live_play_and_refills_for_a_new_side() {
     let mut w = clocked();
     w.step_shot_clock();
-    assert!((w.shot_clock - (24.0 - TICK_SECONDS)).abs() < 1e-5);
+    assert!((w.shot_clock - (24.0 - crate::shot_clock::CLOCK_STEP)).abs() < 1e-5);
     // The other side with the ball: full again at the next look.
     w.shot_clock = 5.0;
     w.possession = 1;
     w.step_shot_clock();
     // Refilled, then run for this update.
-    assert!((w.shot_clock - (24.0 - TICK_SECONDS)).abs() < 1e-5);
+    assert!((w.shot_clock - (24.0 - crate::shot_clock::CLOCK_STEP)).abs() < 1e-5);
     assert_eq!(w.clock.side, 1);
 }
 
@@ -488,7 +488,7 @@ fn a_falling_shot_and_the_rim_refill_the_clock() {
     w.ball.state = BallState::Shot;
     w.ball.velocity = [0.0, -1.0, 0.0];
     w.step_shot_clock();
-    let ran = 24.0 - TICK_SECONDS;
+    let ran = 24.0 - crate::shot_clock::CLOCK_STEP;
     assert!((w.shot_clock - ran).abs() < 1e-5, "a shot on its way down");
     // The rim at the end team 0 attacks: full, and stopped until a hold.
     w.shot_clock = 3.0;

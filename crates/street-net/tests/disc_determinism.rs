@@ -448,8 +448,9 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         [3, 9],
         // (2025: on 2024, after the board passout's look, the second
         // client's match played no replay; 2026: 2025's blocked no shot
-        // once the holders backed down.)
-        2026,
+        // once the holders backed down; 2027: 2026's played no replay on
+        // one machine once the shot clock ran at the original's step.)
+        2027,
         15_000,
         Conditions {
             loss: 0.04,

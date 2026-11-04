@@ -5,6 +5,12 @@ its version's part.
 
 ## Unreleased
 
+- The shot clock runs at the PS2's speed: its 24 seconds tick down in 16
+  real seconds, one and a half times as fast as before.
+- The defence's "21 on the clock" call now takes its chance from the
+  game's own random numbers at the PS2's moment, so the court's litter
+  and other effects that share them follow the original's.
+
 - After a pass goes loose, players who were watching it keep looking at
   the intended receiver as on the PS2, instead of turning their heads
   back to their animation.

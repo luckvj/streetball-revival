@@ -10722,6 +10722,24 @@ ball at 6.9, which is why the zone reads the ball. His stick let go at
 the press, a dribble stop plays on channel 0 under the toss: a quarter of
 his speed for five updates, as captured.)
 
+**The shot clock's step and its per-second post** (2026-11-04). The
+clock's run (`FUN_00131308(timer, 1)`, called at `0x13f598`) takes `n ×
+1.5 / fps` (`0x3fc00000` over `FUN_0030fa50`'s +0x28, 60.0 in every save
+state) off the timer's +4: 0.025 an update, so the 24 shown seconds last
+16. The rewrite had run it at 1/60. Save state 12's timer reads
+`0x4199ccf3` (19.225), 24 less 191 such steps exactly (no count of 1/60
+steps reaches it); test `the_clock_runs_at_the_originals_step`. After the
+run, `FUN_00131378` (`trunc(t) % 60`) against `DAT_003d30c8`: on a change
+slot 48 goes out with one more (`0x13f5b8..0x13f5e0`) and the value is
+kept. Slot 48's sound handler (`0x1a5c90..0x1a5cdc`) draws the C
+library's `rand()` (`0x3b42a0`, `World::libc_rand`, the litter's
+generator, not the shared one) when the value is 21 and on an odd draw a
+defender calls it (`0x1ad068`, category 7): the draw is inside the
+game's update, so the simulation makes it (`Event::ShotClockCall`) and
+the presentation reads its coin. The AI's restart test now counts a second walk in one restart
+as the inbound strategy's replan (a teammate took the loose ball first;
+`FUN_0012bc08`'s 10-update check plans again).
+
 **The staged gamebreaker's cue 0x51** (2026-11-04). Three sound
 listener handlers, while the Script Manager runs a script (game+0x424
 +0x50 in 3..7) whose header kind (`FUN_00337af0`: the running script's

@@ -117,7 +117,7 @@ use crate::{
 /// stops among the stands (the flair's up three), a stand's coast and the
 /// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324); 109:
 /// the advanced dunk's toss and finish ([`crate::advanced`]).
-const VERSION: u8 = 111;
+const VERSION: u8 = 112;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -374,11 +374,13 @@ impl World {
             loose,
             pass,
             shot,
+            shown,
         } = clock;
         w.iv(i64::from(*side));
         for f in [stopped, loose, pass, shot] {
             w.bool(*f);
         }
+        w.iv(i64::from(*shown));
         match lesson {
             None => w.u8(0),
             Some(l) => {
@@ -769,6 +771,7 @@ impl World {
             loose: r.bool()?,
             pass: r.bool()?,
             shot: r.bool()?,
+            shown: r.i32()?,
         };
         let (lesson, lesson_page) = match r.u8()? {
             0 => (None, false),
@@ -3099,6 +3102,10 @@ fn event(w: &mut Writer, e: &Event) {
             w.u8(9);
             w.us(team);
         }
+        Event::ShotClockCall { coin } => {
+            w.u8(49);
+            w.bool(coin);
+        }
         Event::Inbound { player } => {
             w.u8(10);
             w.us(player);
@@ -3365,6 +3372,7 @@ fn event_in(r: &mut Reader) -> Result<Event, String> {
         8 => Event::Pickup { player: r.us()? },
         34 => Event::Rebound { player: r.us()? },
         9 => Event::ShotClockViolation { team: r.us()? },
+        49 => Event::ShotClockCall { coin: r.bool()? },
         10 => Event::Inbound { player: r.us()? },
         11 => Event::GameOver { winner: r.us()? },
         12 => Event::Trick {

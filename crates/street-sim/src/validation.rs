@@ -1228,6 +1228,7 @@ impl World {
                 | Event::Pocket { team: t }
                 | Event::Cancel { team: t } => team(t)?,
                 Event::GameOver { winner } => team(winner)?,
+                Event::ShotClockCall { .. } => {}
                 Event::ReplayRoll { .. } => {}
                 Event::InboundWalk { player: p }
                 | Event::Swing { player: p }

@@ -1109,7 +1109,11 @@ fn every_restart_of_a_computer_game_ends_with_an_inbound_pass() {
         let (mut restarts, mut longest, mut ticks) = (0, 0, 0);
         // "throw inbound"'s first update posts slot 41 once a restart
         // (`Event::InboundWalk`), by the man who then throws it.
-        let (mut walks, mut walker) = (0, None);
+        // A teammate who takes the loose ball first has the restart planned
+        // again at the strategy's next check (`FUN_0012bc08`'s 10-update
+        // timer), and the new inbounder walks too: a walk before the last
+        // one's pass is such a replan.
+        let (mut walks, mut walker, mut replans) = (0, None, 0);
         for _ in 0..20_000 {
             step_all(&mut w);
             if w.restarting() {
@@ -1121,6 +1125,7 @@ fn every_restart_of_a_computer_game_ends_with_an_inbound_pass() {
             for e in &w.events {
                 if let crate::Event::InboundWalk { player } = *e {
                     walks += 1;
+                    replans += usize::from(walker.is_some());
                     walker = Some(player);
                 }
                 if let crate::Event::Inbound { player } = *e {
@@ -1137,8 +1142,8 @@ fn every_restart_of_a_computer_game_ends_with_an_inbound_pass() {
         println!("seed {seed}: {restarts} restarts, longest {longest} updates");
         assert!(restarts > 3, "seed {seed}: {restarts} restarts");
         assert!(
-            (restarts..=restarts + 1).contains(&walks),
-            "seed {seed}: {walks} walks"
+            (restarts + replans..=restarts + replans + 1).contains(&walks),
+            "seed {seed}: {walks} walks, {replans} replanned"
         );
         assert!(
             longest < 12 * 60,

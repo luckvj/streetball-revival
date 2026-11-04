@@ -631,9 +631,6 @@ pub struct Effects {
     pub(crate) signatures: Vec<u8>,
     /// Milliseconds of play run so far.
     clock: f64,
-    /// The rewrite's stand-in for the game's `rand()` where a listener
-    /// handler draws from it.
-    rng: u32,
     /// The tip-off's catch has been heard (slot 22).
     tipped: bool,
     /// Alternations the listener keeps: [1] the violations' line
@@ -945,7 +942,6 @@ impl Effects {
             speakers: Vec::new(),
             signatures: Vec::new(),
             clock: 0.0,
-            rng: seed | 1,
             tipped: false,
             turns: [0; 2],
             exertions: 0,
@@ -980,15 +976,6 @@ impl Effects {
         self.stop_loop(ev::CROWD_LOOP);
         self.fire(&[ev::SWEETENER, 0, 0, 1000, 14]);
         self.started = true;
-    }
-
-    fn roll(&mut self) -> u32 {
-        let mut x = self.rng.max(1);
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        self.rng = x;
-        x
     }
 
     /// `player` asks to say a line of `category` (`0x1ad068`, which asks
@@ -2063,9 +2050,14 @@ pub(crate) fn fire_events(
             let p = third(w, w.possession);
             fx.say(speech.as_deref_mut(), p, 2, at(player_at(p)));
         }
-        // `rand() & 1` (`0x1a5cb4`): the rewrite's own draw stands in for
-        // the game's global generator, which the presentation cannot take.
-        if left == 21 && fx.roll() & 1 != 0 {
+        // At 21 the handler's `rand() & 1` (`0x1a5cb4`), drawn by the
+        // simulation from the game's generator (`Event::ShotClockCall`).
+        if !tick.replay
+            && tick
+                .events
+                .iter()
+                .any(|e| matches!(e, Event::ShotClockCall { coin: true }))
+        {
             let p = third(w, 1 - w.possession.min(1));
             fx.say(speech, p, 7, at(player_at(p)));
         }

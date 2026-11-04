@@ -377,6 +377,12 @@ pub enum Event {
     ShotClockViolation {
         team: usize,
     },
+    /// The shot clock shows 21 (slot 48's post, `0x13f5c8`): the sound
+    /// listener's handler draws `rand()` (`0x1a5cac`, [`World::libc_rand`]) and on an
+    /// odd draw (`coin`) a defender calls it (`0x1a5cc0..0x1a5cd8`).
+    ShotClockCall {
+        coin: bool,
+    },
     Inbound {
         player: usize,
     },
