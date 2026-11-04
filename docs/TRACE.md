@@ -10722,6 +10722,18 @@ ball at 6.9, which is why the zone reads the ball. His stick let go at
 the press, a dribble stop plays on channel 0 under the toss: a quarter of
 his speed for five updates, as captured.)
 
+**The staged gamebreaker's cue 0x51** (2026-11-04). Three sound
+listener handlers, while the Script Manager runs a script (game+0x424
++0x50 in 3..7) whose header kind (`FUN_00337af0`: the running script's
+word at +4, 1 for the gamebreakers' nearest binding) is 1, hand the
+listener's +0x68 object a code (`FUN_001a9d80`: 3, 3, 4; read back
+through a virtual at `0x45ce6c`, not traced) and fire event 0x51 at the
+origin with volume 1000 (the router sends `[0x51, parameter]`): a jump
+shot's launch (slot 11, kind 2 only, `0x1a47b0..0x1a4840`) and a take-off
+(slot 4, `0x1a4954..0x1a49e4`) with 1, a throw from 9 or more up (slot
+18, the ball's place, `0x1a5e00..0x1a5ebc`) with 2. `street_game::sfx`
+fires them (`ev::STAGED_CUE`).
+
 **Three closed gaps** (2026-11-04).
 - A pass's timer is its flight plus fps / 12 (`DAT_004b84b0`, set at
   `0x153fa0` to `fps / 12`, added at `0x14c2f0`); as it comes down to fps
@@ -11314,7 +11326,10 @@ attract's and the played: 4 of the story game's 45, 3 of the defence capture's 2
 Left: in a restart without a replay the original's inbounder is not driven for about 20 updates (speed level 0, his
 last clip carrying him), so it takes the ball 41..44 updates in (the ball down from the rim through the net and up off
 the floor) where the rewrite's takes it about 30 in: those restarts run 111..120 updates at the shortest against
-130..135.
+130..135. (Re-measured 2026-11-04 on the gate's three attract reports: the restarts without a replay now start at 131
+in ours as in the original's, the means 151, 150 and 139 against 159, 153 and 142. The idle spell is "loose ball"'s
+stand where a high ball comes down (`0x10e350..0x10e4a8`, +0x24), which the rewrite has; the constructor
+`FUN_0010dd68` sets no wait, and the restart strategy starts 0 or 1 update in, 8 or 14 after a celebration.)
 
 **The tip jumpers' hands.** The tip-off script's `a1 ef` (raw `0x19537c..0x195570`) poses the channel's clip (`8e 03`:
 `tipoff_jump_2` 380, `tipoff_jump_1` 384, `tipoff_jump_3` 382) at the script's frame (15, 10, 11; `FUN_0019bda8`)

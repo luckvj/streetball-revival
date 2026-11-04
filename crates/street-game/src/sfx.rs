@@ -169,6 +169,10 @@ pub(crate) mod ev {
     /// A signature player's own sound (`[angle, kind]`): slots 2, 4, 11.
     pub const SIGNATURE: i32 = 0x47;
     pub const EXERTION: i32 = 0x50;
+    /// A staged gamebreaker's cue (`[parameter]`, a running script of kind
+    /// 1): its jump shot's launch and a take-off (1), a throw from 9 or
+    /// more up (2).
+    pub const STAGED_CUE: i32 = 0x51;
 }
 
 // ---------------------------------------------------------------------------
@@ -1546,6 +1550,15 @@ pub(crate) fn fire_events(
     // Requests go to the speech manager, which serves them each tick
     // (`audio::speech_service`); a replay's re-stepped ticks ask nothing.
     let mut speech = pause_speech.as_deref_mut().filter(|_| !tick.replay);
+    // The Script Manager runs a staged script of kind 1 (game+0x424 +0x50
+    // in 3..7; `FUN_00337af0`, the running script's header word at +4, 1:
+    // a gamebreaker's): three handlers cue 0x51.
+    let staged_one = w.sequence.is_some_and(|s| {
+        clips
+            .as_ref()
+            .and_then(|c| c.timeline.scripts.get(s.script))
+            .is_some_and(|t| t.kind == 1)
+    });
     for event in &tick.events {
         match *event {
             // Every take (slot 24, `0x1a4f90`): 0x3a at the ball. A catch,
@@ -1589,6 +1602,11 @@ pub(crate) fn fire_events(
                 fx.block_flag = false;
                 let (ba, bd) = at(ball);
                 if matches!(event, Event::Shot { .. }) {
+                    // In a staged gamebreaker (`0x1a47b0..0x1a4840`) the cue
+                    // 0x51 1 first.
+                    if staged_one {
+                        fx.fire(&[ev::STAGED_CUE, 1]);
+                    }
                     fx.fire(&[ev::LOB, ba, bd]);
                     fx.say_launch(speech.as_deref_mut(), player, (a, d));
                 } else {
@@ -1603,8 +1621,8 @@ pub(crate) fn fire_events(
             // at the ball, or in its place the signature sound for dunk id
             // 53 by Stretch or 56 by Bonafide ([`dunk_signature`]). The
             // music's duck at finishes of 2 or more (`0x1ab070`) is
-            // `crate::song`'s; not modelled: 0x51 inside a staged
-            // gamebreaker.
+            // `crate::song`'s. In a staged gamebreaker the cue 0x51 1 first
+            // (`0x1a4954..0x1a49e4`).
             Event::TakeOff {
                 player,
                 leap,
@@ -1612,6 +1630,9 @@ pub(crate) fn fire_events(
                 dunk,
             } => {
                 let (a, d) = at(player_at(player));
+                if staged_one {
+                    fx.fire(&[ev::STAGED_CUE, 1]);
+                }
                 if every_other(&mut fx.exertions) {
                     let voice = fx.voices.get(player).copied().unwrap_or(0);
                     fx.fire(&[ev::EXERTION, a, d, voice]);
@@ -1643,6 +1664,11 @@ pub(crate) fn fire_events(
                 }
                 if leaper {
                     fx.block_flag = true;
+                }
+                // In a staged gamebreaker a throw from 9 or more up (the ball's
+                // place, `0x1a5e00..0x1a5ebc`) cues 0x51 2.
+                if staged_one && 9.0 <= w.ball.position[1] {
+                    fx.fire(&[ev::STAGED_CUE, 2]);
                 }
             }
             // A block jump's take-off (slot 6): the block scripts' callback

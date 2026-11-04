@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- Level 2 gamebreaker sequences play the PS2's extra sound cue at the
+  shot, the take-off and a high pass.
+
 - An alley-oop lob the leaper hasn't caught by the end of its flight
   slows to half speed for its last few updates as on the PS2, instead of
   flying on at full speed.
