@@ -113,8 +113,10 @@ use crate::{
 /// `inbound_walk`); 101: the team's passout value (team +0x5c); 102: the
 /// swing ([`Event::Swing`], actor+0x1d8); 103: the pick's call
 /// ([`Event::PickCall`], the AI game's `pick_call`); 106: the tip-off's
-/// stances among the stands, the flair's moved up two.
-const VERSION: u8 = 106;
+/// stances among the stands, the flair's moved up two; 107: the dribble
+/// stops among the stands (the flair's up three), a stand's coast and the
+/// stick's run (actor+0xa0).
+const VERSION: u8 = 107;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1061,6 +1063,7 @@ fn player(w: &mut Writer, p: &Player) {
         celebrate,
         stand,
         stand_count,
+        stick_run,
         boxing,
         posting,
         restart_walk,
@@ -1182,9 +1185,12 @@ fn player(w: &mut Writer, p: &Player) {
                     w.f(at[1]);
                 }
             }
+            w.f(s.coast[0]);
+            w.f(s.coast[1]);
         }
     }
     w.uv(u64::from(*stand_count));
+    w.uv(u64::from(*stick_run));
     w.bool(*boxing);
     w.bool(*posting);
     w.bool(*restart_walk);
@@ -1680,10 +1686,12 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                     1 => Some(([r.u8()?, r.u8()?], [r.f()?, r.f()?])),
                     k => return Err(format!("bad plant flag {k}")),
                 },
+                coast: [r.f()?, r.f()?],
             }),
             k => return Err(format!("bad stand flag {k}")),
         },
         stand_count: u16::try_from(r.uv()?).map_err(|_| "invalid stand count")?,
+        stick_run: u16::try_from(r.uv()?).map_err(|_| "invalid stick run")?,
         boxing: r.bool()?,
         posting: r.bool()?,
         restart_walk: r.bool()?,

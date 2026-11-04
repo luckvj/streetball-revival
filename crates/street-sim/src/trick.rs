@@ -121,6 +121,10 @@ pub enum Step {
     /// `aa k` (`FUN_00194848`): the velocity `k` times the last update's
     /// displacement (actor+0x220).
     Carry(f32),
+    /// `ae k` (`FUN_00194960`): the velocity (actor+0x40) times `k` (the
+    /// dribble stands' 0.25: the stop's velocity a quarter through their
+    /// blend).
+    Scale(f32),
     /// Callback 4 (`FUN_00175248`): the wanted facing (actor+0xb0) toward
     /// the rim his team attacks (`FUN_0016f260`) plus its word.
     Want(i16),
@@ -764,6 +768,7 @@ impl Run {
                 | Step::Aim(_)
                 | Step::Reach(_)
                 | Step::Carry(_)
+                | Step::Scale(_)
                 | Step::Slide(_)
                 | Step::Want(_)
                 | Step::Plant { .. }

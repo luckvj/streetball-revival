@@ -3,7 +3,7 @@
 
 /// The stand scripts: [`STAND_ADDRESSES`] in order, then the flair's
 /// rows ([`FLAIR_ROWS`]) on `0x457271` from [`FLAIR_FIRST`].
-pub const STAND_SCRIPTS: [StandScript; 61] = [
+pub const STAND_SCRIPTS: [StandScript; 64] = [
     // breathe_1
     StandScript {
         address: 0x4570f5,
@@ -321,6 +321,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443bcf,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [75, 74] },
@@ -334,6 +335,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443bf6,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [77, 76] },
@@ -347,6 +349,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443c1d,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [667, 666] },
@@ -360,6 +363,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443c44,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 12, records: [669, 668] },
@@ -373,6 +377,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443c6b,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [670, 671] },
@@ -386,6 +391,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443c92,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [673, 672] },
@@ -399,6 +405,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443cb9,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [674, 675] },
@@ -412,6 +419,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443ce0,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [680, 681] },
@@ -425,6 +433,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443d74,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [677, 676] },
@@ -438,6 +447,7 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443d07,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
             Blend { n: 6, start: 0, records: [678, 679] },
@@ -451,16 +461,17 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
         address: 0x443d2e,
         steps: &[
             Unplant,
+            Scale(f32::from_bits(0x3e800000)),
             Flags(0x820000),
             Bits(0x20),
-            RightHand(9),
+            RightHand(10),
             Blend { n: 6, start: 8, records: [141, 141] },
-            Jump(6),
+            Jump(7),
             Stop,
             Loop { per_frame: f32::from_bits(0x40800000), frames: 43 },
             End,
             Blend { n: 6, start: 2, records: [141, 141] },
-            Jump(6),
+            Jump(7),
         ],
     },
     // BOX_BEHIND_4
@@ -976,6 +987,71 @@ pub const STAND_SCRIPTS: [StandScript; 61] = [
             Flags(0x820040),
             Blend { n: 12, start: 0, records: [378, 378] },
             Loop { per_frame: f32::from_bits(0x40a00000), frames: 20 },
+            End,
+        ],
+    },
+    // dribble stop (0x3d7b00 [0]: records 176/177)
+    StandScript {
+        address: 0x443ad4,
+        steps: &[
+            Unplant,
+            Flags(0x820000),
+            Bits(0x20),
+            Blend { n: 6, start: 0, records: [176, 177] },
+            Stop,
+            Wait { to: 14, n: 17 },
+            Flags(0x0),
+            PlayOut { per_frame: f32::from_bits(0x3f99999a), to: 29, n: 18 },
+            Call(7),
+            Jump(10),
+            Flags(0x820000),
+            Bits(0x20),
+            Blend { n: 6, start: 0, records: [673, 672] },
+            Stop,
+            Loop { per_frame: f32::from_bits(0x3fd5c28f), frames: 37 },
+            End,
+        ],
+    },
+    // dribble stop (0x3d7b00 [1]: records 174/175)
+    StandScript {
+        address: 0x443b1e,
+        steps: &[
+            Unplant,
+            Flags(0x820000),
+            Bits(0x20),
+            Blend { n: 6, start: 0, records: [174, 175] },
+            Stop,
+            Wait { to: 12, n: 24 },
+            Flags(0x0),
+            PlayOut { per_frame: f32::from_bits(0x40000000), to: 30, n: 36 },
+            Call(7),
+            Jump(10),
+            Flags(0x820000),
+            Bits(0x20),
+            Blend { n: 6, start: 0, records: [670, 671] },
+            Stop,
+            Loop { per_frame: f32::from_bits(0x3fd5c28f), frames: 37 },
+            End,
+        ],
+    },
+    // dribble stop (0x3d7b00 [2]: records 47/46)
+    StandScript {
+        address: 0x443b68,
+        steps: &[
+            Unplant,
+            Flags(0x820000),
+            Bits(0x20),
+            Blend { n: 6, start: 11, records: [47, 46] },
+            Stop,
+            Wait { to: 29, n: 36 },
+            Flags(0x0),
+            Call(7),
+            Jump(9),
+            Flags(0x820000),
+            Bits(0x20),
+            Blend { n: 6, start: 0, records: [77, 76] },
+            Stop,
+            Loop { per_frame: f32::from_bits(0x3f933333), frames: 47 },
             End,
         ],
     },

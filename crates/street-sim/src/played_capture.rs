@@ -2597,6 +2597,136 @@ fn bodies(cap: &Capture) -> Vec<crate::pose::Body> {
 }
 
 #[test]
+fn the_dribblers_stops_coast_into_their_stands_as_the_original() {
+    // Every stop of a dribbling holder in the played captures (his stick
+    // from 16 or more to under 16, on the floor, on a dribble stand or
+    // stop after it: state bit 5): the match as the update before the drop
+    // left it, his stick's run (actor+0xa0) as the capture counts it, one
+    // update with the stick let go, then five more. The stand the stand
+    // path picks must be the original's kind (a dribble stop from
+    // `0x3d7b00` after a run of 60 or more 23 from the rim, else a dribble
+    // stand), and through its six-update blend he coasts on the velocity
+    // the stop left him (the stand path sets none; the script's `97` zeroes
+    // it after the blend), as far an update as the original went.
+    let Some(captures) = load() else {
+        return;
+    };
+    if crate::pose::disc_bank().get().is_none() {
+        return;
+    }
+    let (mut stops, mut kinds, mut steps, mut close) = (0, 0, 0, 0);
+    let mut off = Vec::new();
+    for cap in captures {
+        for (n, u) in cap.updates.iter().enumerate() {
+            if n == 0 || !matches!(u.phase(), 4 | 5) || u.ball_state() != 3 {
+                continue;
+            }
+            let a = &cap.updates[n - 1];
+            let Some(k) = cap.actor_of(u.holder()) else {
+                continue;
+            };
+            if a.frame() + 1 != u.frame()
+                || a.word(k, "requested_intensity") < 16
+                || u.word(k, "requested_intensity") >= 16
+                || u.word(k, "bits") & 0x20 == 0
+                || u.word(k, "bits") & 0x48c != 0
+            {
+                continue;
+            }
+            // The run as actor+0xa0 holds it, and six still updates on.
+            let mut run = 0u16;
+            while let Some(x) = cap.get(a.frame() - i64::from(run)) {
+                if x.word(k, "requested_intensity") < 16 {
+                    break;
+                }
+                run += 1;
+            }
+            let next: Option<Vec<&Update>> = (0..6).map(|t| cap.get(u.frame() + t)).collect();
+            let Some(next) = next else {
+                continue;
+            };
+            // His stand plays through: no shot, trick or pass starts.
+            if next.iter().any(|x| {
+                x.word(k, "requested_intensity") >= 16
+                    || x.actor(k)["position"][1].as_f64() != Some(0.0)
+                    || x.ball_state() != 3
+                    || x.word(k, "bits") & 0x48c != 0
+                    || x.word(k, "bits") & 0x20 == 0
+            }) {
+                continue;
+            }
+            let pc = u.pc(k);
+            let stopped = (0x443ad4..0x443bad).contains(&pc);
+            let mut w = dressed(
+                replay_world_for(
+                    cap,
+                    a,
+                    k,
+                    a.word(k, "heading") as i32,
+                    a.motion(k),
+                    a.word(k, "hand"),
+                ),
+                cap,
+            );
+            let m = &a.actor(k)["motion"];
+            let (mx, mz) = (
+                m[0].as_f64().unwrap_or(0.0) as f32,
+                m[2].as_f64().unwrap_or(0.0) as f32,
+            );
+            if mx != 0.0 || mz != 0.0 {
+                w.players[k].course = crate::math::atan2(mx, mz);
+            }
+            w.players[k].dribble = 1;
+            w.players[k].stick_run = run;
+            w.rng = generator_of(a);
+            let input = |x: &Update| {
+                let mut all = vec![Input::default(); 6];
+                all[k] = Input::moving(stick(x.word(k, "requested_heading") as i32, 0));
+                all
+            };
+            stops += 1;
+            let mut last = w.players[k].position;
+            let mut from = a.floor(k);
+            for (t, x) in next.iter().enumerate() {
+                w.step(&input(x));
+                if t == 0 {
+                    let ours = w.players[k].stand.is_some_and(|s| {
+                        (crate::stand::DRIBBLE_STOP_FIRST..crate::stand::DRIBBLE_STOP_FIRST + 3)
+                            .contains(&s.script)
+                    });
+                    kinds += usize::from(ours == stopped);
+                    if ours != stopped {
+                        off.push((cap.name.clone(), u.frame(), k, run, stopped, ours));
+                    }
+                }
+                let p = w.players[k].position;
+                let f = x.floor(k);
+                let (o, c) = (
+                    crate::math::len(p[0] - last[0], p[1] - last[1]),
+                    crate::math::len(f[0] - from[0], f[1] - from[1]),
+                );
+                steps += 1;
+                close += usize::from((o - c).abs() <= 0.02);
+                last = p;
+                from = f;
+            }
+        }
+    }
+    report(
+        "dribble_stops",
+        json!({"stops": stops, "kinds": kinds, "steps": steps, "within_0.02": close,
+            "off": format!("{:?}", &off[..off.len().min(20)])}),
+    );
+    eprintln!("dribble stops {stops}: kind {kinds}, coast {close} of {steps}; off {off:?}");
+    assert!(stops >= 100, "{stops}");
+    assert!(
+        kinds * 100 >= stops * 97,
+        "kind {kinds} of {stops}: {off:?}"
+    );
+    assert!(close * 100 >= steps * 90, "coast {close} of {steps}");
+}
+
+#[test]
 fn the_swiping_hand_reaches_the_ball_where_the_original_strips_in_play() {
     // Every swipe at a held ball in the played captures (a steal press
     // without the two turbos), posed from the channel's own state as the

@@ -10,13 +10,14 @@
 //! he moves again or a move takes the channel.
 
 /// The stand scripts, as [`STAND_SCRIPTS`] holds them.
-pub const STAND_ADDRESSES: [u32; 54] = [
+pub const STAND_ADDRESSES: [u32; 57] = [
     0x4570f5, 0x457139, 0x4571a8, 0x457202, 0x4570bb, 0x4570d8, 0x4572ae, 0x45731b, 0x456f41,
     0x457412, 0x45742f, 0x4573ce, 0x4573f0, 0x457450, 0x45746d, 0x443bad, 0x443bcf, 0x443bf6,
     0x443c1d, 0x443c44, 0x443c6b, 0x443c92, 0x443cb9, 0x443ce0, 0x443d74, 0x443d07, 0x443d2e,
     0x456f6f, 0x456f9d, 0x456fcb, 0x456ff9, 0x45702c, 0x45705f, 0x45708d, 0x44392a, 0x443980,
     0x4439cd, 0x443a1a, 0x4438d7, 0x4438a7, 0x457377, 0x456d38, 0x456f0e, 0x456de8, 0x456e39,
     0x456e8a, 0x456ed6, 0x456d96, 0x44c31c, 0x44c741, 0x44c6f8, 0x44ba7b, 0x4579d7, 0x4579f5,
+    0x443ad4, 0x443b1e, 0x443b68,
 ];
 
 /// The defence's flair (`FUN_00170fc8`'s `r % 7` of `0x3d9100`, which the
@@ -118,7 +119,7 @@ pub const TIP_OTHERS: [Option<u8>; 6] = [
     Some(RELAX),
     None,
 ];
-pub const FLAIR_FIRST: u8 = 54;
+pub const FLAIR_FIRST: u8 = 57;
 
 /// The offence's stands off the ball (`0x3d7938`, `r % 15`) and the rows
 /// that count as one already (`0x3d78f0`).
@@ -152,6 +153,12 @@ pub const DRIBBLE_ROWS: [u16; 29] = [
     678, 679, 141, 176, 177, 174, 175, 46, 47,
 ];
 
+/// The dribble stops (`0x3d7b00`): a dribbler's stand after a run.
+pub const DRIBBLE_STOP_FIRST: u8 = 54;
+/// The stick's run from which a dribbler stops on one (`DAT_003d78d8`,
+/// the frame rate the boot stores).
+pub const STOP_RUN: u16 = 60;
+
 /// Updates a defender may stand on the post defence's rows before his
 /// stand starts again (`(int)(fps × 0.12)`, `0x16844c..0x168490`).
 pub const POST_HOLD: u16 = 7;
@@ -168,6 +175,10 @@ pub struct Standing {
     /// The planted feet (channel flag 0x80000, `95`): the bones and their
     /// point on the floor, held until a `96` lets go.
     pub plant: Option<([u8; 2], [f32; 2])>,
+    /// The velocity a stop left him (units an update): the stand path
+    /// sets none, so he coasts on it until the script's `97` (a dribble
+    /// stand's after its six-update blend; the others' first).
+    pub coast: [f32; 2],
 }
 
 impl Standing {
@@ -370,6 +381,18 @@ impl World {
             return;
         }
         if self.players[i].dribble == 1 {
+            // A stop from a run of a second or more (actor+0xa0 against
+            // `DAT_003d78d8`, 60 at the boot) 23 or more from the rim
+            // (`FUN_0016e930`), out of the restart: one of the three
+            // dribble stops (`0x3d7b00`, `r % 3`; `0x168864..0x1688dc`).
+            if self.players[i].stick_run >= STOP_RUN
+                && self.game_phase.phase != crate::game_phase::phase::RESTART
+                && self.offence_rim_distance(i) >= 23.0
+            {
+                let k = (self.rng.next_u32() % 3) as u8;
+                self.start_stand(i, DRIBBLE_STOP_FIRST + k);
+                return;
+            }
             if DRIBBLE_ROWS.contains(&row) {
                 return;
             }
@@ -520,6 +543,7 @@ impl World {
             run,
             from,
             plant,
+            coast: [0.0; 2],
         });
     }
 
@@ -665,8 +689,19 @@ impl World {
                     unplant = false;
                 }
                 Step::Unplant => unplant = true,
+                // `97` (`FUN_001947a0`): the velocity zeroed.
+                Step::Stop => s.coast = [0.0; 2],
+                Step::Scale(k) => s.coast = s.coast.map(|c| c * k),
                 _ => {}
             }
+        }
+        // The velocity the stop left him moves him on until then (the
+        // locomotion runs: a stand's `91` has no 0x2).
+        if s.coast != [0.0; 2] {
+            let p = &mut self.players[i];
+            p.position[0] += s.coast[0];
+            p.position[1] += s.coast[1];
+            p.clamp_to_court();
         }
         // `96` lets go at the motion step.
         if unplant {

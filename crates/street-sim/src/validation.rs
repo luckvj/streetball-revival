@@ -542,6 +542,7 @@ impl World {
                 celebrate: _,
                 stand,
                 stand_count: _,
+                stick_run: _,
                 boxing: _,
                 boxed: _,
                 posting: _,
@@ -913,13 +914,20 @@ impl World {
             player(s.shooter)?;
             hoop(s.hoop)?;
             level(s.gamebreaker, 0, 2, "shot gamebreaker level")?;
+            // A slam is a dunk's or an alley-oop's, or a staged Level 2's
+            // dunk (`street`'s launcher: the finishing body in a dunk).
             require(
                 s.slam.is_none_or(|b| {
-                    matches!(
-                        b,
-                        crate::Basket::Dunk { .. } | crate::Basket::AlleyOop { .. }
-                    ) && s.gamebreaker == 0
-                        && !s.layup
+                    !s.layup
+                        && match b {
+                            crate::Basket::Dunk { .. } | crate::Basket::AlleyOop { .. } => {
+                                s.gamebreaker == 0
+                            }
+                            crate::Basket::Gamebreaker {
+                                level, dunk: true, ..
+                            } => s.gamebreaker == 2 && level == 2,
+                            _ => false,
+                        }
                 }),
                 "shot slam",
             )?;

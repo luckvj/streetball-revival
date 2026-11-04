@@ -89,8 +89,8 @@ impl Disc {
     /// [`Step::Loop`], the planted feet (`95`) and their release (`96`),
     /// `98`'s choice between two plantings, `91` as [`Step::Flags`] (no
     /// stand sets 0x1000, so every stand's root carries its player);
-    /// callback 11's `84` and `ae` change nothing a stand plays and are
-    /// passed.
+    /// `ae` as [`Step::Scale`] (the dribble stands' velocity a quarter);
+    /// callback 11's `84` changes nothing a stand plays and is passed.
     fn stand_steps(&self, entry: u32) -> Vec<Step> {
         let mut out: Vec<Step> = Vec::new();
         let mut at = std::collections::BTreeMap::new();
@@ -120,7 +120,10 @@ impl Disc {
                         out.push(Step::Flags(self.unaligned(p)));
                         p + 4
                     }
-                    0xae => p + 4,
+                    0xae => {
+                        out.push(Step::Scale(f32::from_bits(self.unaligned(p))));
+                        p + 4
+                    }
                     0x93..=0x95 => {
                         let mut n = 0;
                         let keep = self.byte(p) == 0xf1;
@@ -1106,6 +1109,8 @@ fn the_stand_scripts_are_the_executables() {
     assert_eq!(rows(0x3d79e0, 9), stand::HELD_ROWS);
     let dribble: Vec<u8> = (0..11).map(|k| stand::DRIBBLE_FIRST + k).collect();
     assert_eq!(words(0x3d7ad0, 11), scripts(&dribble));
+    let stops: Vec<u8> = (0..3).map(|k| stand::DRIBBLE_STOP_FIRST + k).collect();
+    assert_eq!(words(0x3d7b00, 3), scripts(&stops));
     assert_eq!(rows(0x3d7a58, 29), stand::DRIBBLE_ROWS);
     // The scripts named in place (`lui a1, 0x45 / 0x44; addiu a1, lo`).
     let address = |hi: u32, lo: u32| {
@@ -1601,6 +1606,7 @@ fn spelled(s: &Step) -> String {
             f(a.ahead)
         ),
         Step::Carry(v) => format!("Carry({})", f(v)),
+        Step::Scale(v) => format!("Scale({})", f(v)),
         Step::Want(w) => format!("Want({w})"),
         Step::Plant(p) => format!(
             "Plant(jump::Plant {{ hands: {}, keep: {}, pick: {:#x}, bones: [{}, {}] }})",

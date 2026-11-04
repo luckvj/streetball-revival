@@ -3369,7 +3369,10 @@ const FIRST_BOUNDS: Bounds = Bounds {
 /// turnovers 3.75 (se 0.43) against 7, 5.0; counter presses 15.75 (se
 /// 1.01) against 18, 5.5; shots 44.9 (se 0.87) against 49, 7.0; passes
 /// loose at their timer 2.6 (se 0.43) against 0, 4.0; shots knocked loose
-/// 0.69 (se 0.28) against 2, 2.5.
+/// 0.69 (se 0.28) against 2, 2.5. Passes knocked loose set again by the
+/// rule on 2026-11-03 with the dribblers' stops (`stand`'s coast and
+/// dribble stops, checked stop by stop on the played captures): 0.875
+/// (se 0.20) against 2, 1.75.
 const RECORDED_BOUNDS: Bounds = Bounds {
     standing: 0.045,
     away: 0.025,
@@ -3381,7 +3384,7 @@ const RECORDED_BOUNDS: Bounds = Bounds {
     counters: 5.5,
     shots: 7.0,
     jumps: [10.5, 8.0, 5.5],
-    loose: [1.75, 1.0, 4.0, 2.5, 0.11, 425.0],
+    loose: [1.75, 1.75, 4.0, 2.5, 0.11, 425.0],
 };
 
 /// The second capture's on its rosters (Sacramento against Seattle, 13,522
@@ -5139,10 +5142,11 @@ fn stops_slide_as_the_originals_by_role() {
             native.by[k].len(),
             ours.by[k].len()
         );
-        // The holder's medians spread over the matches (0.77, 0.80, 0.84
-        // and the first re-capture's 1.16), and the rewrite's holder slides
-        // less than any (0.60 and 0.69 on the first capture's rosters): a lead,
-        // docs/TRACE.md "The attract captures re-made".
+        // The holder's medians spread over the matches (0.64, 0.80 and the
+        // first re-capture's 1.16; 0.77..0.84 before). Since the dribble
+        // stops and the stands' coast (`stand`, checked stop by stop by
+        // the played test `the_dribblers_stops_coast_into_their_stands_as_the_original`)
+        // the rewrite's own games give 0.79..0.82.
         let spread = if k == 0 { 0.4 } else { 0.3 };
         if native.by[k].len() >= 20 {
             assert!(

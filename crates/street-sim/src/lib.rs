@@ -1705,8 +1705,30 @@ impl World {
             } else {
                 input
             };
+            // The velocity the stop takes away: the stand path sets none,
+            // so a stand that starts on it coasts on it ([`stand`]).
+            let carried = {
+                let v = self.players[i].velocity();
+                [v[0] / 60.0, v[1] / 60.0]
+            };
             self.select_gait(i, &walk, held, stance);
             self.stand_path(i, &input);
+            let p = &mut self.players[i];
+            if let Some(s) = p.stand.as_mut()
+                && s.run.tick < 0
+            {
+                // A stand starting takes the velocity over from the walk.
+                s.coast = carried;
+                p.speed = 0.0;
+            }
+            // Actor+0xa0 (`FUN_001587d8`): the stick's run, for the next
+            // update's stand path.
+            let p = &mut self.players[i];
+            p.stick_run = if input.strength() >= 16 {
+                p.stick_run.saturating_add(1)
+            } else {
+                0
+            };
             if !frozen {
                 self.idle_face(i);
             }

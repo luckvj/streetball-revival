@@ -14298,6 +14298,23 @@ goes loose with its kind (ball+0x184) rewritten is no strip: the five
 knocks keep it at 1, the freestyle dribble lost past the end line
 (pads-1 8709, the swiper 5 away) wrote 0.
 
-Still open: the holder's stop slide; where the original starts a
-lay-up after the channel's step. The School's seven captures are not
+**The dribbler's stop.** The stand path sets no velocity: a stand
+coasts on the one the stop left (actor+0x40) until its script's `97`.
+The no-ball stands open with `97`; the dribble stands open with `ae
+0.25` (`FUN_00194960`: the velocity times its float), blend six updates,
+then `97`, so a dribbler coasts a quarter of his run's speed through the
+blend; and a dribbler whose stick stood at 16 or more for 60 updates
+(actor+0xa0, counted in `FUN_001587d8` against `DAT_003d78d8`, the boot's
+frame rate) 23 or more from the rim, out of the restart, takes one of
+three dribble stops (`0x3d7b00`, `r % 3`, `0x168864..0x1688dc`: records
+176/177, 174/175, 47/46), which keep the whole speed through their blend.
+The port had zeroed every stop at once and lacked the stops and `ae`.
+In the played captures the original's velocity at a dribbler's stop is
+a quarter in all 130 of its dribble stands and whole in all 54 of its
+stops; the new played test replays 214 such stops: the stop or stand
+the original chose in every one, and the coast within 0.02 an update in
+1168 of 1284 updates (the rest beside another player's contacts).
+
+Still open: where the original starts a lay-up after the channel's
+step. The School's seven captures are not
 re-made yet (its tests skip without them).

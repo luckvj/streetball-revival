@@ -5,6 +5,12 @@ its version's part.
 
 ## Unreleased
 
+- Online matches no longer stop with an "invalid state" fault when a
+  Level 2 gamebreaker ends in a dunk.
+- A dribbler who stops now slides into his stance as on the PS2: a
+  quarter of his speed through the stance's blend, and after a long run
+  away from the basket one of the three dribble-stop animations, which
+  carry him further.
 - A player leaping for an alley-oop turns toward the rim as fast as on
   the PS2 (twice the old rate), so his run-up and the lob to him land
   where the original's do.
