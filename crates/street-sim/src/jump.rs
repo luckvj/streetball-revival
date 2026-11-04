@@ -666,6 +666,7 @@ impl World {
                     Step::Stop => vy = 0.0,
                     Step::Rise(v) => vy = v,
                     Step::Carry(k) => vy = f.moved[1] * k,
+                    Step::Scale(k) => vy *= k,
                     _ => {}
                 }
             }
@@ -1060,6 +1061,9 @@ impl World {
                 );
             }
             Step::Carry(k) => f.velocity = f.moved.map(|c| c * k),
+            // `ae k` (`FUN_00194960`): the velocity times `k` (the mid-air
+            // lay-ups' and passes' 0.5), the landing timed again from it.
+            Step::Scale(k) => f.velocity = f.velocity.map(|c| c * k),
             Step::Slide(k) => {
                 // `FUN_001957d8`: a negative value is the default 0.5.
                 f.slide = if k < 0.0 { 0.5 } else { k };

@@ -10722,6 +10722,16 @@ ball at 6.9, which is why the zone reads the ball. His stick let go at
 the press, a dribble stop plays on channel 0 under the toss: a quarter of
 his speed for five updates, as captured.)
 
+**`ae` in the move scripts** (2026-11-04). `ae k` (`FUN_00194960`)
+multiplies the actor's velocity (+0x40, all three parts, a VU0 multiply)
+by `k` and times the landing again (`FUN_0019bed8` into +0x64). Beside the
+dribble stands' 0.25 it opens 21 move scripts with 0.5: the mid-air
+passes (`pass_air_1`..`9`, both sets, and `divepass_air_1`..`3`, rows
+61..79, after `9b 0x10`) and `FUN_0016b1e8`'s ten mid-air lay-ups (after
+callback 4). The held tables had left it out; they now carry it as
+`Step::Scale` and the flight applies it (`jump.rs`, the landing's rise
+reads it as it reads `aa`).
+
 **The gamebreaker task** (`FUN_00144df0`, its process `FUN_00144ef8`; the
 second audit's 3.2). Created by the game listener's slot +0x204
 (`FUN_001422f8`, one at a time), it runs as a process before the game's

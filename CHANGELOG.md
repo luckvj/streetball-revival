@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A player who passes or switches to a lay-up in mid-air loses half his
+  speed as on the PS2, so he drifts and lands where the original's does.
+
 - Advanced dunks play as on the PS2: from 8.5 or more out with four turbo
   bars the dunker tosses the ball up off the backboard while he walks on,
   then leaps for it, catches it in the air and slams it on the original's

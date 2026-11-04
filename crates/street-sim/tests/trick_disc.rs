@@ -587,7 +587,11 @@ impl Disc {
                 });
                 p + 4
             }
-            0x86 | 0x91 | 0xa2 | 0xa4 | 0xaa | 0xae => p + 4,
+            0xae => {
+                out.push(Step::Scale(f32::from_bits(self.unaligned(p))));
+                p + 4
+            }
+            0x86 | 0x91 | 0xa2 | 0xa4 | 0xaa => p + 4,
             0x9f
             | 0x8b
             | 0xa3

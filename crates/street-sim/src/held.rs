@@ -58,7 +58,8 @@ use crate::trick::CURRENT;
 use crate::trick::Select::{Handed, Side};
 use crate::trick::Step::{
     Aim, Bits, Blend, Call, Carry, Clear, Dive, Either, End, Flags, Flight, Hang, Hop, Knock, Land,
-    Pick, Plant, PlayOut, Reach, Rise, Shove, Slide, Stop, Test, Toward, Unplant, Wait, Want,
+    Pick, Plant, PlayOut, Reach, Rise, Scale, Shove, Slide, Stop, Test, Toward, Unplant, Wait,
+    Want,
 };
 
 include!("held_tables.rs");
