@@ -9453,7 +9453,11 @@ ownerless path, a ball leaving its owner as a shot (state 5, after
 rise turning from below zero to not sets `+0x158`, only in the row's copy
 (`FUN_003003f8`'s second argument 0); `+0x1b4` keeps the last rise; while
 `+0x158` is set and the ball has no owner the focus's height reads 0. A
-knock-loose keeps the gate. Tests:
+knock-loose keeps the gate. (2026-11-04: the row's turn reads the same
+field, `0x2fc354..0x2fc380`: with the default focus (+0x1a0 3), no holder
+and +0x158 set, `FUN_002face8` turns on no rise; `RowInputs::vertical_gate`
+had stayed false in the game's adapter and now reads the row source's.)
+Tests:
 `a_loose_balls_bounce_flattens_the_rows_focus_until_a_shot_or_pass`,
 `a_stopping_clip_keeps_the_stationary_gate_off_like_fun_00300b98`.
 

@@ -468,7 +468,7 @@ pub struct RowInputs {
     /// A free ball on the default focus: `FUN_002fe780` aims at the ball.
     pub free_ball: Option<Vec3>,
     /// `+0x158` with a free ball: the vertical motion is dropped from the
-    /// turn (not modelled by the rewrite's source adapter: always false).
+    /// turn (`0x2fc354..0x2fc380`: `FUN_002face8`'s rise argument 0).
     pub vertical_gate: bool,
     /// Game phase 1, the opening toss.
     pub opening: bool,
@@ -3438,7 +3438,9 @@ impl CameraManager {
             reference,
             margin,
             free_ball,
-            vertical_gate: false,
+            // The row helper's own +0x158 (`0x2fc354`), which its source
+            // history keeps (`FUN_003003f8`).
+            vertical_gate: self.row_source.vertical,
             opening,
             possession,
             side,

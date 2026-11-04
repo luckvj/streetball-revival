@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- The court camera no longer bobs up and down following a loose ball
+  bouncing on the floor, as on the PS2.
+
 - The shot clock runs at the PS2's speed: its 24 seconds tick down in 16
   real seconds, one and a half times as fast as before.
 - The defence's "21 on the clock" call now takes its chance from the
