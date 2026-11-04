@@ -2715,8 +2715,17 @@ fn the_swiping_hand_reaches_the_ball_where_the_original_strips_in_play() {
                         first = Some(t);
                     }
                     // The shot clock's violation drops the ball too (phase
-                    // 6, the holder on its script): not a strip.
-                    if before.ball_state() == 3 && w.ball_state() == 1 && w.phase() != 6 {
+                    // 6, the holder on its script): not a strip. Nor is a
+                    // drop that writes the ball's kind (+0x184): a knock
+                    // leaves it as held (1, the five strips'), the
+                    // freestyle dribble lost past the end line in pads-1
+                    // at 8709 wrote 0 with the swiper 5 away.
+                    let kind = |x: &Update| x.ball()["kind"].as_i64();
+                    if before.ball_state() == 3
+                        && w.ball_state() == 1
+                        && w.phase() != 6
+                        && kind(w) == kind(before)
+                    {
                         strip = Some((t, d[0] - reach));
                         break;
                     }
@@ -3677,6 +3686,19 @@ fn the_trick_moves_play_their_scripts_and_clips_in_play() {
                     let word = now.word(i, "heading") as i32;
                     let ours =
                         trick::root_motion(trick::root_step(poses, previous, shown), body, word);
+                    // Kept on the court as `World::contain` keeps him (a
+                    // trick run into the end line stops at ±40.5).
+                    let from = last.floor(i);
+                    let ours = if from[0].abs() <= 40.5 && from[1].abs() <= 25.0 {
+                        let y = now.actor(i)["position"][1].as_f64().unwrap_or(0.0) as f32;
+                        let margin = y * 0.4;
+                        [
+                            (from[0] + ours[0]).clamp(-40.5 - margin, 40.5 + margin) - from[0],
+                            (from[1] + ours[1]).clamp(-25.0 - margin, 25.0 + margin) - from[1],
+                        ]
+                    } else {
+                        ours
+                    };
                     let theirs = [
                         now.floor(i)[0] - last.floor(i)[0],
                         now.floor(i)[1] - last.floor(i)[1],

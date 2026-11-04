@@ -14241,7 +14241,7 @@ pass leave the hands before the next press. (Presses inside a trick or
 inside a pass's windup start nothing; the tests now leave them out.)
 
 **Open on the re-made played set** (`cargo test -p street-sim --lib
-played_capture` with the disc, 35 of 37 pass). Settled: `catch_stand_5` plays record 572
+played_capture` with the disc, all 37 pass). Settled: `catch_stand_5` plays record 572
 out (`8c 1.25` from frame 6 of 16 frames: a tail of 12, not
 `catch_stand_1`'s 9; the tail is ceil((last - frame) × x)); a press
 inside a trick move or a reaction script (bit 10, or the pc inside one,
@@ -14290,6 +14290,14 @@ update orders give a lob's flight, the order the match's other lobs'
 flights set is used, else the point where it is plain (one within 0.1,
 the other three times as far); every match's pairs still make one order.
 
-Still open: the trick moves' root (1866 of 2379); the swipes' strips on time (4 of 5; the swipe is the
-rewrite's own); the holder's stop slide. The School's seven captures are
-not re-made yet (its tests skip without them).
+The trick moves' clip root is kept on the court as `World::contain`
+keeps him: the re-made pads run tricks into the end line, where the
+original stops him at ±40.5 (open-space steps 1866 -> 2333 of 2379
+within 0.01, along the facing 204.51 against 204.45). A held ball that
+goes loose with its kind (ball+0x184) rewritten is no strip: the five
+knocks keep it at 1, the freestyle dribble lost past the end line
+(pads-1 8709, the swiper 5 away) wrote 0.
+
+Still open: the holder's stop slide; where the original starts a
+lay-up after the channel's step. The School's seven captures are not
+re-made yet (its tests skip without them).
