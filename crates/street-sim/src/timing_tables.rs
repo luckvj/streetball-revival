@@ -2492,10 +2492,12 @@ pub struct CatchRow {
     pub frame: u8,
 }
 
-/// Updates a catch that plays its clip out (`8c 1.5`: the rest of the
-/// clip at two thirds speed) keeps bit 9 after the flight's end: 9 in
-/// every one of the 53 `catch_stand_1` catches of the attract captures
-/// (the clip's length is not in the executable).
+/// Updates a catch that plays its clip out (`8c x`: the rest of the clip,
+/// ceil((last - frame) × x) updates) keeps bit 9 after the flight's end:
+/// 9 for `catch_stand_1` (`8c 1.5` from frame 10 of record 565's 17
+/// frames; every one of the 53 in the attract captures). The clips'
+/// lengths are the disc's, not the executable's; `catch_stand_5` plays
+/// its own (12, the re-made played captures').
 pub const CLIP_TAIL: u8 = 9;
 
 pub const CATCH_ROWS: [CatchRow; 39] = [
@@ -2630,7 +2632,8 @@ pub const CATCH_ROWS: [CatchRow; 39] = [
         script: 0x4434cf,
         min_flight: 15,
         flags: 0x110,
-        tail: CLIP_TAIL,
+        // `8c 1.25` from frame 6 of record 572's 16 frames: ceil(9 × 1.25).
+        tail: 12,
         record: 572,
         frame: 6,
     }, // 14

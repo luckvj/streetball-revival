@@ -14241,14 +14241,21 @@ pass leave the hands before the next press. (Presses inside a trick or
 inside a pass's windup start nothing; the tests now leave them out.)
 
 **Open on the re-made played set** (`cargo test -p street-sim --lib
-played_capture`, 25 of 37 pass): the held side fades (none held past 45
-yet: the driver's side-fade rate is low, about 4 in 20 presses); the
-catch holds (3 of the standing catches off by 1..3); the catch rows'
-sectors (529 of 557, under the 48-in-50 bar); one control move in
-defence-1 at 16122; the heave's pump-fake and release an update off (3
-presses); one lob 0.53 off its point (the median 0.084); the presses'
-shots (107 agreeing of the shoot presses); the side shots' facing band;
-the trick moves' root (1771 of 2262); a dunk's rise 0.946; the swipes'
-strips on time (5 of 9; the swipe is the rewrite's own, not ported);
-and the holder's stop slide. The School's seven captures are not
+played_capture`, 30 of 37 pass). Settled since: `catch_stand_5` plays
+record 572 out (`8c 1.25` from frame 6 of 16 frames: a tail of 12, not
+`catch_stand_1`'s 9; the tail is ceil((last - frame) × x)); a press
+inside a trick move or a reaction script (bit 10, or the pc inside one,
+`backdown_spinout` with them) starts nothing and is left out; a shot
+lost before its release (`lost` with no release) is no shot; a press
+with the stick released (intensity under 16 then and the update before)
+replays standing. The heave's release and pump-fake move by an update
+between presses (3 of the 13 heaves; its `8e f2 08` opening), reported
+apart as a known difference. Still open: one control move in defence-1
+at 16122 (the recorder kept the stale first read of update 16121 and
+marked the true one a repeat); six replayed shot choices (side fade
+against hook, runner against the leg kicks); 25 pass targets on moving
+and two-turbo passes; legend-1's lobs (about 0.53 off: the story crew's
+bodies); a running lay-up's rise 0.918; the trick moves' root (1866 of
+2379); the swipes' strips on time (4 of 5; the swipe is the rewrite's
+own); and the holder's stop slide. The School's seven captures are not
 re-made yet (its tests skip without them).

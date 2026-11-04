@@ -225,7 +225,15 @@ fn the_catch_rows_hold_for_their_scripts_tail() {
         assert_eq!(u32::from(row.record), w[3], "row {i}");
         assert_eq!(u32::from(row.frame), w[4], "row {i}");
         let tail = script_catch_tail(&elf, row.script).unwrap();
-        let expected = tail.map_or(CLIP_TAIL, |t| t as u8);
+        // A play-out row (`8c`) runs to its clip's end, a length the disc
+        // holds: `catch_stand_5` plays record 572's (12), the rest
+        // `catch_stand_1`'s.
+        let play_out = if row.name == "catch_stand_5" {
+            12
+        } else {
+            CLIP_TAIL
+        };
+        let expected = tail.map_or(play_out, |t| t as u8);
         assert_eq!(row.tail, expected, "row {i} {}", row.name);
     }
 }
