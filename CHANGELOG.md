@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A standing catch that plays its clip out to the end (`catch_stand_5`)
+  now holds the catch for its own clip's length (12 updates) instead of
+  another catch's (9), as on the PS2.
 - The match intros pick their scripts as the PS2 does, from the game's
   own random numbers, and a streetball legend's own intro plays for the
   same side's legend the PS2 picks it for. The intros' dunks take their
