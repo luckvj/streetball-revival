@@ -43,9 +43,9 @@
 //!
 //! The jumps' own opcodes are steps the flight reads ([`crate::jump`]), and
 //! a `98` record test over its two branches picks one by the channel's
-//! record. The rewrite's own, labelled: `a9` (the glass aim) and the
-//! planted points' correction (`93`..`95` only set their flags) are not
-//! modelled. A blend's step-matched start (`-9`, one pass row, `0x454f5c`)
+//! record. The planted points (`93`..`95`) hold their bones where the
+//! last update posed them ([`crate::jump`]). The rewrite's own, labelled:
+//! `a9` (the glass aim) is not modelled. A blend's step-matched start (`-9`, one pass row, `0x454f5c`)
 //! is [`foot_sync`]'s. The gait channel's own blends (a change of row over
 //! 6 updates) show through [`World::channel`] too.
 
