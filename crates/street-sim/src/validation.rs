@@ -879,6 +879,7 @@ impl World {
             state,
             shot,
             pass,
+            target,
             flight_left,
             flight_time,
             flight_start,
@@ -958,6 +959,10 @@ impl World {
                 BallState::Held(_) | BallState::Loose => shot.is_none() && pass.is_none(),
             },
             "ball state/flight payload",
+        )?;
+        require(
+            target.is_none_or(|t| usize::from(t) < players.len()),
+            "ball target",
         )?;
         let crate::Rules {
             goal,

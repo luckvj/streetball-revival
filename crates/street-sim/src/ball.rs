@@ -175,6 +175,11 @@ pub struct Ball {
     pub shot: Option<Shot>,
     /// The pass while [`BallState::Pass`].
     pub pass: Option<Pass>,
+    /// `ball+0x100`: the last pass's target, set as it leaves the hand
+    /// (`FUN_0014bff8`) and kept after it ends, until the next take
+    /// clears it (`FUN_0014cb28`, `0x14d130`): a pass gone loose still
+    /// names its receiver (the head's look of kind 1).
+    pub target: Option<u8>,
     /// Seconds until a shot or pass arrives.
     pub(crate) flight_left: f32,
     /// The whole flight's seconds (`ball+0x64`, against the frames flown
@@ -511,6 +516,7 @@ impl Ball {
             state: BallState::Loose,
             shot: None,
             pass: None,
+            target: None,
             flight_left: 0.0,
             flight_time: 0.0,
             flight_start: 0.0,
@@ -596,6 +602,7 @@ impl Ball {
         self.shooter = None;
         self.shot = None;
         self.pass = None;
+        self.target = None;
         self.velocity = [0.0; 3];
         self.spin = 0.0;
         self.through = false;
@@ -683,6 +690,7 @@ impl Ball {
         self.spin_from(UP, PASS_SPIN);
         self.state = BallState::Pass;
         self.pass = Some(pass);
+        self.target = Some(pass.to as u8);
         self.shot = None;
     }
 
@@ -710,6 +718,7 @@ impl Ball {
         self.spin_from(if self.bank { DOWN } else { UP }, PASS_SPIN);
         self.state = BallState::Pass;
         self.pass = Some(pass);
+        self.target = Some(pass.to as u8);
         self.shot = None;
     }
 

@@ -1307,6 +1307,7 @@ impl World {
                 self.ball.state = BallState::Pass;
                 self.ball.shot = None;
                 self.ball.pass = Some(pass);
+                self.ball.target = Some(pass.to as u8);
             }
         }
         self.events.push(Event::Pass {

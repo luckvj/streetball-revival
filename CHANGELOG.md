@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- After a pass goes loose, players who were watching it keep looking at
+  the intended receiver as on the PS2, instead of turning their heads
+  back to their animation.
+
 - Level 2 gamebreaker sequences play the PS2's extra sound cue at the
   shot, the take-off and a high pass.
 

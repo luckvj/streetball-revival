@@ -117,7 +117,7 @@ use crate::{
 /// stops among the stands (the flair's up three), a stand's coast and the
 /// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324); 109:
 /// the advanced dunk's toss and finish ([`crate::advanced`]).
-const VERSION: u8 = 110;
+const VERSION: u8 = 111;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -2570,6 +2570,7 @@ fn ball_out(w: &mut Writer, b: &Ball) {
         None => w.u8(0),
     }
     w.bool(b.rolled);
+    w.u8(b.target.map_or(u8::MAX, |t| t));
 }
 
 fn ball_in(r: &mut Reader) -> Result<Ball, String> {
@@ -2650,6 +2651,10 @@ fn ball_in(r: &mut Reader) -> Result<Ball, String> {
         _ => Some(r.u8()?),
     };
     ball.rolled = r.bool()?;
+    ball.target = match r.u8()? {
+        u8::MAX => None,
+        t => Some(t),
+    };
     ball.position = position;
     ball.velocity = velocity;
     ball.state = state;

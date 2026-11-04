@@ -402,7 +402,8 @@ impl World {
         let team = self.team_of(i);
         match kind {
             1 => {
-                let to = self.ball.pass.map(|p| p.to);
+                // ball+0x100: kept after the pass ends until a take.
+                let to = self.ball.target.map(usize::from);
                 if self.players[i].pass_kind == 2 {
                     actor(to.and_then(|r| {
                         let slot = 3 - Court::slot(self, r) as i32 - Court::slot(self, i) as i32;
