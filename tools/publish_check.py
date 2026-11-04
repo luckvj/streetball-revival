@@ -2,8 +2,8 @@
 
 Walks the repository and fails when it finds anything taken from the disc:
 files over 2 MB, game-data file extensions, or game-data magic numbers.
-Build output (target/), git metadata (.git/), and ignored local agent
-worktrees (hidden folders) are skipped; none are release contents.
+Build output (target/) and hidden folders (git metadata, local tool
+folders) are skipped; none are release contents.
 
 Run from the repository root:  python tools/publish_check.py
 """
@@ -31,7 +31,7 @@ MAGIC = (
 ISO_MAGIC = b"CD001"
 ISO_MAGIC_OFFSET = 0x8001
 
-SKIP_DIRS = {"target", ".git", ".helper"}
+SKIP_DIRS = {"target"}
 
 # The original's publisher's and league's names stay out of the project's
 # own text; LEGAL.md is the one place that names them.
@@ -76,7 +76,7 @@ def tracked(root, rel):
 def offenders(root):
     found = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
         for name in filenames:
             path = os.path.join(dirpath, name)
             rel = os.path.relpath(path, root)

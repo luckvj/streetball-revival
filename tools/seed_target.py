@@ -3,7 +3,7 @@
 Every third-party artifact under target/vj/debug is hard-linked (same
 metadata hash in every worktree, so cargo keeps it fresh and never rewrites
 it); the workspace's own crates (street-*) and the examples are left out so
-The helper builds them into files of its own. Hard links share mtimes, so
+the helper builds them into files of its own. Hard links share mtimes, so
 cargo's fingerprints stay valid.
 
 Usage: python seed_target.py <repo> <dest-target-dir-relative-to-repo>

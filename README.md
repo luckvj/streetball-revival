@@ -137,8 +137,8 @@ selected list, not a whole-game percentage. The biggest open areas:
 
 ## AI disclosure
 
-This project was built with the help of a large language model (LLM):
-an LLM wrote and tested much of the code and the research notes,
+This project was built with the help of a large language model (LLM),
+which wrote and tested much of the code and the research notes,
 working from the original game's program and recorded matches, with a person
 directing the work and playing every build. That makes it possible to rebuild
 a whole game in detail, but it also means:
