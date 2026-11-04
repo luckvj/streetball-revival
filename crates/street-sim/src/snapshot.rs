@@ -2570,7 +2570,7 @@ fn ball_out(w: &mut Writer, b: &Ball) {
         None => w.u8(0),
     }
     w.bool(b.rolled);
-    w.u8(b.target.map_or(u8::MAX, |t| t));
+    w.u8(b.target.unwrap_or(u8::MAX));
 }
 
 fn ball_in(r: &mut Reader) -> Result<Ball, String> {
