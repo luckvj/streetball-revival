@@ -14241,21 +14241,38 @@ pass leave the hands before the next press. (Presses inside a trick or
 inside a pass's windup start nothing; the tests now leave them out.)
 
 **Open on the re-made played set** (`cargo test -p street-sim --lib
-played_capture`, 30 of 37 pass). Settled since: `catch_stand_5` plays
-record 572 out (`8c 1.25` from frame 6 of 16 frames: a tail of 12, not
+played_capture` with the disc, 33 of 37 pass). Settled: `catch_stand_5` plays record 572
+out (`8c 1.25` from frame 6 of 16 frames: a tail of 12, not
 `catch_stand_1`'s 9; the tail is ceil((last - frame) × x)); a press
 inside a trick move or a reaction script (bit 10, or the pc inside one,
 `backdown_spinout` with them) starts nothing and is left out; a shot
-lost before its release (`lost` with no release) is no shot; a press
-with the stick released (intensity under 16 then and the update before)
-replays standing. The heave's release and pump-fake move by an update
-between presses (3 of the 13 heaves; its `8e f2 08` opening), reported
-apart as a known difference. Still open: one control move in defence-1
-at 16122 (the recorder kept the stale first read of update 16121 and
-marked the true one a repeat); six replayed shot choices (side fade
-against hook, runner against the leg kicks); 25 pass targets on moving
-and two-turbo passes; legend-1's lobs (about 0.53 off: the story crew's
-bodies); a running lay-up's rise 0.918; the trick moves' root (1866 of
-2379); the swipes' strips on time (4 of 5; the swipe is the rewrite's
-own); and the holder's stop slide. The School's seven captures are not
-re-made yet (its tests skip without them).
+lost before its release is no shot; the heave's release and pump-fake
+move by an update between presses (3 of the 13 heaves; its `8e f2 08`
+opening), reported apart as a known difference.
+
+The recorder's first read of an update lands as the counter ticks,
+before the update's later work: a repeated read (kept as `repeat` when
+it differs) shows the update's own phase and possession. The pad moves
+off a person's scored alley-oop (defence-1 16122 and 4478, legend-1
+5107) on those, so the control test reads the action tap's phase and
+possession from the repeat where there is one.
+
+The press's stick is the press update's, as the pad builder read it.
+Only where it reads at rest on the same heading after a moving update
+(the D-pad held through the press, dropped for the update) is it the
+update before's: a press made as the arrows are let go reads a new
+heading and is at rest. The re-made passes' two-turbo presses off a
+drive are Off the Heezay to the passer himself; reading them as moving
+missed 25 (517 of 520 passes agree, 1 in 100 allowed: two inbounds from
+the restart spot at x -40.5 and one Heezay whose defender is the AI's
+matchup, not captured). A lone leaper falling below 6.5 gives the pass
+to the other teammate (`0x14674c`, defence-1 19928). The shot replays
+start from the update before the press (the press update has run the
+original's pick: pads-1 10189's runner had already left the floor) and
+stop a shooter whose stick was let go then and at the press.
+
+Still open: legend-1's lobs (one 0.53 off its point, the median 0.084:
+the story crew's bodies); a running lay-up's rise 0.918; the trick
+moves' root (1866 of 2379); the swipes' strips on time (4 of 5; the
+swipe is the rewrite's own); the holder's stop slide. The School's seven
+captures are not re-made yet (its tests skip without them).
