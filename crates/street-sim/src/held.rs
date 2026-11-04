@@ -110,7 +110,7 @@ pub fn other_side(p: &Player) -> bool {
 }
 
 /// The yaw of facing word `word` (the pose's, `pose::place`).
-fn yaw(word: i32) -> [f32; 4] {
+pub(crate) fn yaw(word: i32) -> [f32; 4] {
     let theta = word as f32 * std::f32::consts::TAU / 1024.0;
     [
         0.0,
@@ -170,9 +170,12 @@ pub fn move_row_steps(row: u8) -> Option<&'static [Step]> {
                 let r = r.checked_sub(LEAP_STEPS.len())?;
                 EXTRA_STEPS.get(r).or_else(|| {
                     let r = r.checked_sub(EXTRA_STEPS.len())?;
-                    PUTBACK_STEPS
-                        .get(r)
-                        .or_else(|| FINISH_STEPS.get(r.checked_sub(PUTBACK_STEPS.len())?))
+                    PUTBACK_STEPS.get(r).or_else(|| {
+                        let r = r.checked_sub(PUTBACK_STEPS.len())?;
+                        FINISH_STEPS
+                            .get(r)
+                            .or_else(|| ADVANCED_STEPS.get(r.checked_sub(FINISH_STEPS.len())?))
+                    })
                 })
             })
         })

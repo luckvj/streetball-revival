@@ -2759,6 +2759,184 @@ fn the_dribblers_stops_coast_into_their_stands_as_the_original() {
 }
 
 #[test]
+fn the_advanced_dunks_toss_and_finish_as_the_original() {
+    // Every advanced dunk press of the person's (state bits 0x90 set: the
+    // four-turbo slot's advanced id from 8.5 or more out, `bbpass_1`): the
+    // match as the update before it left it, the captured stick and held
+    // buttons each update after. The toss leaves at `bbpass_1`'s tick 10
+    // on a 20-update flight to the board, the finish's callback 31 sends
+    // the second leg (45 updates) when the toss came from the zone, he
+    // catches it in the air and slams it, on the original's updates.
+    let Some(captures) = load() else {
+        return;
+    };
+    if crate::pose::disc_bank().get().is_none() {
+        return;
+    }
+    let mut checked = 0;
+    let mut rows = Vec::new();
+    for cap in captures {
+        for (n, u) in cap.updates.iter().enumerate() {
+            if n == 0 {
+                continue;
+            }
+            let a = &cap.updates[n - 1];
+            if a.frame() + 1 != u.frame() {
+                continue;
+            }
+            for k in 0..6 {
+                if u.controllers()[k] == 4
+                    || u.word(k, "bits") & 0x90 != 0x90
+                    || a.word(k, "bits") & 0x90 == 0x90
+                {
+                    continue;
+                }
+                // The original's marks: the toss, the second leg, the catch.
+                let mut marks = (None, None, None);
+                let mut last = (3, 0);
+                for t in 0..90i64 {
+                    let Some(x) = cap.get(u.frame() + t) else {
+                        break;
+                    };
+                    let b = x.ball();
+                    let now = (x.ball_state(), b["flight_updates"].as_i64().unwrap_or(0));
+                    if now != last {
+                        match now {
+                            (4, 20) if marks.0.is_none() => marks.0 = Some(t),
+                            (4, 45) if marks.1.is_none() => marks.1 = Some(t),
+                            (3, _) if marks.1.is_some() && marks.2.is_none() => marks.2 = Some(t),
+                            _ => {}
+                        }
+                    }
+                    last = now;
+                }
+                let mut w = dressed(
+                    replay_world_for(
+                        cap,
+                        a,
+                        k,
+                        a.actor(k)["facing"]
+                            .as_i64()
+                            .unwrap_or_else(|| a.word(k, "heading")) as i32,
+                        a.motion(k),
+                        a.word(k, "hand"),
+                    ),
+                    cap,
+                );
+                w.lesson = a.0["lesson_words"][3]
+                    .as_i64()
+                    .filter(|&l| l >= 0)
+                    .map(|l| l as u8);
+                w.people = u.controllers().iter().map(|&c| c != 4).collect();
+                w.rng = generator_of(a);
+                // His dribble as actor+0xa0 and the motion's course left it
+                // (the stick let go at the press: a dribble stop plays on
+                // channel 0 under the toss).
+                let mut run = 0u16;
+                while let Some(x) = cap.get(a.frame() - i64::from(run)) {
+                    if x.word(k, "requested_intensity") < 16 {
+                        break;
+                    }
+                    run += 1;
+                }
+                let m = &a.actor(k)["motion"];
+                let (mx, mz) = (
+                    m[0].as_f64().unwrap_or(0.0) as f32,
+                    m[2].as_f64().unwrap_or(0.0) as f32,
+                );
+                if mx != 0.0 || mz != 0.0 {
+                    w.players[k].course = crate::math::atan2(mx, mz);
+                }
+                w.players[k].dribble = 1;
+                w.players[k].stick_run = run;
+                let people = w.people.clone();
+                let input = |x: &Update| {
+                    let mut all: Vec<Input> = (0..6)
+                        .map(|j| {
+                            if people[j] {
+                                Input::default()
+                            } else {
+                                Input::computer()
+                            }
+                        })
+                        .collect();
+                    let held = x.word(k, "held");
+                    let mut mine = Input::moving(stick(
+                        x.word(k, "requested_heading") as i32,
+                        x.word(k, "requested_intensity") as i32,
+                    ))
+                    .with(sim_buttons(held));
+                    if held & 0x80 != 0 {
+                        mine = mine.with(button::SHOOT);
+                    }
+                    all[k] = mine;
+                    all
+                };
+                let mut before = input(a);
+                before[k].buttons &= !button::SHOOT;
+                w.previous_inputs = before;
+                let mut ours = (None, None, None);
+                let mut slam = None;
+                let mut last = (BallState::Held(k), 0);
+                for t in 0..90i64 {
+                    let Some(x) = cap.get(u.frame() + t) else {
+                        break;
+                    };
+                    w.step(&input(x));
+                    // The leg back queued (callback 31; the original sets
+                    // the ball's timer to its 45 then, the toss flying on
+                    // to the board first).
+                    if ours.1.is_none() && w.advanced.is_some_and(|a| a.back.is_some()) {
+                        ours.1 = Some(t);
+                    }
+                    let now = (w.ball.state, w.ball.flight_ticks());
+                    if now != last {
+                        match now {
+                            (BallState::Pass, 20) if ours.0.is_none() => ours.0 = Some(t),
+
+                            (BallState::Held(h), _)
+                                if h == k && ours.1.is_some() && ours.2.is_none() =>
+                            {
+                                ours.2 = Some(t)
+                            }
+                            _ => {}
+                        }
+                    }
+                    if slam.is_none()
+                        && w.events
+                            .iter()
+                            .any(|e| matches!(e, Event::Slam { player, .. } if *player == k))
+                    {
+                        slam = Some(t);
+                    }
+                    last = now;
+                }
+                checked += 1;
+                rows.push(json!({"capture": cap.name, "press": u.frame(), "actor": k,
+                    "original": [marks.0, marks.1, marks.2], "ours": [ours.0, ours.1, ours.2],
+                    "slam": slam}));
+                assert_eq!(
+                    (ours.0, ours.1),
+                    (marks.0, marks.1),
+                    "{}",
+                    rows.last().unwrap()
+                );
+                assert!(
+                    matches!((ours.2, marks.2), (Some(a), Some(b)) if (a - b).abs() <= 1),
+                    "{}",
+                    rows.last().unwrap()
+                );
+                assert!(slam.is_some(), "{}", rows.last().unwrap());
+            }
+        }
+    }
+    report("advanced_dunks", json!(rows));
+    if captures.iter().any(|c| !c.school.is_empty()) {
+        assert!(checked >= 2, "{checked}");
+    }
+}
+
+#[test]
 fn the_swiping_hand_reaches_the_ball_where_the_original_strips_in_play() {
     // Every swipe at a held ball in the played captures (a steal press
     // without the two turbos), posed from the channel's own state as the
@@ -5114,10 +5292,10 @@ fn the_lobs_to_leapers_are_timed_and_aimed_as_fun_00162aa8() {
         );
     }
     // One lob is open: the re-made School's Alley-Oop at school-4 40860,
-    // released six updates into the leap's blend into its clip, its point
-    // 0.30 high (x and z and the leaper's height exact): how
-    // `FUN_00162aa8` reads the frame mid-blend is not ported. Every other
-    // lob within 0.2.
+    // released two updates after the leaper took off, its point 0.30 high
+    // (x and z and the leaper's height exact, the frame right): about half
+    // a gravity step times its 57-update flight. Every other lob within
+    // 0.2.
     let open = rows
         .iter()
         .zip(&offsets)
@@ -6060,9 +6238,9 @@ fn the_persons_presses_choose_the_originals_moves() {
     // presses (the four-turbo slot's id 48 from 8.5 or more out, the
     // School's Advanced Dunks lesson): the original plays `bbpass_1`
     // (`0x447b53`, state bits 0x90 at the press, on a channel the capture
-    // does not keep while channel 0 runs on), whose toss off the board and
-    // finish (callbacks 31 and 32) the sim does not play; the port's
-    // `timing::press_move` must name the advanced row on every draw.
+    // does not keep while channel 0 runs on); the port's
+    // `timing::press_move` must answer `PressMove::Advanced` on every draw
+    // (the toss and finish are `the_advanced_dunks_toss_and_finish_as_the_original`'s).
     let Some(captures) = load() else {
         return;
     };
@@ -6218,7 +6396,7 @@ fn the_persons_presses_choose_the_originals_moves() {
                         }
                         matches!(
                             timing::press_move(&mut w, k, input.buttons),
-                            timing::PressMove::Row { advanced: true, .. }
+                            timing::PressMove::Advanced
                         )
                     });
                     advanced[0] += 1;

@@ -119,6 +119,7 @@ impl World {
                 self.begin_script(i, crate::timing::SHOT_SCRIPTS[script].script);
                 self.players[i].start_shot(hoop, rim, 0, false, script);
             }
+            crate::timing::PressMove::Advanced => self.start_advanced(i),
         }
     }
 

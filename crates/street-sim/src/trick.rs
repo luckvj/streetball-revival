@@ -528,11 +528,15 @@ impl Run {
         } else {
             Some(record)
         };
+        // The blend's rate is 1/n (+0x68, `0x1983f4`), the weight's step:
+        // it moves no frame (the record and frame stay the outgoing clip's
+        // until it ends), but what reads frame + rate × updates ahead
+        // (`FUN_00162aa8`'s lob) reads it.
         self.span = Some(Span {
             blend: true,
             length: u16::from(n),
             counter: 0,
-            rate: 0.0,
+            rate: 1.0 / f32::from(n.max(1)),
             to: start,
             to_record,
             frames: 0,
@@ -638,6 +642,12 @@ impl Run {
                 }
                 Step::Call(18) => {
                     // The side fades' jump (`FUN_00172788`).
+                    ran.ops.push(step);
+                    true
+                }
+                Step::Call(31) => {
+                    // The advanced dunk's finish: its second leg
+                    // (`FUN_001631c8`, [`crate::advanced`]).
                     ran.ops.push(step);
                     true
                 }

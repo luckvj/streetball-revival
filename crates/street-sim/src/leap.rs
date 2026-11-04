@@ -124,6 +124,7 @@ pub fn leap_end(row: u8) -> Option<i32> {
     static ENDS: std::sync::OnceLock<Vec<(u8, i32)>> = std::sync::OnceLock::new();
     let ends = ENDS.get_or_init(|| {
         (0..(MOVE_ROWS.len() + LEAP_ROWS.len()) as u8)
+            .chain((0..timing::ADVANCED_ROWS.len() as u8).map(|k| timing::ADVANCED_FIRST + k))
             .filter(|&r| leap_row(r))
             .filter_map(|r| {
                 let steps = crate::held::move_row_steps(r)?;
@@ -515,9 +516,13 @@ mod tests {
 
     #[test]
     fn the_leaps_are_the_alley_oop_rows_and_the_two_turbo_scripts() {
-        // Rows 94..98 carry the table's 0x100000; 99 and 100 are past it.
+        // Rows 94..98 carry the table's 0x100000; 99 and 100 are past it;
+        // the advanced dunk's five finishes (138..142) carry it too.
         let leaps: Vec<u8> = (0..=u8::MAX).filter(|&r| leap_row(r)).collect();
-        assert_eq!(leaps, vec![94, 95, 96, 97, 98, 99, 100]);
+        assert_eq!(
+            leaps,
+            vec![94, 95, 96, 97, 98, 99, 100, 138, 139, 140, 141, 142]
+        );
         for r in leaps {
             let steps = crate::held::move_row_steps(r).unwrap();
             // `9b 0x8000` first, callback 21 at the row's release, then the

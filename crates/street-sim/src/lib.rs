@@ -22,6 +22,7 @@
 //! words agree with captures of the original without any mirroring
 //! (docs/TRACE.md "The court's frame").
 
+pub mod advanced;
 pub mod ai;
 pub mod backdown;
 pub mod ball;
@@ -906,6 +907,8 @@ pub struct World {
     /// The passout identity through its catch, with the board route's
     /// row and return leg ([`passout::Passout`], game+0x140..+0x160).
     pub passout: Option<passout::Passout>,
+    /// The advanced dunk under way ([`advanced::Advanced`]).
+    pub advanced: Option<advanced::Advanced>,
     /// The ball's offset its holder's blend stored (channel +0xa0 while
     /// +0xb0): the held ball eases from it to the new clip's hand over the
     /// blend ([`held`]).
@@ -1287,6 +1290,7 @@ impl World {
             catching: None,
             spot_run: receiver::SpotRun::default(),
             passout: None,
+            advanced: None,
             held_anchor: None,
             turbo: [1.0; turbo::SLOTS],
             turbo_owner: vec![false; n],
@@ -1592,7 +1596,12 @@ impl World {
             if self.phase == Phase::Live && self.fumble_tick(i) {
                 // The fumble ends his update (`0x15a3ec`).
             } else if self.phase == Phase::Live {
-                self.buttons(i, &input, pressed, &before, calls, &start);
+                // `bbpass_1` on the upper body: its tick, then nothing the
+                // buttons start while it plays ([`advanced`]).
+                self.advanced_tick(i);
+                if !self.advanced.is_some_and(|a| a.player == i && !a.finishing) {
+                    self.buttons(i, &input, pressed, &before, calls, &start);
+                }
             } else if restarting
                 && pressed & button::PASS != 0
                 && self.ball.state == BallState::Held(i)
@@ -3683,7 +3692,13 @@ impl World {
             // a lay-up, a pass, a catch row); without the disc's animations
             // the rewrite carries it at his waist.
             BallState::Held(i) => {
-                if !self.place_held(i, held_before) {
+                if let Some(at) = self.advanced_ball(i, held_before) {
+                    // The toss clip on his upper body holds the ball
+                    // ([`advanced`]).
+                    let [vx, vz] = self.players[i].velocity();
+                    self.ball.position = at;
+                    self.ball.velocity = [vx, 0.0, vz];
+                } else if !self.place_held(i, held_before) {
                     self.held_anchor = None;
                     self.ball.carry(&self.players[i]);
                 }

@@ -1850,6 +1850,26 @@ fn the_held_moves_scripts_are_the_executables() {
             r.name
         );
     }
+    // The advanced dunk's finishes (callback 32's five) and its toss.
+    for (k, r) in street_sim::timing::ADVANCED_ROWS.iter().enumerate() {
+        let steps = street_sim::held::ADVANCED_STEPS[k];
+        assert_eq!(disc.steps_on(r.script, held), steps, "{}", r.name);
+        let release =
+            street_assets::scripts::script_callback_tick(&disc.elf, r.script, 21).unwrap();
+        let end = street_assets::scripts::script_end_tick(&disc.elf, r.script).unwrap();
+        assert_eq!(
+            (release, end),
+            (Some(u32::from(r.release)), Some(u32::from(r.end))),
+            "{}",
+            r.name
+        );
+    }
+    let toss = street_sim::timing::ADVANCED_TOSS;
+    assert_eq!(
+        street_assets::scripts::script_end_tick(&disc.elf, toss).unwrap(),
+        Some(u32::from(street_sim::timing::ADVANCED_TOSS_TICK)),
+        "bbpass_1"
+    );
     assert_eq!(
         disc.steps_on(
             0x45748a,

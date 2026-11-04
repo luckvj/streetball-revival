@@ -1048,6 +1048,7 @@ impl World {
                 let w = (self.to_rim(i, at) + i32::from(turn)) & 0x3ff;
                 self.players[i].wanted = crate::restart::heading_radians(w);
             }
+            Step::Call(31) => self.advanced_second_leg(i, f.velocity),
             Step::Call(18) => {
                 let side = crate::restart::side(self.players[i].team);
                 let behind = behind_board(self.players[i].position, side);

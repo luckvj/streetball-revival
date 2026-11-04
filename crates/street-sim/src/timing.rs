@@ -206,6 +206,63 @@ pub const FINISH_ROWS: [MoveRow; 8] = [
 /// The first of [`FINISH_ROWS`] as a row.
 pub const FINISH_FIRST: u8 = PUTBACK_FIRST + PUTBACK_ROWS.len() as u8;
 
+/// A finish of the advanced dunk: a leap (mask 0x100000, bit 15) with its
+/// callback 21's tick and its last opcode's.
+const fn advanced_finish_row(
+    name: &'static str,
+    script: u32,
+    id: u8,
+    release: u8,
+    end: u8,
+) -> MoveRow {
+    MoveRow {
+        name,
+        script,
+        legend: -1,
+        mask: 0x100000,
+        family: 0,
+        id,
+        release,
+        end,
+    }
+}
+
+/// The advanced dunk's finishes (callback 32, `FUN_001773b0`): by the
+/// player's slot-0 dunk id (`FUN_0013a1f8(table, 0, +0x254, 0)`), 48
+/// `0x447ed5`, 49 `0x447c1d`, 50 `0x447d0d`, 51 `0x447de5`, else
+/// `0x447bbe`. Each is a leap on channel 0: bit 15, callback 4, an
+/// eight-update blend, the aimed jump, callback 31 (the ball's second leg,
+/// [`crate::advanced`]), the long wait, the slam at callback 21.
+pub const ADVANCED_ROWS: [MoveRow; 5] = [
+    advanced_finish_row("advanced_finish_48", 0x447ed5, 48, 77, 139),
+    advanced_finish_row("advanced_finish_49", 0x447c1d, 49, 79, 94),
+    advanced_finish_row("advanced_finish_50", 0x447d0d, 50, 78, 119),
+    advanced_finish_row("advanced_finish_51", 0x447de5, 51, 77, 92),
+    advanced_finish_row("advanced_finish", 0x447bbe, 0, 76, 102),
+];
+
+/// The first of [`ADVANCED_ROWS`] as a row.
+pub const ADVANCED_FIRST: u8 = FINISH_FIRST + FINISH_ROWS.len() as u8;
+
+/// Callback 32's finish row for the slot-0 dunk `id`.
+pub fn advanced_finish(id: u8) -> u8 {
+    ADVANCED_FIRST
+        + match id {
+            48 => 0,
+            49 => 1,
+            50 => 2,
+            51 => 3,
+            _ => 4,
+        }
+}
+
+/// `bbpass_1` (`0x447b53`), the advanced dunk's toss on the upper body:
+/// callback 30, state bits 0x90, a three-update blend, a seven-update
+/// wait, then callback 31 (the toss), `9c 0x10`, callback 30 and callback
+/// 32 (the finish) at this tick.
+pub const ADVANCED_TOSS: u32 = 0x447b53;
+pub const ADVANCED_TOSS_TICK: u8 = 10;
+
 /// The row of the finishing body at `script`, if it is one of
 /// [`FINISH_ROWS`].
 pub fn finish_row(script: u32) -> Option<u8> {
@@ -236,9 +293,12 @@ pub fn move_row(row: u8) -> Option<&'static MoveRow> {
             let r = r.checked_sub(LEAP_ROWS.len())?;
             EXTRA_ROWS.get(r).or_else(|| {
                 let r = r.checked_sub(EXTRA_ROWS.len())?;
-                PUTBACK_ROWS
-                    .get(r)
-                    .or_else(|| FINISH_ROWS.get(r.checked_sub(PUTBACK_ROWS.len())?))
+                PUTBACK_ROWS.get(r).or_else(|| {
+                    let r = r.checked_sub(PUTBACK_ROWS.len())?;
+                    FINISH_ROWS
+                        .get(r)
+                        .or_else(|| ADVANCED_ROWS.get(r.checked_sub(FINISH_ROWS.len())?))
+                })
             })
         })
     })
@@ -937,14 +997,15 @@ pub const ADVANCED_DUNKS: [u8; 5] = [30, 48, 49, 50, 51];
 /// [`SHOT_SCRIPTS`] when no row qualifies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PressMove {
-    /// The row; `advanced` for the four-turbo slot's `bbpass_1` from 8.5
-    /// or more out, which the sim does not play: a drawn row stands in,
-    /// on the advanced dunk's odds.
+    /// The row drawn (`advanced` false; kept for the callers' shape).
     Row {
         row: u8,
         advanced: bool,
     },
     Shot(usize),
+    /// The four-turbo slot's advanced id from 8.5 or more out: `bbpass_1`
+    /// starts and nothing is drawn ([`crate::advanced`]).
+    Advanced,
 }
 
 /// The jump shot the Block lessons' holder always takes (`0x44ed73`,
@@ -980,7 +1041,6 @@ pub(crate) fn press_move(w: &mut World, i: usize, buttons: u16) -> PressMove {
     let p = &w.players[i];
     let rim = w.rim_spot(crate::target_hoop(p.team));
     let d = distance(p.position, rim);
-    let mut advanced = false;
     if let Some(slot) = NativeTricks::slot(buttons) {
         let id = p.shooter.map_or(DUNK_SLOTS[slot], |s| s.dunks[slot]);
         if let Some(k) = MOVE_ROWS.iter().position(|r| r.family == 0 && r.id == id) {
@@ -990,7 +1050,11 @@ pub(crate) fn press_move(w: &mut World, i: usize, buttons: u16) -> PressMove {
                     advanced: false,
                 };
             }
-            advanced = d >= 8.5;
+            // `0x169628..0x16965c`: `bbpass_1` on the upper body, and
+            // back with no row drawn; nearer, the draw below.
+            if d >= 8.5 {
+                return PressMove::Advanced;
+            }
         }
     }
     let turbo = buttons & crate::button::TURBOS != 0;
@@ -1022,7 +1086,10 @@ pub(crate) fn press_move(w: &mut World, i: usize, buttons: u16) -> PressMove {
         });
     }
     let row = rows[(w.rng.next_u32() % rows.len() as u32) as usize] as u8;
-    PressMove::Row { row, advanced }
+    PressMove::Row {
+        row,
+        advanced: false,
+    }
 }
 
 /// The Dunks-rating gates `FUN_001693b8` sets before its filter (raw

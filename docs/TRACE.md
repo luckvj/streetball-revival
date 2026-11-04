@@ -10707,9 +10707,20 @@ to the board's point `(±(38 − r), 15 − r, 0)`, r the ball's radius
 and the ball still his pass, a second leg to it in 45 updates), the long
 wait, the slam at callback 21). The captured three tossed from 33 across:
 no second leg, the ball came off the board loose, and the lesson failed.
-The simulation names the advanced row on the press but plays a drawn row
-in its place; the presses check now pins that it names it on all 32
-draws, the play itself left for a pass of its own.
+(Ported 2026-11-04, `street_sim::advanced`: the press starts the toss and
+returns with no row drawn; the ball rides `bbpass_1`'s hand, held at its
+frame 2 through the blend from the offset stored as it began, then frame
+tick − 1; the toss leaves from frame 9 at tick 10; the zone is tested on
+the ball's place as he lets it go (ball+0x30 into `0x3d6590`,
+`0x173fc0..0x174068`: `23 ≤ |x × side| ≤ 32.5` and `|z| ≤ 8`, side from
+`FUN_001404c0`), not his; the finish's callback 31 queues the leg back,
+which leaves the board when the toss reaches it and flies to the hand in
+what is left of the 45. The re-made School captures' two successes,
+school-3 36932 and school-6 50380: toss 10, leg 24, catch 64 and 66
+against 64 and 65, slam 87; the second's dunker stood at z 8.14, his
+ball at 6.9, which is why the zone reads the ball. His stick let go at
+the press, a dribble stop plays on channel 0 under the toss: a quarter of
+his speed for five updates, as captured.)
 
 **The gamebreaker task** (`FUN_00144df0`, its process `FUN_00144ef8`; the
 second audit's 3.2). Created by the game listener's slot +0x204
@@ -14352,5 +14363,12 @@ final set (it passed in a trial). With them beside the played set, all
   the chooser's too (the tests had left them out).
 
 Still open: where the original starts a lay-up after the channel's
-step; a lob released mid-blend into the leap's clip (school-4 40860,
-0.30 high); the relaunch off a ball resting on the rim.
+step; a lob released two updates after the leaper took off (school-4
+40860, 0.30 high: its frame is right, record 809 at 9 puts x within 0.02,
+and 0.30 is about half a gravity step times the 57-update flight, so the
+original reads his rise half a step on from ours there; every other lob,
+released before take-off or later in the air, is within 0.15); the
+relaunch off a ball resting on the rim. (2026-11-04: the script
+runner's blend now carries the original's rate, 1/n at +0x68
+(`0x1983f4`), which the lob's frame + rate × flight reads mid-blend; the
+record and frame stay the outgoing clip's, as they do in ours.)

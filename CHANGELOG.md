@@ -5,6 +5,13 @@ its version's part.
 
 ## Unreleased
 
+- Advanced dunks play as on the PS2: from 8.5 or more out with four turbo
+  bars the dunker tosses the ball up off the backboard while he walks on,
+  then leaps for it, catches it in the air and slams it on the original's
+  updates. A toss from outside the board's zone comes off the glass loose,
+  as it does on the PS2. (Before, a drawn ordinary dunk played in its
+  place.)
+
 - A diving player hops at the original's speed (a tall player's dive was
   about 7% too fast) and stays on the court in the air as on the PS2.
 - Level 2 gamebreaker replays end on exactly the original's frame.

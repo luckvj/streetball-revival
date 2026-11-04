@@ -104,6 +104,7 @@ impl World {
             catching,
             spot_run,
             passout,
+            advanced,
             held_anchor,
             turbo,
             turbo_owner,
@@ -203,6 +204,13 @@ impl World {
             if let Some((_, time)) = c.from {
                 floats(&[time], "catching clip frame")?;
             }
+        }
+        if let Some(a) = advanced {
+            require(a.player < players.len(), "advanced dunk player")?;
+            require(
+                a.tick <= crate::timing::ADVANCED_TOSS_TICK,
+                "advanced dunk tick",
+            )?;
         }
         if let Some(crate::passout::Passout {
             passer,

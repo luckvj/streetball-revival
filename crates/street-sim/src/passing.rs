@@ -1462,6 +1462,7 @@ impl World {
             }
             Via::Head { defender } => self.head_leg(pass, defender),
             Via::Glass { .. } if self.passout_leg(pass) => {}
+            Via::Glass { .. } if self.advanced_leg(pass) => {}
             // A board pass without its queued leg has lost its route.
             Via::Glass { .. } => self.ball.drop_loose(),
             Via::Direct | Via::Floor if crate::touch::bone_catch(self, &pass) => {

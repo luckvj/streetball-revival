@@ -115,8 +115,9 @@ use crate::{
 /// ([`Event::PickCall`], the AI game's `pick_call`); 106: the tip-off's
 /// stances among the stands, the flair's moved up two; 107: the dribble
 /// stops among the stands (the flair's up three), a stand's coast and the
-/// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324).
-const VERSION: u8 = 108;
+/// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324); 109:
+/// the advanced dunk's toss and finish ([`crate::advanced`]).
+const VERSION: u8 = 109;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -190,6 +191,7 @@ impl World {
             catching,
             spot_run,
             passout,
+            advanced,
             held_anchor,
             turbo,
             turbo_owner,
@@ -492,6 +494,31 @@ impl World {
                 }
                 w.bool(po.tossed);
                 w.iv(po.tail.map_or(-1, i64::from));
+            }
+        }
+        match advanced {
+            None => w.u8(0),
+            Some(a) => {
+                w.u8(1);
+                w.us(a.player);
+                w.u8(a.tick);
+                w.bool(a.zone);
+                w.bool(a.finishing);
+                match a.anchor {
+                    None => w.u8(0),
+                    Some(local) => {
+                        w.u8(1);
+                        w.f3(&local);
+                    }
+                }
+                match a.back {
+                    None => w.u8(0),
+                    Some((hand, due)) => {
+                        w.u8(1);
+                        w.f3(&hand);
+                        w.uv(due);
+                    }
+                }
             }
         }
         match held_anchor {
@@ -881,6 +908,26 @@ impl World {
             }),
             k => return Err(format!("bad passout flag {k}")),
         };
+        let advanced = match r.u8()? {
+            0 => None,
+            1 => Some(crate::advanced::Advanced {
+                player: r.us()?,
+                tick: r.u8()?,
+                zone: r.bool()?,
+                finishing: r.bool()?,
+                anchor: match r.u8()? {
+                    0 => None,
+                    1 => Some(r.f3()?),
+                    k => return Err(format!("bad advanced anchor flag {k}")),
+                },
+                back: match r.u8()? {
+                    0 => None,
+                    1 => Some((r.f3()?, r.uv()?)),
+                    k => return Err(format!("bad advanced leg flag {k}")),
+                },
+            }),
+            k => return Err(format!("bad advanced dunk flag {k}")),
+        };
         let held_anchor = match r.u8()? {
             0 => None,
             1 => Some(crate::held::Anchor {
@@ -1018,6 +1065,7 @@ impl World {
             catching,
             spot_run,
             passout,
+            advanced,
             held_anchor,
             turbo,
             turbo_owner,
