@@ -197,7 +197,9 @@ impl FastBreak {
         if zone == -1 {
             self.settle(ctx, b, i);
         } else {
-            self.spot = super::offence::spot_in(ctx, i, zone, deep != 0);
+            // `FUN_001812a8` (`0x10aaa0`): the paint's spot by the row's
+            // deep flag (no coin), a zone under 5's from `FUN_00180f80`.
+            self.spot = super::offence::paint_spot(ctx, i, zone, deep != 0);
         }
     }
 

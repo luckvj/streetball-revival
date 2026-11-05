@@ -203,6 +203,7 @@ pub fn scripted(w: &World, i: usize) -> Option<Scripted> {
             tick,
             vy,
             up,
+            landed,
             ..
         } => toss::TIP_SCRIPTS
             .get(usize::from(script))
@@ -211,7 +212,11 @@ pub fn scripted(w: &World, i: usize) -> Option<Scripted> {
                 path: Path::Plain,
                 tick: i32::from(tick) - 1,
                 flight: None,
-                landing: up.then(|| i32::from(tick) - 1 + i32::from(timing::airtime(vy, p.height))),
+                landing: if up {
+                    Some(i32::from(tick) - 1 + i32::from(timing::airtime(vy, p.height)))
+                } else {
+                    (landed > 0).then(|| i32::from(landed) - 1)
+                },
             }),
         // A rebound jump's script, the same way: its airtime wait (`8d ee
         // G fe`) lasts until the sim's jump lands. (Its wait for the

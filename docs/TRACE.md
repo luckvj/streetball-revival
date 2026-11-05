@@ -14532,3 +14532,69 @@ so their draws come after the rest of the update's gameplay draws
 rather than before them. The count is right, so the next update starts
 on the original's value. Those handlers read the camera's own state
 (the helper on screen, its focus), which the simulation doesn't keep.
+
+## The opening past the tip, draw for draw (2026-11-04)
+
+The third attract's draw log (`work/drawlog-attract3.jsonl`, seed 20,455)
+against the rewrite's match stepped headless, each draw tagged by its
+caller (a temporary `#[track_caller]` probe; rewrite step 0 = update 615),
+with the intro's draws taken on the world (`intro::picks`,
+`staged_take_off`, `staged_release_roll`, the cheer) and the disc's
+animations loaded. The draws now match update for update through 853.
+
+- **The tip's update.** `FUN_0015eaa0`'s tip (`0x15eec4`) reads the hand
+  bones as the last update posed them: the script starts inside the
+  press block (`0x15edd8`), after that update's channel step, so the
+  posed frame is one script step behind the jump's tick
+  (`World::tip_pose`). The rewrite tipped one update early in all three
+  captured openings (200 against 201); now it tips in 201, and the
+  capture test asserts the update exactly.
+- **The toss's flight words.** `FUN_0014c858` lets the toss go free
+  (`FUN_0014c408`), which runs `FUN_0014f6a0`: ball+0x64 =
+  ceil((vy + sqrt(vy² + 2g(y − r))) / g), the updates to the resting
+  height, and ball+0x60 = 0, counted up each ball update (`Tip::toss_flight`,
+  `Tip::toss_flown`, `toss::fall_updates`; 109 in the third capture and in
+  the rewrite). The loser's jump sets actor+0x1a8 to +0x64 − +0x60
+  (`0x15ee14`, 52 in the capture) and the taker's take 70 (`0x15efb8`,
+  `toss::TAKE_BAR`).
+- **The tip stands.** `FUN_00170608` starts the placement script
+  `0x4574e2` on every player, then draws his stand. The placement is
+  `89 41` (`FUN_00196318`: record 65 at once, no blend) and `ab 6.0`, so
+  `r % 6`'s sixth plays clip 65 looping on its root (stand script
+  `PLACEMENT`, 57; the flair rows moved up one). The warm-up, kick and
+  stretch open with `84 0b -> T`, callback 11 (`FUN_00174e40`: game+0xf4
+  0 or 1, or ball state 7), which jumps past the `95 f4 07 03` plant: in
+  the opening they stand on their roots without a planted foot (the
+  third capture's warm-up holds still through its 10-update blend). The
+  compiler reads it as `Step::Asked`, answered every update. With these,
+  actor 4 holds at x = −3.90 at the fast break's first update (it drew a
+  spot from −4.05 before).
+- **The tip jumpers after landing.** The tip scripts (`0x457a7b`,
+  `0x457a12`, `0x457ae4`) land at frames 25, 23 and 24 (`8d ee F fe`),
+  then `91 2` bars the locomotion while `8c 2.0` plays the clip out (36,
+  34, 36 frames): 20, 20 and 22 updates (`toss::PLAYOUT_UPDATES`), then
+  `91 0`, callback 7 and callback 1. The rewrite let the jumper go at
+  the landing. Their tests run through the jump (the loser rolls for the
+  steal at three quarters of the tip pass's flight).
+- **The tail after the locomotion.** The side updates call
+  `FUN_00163d40` (the defence at `0x15ddc8`, its gait selector
+  `FUN_00168b30`) before their tails (the steal roll at `0x15e6b4`), so
+  an actor's gait and stand draws come before his catch and steal draws.
+  `World::step` now runs the side update's celebration test, post moves,
+  pick stance, guard stance, gait and stand path, then the tail on the
+  pose taken before them (`World::tail_pose`, the model as the last
+  update posed it), then the channel steps.
+- **The catch row after the catch.** `catch_stand_1` (`0x44319a`) sets
+  flags 0x820002 at its start and `91 0` only after its play-out: through
+  the post-catch tail a standing row (0x4000) bars the locomotion
+  (`World::caught_row_holds`): no stand path, no walk.
+- **The fast break's spot.** `FUN_0010a828` calls `FUN_001812a8` (the
+  paint spot by the row's deep flag, no near/far coin), not
+  `FUN_00180f80`.
+
+Left at 854: defender actor 2 (guarding the receiver 19 units away)
+stands since 832 with its spot 4.36 off after the receiver's run and
+rises to level 2 when its level hold (23) runs out; the original's
+stays. Its positions aren't in any capture of this match (the third AI
+capture is the same match on other draws), so the next comparison needs
+the draw log's run with positions.

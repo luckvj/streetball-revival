@@ -5,6 +5,21 @@ its version's part.
 
 ## Unreleased
 
+- The tip-off comes in the PS2's update: the jumper's hands are tested
+  as the last update posed them (the rewrite tipped one update early in
+  all three captured openings). The loser is barred from the ball for the
+  rest of the toss's fall and the taker for 70 updates, and the jumpers
+  stay on their tip scripts until the clip plays out after landing.
+- The players around the tip stand as on the PS2: the sixth of the six
+  stands is the placement script (clip 65, swaying on its root) rather
+  than no stand, and the warm-up, kick and stretch don't plant a foot
+  during the opening, so they hold still through their first blend.
+- A player's stand and gait choices come before his catch and steal
+  tests in his update, as on the PS2 (the tests still see last update's
+  pose), and a standing catch row keeps its catcher still until it ends.
+- The fast break's spot past half court is the paint spot by the row's
+  own deep flag, without the extra near/far coin.
+
 - The camera's random placements (the courtside and baseline views, the
   demo's cuts) take their random numbers from the game's own, as on the
   PS2, so the players' choices after a camera cut no longer drift from

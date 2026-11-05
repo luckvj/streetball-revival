@@ -304,14 +304,16 @@ pub enum Action {
     /// winner's, 1 or 2 the loser's), `tick` updates since it started (that
     /// update its tick 0). At [`crate::toss::JUMP_TICK`] its `a1` sends
     /// him `up` at `vy` units an update, drifting `drift` an update on the
-    /// floor, under [`crate::toss::JUMP_GRAVITY`] until he lands, where
-    /// the rewrite lets him go (the script's play-out is the display's).
+    /// floor, under [`crate::toss::JUMP_GRAVITY`] until he lands (`landed`
+    /// the tick, 0 before); the script then plays its clip out
+    /// ([`crate::toss::PLAYOUT_UPDATES`]) with the locomotion barred.
     TipJump {
         script: u8,
         tick: u16,
         vy: f32,
         drift: [f32; 2],
         up: bool,
+        landed: u16,
     },
     /// A rebound jump (actor state bit 8, `FUN_0015ce50`): `script` its
     /// script ([`crate::rebound::SCRIPTS`]), `tick` updates since the press
@@ -1186,20 +1188,35 @@ impl Player {
                 None
             }
             Action::TipJump {
+                script,
                 tick,
                 vy,
                 drift,
                 up,
-                ..
+                landed,
             } => {
                 *tick = tick.saturating_add(1);
                 self.speed = 0.0;
                 self.gait = Gait::Stand;
+                // Down, his script's `91 2` bars the locomotion while `8c`
+                // plays the clip out at a frame each 2 updates; then `91 0`
+                // and callback 1 hand him back to it.
+                if *landed > 0 {
+                    let rest = crate::toss::PLAYOUT_UPDATES
+                        .get(usize::from(*script))
+                        .copied()
+                        .unwrap_or(0);
+                    if tick.saturating_sub(*landed) >= rest {
+                        self.action = Action::None;
+                    }
+                    return None;
+                }
                 if *up {
                     // As the ball flies (`FUN_0014d1f8`): the step, then
                     // half the gravity off the height and all of it off
                     // the rise.
                     let g = crate::toss::JUMP_GRAVITY;
+                    let now = *tick;
                     self.height += *vy - 0.5 * g;
                     *vy -= g;
                     self.position[0] += drift[0];
@@ -1207,7 +1224,10 @@ impl Player {
                     self.clamp_to_court();
                     if self.height <= 0.0 {
                         self.height = 0.0;
-                        self.action = Action::None;
+                        if let Action::TipJump { up, landed, .. } = &mut self.action {
+                            *up = false;
+                            *landed = now;
+                        }
                     }
                 }
                 None

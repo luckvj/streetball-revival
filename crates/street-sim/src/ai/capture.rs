@@ -745,13 +745,9 @@ fn the_opening_toss_and_tip_follow_the_captured_original() {
         if w.ball.state == BallState::Pass {
             // The original's tip is a catch by the winner's hand bones
             // within 1.25 of the ball, on the jump his script's `a1` aims
-            // his posed hand on (`World::tip_aim_hand`, `World::tip_hands`):
-            // within an update (the second capture's players are not
-            // known: its jumpers have stand-in bodies).
-            assert!(
-                (frame - tipped).abs() <= 1,
-                "the tip's update {frame}, {tipped}"
-            );
+            // his posed hand on (`World::tip_aim_hand`, `World::tip_hands`),
+            // the model as the last update posed it: in the captured update.
+            assert_eq!(frame, tipped, "the tip's update");
             tip_update = frame;
             let pass = w.ball.pass.unwrap();
             // The winner's slot 2 (actor+0x74 = actor 2 or 5).

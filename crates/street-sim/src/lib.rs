@@ -976,6 +976,12 @@ pub struct Tip {
     /// sets it, and the next pass's catch draw flies that pass
     /// [`FIRST_PASS_FLIGHT`] updates and clears it: the tip.
     pub first_pass: bool,
+    /// The toss's ball+0x64: the updates of its fall to its resting
+    /// height, set as it goes free (`FUN_0014f6a0`, [`toss::fall_updates`]).
+    pub toss_flight: i32,
+    /// The toss's ball+0x60: the ball's updates since (one each ball
+    /// update).
+    pub toss_flown: i32,
 }
 
 impl Default for Tip {
@@ -985,6 +991,8 @@ impl Default for Tip {
             winner: -1,
             jumped: [false; 2],
             first_pass: false,
+            toss_flight: 0,
+            toss_flown: 0,
         }
     }
 }
@@ -1068,6 +1076,11 @@ pub mod toss {
     /// from it to [`JUMP_FRAMES`] over the [`JUMP_UPDATES`] to the meet
     /// (`8d ee F 19`).
     pub const JUMP_START_FRAMES: [f32; 3] = [4.0, 3.0, 2.0];
+    /// The updates each script holds him after he lands: `8c 2.0` plays
+    /// the clip from the landing's frame (`8d ee F fe`: 25, 23, 24) to its
+    /// last (35, 33, 35) at a frame each 2 updates, its locomotion barred
+    /// (`91 2`).
+    pub const PLAYOUT_UPDATES: [u16; 3] = [20, 20, 22];
     /// The script tick its first blend (`8e 03`) is over.
     pub const BLEND_TICKS: u16 = 3;
     /// The actor's gravity, units per update squared (the jump's
@@ -1081,6 +1094,24 @@ pub mod toss {
     /// standing reach above his feet ([`crate::Ratings::reach`]), carried
     /// rigidly on the jump that brings it to the ball.
     pub const TIP_REACH: f32 = 1.25;
+    /// The taker's bar from the ball after the tip (actor+0x1a8, `0x46` at
+    /// `0x15efb8`).
+    pub const TAKE_BAR: u16 = 70;
+
+    /// `FUN_0014f6a0`, which every ball let go free runs (`FUN_0014c408`):
+    /// the updates until a ball at height `y` rising `vy` an update falls
+    /// to its resting height `radius` under gravity `g` an update²,
+    /// `(vy + √(vy² + 2g(y − radius))) / g` rounded up; 0 when it never
+    /// gets there.
+    pub fn fall_updates(y: f32, vy: f32, radius: f32, g: f32) -> i32 {
+        let d = vy * vy + (g + g) * (y - radius);
+        if d < 0.0 {
+            return 0;
+        }
+        let t = (vy + d.sqrt()) / g;
+        let n = t as i32;
+        if (n as f32) < t { n + 1 } else { n }
+    }
     /// The person's timing window: a press of shoot with the toss above
     /// this share of its apex scores 1..20 by how near the apex
     /// (`FUN_0015eaa0`: `(y - 0.8 apex) / (0.2 apex) Ã— 20`, rounded, plus
@@ -1682,7 +1713,7 @@ impl World {
                 Some(stick) => Input { stick, ..input },
                 None => input,
             };
-            let standing = standing || self.receiver_holds(i);
+            let standing = standing || self.receiver_holds(i) || self.caught_row_holds(i);
             let input = if standing {
                 Input {
                     stick: [0, 0],
@@ -1691,29 +1722,15 @@ impl World {
             } else {
                 input
             };
-            // The tail's catches, pickups and knocks off the body, on his
-            // bones as his channel now shows them at his place before he
-            // moves, against the ball the last ball update left ([`touch`]);
-            // a diver's catch first, which ends his tests when it meets the
-            // ball (`FUN_0015c598`, [`dive`]).
-            if !self.dive_catch(i) {
-                self.touch_ball(i);
-            }
-            if !caught_started {
-                self.catching_tick(i);
-            }
-            self.passout_tick(i);
-            // A rebound jump's callback 36 at its script's jump tick; a
-            // block jump's callback 35 at its own.
-            self.rebound_jump_tick(i);
-            self.block_jump_tick(i);
-            // His side's first test: a celebration due in the restart.
+            // His side's update (`FUN_0015a060`, `FUN_0015da28`): its first
+            // test, a celebration due in the restart; the post moves; the
+            // locomotion (`FUN_00163d40`: the guard's mode, the gait record,
+            // the stand path), whose draws come before the tail's.
             self.celebrate_due(i);
-            // A trick's or a reaction's script moves him ([`trick`]).
-            let trick = match self.players[i].action {
-                Action::Trick { id, .. } => Some(id.script),
-                _ => None,
-            };
+            // The tail reads the model as the last update posed it (the pose
+            // step runs after it): the gait's record as it was before this
+            // update's locomotion.
+            let tail_pose = self.tail_pose(i);
             // Any move's script but the stands' and the gait's replaces
             // the state word (`9b`), and none of them posts up (bit 11).
             if !matches!(self.players[i].action, Action::None) {
@@ -1757,6 +1774,27 @@ impl World {
                 s.coast = carried;
                 p.speed = 0.0;
             }
+            // The tail's catches, pickups and knocks off the body, on his
+            // bones as his channel showed them at his place before he
+            // moves, against the ball the last ball update left ([`touch`]);
+            // a diver's catch first, which ends his tests when it meets the
+            // ball (`FUN_0015c598`, [`dive`]).
+            if !self.dive_catch(i) {
+                self.touch_ball_posed(i, tail_pose);
+            }
+            if !caught_started {
+                self.catching_tick(i);
+            }
+            self.passout_tick(i);
+            // A rebound jump's callback 36 at its script's jump tick; a
+            // block jump's callback 35 at its own.
+            self.rebound_jump_tick(i);
+            self.block_jump_tick(i);
+            // A trick's or a reaction's script moves him ([`trick`]).
+            let trick = match self.players[i].action {
+                Action::Trick { id, .. } => Some(id.script),
+                _ => None,
+            };
             // Actor+0xa0 (`FUN_001587d8`): the stick's run, for the next
             // update's stand path.
             let p = &mut self.players[i];
@@ -3400,10 +3438,14 @@ impl World {
                 self.tip.winner = winner * 3;
             }
             self.tip.jumped[team] = true;
-            // The winner's script, or the loser's, one of two.
+            // The winner's script, or the loser's, one of two; the loser
+            // barred from the ball for the toss's fall left (actor+0x1a8 =
+            // ball+0x64 − ball+0x60, `0x15ee14..0x15ee20`).
             let script = if self.tip.winner == team as i32 * 3 {
                 0
             } else {
+                let left = self.tip.toss_flight - self.tip.toss_flown;
+                self.players[i].barred = left.clamp(0, i32::from(u16::MAX)) as u16;
                 1 + (self.rng.next_u32() & 1) as u8
             };
             if self.players[i].free() {
@@ -3413,6 +3455,7 @@ impl World {
                     vy: 0.0,
                     drift: [0.0; 2],
                     up: false,
+                    landed: 0,
                 };
                 self.events.push(Event::Jump {
                     player: i,
@@ -3453,6 +3496,7 @@ impl World {
             // face, `r & 1 ? 1 : 2`, for two seconds.
             self.rng.next_u32();
             self.face(i, 2 * TICK_HZ as i32);
+            self.players[i].barred = toss::TAKE_BAR;
             self.events.push(Event::Pass {
                 from: i,
                 to,
@@ -3476,6 +3520,16 @@ impl World {
     /// toward [`toss::JUMP_FRAMES`] over [`toss::JUMP_UPDATES`]; at his
     /// place and facing. `None` without the disc's animations or a jump.
     fn tip_hands(&self, i: usize) -> Option<[[f32; 3]; 2]> {
+        let posed = self.tip_pose(i)?;
+        Some([
+            posed.joints[pose::RIGHT_HAND].position,
+            posed.joints[pose::LEFT_HAND].position,
+        ])
+    }
+
+    /// Jumper `i` on his tip script's clip, the model as the last update
+    /// posed it (his tests' bones: the tip's hands and his side's tail).
+    pub(crate) fn tip_pose(&self, i: usize) -> Option<pose::Pose> {
         let poses = self.poses.get()?;
         let p = &self.players[i];
         let Action::TipJump { script, tick, .. } = p.action else {
@@ -3484,7 +3538,12 @@ impl World {
         let k = usize::from(script);
         let record = *toss::JUMP_RECORDS.get(k)?;
         let (start, aim) = (toss::JUMP_START_FRAMES[k], toss::JUMP_FRAMES[k]);
-        let t = f32::from(tick);
+        // The model as the last update posed it: the script started inside
+        // the press block (`0x15edd8`), after that update's channel step,
+        // so the posed frame is one script step behind the tick (the tip
+        // comes in the captured update in all three openings and in the
+        // third attract's draw log).
+        let t = f32::from(tick.saturating_sub(1));
         let blend = f32::from(toss::BLEND_TICKS);
         let jump = f32::from(toss::JUMP_TICK);
         let time = if t < blend {
@@ -3503,11 +3562,7 @@ impl World {
             time,
             looping: false,
         };
-        let posed = poses.pose(at, p.body(), place)?;
-        Some([
-            posed.joints[pose::RIGHT_HAND].position,
-            posed.joints[pose::LEFT_HAND].position,
-        ])
+        poses.pose(at, p.body(), place)
     }
 
     /// The hand a tip jump of `script` aims (`0x19537c..0x195570`): the
@@ -3606,14 +3661,11 @@ impl World {
                     continue;
                 }
                 let script = if i == 0 || i == 3 {
-                    Some(stand::TIP_JUMPER[(self.rng.next_u32() & 1) as usize])
+                    stand::TIP_JUMPER[(self.rng.next_u32() & 1) as usize]
                 } else {
                     stand::TIP_OTHERS[(self.rng.next_u32() % 6) as usize]
                 };
-                match script {
-                    Some(s) => self.start_stand(i, s),
-                    None => self.players[i].stand = None,
-                }
+                self.start_stand(i, script);
             }
         }
     }
@@ -3646,6 +3698,11 @@ impl World {
         self.ball.shot = None;
         self.ball.pass = None;
         self.ball.velocity = per_update.map(|v| v * TICK_HZ as f32);
+        // Let go free (`FUN_0014c408` -> `FUN_0014f6a0`): ball+0x64 the
+        // fall's updates, ball+0x60 from 0.
+        self.tip.toss_flight =
+            toss::fall_updates(self.ball.position[1], per_update[1], self.ball.radius, g);
+        self.tip.toss_flown = 0;
         self.ball.airborne = true;
         self.ball.through = false;
         self.ball.bank = false;
@@ -3719,6 +3776,10 @@ impl World {
     }
 
     fn step_ball(&mut self, held_before: Option<(usize, [f32; 3])>) {
+        // The toss's ball+0x60, one an update of its free flight.
+        if self.opening_toss == OpeningToss::Flight && self.ball.state == BallState::Loose {
+            self.tip.toss_flown += 1;
+        }
         self.step_ball_state(held_before);
         for (surface, speed) in std::mem::take(&mut self.ball.hits) {
             self.events.push(Event::BallHit { surface, speed });

@@ -4341,11 +4341,11 @@ fn the_opening_waits_two_pregame_updates_and_takes_its_stands_like_the_attracts_
     assert_eq!(w.opening_toss, OpeningToss::Waiting(toss::WAIT_UPDATES));
     for (i, d) in draws.iter().enumerate() {
         let want = if i == 0 || i == 3 {
-            Some(stand::TIP_JUMPER[(d & 1) as usize])
+            stand::TIP_JUMPER[(d & 1) as usize]
         } else {
             stand::TIP_OTHERS[(d % 6) as usize]
         };
-        assert_eq!(w.players[i].stand.map(|s| s.script), want, "{i}");
+        assert_eq!(w.players[i].stand.map(|s| s.script), Some(want), "{i}");
     }
     // The faces' first draws: each face's time from the reset, counted
     // from the first pregame update.
@@ -4383,6 +4383,82 @@ fn the_opening_toss_spins_about_a_random_axis_like_fun_0014c858() {
     assert_eq!(w.ball.spin_axis, axis.map(|c| c / length));
     let unit: f32 = w.ball.spin_axis.iter().map(|c| c * c).sum();
     assert!((unit - 1.0).abs() < 1e-5);
+}
+
+#[test]
+fn the_toss_counts_its_fall_and_bars_the_loser_for_the_rest_of_it() {
+    use crate::toss;
+    // `FUN_0014f6a0` as the toss goes free: ball+0x64 the updates to its
+    // resting height, rounded up (the third attract capture's toss: 109,
+    // ball+0x60 counting from 0); the loser's jump bars him for what is
+    // left of it (actor+0x1a8 = +0x64 - +0x60, `0x15ee14`), the taker
+    // 70 updates (`0x15efb8`).
+    assert_eq!(toss::fall_updates(20.0, 0.0, 0.5, 1.0), 7);
+    assert_eq!(toss::fall_updates(0.5, 0.0, 0.5, 1.0), 0);
+    assert_eq!(toss::fall_updates(0.0, -1.0, 0.5, 1.0), -1);
+    let mut w = three_on_three(5);
+    w.start_opening_toss();
+    while w.opening_toss != OpeningToss::Flight {
+        w.step(&[Input::default(); 6]);
+    }
+    let g = GRAVITY * TICK_SECONDS * TICK_SECONDS;
+    let vy = w.ball.velocity[1] * TICK_SECONDS;
+    assert_eq!(
+        w.tip.toss_flight,
+        toss::fall_updates(w.ball.position[1] - vy + 0.5 * g, vy + g, w.ball.radius, g)
+    );
+    assert_eq!(w.tip.toss_flight, 109);
+    assert_eq!(w.tip.toss_flown, 1);
+    let mut barred = None;
+    for _ in 0..200 {
+        let jumped = w.tip.jumped;
+        let flown = w.tip.toss_flown;
+        w.step(&[Input::default(); 6]);
+        for (team, &was) in jumped.iter().enumerate() {
+            if !was && w.tip.jumped[team] && w.tip.winner != team as i32 * 3 {
+                barred = Some((team * 3, w.tip.toss_flight - flown));
+            }
+        }
+        if w.ball.state == BallState::Pass {
+            break;
+        }
+    }
+    let (loser, left) = barred.expect("the loser jumped");
+    assert!(left > 0);
+    let winner = w.tip.winner as usize;
+    // Counted down once at the update's end, as the capture's 69 after it.
+    assert_eq!(w.players[winner].barred, toss::TAKE_BAR - 1);
+    assert!(w.players[loser].barred < left as u16);
+}
+
+#[test]
+fn the_tips_others_stand_on_the_placement_script_or_unplanted() {
+    use crate::{stand, trick};
+    // `FUN_00170608` starts the placement script (`0x4574e2`: clip 65 at
+    // once, looped) on every player, then his stand; `r % 6`'s sixth
+    // keeps it. The warm-up, the kick and the stretch test callback 11
+    // (`84 0b`: the game in phase 0 or 1, or the referee's toss) before
+    // their plants and skip them through the opening.
+    assert_eq!(stand::TIP_OTHERS[5], stand::PLACEMENT);
+    assert_eq!(
+        stand::STAND_ADDRESSES[usize::from(stand::PLACEMENT)],
+        0x4574e2
+    );
+    let steps = stand::STAND_SCRIPTS[usize::from(stand::PLACEMENT)].steps;
+    assert!(steps.contains(&trick::Step::Blend {
+        n: 0,
+        start: 0,
+        records: [65, 65],
+    }));
+    let mut w = three_on_three(5);
+    w.start_opening_toss();
+    assert!(w.opening_quiet());
+    w.start_stand(1, stand::WARMUP);
+    w.stand_tick(1);
+    assert!(w.players[1].stand.is_some_and(|s| s.plant.is_none()));
+    w.game_phase.phase = crate::game_phase::phase::BACK_COURT;
+    w.opening_toss = OpeningToss::None;
+    assert!(!w.opening_quiet());
 }
 
 #[test]

@@ -630,7 +630,10 @@ mod tests {
             HashMap::<String, i64>::new(),
             HashMap::<String, i64>::new(),
         );
-        let ticks = 6000u64;
+        // Long enough that the newest tick alone loses some (9000: two of
+        // 425; 6000 lost none once the tip's stands and bars were the
+        // original's).
+        let ticks = 9000u64;
         for t in 0..ticks {
             s.add_local_input(0, pad(t, 0));
             s.advance().expect("not stalled");

@@ -120,6 +120,20 @@ impl Disc {
                         out.push(Step::Flags(self.unaligned(p)));
                         p + 4
                     }
+                    // `89 r` (`FUN_00196318`): the channel on record `r` at
+                    // once, no blend (the placement script's clip 65).
+                    0x89 => {
+                        let r = self.unaligned(p);
+                        assert!(r < 1144, "{pc:#x}: a special record");
+                        record = r;
+                        frame = 0;
+                        out.push(Step::Blend {
+                            n: 0,
+                            start: 0,
+                            records: [r as u16, r as u16],
+                        });
+                        p + 4
+                    }
                     0xae => {
                         out.push(Step::Scale(f32::from_bits(self.unaligned(p))));
                         p + 4
@@ -170,7 +184,7 @@ impl Disc {
                         pending.push(target);
                         p + 20
                     }
-                    0x84 if matches!(self.unaligned(p), 10 | 45 | 49) => {
+                    0x84 if matches!(self.unaligned(p), 10 | 11 | 45 | 49) => {
                         let target = self.unaligned(p + 16);
                         out.push(Step::Asked(0));
                         fixups.push((out.len() - 1, target));
@@ -1110,11 +1124,8 @@ fn the_stand_scripts_are_the_executables() {
     // The tip-off's stands (`FUN_00170608`): the jumpers' pair, the
     // others' six, the last the placement script.
     assert_eq!(words(0x43f0e0, 2), scripts(&stand::TIP_JUMPER));
-    let others: Vec<u32> = stand::TIP_OTHERS
-        .iter()
-        .map(|k| k.map_or(0x4574e2, |k| STAND_ADDRESSES[usize::from(k)]))
-        .collect();
-    assert_eq!(words(0x3d9060, 6), others);
+    assert_eq!(words(0x3d9060, 6), scripts(&stand::TIP_OTHERS));
+    assert_eq!(STAND_ADDRESSES[usize::from(stand::PLACEMENT)], 0x4574e2);
     assert_eq!(rows(0x3d79e0, 9), stand::HELD_ROWS);
     let dribble: Vec<u8> = (0..11).map(|k| stand::DRIBBLE_FIRST + k).collect();
     assert_eq!(words(0x3d7ad0, 11), scripts(&dribble));

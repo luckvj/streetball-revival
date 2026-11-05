@@ -167,10 +167,12 @@ pub enum Step {
     /// clip the script started on, [`Run::before`]) the steps go on at
     /// step `to`.
     OnRecord { records: [u16; 12], to: u8 },
-    /// `84 10`, `84 45` or `84 49 -> T`: a test the script's starter
-    /// answers as it starts ([`Run::asked`]): callback 10 (`FUN_001757e8`,
-    /// the post call's side), callback 45 (`FUN_00177750`, the backdown's
-    /// turn), callback 49 (`FUN_00177fa0`, the post defence's side).
+    /// `84 10`, `84 11`, `84 45` or `84 49 -> T`: a test the script's
+    /// starter answers ([`Run::asked`]): callback 10 (`FUN_001757e8`, the
+    /// post call's side), callback 11 (`FUN_00174e40`, the opening's
+    /// phases or the referee's toss; answered every update), callback 45
+    /// (`FUN_00177750`, the backdown's turn), callback 49 (`FUN_00177fa0`,
+    /// the post defence's side).
     Asked(u8),
 }
 

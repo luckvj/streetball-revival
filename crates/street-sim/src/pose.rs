@@ -668,6 +668,9 @@ impl crate::World {
         if let Some(pose) = self.move_pose(i) {
             return Some(pose);
         }
+        if let Some(pose) = self.tip_pose(i) {
+            return Some(pose);
+        }
         let body = self.players[i].body();
         let place = self.place(i);
         if let crate::Action::Stealing { swipe: Some(s), .. } = self.players[i].action {

@@ -118,8 +118,10 @@ use crate::{
 /// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324); 109:
 /// the advanced dunk's toss and finish ([`crate::advanced`]); 114: the
 /// crowd's groups and the update's calls ([`crate::crowd`]); 115: the
-/// camera's draws ([`crate::camera`]).
-const VERSION: u8 = 115;
+/// camera's draws ([`crate::camera`]); 116: the placement script among
+/// the stands (the flair's up one), the toss's flight words
+/// ([`crate::Tip::toss_flight`]), the tip jump's landing.
+const VERSION: u8 = 116;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -416,6 +418,8 @@ impl World {
             winner,
             jumped,
             first_pass,
+            toss_flight,
+            toss_flown,
         } = *tip;
         for t in timing {
             w.uv(u64::from(t as u32));
@@ -425,6 +429,8 @@ impl World {
             w.u8(u8::from(j));
         }
         w.u8(u8::from(first_pass));
+        w.iv(i64::from(toss_flight));
+        w.iv(i64::from(toss_flown));
         w.u8(u8::from(*timed_dead_ball));
         w.iv(scorer.map_or(-1, |s| s as i64));
         w.bool(*celebrate_pending);
@@ -826,11 +832,15 @@ impl World {
             1 => true,
             k => return Err(format!("bad first pass flag {k}")),
         };
+        let toss_flight = r.i32()?;
+        let toss_flown = r.i32()?;
         let tip = Tip {
             timing,
             winner,
             jumped,
             first_pass,
+            toss_flight,
+            toss_flown,
         };
         let timed_dead_ball = match r.u8()? {
             0 => false,
@@ -2258,6 +2268,7 @@ fn action_out(w: &mut Writer, a: &Action) {
             vy,
             drift,
             up,
+            landed,
         } => {
             w.u8(12);
             w.u8(script);
@@ -2265,6 +2276,7 @@ fn action_out(w: &mut Writer, a: &Action) {
             w.f(vy);
             w.f2(&drift);
             w.u8(u8::from(up));
+            w.uv(landed.into());
         }
         Action::ReboundJump {
             script,
@@ -2470,6 +2482,7 @@ fn action_in(r: &mut Reader) -> Result<Action, String> {
                 1 => true,
                 k => return Err(format!("bad tip jump flag {k}")),
             },
+            landed: u16::try_from(r.uv()?).map_err(|_| "tip jump landing out of range")?,
         },
         13 => Action::ReboundJump {
             script: r.u8()?,

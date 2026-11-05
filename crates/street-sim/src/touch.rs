@@ -352,6 +352,21 @@ impl World {
         self.catching.filter(|c| c.player == i && !c.parked)
     }
 
+    /// A standing catch row (0x4000) still playing on `i`'s channel after
+    /// the catch ([`crate::World::catch`]): its first `91` set channel 0's
+    /// flag 2 (`catch_stand_1`'s 0x820002), which bars the side update's
+    /// locomotion (no walk, no stand path) until its `91 0` after the
+    /// play-out.
+    pub(crate) fn caught_row_holds(&self, i: usize) -> bool {
+        self.catch.is_some_and(|c| {
+            c.player == i
+                && self.tick < c.until
+                && timing::CATCH_ROWS
+                    .get(usize::from(c.row))
+                    .is_some_and(|r| r.flags & 0x4000 != 0)
+        })
+    }
+
     /// Receiver `i`'s catch row still his: the pass flying to him and him
     /// free (otherwise it is dropped). A parked script his channel's bar
     /// cancels (`0x15a9c8`; the rewrite's moves and reactions stand in for
@@ -598,16 +613,12 @@ impl World {
             && (at - low).abs() > PICKUP_SLACK)
     }
 
-    /// The tests at the end of actor `i`'s update (see the module docs),
-    /// before he moves: his bones as his channel shows them (a catch row
-    /// stepped by [`World::catching_tick`] first) against the ball's last
-    /// move. Without the disc's animations the rewrite's own rules stand
-    /// in (`World::catcher`, the arrival catch, the pass's stand-in
-    /// interception).
-    pub(crate) fn touch_ball(&mut self, i: usize) {
-        let Some(poses) = self.poses.arc() else {
-            return;
-        };
+    /// Whether actor `i`'s tail runs its tests this update: the ball in
+    /// play and free, he unbarred and on a clip that leaves him the ball.
+    fn tail_runs(&self, i: usize) -> bool {
+        if self.poses.get().is_none() {
+            return false;
+        }
         // The tip's pass is caught so too: the tip's take gives the sides
         // their roles (`FUN_00169138`), and the receiver runs his side's
         // update; the referee's toss is the jumpers' (`FUN_0015eaa0`).
@@ -629,11 +640,11 @@ impl World {
                 BallState::Pass | BallState::Shot | BallState::Loose
             )
         {
-            return;
+            return false;
         }
         let p = &self.players[i];
         if p.barred > 0 {
-            return;
+            return false;
         }
         match p.action {
             Action::None
@@ -641,6 +652,10 @@ impl World {
             | Action::Stealing { .. }
             | Action::Trick { .. } => {}
             Action::Jumping { block: Some(_), .. } if p.height <= 0.0 => {}
+            // The tip's jumpers on their tip scripts, up or down: no bar of
+            // the channel's, only the loser's actor+0x1a8 for the toss's
+            // fall and the taker's 70 (`FUN_0015eaa0`).
+            Action::TipJump { .. } => {}
             // A leaper (bit 15) runs his side's tests in the air on his
             // leap's clip: the near take and the sweep ([`crate::leap`]).
             _ if p.leaping() => {}
@@ -651,9 +666,41 @@ impl World {
             // of the channel's 0x40, `FUN_0016ea70`); the jumps and the
             // dive test elsewhere ([`crate::dive`]), the moves the rewrite
             // does not pose not at all.
-            _ => return,
+            _ => return false,
         }
-        let Some(pose) = self.actor_pose(i) else {
+        true
+    }
+
+    /// Actor `i`'s bones for his tail, the model as the last update posed
+    /// it, taken before his side's locomotion changes his gait (none when
+    /// his tail will not run).
+    pub(crate) fn tail_pose(&self, i: usize) -> Option<crate::pose::Pose> {
+        if !self.tail_runs(i) {
+            return None;
+        }
+        self.actor_pose(i)
+    }
+
+    /// [`World::touch_ball_posed`] on his bones as they stand now.
+    #[cfg(test)]
+    pub(crate) fn touch_ball(&mut self, i: usize) {
+        let posed = self.tail_pose(i);
+        self.touch_ball_posed(i, posed);
+    }
+
+    /// The tests at the end of actor `i`'s update (see the module docs),
+    /// before he moves: his bones as his channel showed them before his
+    /// side's locomotion (`posed`, [`World::tail_pose`]; a catch row
+    /// started by [`World::catching_start`]) against the ball's last move.
+    pub(crate) fn touch_ball_posed(&mut self, i: usize, posed: Option<crate::pose::Pose>) {
+        let Some(poses) = self.poses.arc() else {
+            return;
+        };
+        if !self.tail_runs(i) {
+            return;
+        }
+        let p = &self.players[i];
+        let Some(pose) = posed else {
             return;
         };
         let offence = p.team == self.possession;

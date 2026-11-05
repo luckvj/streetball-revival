@@ -10,14 +10,14 @@
 //! he moves again or a move takes the channel.
 
 /// The stand scripts, as [`STAND_SCRIPTS`] holds them.
-pub const STAND_ADDRESSES: [u32; 57] = [
+pub const STAND_ADDRESSES: [u32; 58] = [
     0x4570f5, 0x457139, 0x4571a8, 0x457202, 0x4570bb, 0x4570d8, 0x4572ae, 0x45731b, 0x456f41,
     0x457412, 0x45742f, 0x4573ce, 0x4573f0, 0x457450, 0x45746d, 0x443bad, 0x443bcf, 0x443bf6,
     0x443c1d, 0x443c44, 0x443c6b, 0x443c92, 0x443cb9, 0x443ce0, 0x443d74, 0x443d07, 0x443d2e,
     0x456f6f, 0x456f9d, 0x456fcb, 0x456ff9, 0x45702c, 0x45705f, 0x45708d, 0x44392a, 0x443980,
     0x4439cd, 0x443a1a, 0x4438d7, 0x4438a7, 0x457377, 0x456d38, 0x456f0e, 0x456de8, 0x456e39,
     0x456e8a, 0x456ed6, 0x456d96, 0x44c31c, 0x44c741, 0x44c6f8, 0x44ba7b, 0x4579d7, 0x4579f5,
-    0x443ad4, 0x443b1e, 0x443b68,
+    0x443ad4, 0x443b1e, 0x443b68, 0x4574e2,
 ];
 
 /// The defence's flair (`FUN_00170fc8`'s `r % 7` of `0x3d9100`, which the
@@ -108,18 +108,15 @@ pub const PICK_STANCE: u8 = 51;
 /// The jumpers' stances at the tip-off (`0x43f0e0`: `0x4579d7`, record
 /// 376, and `0x4579f5`, record 378), `r & 1` ([`World::tip_stands`]).
 pub const TIP_JUMPER: [u8; 2] = [52, 53];
-/// The others' at the tip-off (`0x3d9060`, `r % 6`): the warm-up, the
-/// ready stand, the warm-up again, the stretch, the relaxed stand, and the
-/// placement script (`0x4574e2`), no stand of these.
-pub const TIP_OTHERS: [Option<u8>; 6] = [
-    Some(WARMUP),
-    Some(READY),
-    Some(WARMUP),
-    Some(STRETCH),
-    Some(RELAX),
-    None,
-];
-pub const FLAIR_FIRST: u8 = 57;
+/// The others' at the tip-off (`0x3d9060`, `r % 6`, as save-state RAM
+/// holds it): the warm-up, the ready stand, the warm-up again, the
+/// stretch, the relaxed stand, and the placement script.
+pub const TIP_OTHERS: [u8; 6] = [WARMUP, READY, WARMUP, STRETCH, RELAX, PLACEMENT];
+/// The placement script (`0x4574e2`, which `FUN_00170608` starts on every
+/// player before his stand): `89 41`, clip 65 at once (`FUN_00196318`),
+/// looped at a frame each 6 updates, its root swaying him.
+pub const PLACEMENT: u8 = 57;
+pub const FLAIR_FIRST: u8 = 58;
 
 /// The offence's stands off the ball (`0x3d7938`, `r % 15`) and the rows
 /// that count as one already (`0x3d78f0`).
@@ -224,6 +221,7 @@ impl World {
         let free = matches!(p.action, Action::None)
             && p.height == 0.0
             && self.catch_row_playing(i).is_none()
+            && !self.caught_row_holds(i)
             && !(self.ball.state == BallState::Pass && self.ball.pass.is_some_and(|q| q.to == i));
         // A catch row's script takes his channel from any stand, the ones
         // that hold his walk too (the post call's: `FUN_0019c2f8` replaces
@@ -580,8 +578,20 @@ impl World {
                     if z >= 0.0 { x < 0.0 } else { x >= 0.0 }
                 }
             },
+            WARMUP | KICK | STRETCH => self.opening_quiet(),
             _ => false,
         }
+    }
+
+    /// Callback 11 (`FUN_00174e40`): the game in phase 0 or 1 (game+0xf4)
+    /// or the referee's toss up (ball state 7). The warm-up, the kick and
+    /// the stretch test it before each plant (`84 0b`) and skip the plant
+    /// on it, so through the opening they stand on their own roots.
+    pub(crate) fn opening_quiet(&self) -> bool {
+        use crate::game_phase::phase;
+        matches!(self.game_phase.phase, phase::PREGAME | phase::TIP)
+            || (self.opening_toss == crate::OpeningToss::Flight
+                && self.ball.state == BallState::Loose)
     }
 
     /// `FUN_00163a38`: whether defender `i` takes the stance against a
@@ -643,6 +653,10 @@ impl World {
             })
         };
         let prev = posed(self, &s);
+        // Callback 11's `84 0b` reads the game as each loop reaches it.
+        if matches!(s.script, WARMUP | KICK | STRETCH) {
+            s.run.asked = self.opening_quiet();
+        }
         let before = s.run.shown();
         let steps = s.steps();
         let height = self.players[i].height;
