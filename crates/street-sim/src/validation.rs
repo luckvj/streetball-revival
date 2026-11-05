@@ -112,7 +112,18 @@ impl World {
             control,
             gamebreaker_task,
             staged_start,
+            crowd,
         } = self;
+        for c in &crowd.calls {
+            require(
+                c.picks.len() <= usize::from(crowd.groups)
+                    && c.picks
+                        .iter()
+                        .enumerate()
+                        .all(|(n, &k)| usize::from(k) + n < usize::from(crowd.groups)),
+                "crowd picks",
+            )?;
+        }
         if let Some(w) = scenario {
             require(w.is_finite() && (0.0..=1.0).contains(w), "story weight")?;
         }

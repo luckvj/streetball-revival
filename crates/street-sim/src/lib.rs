@@ -33,6 +33,7 @@ pub mod combo;
 pub mod contact;
 pub mod control;
 pub mod counter;
+pub mod crowd;
 pub mod disc;
 pub mod dive;
 pub mod dribble;
@@ -825,6 +826,9 @@ pub struct World {
     /// poses its frame 0 the update after (the School's Level 2 capture:
     /// two updates after the press). Play goes on meanwhile.
     pub staged_start: Option<(gamebreaker::Sequence, u8)>,
+    /// The court's crowd groups and this update's calls to them
+    /// ([`crowd`]).
+    pub crowd: crowd::Crowd,
     /// The combo manager (game+0xd0, [`combo::Manager`]): the match's one
     /// ring of events and the words its dispatchers keep ([`scoring`]).
     pub combo: combo::Manager,
@@ -1307,6 +1311,7 @@ impl World {
             control: control::Control::default(),
             gamebreaker_task: None,
             staged_start: None,
+            crowd: crowd::Crowd::default(),
         }
     }
 
@@ -1407,6 +1412,7 @@ impl World {
             "a match can't play without the disc's animations (World::install)"
         );
         self.events.clear();
+        self.crowd.calls.clear();
         // `FUN_00131560`, before the game's count moves on.
         self.combo_update();
         // The pad each side's one person plays, as the client gave it: the
@@ -2556,7 +2562,7 @@ impl World {
     /// the ball's holder at the knock was in his shot.
     pub(crate) fn credit_block(&mut self, blocker: usize, shooter: usize, shooting: bool) {
         self.post_block(blocker, shooting);
-        self.events.push(Event::Block {
+        self.post(Event::Block {
             player: blocker,
             shooter,
         });
@@ -2695,7 +2701,7 @@ impl World {
         // The swiper's face (`FUN_00159190(swiper, 2, fps Ã— 2)`, raw
         // `0x16d3c4..0x16d3d0`, after the give; not played): its draw.
         self.face(i, 2 * TICK_HZ as i32);
-        self.events.push(Event::Steal {
+        self.post(Event::Steal {
             player: i,
             from: h,
             intercepted_pass: false,
@@ -2767,7 +2773,7 @@ impl World {
         // The caught block's slot 16 is also heard by the HUD and audio;
         // its following generic pickup must not replace it with a rebound.
         if blocked && let Some(shooter) = shooter {
-            self.events.push(Event::Block { player: i, shooter });
+            self.post(Event::Block { player: i, shooter });
         }
         // `0x14d158..0x14d178`: every take ends posting slot 24.
         self.events.push(Event::Take { player: i });
@@ -2836,26 +2842,19 @@ impl World {
             points,
             basket,
         });
-        // The replay director's basket handler (FUN_003248d8, raw
-        // 0x3248d8..0x324be4): with points, unless the game is won (the
-        // game's vt+0xbc) and unless Manual replays offer it instead (no
-        // gamebreaker ball and no full meter), it draws once from the
-        // shared generator.
+        // The basket's listeners in their order (the third attract's draw
+        // log: the faces, then the replay director's roll, then the
+        // crowd's picks): first the game's.
         let won = wins || matches!(self.phase, Phase::Over { .. });
-        let meter_full = self.teams.iter().any(|t| t.meter_full());
-        if points != 0 && !won && (self.replays != 2 || gamebreaker > 0 || meter_full) {
-            let draw = self.rng.next_u32();
-            self.events.push(Event::ReplayRoll { draw });
-        }
         if self.game_phase.phase != game_phase::phase::WON {
             self.scorer = Some(player);
         }
         if matches!(self.phase, Phase::Over { .. }) {
-            return; // the trick points just won it
-        }
-        if self.basket_wins(team, basket) {
+            // The trick points just won it.
+        } else if self.basket_wins(team, basket) {
             self.phase = Phase::Over { winner: team };
             self.events.push(Event::GameOver { winner: team });
+            self.basket_bars_and_faces(player, kind);
         } else {
             self.start_restart(1 - team);
             // A gamebreaker's basket holds the restart through its replays
@@ -2865,8 +2864,24 @@ impl World {
                 self.game_phase.hold = game_phase::GAMEBREAKER_HOLD;
                 self.game_phase.since = 0;
             }
+            self.basket_bars_and_faces(player, kind);
         }
-        self.basket_bars_and_faces(player, kind);
+        // The replay director's basket handler (FUN_003248d8, raw
+        // 0x3248d8..0x324be4): with points, unless the game is won (the
+        // game's vt+0xbc) and unless Manual replays offer it instead (no
+        // gamebreaker ball and no full meter), it draws once from the
+        // shared generator.
+        let meter_full = self.teams.iter().any(|t| t.meter_full());
+        if points != 0 && !won && (self.replays != 2 || gamebreaker > 0 || meter_full) {
+            let draw = self.rng.next_u32();
+            self.events.push(Event::ReplayRoll { draw });
+        }
+        // The sound listener's crowd call (slot 26 `0x1a3b10`), and a
+        // gamebreaker basket's second (`FUN_001a6b80`).
+        self.crowd_call(true);
+        if matches!(basket, Basket::Gamebreaker { .. }) {
+            self.crowd_call(true);
+        }
     }
 
     /// The game listener's slot 27 (`0x141c38`, a shot done without a
@@ -3414,6 +3429,10 @@ impl World {
                 return;
             };
             self.take_ball(i);
+            // Slot 22, posted at the take of the toss (`FUN_0014cb28`,
+            // `0x1a5d10`): the crowd's call, before the pass's draws (the
+            // third attract's log at the tip).
+            self.crowd_call(true);
             let from = self.ball.position;
             let aim = self.pass_aim(i, to);
             let start = self.floor_positions();

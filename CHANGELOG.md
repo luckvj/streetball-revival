@@ -5,6 +5,12 @@ its version's part.
 
 ## Unreleased
 
+- The crowd's reactions pick their spectators at the moment of the
+  basket, block or steal, inside the game's update as on the PS2, so the
+  random numbers the players draw after them in the same update match
+  the original's. After a basket the players' faces now draw before the
+  instant replay's roll, in the PS2's order.
+
 - The court camera no longer bobs up and down following a loose ball
   bouncing on the floor, as on the PS2.
 

@@ -3,7 +3,7 @@
 
 use bevy::{mesh::skinning::SkinnedMeshInverseBindposes, prelude::*};
 use street_render::animation::Animator;
-use street_sim::{Basket, Goal, Input, PassStyle, Phase, World as SimWorld};
+use street_sim::{Basket, Input, PassStyle, Phase, World as SimWorld};
 
 use crate::{
     Screen, clip, controls,
@@ -383,7 +383,6 @@ impl Plugin for GamePlugin {
                         .in_set(SimStep),
                     // Online the network runs through the intro (the
                     // match holds its world); the rest waits for it.
-                    crowd_reactions.run_if(crate::intro::finished),
                     // The replay director, manager and gamebreaker task, in
                     // the original's task order (crate::tape).
                     crate::tape::step.run_if(crate::intro::finished),
@@ -432,7 +431,7 @@ impl Plugin for GamePlugin {
             .add_systems(
                 FixedUpdate,
                 crowd_step
-                    .after(crowd_reactions)
+                    .after(SimStep)
                     .run_if(in_state(Screen::Playing))
                     .run_if(|p: Res<Paused>| !p.on),
             )
@@ -1066,93 +1065,37 @@ fn spawn_overlays(mut commands: Commands) {
     ));
 }
 
-/// The crowd's calls, as the audio listener makes them: its crowd call
-/// `FUN_001a75a8` reacts a share of the crowd's groups
-/// (`street_render::crowd::fraction`, the leading score over the points
-/// to win) through `FUN_0030d618` → `FUN_0030ca10`, a cheer for every
-/// event but 0x29, a gasp for 0x29. Its callers, by the rewrite's events
-/// (the same listener slots `sfx.rs` and `audio.rs` map):
-///
-/// | Event | Listener | Call |
-/// |---|---|---|
-/// | a basket | slot 26 `FUN_001a3b10` (via `FUN_001a7708`) | 0x27 |
-/// | a gamebreaker basket, also | `FUN_001a3b10` → `FUN_001a6b80` (+0xc set) | 0x27 |
-/// | a dunk or alley-oop (the slam `sfx.rs` folds into the basket) | slot 39 `FUN_001a5d50` | 0x25 |
-/// | a block (a goaltend, as `sfx.rs` hears it) | slot 16 `FUN_001a4ce8` | 0x27 |
-/// | a held-ball steal or a counter | slot 15 `FUN_001a63e0` | 0x27 |
-/// | a loose ball picked up | slot 17 `FUN_001a65c0` | 0x27 |
-/// | a trick move lands | slot 13 `FUN_001a5a78` | 0x29 |
-///
-/// Also: the tip-off's take (slot 22, `FUN_001a5d10`, 0x25, the first
-/// arm) and slot 76's floor contacts (`FUN_001a5348`, 0x29, from posed
-/// joints in `sfx.rs`'s `floor_contact`). Not traced: whether intercepted
-/// passes reach slot 15. A replay's updates call nothing.
-fn crowd_reactions(
-    tick: Res<TickEvents>,
-    sim: Res<Sim>,
-    mut calls: ResMut<street_render::crowd::CrowdReactions>,
-) {
-    use street_sim::Event::*;
-    if tick.replay {
-        return;
-    }
-    let w = &sim.world;
-    let fraction = crowd_fraction(w);
-    for event in &tick.events {
-        let (cheers, gasps) = match *event {
-            // The tip-off's take (slot 22, `0x1a5d10`, 0x25).
-            _ if crate::sfx::tip_taken(w, event) => (1, 0),
-            // The basket's call (`0x1a3b10` through `FUN_001a7708`); a
-            // gamebreaker's adds `FUN_001a6b80`'s.
-            Score { basket, .. } => match basket {
-                Basket::Gamebreaker { .. } => (2, 0),
-                _ => (1, 0),
-            },
-            // A passout going on to its second leg (slot 39, `0x1a5d50`).
-            PassoutBounce { .. } => (1, 0),
-            Block { .. }
-            | Goaltend { .. }
-            | Steal {
-                intercepted_pass: false,
-                ..
-            }
-            | Counter { .. }
-            | Rebound { .. } => (1, 0),
-            // Slot 13's gasp only for a trick that faked a defender out.
-            Trick {
-                fakeout: Some(_), ..
-            } => (0, 1),
-            _ => (0, 0),
-        };
-        let call = |cheer| street_render::crowd::Reaction { fraction, cheer };
-        calls.0.extend((0..cheers).map(|_| call(true)));
-        calls.0.extend((0..gasps).map(|_| call(false)));
-    }
-}
-
-/// `FUN_001a75a8`'s share of the crowd: `FUN_001a7748`'s lead over the
-/// points to win, read as `song.rs` reads the same pair for `0x1a3b10`.
-/// The floor-contact call (`sfx.rs`, slot 76) shares it.
-/// The crowd's tick, its calls' group picks from the match's shared
-/// generator (`FUN_0030ca10` draws them from `FUN_003a16b8`), before the
-/// court's effects draw theirs (`crate::draws`).
+/// The crowd's tick: the calls the match's update made at its events
+/// (`street_sim::crowd`, applied once each), then the floor contacts'
+/// calls (`sfx.rs`), which pick from the match's shared generator
+/// (`FUN_0030ca10` draws them from `FUN_003a16b8`) after the update,
+/// before the court's effects draw theirs (`crate::draws`).
 pub(crate) fn crowd_step(
     mut reactions: ResMut<street_render::crowd::CrowdReactions>,
     mut rigs: Query<&mut street_render::crowd::CrowdRig>,
     mut sim: ResMut<Sim>,
     mut tape: Option<ResMut<crate::tape::Tape>>,
+    mut applied: Local<(u64, usize)>,
 ) {
     let w = crate::draws::live(&mut sim, tape.as_deref_mut());
-    street_render::crowd::step_drawing(&mut reactions, &mut rigs, &mut || w.shared_draw());
+    // The calls stand in the world until its next update clears them: a
+    // tick's new ones once each (the intro's cheer comes between updates).
+    if applied.0 != w.tick {
+        *applied = (w.tick, 0);
+    }
+    let calls = std::mem::take(&mut w.crowd.calls);
+    let picked: Vec<(bool, &[u8])> = calls[applied.1.min(calls.len())..]
+        .iter()
+        .map(|c| (c.cheer, c.picks.as_slice()))
+        .collect();
+    applied.1 = calls.len();
+    street_render::crowd::step_drawing(&picked, &mut reactions, &mut rigs, &mut || w.shared_draw());
+    drop(picked);
+    w.crowd.calls = calls;
 }
 
 pub(crate) fn crowd_fraction(w: &street_sim::World) -> f32 {
-    let (lead, to_win) = match w.rules.goal {
-        Goal::Points(n) => (w.score[0].max(w.score[1]), n),
-        Goal::TrickPoints(n) => (w.teams[0].trick_points.max(w.teams[1].trick_points), n),
-        Goal::Gamebreaker(_) => (0, 0),
-    };
-    street_render::crowd::fraction(lead, to_win)
+    w.crowd_fraction()
 }
 
 pub(crate) fn leave(
@@ -2865,67 +2808,6 @@ mod tests {
                     .chain(),
             );
         app
-    }
-
-    /// The crowd's calls come off the match's own events after the
-    /// simulation's step: a basket cheers (twice for a dunk), a trick gasps,
-    /// each reaching the share `FUN_001a75a8` computes from the lead; a
-    /// replay's re-stepped ticks call nothing.
-    #[test]
-    fn the_crowd_reacts_to_the_matchs_events_like_fun_001a75a8() {
-        use street_render::crowd::{CrowdReactions, Reaction};
-        let mut app = match_app();
-        app.init_resource::<CrowdReactions>()
-            .add_systems(FixedUpdate, crowd_reactions.after(crate::tape::step));
-        school_steps(&mut app, 1);
-        assert!(app.world().resource::<CrowdReactions>().0.is_empty());
-        app.world_mut().resource_mut::<Sim>().world.score = [14, 7];
-        app.world_mut().resource_mut::<Posted>().0 = vec![
-            street_sim::Event::Score {
-                team: 0,
-                player: 0,
-                points: 2,
-                basket: Basket::Dunk { advanced: false },
-            },
-            // A trick that faked a defender out gasps (one that faked
-            // nobody would not).
-            street_sim::Event::Trick {
-                player: 3,
-                level: 1,
-                script: 0,
-                fakeout: Some(0),
-                points: 500,
-            },
-            // A passout's bounce (slot 39) cheers; the dunk's basket once.
-            street_sim::Event::PassoutBounce { head: true },
-        ];
-        school_steps(&mut app, 1);
-        let to_win = match app.world().resource::<Sim>().world.rules.goal {
-            Goal::Points(n) => n,
-            other => panic!("{other:?}"),
-        };
-        let lead = app.world().resource::<Sim>().world.score[0];
-        let fraction = (lead as f32 / to_win as f32 * 0.5 + 0.5).min(1.0);
-        let cheer = Reaction {
-            fraction,
-            cheer: true,
-        };
-        let gasp = Reaction {
-            fraction,
-            cheer: false,
-        };
-        assert_eq!(
-            std::mem::take(&mut app.world_mut().resource_mut::<CrowdReactions>().0),
-            [cheer, gasp, cheer]
-        );
-        // The crowd's tick takes them.
-        app.add_systems(
-            FixedUpdate,
-            street_render::crowd::step.after(crowd_reactions),
-        );
-        app.world_mut().resource_mut::<Posted>().0 = vec![street_sim::Event::Pickup { player: 0 }];
-        school_steps(&mut app, 1);
-        assert!(app.world().resource::<CrowdReactions>().0.is_empty());
     }
 
     #[test]

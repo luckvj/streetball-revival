@@ -116,8 +116,9 @@ use crate::{
 /// stances among the stands, the flair's moved up two; 107: the dribble
 /// stops among the stands (the flair's up three), a stand's coast and the
 /// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324); 109:
-/// the advanced dunk's toss and finish ([`crate::advanced`]).
-const VERSION: u8 = 113;
+/// the advanced dunk's toss and finish ([`crate::advanced`]); 114: the
+/// crowd's groups and the update's calls ([`crate::crowd`]).
+const VERSION: u8 = 114;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -199,6 +200,7 @@ impl World {
             control,
             gamebreaker_task,
             staged_start,
+            crowd,
         } = self;
         w.uv(*tick);
         for h in hoops {
@@ -588,6 +590,14 @@ impl World {
                 w.0.extend_from_slice(&bytes);
                 w.u8(*wait);
             }
+        }
+        let crate::crowd::Crowd { groups, calls } = crowd;
+        w.u8(*groups);
+        w.uv(calls.len() as u64);
+        for c in calls {
+            w.bool(c.cheer);
+            w.uv(c.picks.len() as u64);
+            w.0.extend_from_slice(&c.picks);
         }
         w.0
     }
@@ -1007,6 +1017,18 @@ impl World {
             }
             k => return Err(format!("bad staged start flag {k}")),
         };
+        let groups = r.u8()?;
+        let n = r.len(1024)?;
+        let mut calls = Vec::with_capacity(n);
+        for _ in 0..n {
+            let cheer = r.bool()?;
+            let m = r.len(256)?;
+            calls.push(crate::crowd::Call {
+                cheer,
+                picks: r.take(m)?.to_vec(),
+            });
+        }
+        let crowd = crate::crowd::Crowd { groups, calls };
         if r.at != bytes.len() {
             return Err(format!("{} bytes left over", bytes.len() - r.at));
         }
@@ -1076,6 +1098,7 @@ impl World {
             control,
             gamebreaker_task,
             staged_start,
+            crowd,
         };
         world.validate()?;
         Ok(world)

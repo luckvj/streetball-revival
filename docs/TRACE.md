@@ -14120,14 +14120,15 @@ first draws) now come from the game's generator too.
 
 The model has limits. A vent's draws per frame match the log's rates
 within 3% (`steam.rs`). The litter's come-back test reads the camera's
-view, so its draws follow the rewrite's camera. The crowd's calls draw
-after the update rather than at their event inside it. (Measured
-2026-11-04 on `drawlog-attract3`: 40 of the 65 reaction picks,
-`0x30ca90`, are followed in the same update by gameplay draws, the
-catch rows', the faces', the gait's, so each such call hands the later
-draws other values than the original's. Moving them into the step needs
-the crowd rig's free groups and their timers in the simulation, since
-they decide how many draws a call makes.) The crowd's tick
+view, so its draws follow the rewrite's camera. Since 2026-11-04 the crowd's calls draw at their event inside the
+update (`street_sim::crowd`): `drawlog-attract3` shows 40 of its 65
+reaction picks, `0x30ca90`, followed in the same update by gameplay
+draws (the catch rows', the faces', the gait's). A call's draw count is
+only `trunc(groups × share)`, as every pick finds a free group, so the
+simulation needs only the court's group count (the highest seat group +
+1, set at the match's load) and hands the renderer the groups each call
+picked. Only slot 76's floor contacts, read from the posed rig, still
+pick after the update. The crowd's tick
 picks and its loader's runs keep the rewrite's own `rand()`, because
 the `rand` hook logged nothing. Online, the effects draw from the
 client's copy of the match, which changes nothing the match keeps; a
@@ -14464,3 +14465,33 @@ relaunch off a ball resting on the rim. (2026-11-04: the script
 runner's blend now carries the original's rate, 1/n at +0x68
 (`0x1983f4`), which the lob's frame + rate × flight reads mid-blend; the
 record and frame stay the outgoing clip's, as they do in ours.)
+
+## The crowd's calls inside the update (2026-11-04)
+
+`FUN_0030ca10` draws its picks when the sound listener's crowd call
+reaches it, and the listener hears a message when the update posts it.
+The rewrite had drawn every call after the update. `street_sim::crowd`
+now makes the call at the post (`World::post` for blocks, goaltends,
+held-ball steals, counters, loose-ball takes, faked-out tricks and a
+passout's second leg), each pick `(r + left) % left` of the groups still
+free, and keeps the picks in `World::crowd` for the renderer, which
+applies them before its groups' tick. The draw count needs only the
+court's group count (the highest seat group + 1, none in the School or
+on Broad Street), which the match's load sets.
+
+Two placements come from `drawlog-attract3`:
+
+- **The tip.** The five picks come before the tip pass's catch row
+  (`0x16240c`) and the passer's face (`0x1610f4`): slot 22 is posted at
+  the take of the toss (`FUN_0014cb28`), before the pass starts.
+- **A basket.** The basket's listeners run in the order the log shows
+  at both logged baskets (997 and 2810): the game's (the faces' `r & 1`,
+  `0x141af4`/`0x141a90`, and their clips, `0x1591cc`), then the replay
+  director's roll (`0x324bb4`), then the crowd's picks. The rewrite had
+  rolled the replay before the faces; `World::score_basket` now runs the
+  faces first, then the roll, then the call (two for a gamebreaker's
+  basket).
+
+Slot 76's floor contacts come from the posed rig, which only the
+renderer has, so they still pick after the update. Online, every peer's
+match draws the same picks, since the group count comes from the court.

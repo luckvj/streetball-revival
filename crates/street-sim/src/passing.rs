@@ -1378,7 +1378,7 @@ impl World {
         // The take of a pass by the other side is slot 15's steal
         // ([`World::post_take`]).
         self.take_ball(j);
-        self.events.push(Event::Steal {
+        self.post(Event::Steal {
             player: j,
             from: pass.from,
             intercepted_pass: true,

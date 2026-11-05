@@ -426,6 +426,20 @@ impl Director {
         }
     }
 
+    /// A call whose picks the game's update drew (`street_sim::crowd`):
+    /// each the index among the groups still free.
+    pub fn react_picks(&mut self, cheer: bool, picks: &[u8]) {
+        let count = self.groups.len();
+        let mut taken = vec![false; count];
+        for &k in picks {
+            let Some(g) = (0..count).filter(|&g| !taken[g]).nth(usize::from(k)) else {
+                break;
+            };
+            taken[g] = true;
+            self.groups[g].wants = if cheer { CHEER } else { GASP };
+        }
+    }
+
     /// `FUN_0030db18`: one tick of every group.
     pub fn tick(&mut self) {
         for g in 0..self.groups.len() {
@@ -726,15 +740,21 @@ pub fn step(mut reactions: ResMut<CrowdReactions>, mut rigs: Query<&mut CrowdRig
     }
 }
 
-/// [`step`] with the calls' group picks from `draw` (the game's shared
-/// generator, which the original's calls take them from).
+/// [`step`] with the calls the game's update already picked (`picked`,
+/// `street_sim::crowd`), then the renderer's own calls (the floor
+/// contacts) picking from `draw` (the game's shared generator, which the
+/// original's calls take them from).
 pub fn step_drawing(
+    picked: &[(bool, &[u8])],
     reactions: &mut CrowdReactions,
     rigs: &mut Query<&mut CrowdRig>,
     draw: &mut dyn FnMut() -> u32,
 ) {
     let calls = std::mem::take(&mut reactions.0);
     for mut rig in rigs.iter_mut() {
+        for &(cheer, picks) in picked {
+            rig.director.react_picks(cheer, picks);
+        }
         for &call in &calls {
             rig.director.react_drawing(call, draw);
         }

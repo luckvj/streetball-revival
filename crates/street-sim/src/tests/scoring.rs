@@ -566,20 +566,19 @@ fn a_basket_draws_the_directors_roll_from_the_shared_generator() {
         w.events.clear();
         let mut expected = w.rng.clone();
         w.score_basket(0, Basket::Jumper { long: false });
-        let draws = roll(&w);
-        assert_eq!(draws, [expected.next_u32()], "option {option}");
-        // It follows the basket's own event.
-        let at = w
-            .events
-            .iter()
-            .position(|e| matches!(e, Event::Score { .. }));
-        assert!(matches!(
-            w.events.get(at.unwrap() + 1),
-            Some(Event::ReplayRoll { .. })
-        ));
+        // The game's listener's faces first, then the director's roll
+        // (the third attract's draw log).
         for _ in 0..FACES {
             expected.next_u32();
         }
+        let draws = roll(&w);
+        assert_eq!(draws, [expected.next_u32()], "option {option}");
+        // It comes after the basket's own event.
+        let at = |f: fn(&Event) -> bool| w.events.iter().position(f);
+        assert!(
+            at(|e| matches!(e, Event::Score { .. }))
+                < at(|e| matches!(e, Event::ReplayRoll { .. }))
+        );
         assert_eq!(w.rng.state(), expected.state());
     }
     // Manual: no draw, unless a meter is full.
@@ -630,5 +629,31 @@ fn a_basket_bars_all_six_and_draws_for_their_faces() {
     for _ in 0..9 {
         expected.next_u32();
     }
+    assert_eq!(w.rng.state(), expected.state());
+}
+
+/// The basket's crowd call (slot 26, `FUN_0030ca10`) picks after the
+/// faces and the director's roll, inside the update: half the groups with
+/// no lead, `(r + left) % left` of the groups still free.
+#[test]
+fn a_basket_picks_the_crowd_after_the_faces_and_the_roll() {
+    const FACES: usize = 5;
+    let mut w = scene();
+    w.replays = 0;
+    w.crowd.groups = 11;
+    let mut expected = w.rng.clone();
+    w.score_basket(0, Basket::Jumper { long: false });
+    for _ in 0..=FACES {
+        expected.next_u32();
+    }
+    let share = w.crowd_fraction();
+    let count = (11.0 * share) as u32;
+    let picks: Vec<u8> = (0..count)
+        .map(|n| {
+            let left = 11 - n;
+            (expected.next_u32().wrapping_add(left) % left) as u8
+        })
+        .collect();
+    assert_eq!(w.crowd.calls, [crate::crowd::Call { cheer: true, picks }]);
     assert_eq!(w.rng.state(), expected.state());
 }

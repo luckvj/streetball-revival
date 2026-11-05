@@ -605,6 +605,14 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     // Each seat draws its height from the shared generator before the
     // teams are built (`FUN_0030b9b8`).
     let spectators = crowd.as_ref().map_or(0, |c| c.seats.len() as u32);
+    let crowd_groups = crowd.as_ref().map_or(0, |c| {
+        c.seats
+            .iter()
+            .map(|s| s.group + 1)
+            .max()
+            .unwrap_or(0)
+            .min(usize::from(u8::MAX)) as u8
+    });
     let referee = match PlayerAssets::referee(&mut disc.iso) {
         Ok(referee) => Some(referee),
         Err(e) => {
@@ -739,6 +747,9 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     let mut sim =
         street_sim::World::from_generator(hoops, sim_players, rules, generator, spectators);
     sim.rim_rigs = rim_rigs;
+    // The crowd's groups, for the calls the update picks among
+    // (`street_sim::crowd`): the highest seat group + 1.
+    sim.crowd.groups = crowd_groups;
     if let Some(tricks) = native_tricks {
         for (state, tricks) in sim.players.iter_mut().zip(tricks) {
             state.native_tricks = Some(tricks);

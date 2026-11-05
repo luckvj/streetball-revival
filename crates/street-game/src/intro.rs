@@ -582,33 +582,22 @@ pub fn step(
 
 /// The world takes the intro's draws as its actors make them (offline):
 /// nothing else of the game draws while the script manager runs it.
-pub fn take_draws(
-    intro: Option<ResMut<MatchIntro>>,
-    mut sim: ResMut<Sim>,
-    reactions: Option<ResMut<street_render::crowd::CrowdReactions>>,
-) {
+pub fn take_draws(intro: Option<ResMut<MatchIntro>>, mut sim: ResMut<Sim>) {
     let Some(mut intro) = intro else {
         return;
     };
     if intro.pending.is_empty() {
         return;
     }
-    let mut reactions = reactions;
     for draw in std::mem::take(&mut intro.pending) {
         match draw {
             Draw::TakeOff { player, updates } => sim.world.staged_take_off(player, updates),
             Draw::Release => {
                 sim.world.staged_release_roll();
             }
-            Draw::Cheer => {
-                if let Some(reactions) = reactions.as_mut() {
-                    let fraction = crate::game::crowd_fraction(&sim.world);
-                    reactions.0.push(street_render::crowd::Reaction {
-                        fraction,
-                        cheer: true,
-                    });
-                }
-            }
+            // The shot's basket cheer (`FUN_0030ca10`), its picks drawn
+            // now (`street_sim::crowd`).
+            Draw::Cheer => sim.world.crowd_call(true),
         }
     }
 }

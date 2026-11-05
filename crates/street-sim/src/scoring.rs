@@ -383,7 +383,7 @@ impl World {
             t.paid = true;
         }
         self.stat(taker, stats::REBOUNDS, 1);
-        self.events.push(Event::Rebound { player: taker });
+        self.post(Event::Rebound { player: taker });
         if self.rules.tricks {
             self.trick_points(taker, self.combo.total.max(0) + 500);
             self.side_stat(team, 0x24, 500);

@@ -670,7 +670,7 @@ impl World {
         }
         combo.points += trick;
         combo.moves += 1;
-        self.events.push(Event::Trick {
+        self.post(Event::Trick {
             player: i,
             level: id.level + 1,
             script: id.script,

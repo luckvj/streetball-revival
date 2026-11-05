@@ -534,7 +534,7 @@ impl World {
         let r = self.rng.next_u32() & 1;
         self.react(d, crate::trick::HEAD_HIT[usize::from(r == 0)]);
         // Slot 39 with word 0 (`0x1485ec..0x148634`).
-        self.events.push(crate::Event::PassoutBounce { head: true });
+        self.post(crate::Event::PassoutBounce { head: true });
         let left = (total - self.ball.flight_ticks()).max(1);
         self.ball.throw(
             b,
@@ -572,8 +572,7 @@ impl World {
             return true;
         }
         // Slot 39 with word 1 (`0x148678..0x1486e8`).
-        self.events
-            .push(crate::Event::PassoutBounce { head: false });
+        self.post(crate::Event::PassoutBounce { head: false });
         let left = (total - flown).max(1);
         let from = self.ball.position;
         self.ball.throw(

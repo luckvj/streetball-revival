@@ -408,7 +408,7 @@ impl World {
                     // The stand-in's swat is a block (slot 16).
                     let _ = blocker_team;
                     self.swat(j, shot.shooter, at, [rim[0], rim[2]]);
-                    self.events.push(Event::Goaltend {
+                    self.post(Event::Goaltend {
                         player: j,
                         shooter: shot.shooter,
                     });

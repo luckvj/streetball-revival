@@ -367,7 +367,7 @@ impl World {
         };
         // `FUN_0019c2f8` runs its first update at once.
         self.counter_tick(i);
-        self.events.push(Event::Counter { player: i, from: h });
+        self.post(Event::Counter { player: i, from: h });
         true
     }
 
