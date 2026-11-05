@@ -527,10 +527,21 @@ pub fn parts(
         let side = if plan.kind == 0 { 1 - team } else { team };
         let lead = if side == 0 { &home } else { &away };
         // The featured legend leads (role 0); else that side's first.
+        // The record's actor: the actors take their slots by role
+        // (`crate::setup::actor_slots`), not the line-up's order.
         let shooter = featured
             .and_then(|record| {
-                let k = setup.lineups[0].iter().position(|&r| r == record)?;
-                home.get(k).copied()
+                home.iter()
+                    .copied()
+                    .find(|&i| {
+                        w.players[i]
+                            .shooter
+                            .is_some_and(|s| usize::from(s.record) == record)
+                    })
+                    .or_else(|| {
+                        let k = setup.lineups[0].iter().position(|&r| r == record)?;
+                        home.get(k).copied()
+                    })
             })
             .or_else(|| lead.first().copied());
         let Some(shooter) = shooter else {

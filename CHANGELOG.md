@@ -5,6 +5,19 @@ its version's part.
 
 ## Unreleased
 
+- Each side's three take their places as on the PS2: the tallest of the
+  centres jumps, the best ball handler of the guards plays the third
+  slot, the other the second (the rewrite kept the line-up's order, so a
+  team like Minnesota or Indiana had its forward and guard swapped, with
+  each other's spots, sizes and ratings).
+- The tip-off jump moves as on the PS2, checked against the PS2's own
+  positions update by update: the run-up carries the jumpers forward on
+  the clip, the take-off comes one update later, the aim faces down the
+  court, the take-off settles the body, and after landing the clip's
+  play-out slides them on. Both jumpers now follow the PS2 within 0.03
+  from the run-up to their first steps afterwards.
+- A stand that replaces another blends from the clip the player was
+  showing, not from his walk.
 - The tip-off comes in the PS2's update: the jumper's hands are tested
   as the last update posed them (the rewrite tipped one update early in
   all three captured openings). The loser is barred from the ball for the

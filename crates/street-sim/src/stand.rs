@@ -524,7 +524,14 @@ impl World {
 
     pub(crate) fn start_stand(&mut self, i: usize, script: u8) {
         self.release_box_out(i);
+        // The clip his channel shows: a stand's running still (its clip
+        // at its frame, or its blend's target), else his gait's.
         let from = self.poses.get().map(|_| {
+            if let Some(shown) = self.players[i].stand.map(|s| s.run.shown())
+                && let Some(record) = shown.record
+            {
+                return (record, shown.frame);
+            }
             let f = self.gait_frame(i);
             (f.record, f.time)
         });

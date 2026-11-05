@@ -14598,3 +14598,48 @@ rises to level 2 when its level hold (23) runs out; the original's
 stays. Its positions aren't in any capture of this match (the third AI
 capture is the same match on other draws), so the next comparison needs
 the draw log's run with positions.
+
+## The PS2's positions beside its draws: the tip jump and the slots (2026-11-05)
+
+A position log (work/drawpos.py, beside drawlog.py's hooks): at each game
+update's entry the stub copies 55 words (game+0x128, +0xf4, the ball's
+place and state, each actor's place, facing, +0xa4, +0x1a8, +0x88, +0x90)
+and FUN_00107c40 logs its defence object. Forced into the draw-log
+attract's match (court 6, slot 0 Portland, side 0 Minnesota, count 20455)
+it reproduces drawlog-attract3's shared draws word for word through
+update 4526.
+
+Alignment: the rewrite's state before step u is the log's row at tag
+616 + u, the same tag whose following draws are step u's. (Reading row
+615 + u, one update early, made the jumpers look right and the ball one
+update ahead; the old "tip hands a step behind" was that offset.)
+
+Findings, each now ported:
+- The tip script steps in the actor's update after his side's, the
+  press's own update its first (step tick + 1). `91 02 00 02 00` frees
+  the clip's root on x and z through the blend and the wait (frames 0 to
+  4/3/2 over steps 4..8: the run-up, ~1 unit); `a1 ef` comes at step 9
+  with `91 02 10 01 00`: root only on y, and the resync (0x10000) takes
+  the root's rise back until a step to a new whole frame (that step's
+  too).
+- `a1 ef 25.0 F -1.0`: the operand -1.0 is negative, so the aim's pose
+  faces 0x300 (side 0) or 0x100 (side 1), not the ball (`0x1953f4`); the
+  hand is posed with the root at the height the wait left it (actor+0xe4).
+  The ball's place n updates on is FUN_001537d0's path entry.
+- Landing: `91 02 00 00 00`, `97`, `8c 2.0`: the clip plays out from the
+  landing frame (25/23/24) half a frame an update with the root free,
+  from the update after the landing.
+- FUN_00189f70 (the team's construction) places a side's three by role
+  before building its actors: slot 0 (team+0xa8) the tallest (field 8)
+  of those whose position (field 4) is nearest 0; slot 2 (+0xb0) the
+  best Handles (`FUN_001d7d00(record, 7)`) of the rest nearest 4; slot 1
+  the one left. FUN_0018a108 keeps the ties at the nearest in line-up
+  order, FUN_0018a258 the first of the highest and takes him out. The
+  third attract capture's Indiana (45, 47, 46) and San Antonio (121, 120,
+  122) and the draw-log run's Minnesota (75, 77, 76) all fit; the
+  rewrite had the line-up's order, so stands drifted 11% off for the
+  swapped pair (their scales) and their spots were each other's.
+
+Left: actor 2 after the tip (a 0.127 step and a 33-unit turn in the
+tip's update, then a +101 facing snap at the walk's start, likely the
+pelvis facing): the draw mismatch at 855 is his gait.

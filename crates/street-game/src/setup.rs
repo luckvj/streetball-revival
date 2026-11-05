@@ -458,10 +458,47 @@ pub(crate) fn hoops(court: &court::Court) -> Result<[Hoop; 2], String> {
     }
 }
 
+/// `FUN_00189f70`: which of a side's three (by their place in the
+/// line-up) each actor slot takes. Slot 0 (team+0xa8) goes to the
+/// tallest (field 8, `FUN_00189f20`) of those whose position (field 4) is
+/// nearest the centre's (0); slot 2 (+0xb0) to the best Handles
+/// (`FUN_001d7d00(record, 7)`, `FUN_00189f50`) of the rest whose position
+/// is nearest the point guard's (4); slot 1 (+0xac) to the one left.
+/// `FUN_0018a108` keeps every player tied at the nearest, in line-up
+/// order, and `FUN_0018a258` the first of the highest among them, then
+/// takes him out.
+pub fn actor_slots(
+    positions: [i16; TEAM_SIZE],
+    heights: [i16; TEAM_SIZE],
+    handles: [i16; TEAM_SIZE],
+) -> [usize; TEAM_SIZE] {
+    let mut free = [true; TEAM_SIZE];
+    let mut pick = |target: i16, value: &[i16; TEAM_SIZE]| {
+        let nearest = (0..TEAM_SIZE)
+            .filter(|&k| free[k])
+            .map(|k| (positions[k] - target).abs())
+            .min()
+            .unwrap_or(0);
+        let mut best: Option<usize> = None;
+        for k in (0..TEAM_SIZE).filter(|&k| free[k] && (positions[k] - target).abs() == nearest) {
+            if best.is_none_or(|b| value[b] < value[k]) {
+                best = Some(k);
+            }
+        }
+        let k = best.unwrap_or(0);
+        free[k] = false;
+        k
+    };
+    let first = pick(0, &heights);
+    let third = pick(4, &handles);
+    let second = (0..TEAM_SIZE).find(|&k| free[k]).unwrap_or(0);
+    [first, second, third]
+}
+
 /// Read everything the set-up match needs from the disc and put its
 /// resources in place: the scene to spawn, the simulation, the names.
 pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
-    let setup = world.resource::<MatchSetup>().clone();
+    let mut setup = world.resource::<MatchSetup>().clone();
     let table = world.resource::<Disc>();
     if setup.teams.iter().any(|&team| team >= table.teams.len())
         || setup
@@ -495,23 +532,6 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
                 .map(|s| s.story.ballers.clone())
                 .unwrap_or_default()
         });
-    let moves = crate::clip::PlayerMoves(
-        setup
-            .lineups
-            .iter()
-            .flatten()
-            .map(|&r| {
-                (
-                    r,
-                    ballers
-                        .iter()
-                        .find(|b| b.record() == r)
-                        .map(|b| b.moves.clone())
-                        .unwrap_or_default(),
-                )
-            })
-            .collect(),
-    );
     let crew = world
         .get_resource::<crate::story::Save>()
         .map(|save| save.story.crew.clone())
@@ -533,6 +553,60 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(progress) = &progress {
         crate::story::apply_progression_fields(progress, &mut world.resource_mut::<Disc>());
     }
+    // Each side's three take their actors' slots by role (`FUN_00189f70`,
+    // the team's construction): every per-player list below runs in that
+    // order, as the original's actors do; the setup keeps the order chosen.
+    {
+        let disc = world.resource::<Disc>();
+        let template = usize::from(street_sim::story::BALLER_RECORDS);
+        for (team, lineup) in setup.lineups.iter_mut().enumerate() {
+            let records: [db::Player; TEAM_SIZE] = std::array::from_fn(|k| {
+                let mut p = disc
+                    .players
+                    .get(lineup[k])
+                    .unwrap_or(&disc.players[template])
+                    .clone();
+                if let Some(b) = remote
+                    .as_ref()
+                    .and_then(|r| r.ballers.iter().find(|b| b.record() == lineup[k]))
+                {
+                    crate::ballers::apply(&mut p, b);
+                }
+                p
+            });
+            let handles = std::array::from_fn(|k| {
+                let bump = if team == 0 && crew.contains(&(lineup[k] as u16)) {
+                    gym
+                } else {
+                    [0; 9]
+                };
+                ratings(&records[k], &bump).native(7) as i16
+            });
+            let slots = actor_slots(
+                records.each_ref().map(|p| p.position),
+                records.each_ref().map(|p| p.height_in),
+                handles,
+            );
+            *lineup = slots.map(|k| lineup[k]);
+        }
+    }
+    let moves = crate::clip::PlayerMoves(
+        setup
+            .lineups
+            .iter()
+            .flatten()
+            .map(|&r| {
+                (
+                    r,
+                    ballers
+                        .iter()
+                        .find(|b| b.record() == r)
+                        .map(|b| b.moves.clone())
+                        .unwrap_or_default(),
+                )
+            })
+            .collect(),
+    );
     let meter_weight = progress.as_ref().and_then(|progress| {
         crate::story::meter_weight(run, progress, world.resource::<Disc>(), &setup)
     });
@@ -1265,14 +1339,23 @@ mod tests {
         assert_eq!(sim.players[0].position, [-3.25, 0.0]);
         assert_eq!(sim.players[3].position, [3.25, 0.0]);
         assert_eq!(sim.phase, street_sim::Phase::Live);
-        // Every player weighs his record's attribute 9.
+        // Every player weighs his record's attribute 9, each side's three
+        // in their actor slots ([`actor_slots`]).
         let setup = world.resource::<MatchSetup>();
         let disc = world.resource::<Disc>();
-        for (i, record) in setup.lineups.iter().flatten().enumerate() {
-            assert_eq!(
-                sim.players[i].weight,
-                disc.players[*record].weight_lb as u16
+        for (team, lineup) in setup.lineups.iter().enumerate() {
+            let records = lineup.map(|r| &disc.players[r]);
+            let slots = actor_slots(
+                records.map(|p| p.position),
+                records.map(|p| p.height_in),
+                records.map(|p| ratings(p, &[0; 9]).native(7) as i16),
             );
+            for (k, &slot) in slots.iter().enumerate() {
+                assert_eq!(
+                    sim.players[team * TEAM_SIZE + k].weight,
+                    disc.players[lineup[slot]].weight_lb as u16
+                );
+            }
         }
         // His model (FUN_003168b8's 0x3a1 and 0x3a2) is in the scene.
         let referee = world
@@ -1334,5 +1417,28 @@ mod tests {
         let alone = team_names(None, &creator, [1, 0]);
         assert_eq!(alone.0, ["Lakers", "76ers"]);
         assert_eq!(alone.1, ["Los Angeles", "Philadelphia"]);
+    }
+
+    #[test]
+    fn a_sides_three_take_their_actor_slots_by_position() {
+        // The records' positions (field 4: 0 centre .. 4 point guard) and
+        // heights (field 8) as the disc holds them, and the slots the
+        // original gave them: the draw-log attract's Minnesota (75, 76,
+        // 77 as actors 75, 77, 76) and Portland, the third attract
+        // capture's Indiana (45, 47, 46) and San Antonio (121, 120, 122),
+        // the first's Lakers.
+        let none = [0; TEAM_SIZE];
+        assert_eq!(actor_slots([1, 4, 2], [83, 71, 79], none), [0, 2, 1]);
+        assert_eq!(actor_slots([1, 2, 4], [83, 80, 70], none), [0, 1, 2]);
+        assert_eq!(actor_slots([1, 3, 2], [83, 79, 79], none), [0, 2, 1]);
+        assert_eq!(actor_slots([1, 0, 3], [84, 85, 80], none), [1, 0, 2]);
+        assert_eq!(actor_slots([0, 3, 4], [85, 78, 73], none), [0, 1, 2]);
+        // Two centres: the taller, the first of equals; two guards: the
+        // better Handles (rating 7), the first of equals.
+        assert_eq!(actor_slots([0, 0, 4], [80, 82, 75], none), [1, 0, 2]);
+        assert_eq!(actor_slots([0, 0, 4], [80, 80, 75], none), [0, 1, 2]);
+        assert_eq!(actor_slots([1, 4, 4], [80, 75, 74], [0, 60, 70]), [0, 1, 2]);
+        assert_eq!(actor_slots([1, 4, 4], [80, 75, 74], [0, 70, 60]), [0, 2, 1]);
+        assert_eq!(actor_slots([1, 4, 4], [80, 75, 74], [0, 70, 70]), [0, 2, 1]);
     }
 }

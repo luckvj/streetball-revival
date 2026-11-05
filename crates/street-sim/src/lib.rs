@@ -1050,10 +1050,16 @@ pub mod toss {
     /// `tipoff_jump_1` (`0x457a12`) or `tipoff_jump_3` (`0x457ae4`) as
     /// `r & 1` is 0 or 1 (the pair at `0x43f078`).
     pub const TIP_SCRIPTS: [u32; 3] = [0x457a7b, 0x457a12, 0x457ae4];
-    /// The script tick of each script's jump (`a1 ef`, handler
-    /// `FUN_00194d58`): a 3-update blend and a 5-update wait come first
-    /// in all three.
+    /// The jumper's tick at the update of each script's jump (`a1 ef`,
+    /// handler `FUN_00194d58`), whose channel step is the script's ninth:
+    /// the script steps in the actor's update after his side's, the
+    /// press's own update its first (step `tick + 1`), and a 3-update
+    /// blend and a 5-update wait come first in all three (the third
+    /// attract's jumpers, place and height, within 0.03 an update).
     pub const JUMP_TICK: u16 = 8;
+    /// The script step the wait before the jump ends on (`8d ee s 05`
+    /// after the 3-update blend).
+    pub const WAIT_END: u16 = 8;
     /// `a1 ef`'s first operand (25.0, times fps / 60): the updates until
     /// the hand, posed at the clip frame of its second operand
     /// ([`JUMP_FRAMES`]), meets the ball. The jump aims it there
@@ -1081,8 +1087,32 @@ pub mod toss {
     /// last (35, 33, 35) at a frame each 2 updates, its locomotion barred
     /// (`91 2`).
     pub const PLAYOUT_UPDATES: [u16; 3] = [20, 20, 22];
-    /// The script tick its first blend (`8e 03`) is over.
+    /// Each script's landing frame (`8d ee F fe`), where the play-out
+    /// starts.
+    pub const LAND_FRAMES: [f32; 3] = [25.0, 23.0, 24.0];
+    /// Each clip's last frame, where the play-out stops.
+    pub const LAST_FRAMES: [f32; 3] = [35.0, 33.0, 35.0];
+    /// The script step its first blend (`8e 03`) is over.
     pub const BLEND_TICKS: u16 = 3;
+    /// The script steps the clip's root moves the jumper on the floor
+    /// (the blend's and the wait's, under `91 02 00 02 00`, before the
+    /// jump's `91 02 10 01 00`).
+    pub const ROOT_TICKS: u16 = 8;
+    /// The clip frame a tip script shows after `t` channel steps: the
+    /// blend's [`BLEND_TICKS`] on the first frame, the wait toward `start`
+    /// ([`JUMP_START_FRAMES`]) by [`WAIT_END`], then toward `aim`
+    /// ([`JUMP_FRAMES`]) over [`JUMP_UPDATES`].
+    pub fn script_frame(start: f32, aim: f32, t: f32) -> f32 {
+        let blend = f32::from(BLEND_TICKS);
+        let jump = f32::from(WAIT_END);
+        if t < blend {
+            0.0
+        } else if t < jump {
+            start * (t - blend) / (jump - blend)
+        } else {
+            (start + (aim - start) * (t - jump) / JUMP_UPDATES).min(aim)
+        }
+    }
     /// The actor's gravity, units per update squared (the jump's
     /// `32.152233 / fpsÂ² Ã— 1.2596`, the ball's too).
     pub const JUMP_GRAVITY: f32 =
@@ -1837,6 +1867,7 @@ impl World {
                 Action::ReboundJump { script, .. } => Some(script),
                 _ => None,
             };
+            self.tip_root(i);
             match self.players[i].step(&moved, held, stance) {
                 Some(player::Moment::Release(hoop)) => self.release_shot(i, hoop),
                 Some(player::Moment::Slam(hoop)) => self.slam(i, hoop),
@@ -3538,21 +3569,12 @@ impl World {
         let k = usize::from(script);
         let record = *toss::JUMP_RECORDS.get(k)?;
         let (start, aim) = (toss::JUMP_START_FRAMES[k], toss::JUMP_FRAMES[k]);
-        // The model as the last update posed it: the script started inside
-        // the press block (`0x15edd8`), after that update's channel step,
-        // so the posed frame is one script step behind the tick (the tip
-        // comes in the captured update in all three openings and in the
-        // third attract's draw log).
-        let t = f32::from(tick.saturating_sub(1));
-        let blend = f32::from(toss::BLEND_TICKS);
-        let jump = f32::from(toss::JUMP_TICK);
-        let time = if t < blend {
-            0.0
-        } else if t < jump {
-            start * (t - blend) / (jump - blend)
-        } else {
-            (start + (aim - start) * (t - jump) / toss::JUMP_UPDATES).min(aim)
-        };
+        // The bones the tests read: the skeleton the last update posed,
+        // before its own channel step (the script's step `tick` there, one
+        // behind the channel's `tick + 1` that moves him): the tip comes in
+        // the captured update in all three openings and in the third
+        // attract's draw log, with his place and height the PS2's.
+        let time = toss::script_frame(start, aim, f32::from(tick.saturating_sub(1)));
         let place = pose::Place {
             position: [p.position[0], p.height, p.position[1]],
             word: timing::facing_word(p.heading),
@@ -3565,13 +3587,96 @@ impl World {
         poses.pose(at, p.body(), place)
     }
 
+    /// The tip script's clip root on jumper `i` (`FUN_0019a658`): its
+    /// `91 02 00 02 00` leaves the root free on x and z through the blend
+    /// and the wait before the jump (none moves in the blend), its `91 02
+    /// 10 01 00` turns it off for the jump (the root's change times his
+    /// height scale, turned by his facing). This update's channel step
+    /// takes the clip from the frame the last showed to its next.
+    fn tip_root(&mut self, i: usize) {
+        let Some(poses) = self.poses.arc() else {
+            return;
+        };
+        let p = &self.players[i];
+        let Action::TipJump {
+            script,
+            tick,
+            landed,
+            ..
+        } = p.action
+        else {
+            return;
+        };
+        // The script steps in the actor's update after his side's (the
+        // press's own update its first): this update's is step `tick + 1`.
+        let s = tick + 1;
+        let k = usize::from(script);
+        if landed > 0 {
+            // Down, `91 02 00 00 00` frees the root again and `97` stops
+            // him; `8c 2.0` plays the clip out half a frame an update.
+            // `landed` is the landing update's tick after its count: the
+            // next update takes the first half frame.
+            let n = f32::from(tick.saturating_sub(landed));
+            let n = n + 1.0;
+            let record = toss::JUMP_RECORDS[k];
+            let (land, last) = (toss::LAND_FRAMES[k], toss::LAST_FRAMES[k]);
+            let at = |f: f32| {
+                poses.root(pose::Frame {
+                    record,
+                    time: (land + f * 0.5).min(last),
+                    looping: false,
+                })
+            };
+            if let (Some(a), Some(b)) = (at(n - 1.0), at(n)) {
+                let step = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+                let m = trick::root_motion(step, p.body(), timing::facing_word(p.heading));
+                let p = &mut self.players[i];
+                p.position[0] += m[0];
+                p.position[1] += m[1];
+            }
+            return;
+        }
+        let record = toss::JUMP_RECORDS[k];
+        let (start, aim) = (toss::JUMP_START_FRAMES[k], toss::JUMP_FRAMES[k]);
+        let at = |t: u16| {
+            poses.root(pose::Frame {
+                record,
+                time: toss::script_frame(start, aim, f32::from(t)),
+                looping: false,
+            })
+        };
+        let (Some(a), Some(b)) = (at(s - 1), at(s)) else {
+            return;
+        };
+        let step = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        if s <= toss::ROOT_TICKS {
+            let m = trick::root_motion(step, p.body(), timing::facing_word(p.heading));
+            let p = &mut self.players[i];
+            p.position[0] += m[0];
+            p.position[1] += m[1];
+            return;
+        }
+        // From the jump on the root moves him only on y, and the take-off's
+        // resync (`91 .. 10 01`, 0x10000) lowers him by its rise until a
+        // step to a new whole frame (that step's too; [`jump`]'s
+        // `flight_root`).
+        let frame = |t: u16| toss::script_frame(start, aim, f32::from(t)) as i32;
+        let synced = (toss::JUMP_TICK + 1..s).any(|t| frame(t) != frame(t - 1));
+        let up = matches!(p.action, Action::TipJump { up: true, .. });
+        if !synced && up {
+            let rise = step[1] * p.body().height;
+            self.players[i].height -= rise;
+        }
+    }
+
     /// The hand a tip jump of `script` aims (`0x19537c..0x195570`): the
     /// channel's clip ([`toss::JUMP_RECORDS`]) posed at the script's frame
-    /// ([`toss::JUMP_FRAMES`], `FUN_0019bda8`) where he stands, turned
-    /// toward the ball (`FUN_0016f2b0`, the heading of the actor less the
-    /// ball, `FUN_0018ce78`'s form); the right hand (bone 0x13) when the
-    /// pose's flags hold 8, the left (0xf) at 4, else their midpoint.
-    /// Without the disc's animations, [`World::tip_hand`].
+    /// ([`toss::JUMP_FRAMES`], `FUN_0019bda8`) where he stands, its root at
+    /// the height the wait left it (actor+0xe4, as `9e`'s aim), facing his
+    /// side's way down the court (the operand −1.0; a non-negative one
+    /// turns it toward the ball, `FUN_0016f2b0`); the right hand (bone
+    /// 0x13) when the pose's flags hold 8, the left (0xf) at 4, else their
+    /// midpoint. Without the disc's animations, [`World::tip_hand`].
     fn tip_aim_hand(&self, i: usize, script: usize) -> [f32; 3] {
         let stand_in = self.tip_hand(i);
         let Some(poses) = self.poses.get() else {
@@ -3585,16 +3690,28 @@ impl World {
         };
         let p = &self.players[i];
         let feet = [p.position[0], p.height, p.position[1]];
+        // `a1 ef`'s third operand, −1.0, is negative (`0x1953f4`): the
+        // pose faces his side's way down the court (0x300 side 0, 0x100
+        // side 1), not the ball (`FUN_0016f2b0`, a non-negative operand's).
         let place = pose::Place {
             position: feet,
-            word: ordinary::native_heading(feet, self.ball.position),
+            word: if p.team.min(1) == 1 { 0x100 } else { 0x300 },
         };
-        let at = pose::Frame {
-            record,
-            time: frame,
-            looping: false,
-        };
-        let Some(posed) = poses.pose(at, p.body(), place) else {
+        // The model's root at the height the channel's step left it (the
+        // wait's last frame, actor+0xe4), as `9e`'s aim poses it.
+        let shown = toss::script_frame(
+            toss::JUMP_START_FRAMES[script],
+            frame,
+            f32::from(toss::WAIT_END),
+        );
+        let root = poses
+            .root(pose::Frame {
+                record,
+                time: shown,
+                looping: false,
+            })
+            .map(|r| r[1]);
+        let Some(posed) = jump::aim_pose(poses, record, frame as u8, p.body(), place, root) else {
             return stand_in;
         };
         let right = posed.joints[pose::RIGHT_HAND].position;
