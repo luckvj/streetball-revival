@@ -117,8 +117,9 @@ use crate::{
 /// stops among the stands (the flair's up three), a stand's coast and the
 /// stick's run (actor+0xa0); 108: the on-court flag (actor+0x324); 109:
 /// the advanced dunk's toss and finish ([`crate::advanced`]); 114: the
-/// crowd's groups and the update's calls ([`crate::crowd`]).
-const VERSION: u8 = 114;
+/// crowd's groups and the update's calls ([`crate::crowd`]); 115: the
+/// camera's draws ([`crate::camera`]).
+const VERSION: u8 = 115;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -201,6 +202,7 @@ impl World {
             gamebreaker_task,
             staged_start,
             crowd,
+            camera_draws,
         } = self;
         w.uv(*tick);
         for h in hoops {
@@ -598,6 +600,10 @@ impl World {
             w.bool(c.cheer);
             w.uv(c.picks.len() as u64);
             w.0.extend_from_slice(&c.picks);
+        }
+        w.uv(camera_draws.len() as u64);
+        for &d in camera_draws {
+            w.uv(u64::from(d));
         }
         w.0
     }
@@ -1029,6 +1035,10 @@ impl World {
             });
         }
         let crowd = crate::crowd::Crowd { groups, calls };
+        let n = r.len(64)?;
+        let camera_draws = (0..n)
+            .map(|_| u32::try_from(r.uv()?).map_err(|_| "camera draw out of range".to_string()))
+            .collect::<Result<Vec<_>, _>>()?;
         if r.at != bytes.len() {
             return Err(format!("{} bytes left over", bytes.len() - r.at));
         }
@@ -1099,6 +1109,7 @@ impl World {
             gamebreaker_task,
             staged_start,
             crowd,
+            camera_draws,
         };
         world.validate()?;
         Ok(world)

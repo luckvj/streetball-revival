@@ -29,6 +29,7 @@ pub mod ball;
 pub mod block;
 pub mod bracket;
 pub mod cab;
+pub mod camera;
 pub mod combo;
 pub mod contact;
 pub mod control;
@@ -829,6 +830,8 @@ pub struct World {
     /// The court's crowd groups and this update's calls to them
     /// ([`crowd`]).
     pub crowd: crowd::Crowd,
+    /// This update's draws for the camera's courtside eyes ([`camera`]).
+    pub camera_draws: Vec<u32>,
     /// The combo manager (game+0xd0, [`combo::Manager`]): the match's one
     /// ring of events and the words its dispatchers keep ([`scoring`]).
     pub combo: combo::Manager,
@@ -1312,6 +1315,7 @@ impl World {
             gamebreaker_task: None,
             staged_start: None,
             crowd: crowd::Crowd::default(),
+            camera_draws: Vec::new(),
         }
     }
 
@@ -1420,6 +1424,7 @@ impl World {
         );
         self.events.clear();
         self.crowd.calls.clear();
+        self.camera_draws.clear();
         // `FUN_00131560`, before the game's count moves on.
         self.combo_update();
         // The pad each side's one person plays, as the client gave it: the

@@ -113,6 +113,7 @@ impl World {
             gamebreaker_task,
             staged_start,
             crowd,
+            camera_draws: _,
         } = self;
         for c in &crowd.calls {
             require(

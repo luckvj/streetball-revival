@@ -14515,8 +14515,20 @@ object manager runs after its task list. Online the camera draws from
 the client's copy of the match, which the next update replaces, so the
 peers' cameras decide nothing the match keeps.
 
-Still differing: the camera runs after the update, not at the message
-inside it, so a placement's four draws come after the rest of the
-update's gameplay draws rather than before them (the count is right, so
-the next update starts on the original's value). Moving the manager's
-event handlers into the step would need the camera's state there.
+Two of the manager's handlers place a courtside eye at a message the
+update posts, and need nothing of the camera's state but whether a
+gamebreaker is on: slot 0x204 (`FUN_00303650`, a gamebreaker goes up,
+unless a Level 2 one's spot stages it) and slot 0x1a4 (`FUN_00302488`,
+the shot clock's violation, unless a gamebreaker is on). The simulation
+draws those four values at the post (`street_sim::camera`,
+`World::camera_draws`), and the camera's copy hands them out before its
+own. (A violation in the half-second blend after a gamebreaker, which
+the original's handler skips, still draws.)
+
+Still differing: the camera's other placements (a replay's start and
+end, the attract's cuts on a release, a take-off or a take, the
+attract's inbound) run after the update, not at the message inside it,
+so their draws come after the rest of the update's gameplay draws
+rather than before them. The count is right, so the next update starts
+on the original's value. Those handlers read the camera's own state
+(the helper on screen, its focus), which the simulation doesn't keep.

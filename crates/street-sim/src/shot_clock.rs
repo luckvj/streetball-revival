@@ -107,6 +107,11 @@ impl World {
     fn shot_clock_violation(&mut self) {
         let team = self.possession.min(1);
         self.events.push(Event::ShotClockViolation { team });
+        // The camera's handler (slot 0x1a4, `FUN_00302488`): a courtside
+        // eye unless a gamebreaker is on ([`crate::camera`]).
+        if self.gamebreaker_task.is_none() {
+            self.camera_courtside();
+        }
         if self.teams[team].meter_hold == 0 {
             self.fill_meter(team, -12_500.0);
         }
@@ -223,5 +228,33 @@ mod tests {
             t = (t - CLOCK_STEP).max(0.0);
         }
         assert_eq!(t.to_bits(), 0x4199_ccf3);
+    }
+
+    /// The violation's camera handler (slot 0x1a4) places a courtside eye:
+    /// four values drawn at the post, none while a gamebreaker is on.
+    #[test]
+    fn a_violation_draws_the_cameras_courtside_eye() {
+        let mut w = crate::World::new(
+            crate::tests::hoops(),
+            vec![crate::Player::new(0, [0.0, 0.0], 0.0)],
+            crate::Rules::default(),
+            7,
+        );
+        let mut expected = w.generator().clone();
+        w.shot_clock_violation();
+        let want: Vec<u32> = (0..crate::camera::COURTSIDE_DRAWS)
+            .map(|_| expected.next_u32())
+            .collect();
+        assert_eq!(w.camera_draws, want);
+        assert_eq!(w.generator(), &expected);
+        w.camera_draws.clear();
+        w.gamebreaker_task = Some(crate::street::GamebreakerTask {
+            kind: 1,
+            state: 0,
+            count: 0,
+        });
+        w.shot_clock_violation();
+        assert!(w.camera_draws.is_empty());
+        assert_eq!(w.generator(), &expected);
     }
 }

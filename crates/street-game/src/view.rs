@@ -1369,13 +1369,15 @@ pub enum CameraHelperKind {
 }
 
 /// `FUN_003a16b8`: six 32-bit words added down the chain with carries, the
-/// last word counting up. The camera's placement draws use it.
+/// last word counting up. The camera's placement draws use it. The second
+/// field holds values the match's update already drew for the camera's
+/// handlers there (`street_sim::camera`), handed out first.
 #[derive(Debug, Clone)]
-pub struct NativeWideRandom([u32; 6]);
+pub struct NativeWideRandom([u32; 6], std::collections::VecDeque<u32>);
 
 impl Default for NativeWideRandom {
     fn default() -> Self {
-        Self(Self::ELF_STATE)
+        Self(Self::ELF_STATE, Default::default())
     }
 }
 
@@ -1396,6 +1398,9 @@ impl NativeWideRandom {
 
     /// One draw, as the raw instructions at `0x3a16d8..0x3a1788` add.
     pub fn draw(&mut self) -> u32 {
+        if let Some(r) = self.1.pop_front() {
+            return r;
+        }
         let [mut t0, mut t1, mut t2, mut t3, mut t4, mut t5] = self.0;
         t4 = t4.wrapping_add(t5);
         let mut carry = u32::from(t4 < t5);
@@ -4652,7 +4657,7 @@ pub fn step_camera(
     events: Option<Res<crate::game::TickEvents>>,
     running: Option<Res<crate::story::Running>>,
     cheats: Option<Res<setup::MatchCheats>>,
-    mut active_camera: ResMut<ActiveCamera>,
+    (mut active_camera, mut loaded): (ResMut<ActiveCamera>, Local<Option<u64>>),
 ) {
     // A staged script's replay (mode 7) stays on the script's own cameras:
     // the command's, at the script manager's replay frame (`FUN_00336868`);
@@ -4755,7 +4760,14 @@ pub fn step_camera(
     {
         let live = tape.as_deref().and_then(|t| t.live()).unwrap_or(tick.world);
         let manager = &mut active_camera.manager;
-        manager.placement_random = NativeWideRandom(live.generator().state());
+        // The courtside eyes the update's handlers drew for, once each.
+        let queued = if *loaded != Some(live.tick) {
+            *loaded = Some(live.tick);
+            live.camera_draws.iter().copied().collect()
+        } else {
+            Default::default()
+        };
+        manager.placement_random = NativeWideRandom(live.generator().state(), queued);
         manager.coin_random = crate::progression_trace::NativeRandom::new(live.libc);
     }
     update_camera_step(&tick, &mut active_camera);
@@ -6399,7 +6411,7 @@ mod camera_pose_tests {
             ]
         );
         // The counting word carries into the chain when it wraps.
-        let mut random = NativeWideRandom([0, 0, 0, 0, 0, u32::MAX]);
+        let mut random = NativeWideRandom([0, 0, 0, 0, 0, u32::MAX], Default::default());
         assert_eq!(random.draw(), 0);
         assert_eq!(random.0, [0; 6]);
     }
@@ -6919,11 +6931,17 @@ mod camera_pose_tests {
     #[test]
     fn the_cameras_copy_draws_the_matchs_values() {
         let mut ours = street_sim::Rng::new(20_455);
-        let mut copy = NativeWideRandom(ours.state());
+        let mut copy = NativeWideRandom(ours.state(), Default::default());
         for _ in 0..1000 {
             assert_eq!(copy.draw(), ours.next_u32());
         }
         assert_eq!(copy.0, ours.state());
+        // Values the update drew for the camera come first, and leave the
+        // copy's own words where they were.
+        let mut queued = NativeWideRandom(ours.state(), [7, 8].into());
+        assert_eq!([queued.draw(), queued.draw()], [7, 8]);
+        assert_eq!(queued.0, ours.state());
+        assert_eq!(queued.draw(), ours.next_u32());
     }
 
     #[test]

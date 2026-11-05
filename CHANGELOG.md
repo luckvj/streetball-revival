@@ -9,6 +9,8 @@ its version's part.
   demo's cuts) take their random numbers from the game's own, as on the
   PS2, so the players' choices after a camera cut no longer drift from
   the original's.
+  A gamebreaker's camera and the shot-clock violation's take theirs at
+  the moment it happens, inside the game's update, as on the PS2.
 
 - The crowd's reactions pick their spectators at the moment of the
   basket, block or steal, inside the game's update as on the PS2, so the

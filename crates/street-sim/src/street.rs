@@ -767,6 +767,11 @@ impl World {
         self.start_gamebreaker_meter(team, level);
         self.events.push(Event::Gamebreaker { player: i, level });
         let staged = level == 2 && self.start_staged(i);
+        // The camera's handler (slot 0x204, `FUN_00303650`): a courtside
+        // eye unless the script films it ([`crate::camera`]).
+        if !staged {
+            self.camera_courtside();
+        }
         // Slot +0x204 (`FUN_001422f8`): one task at a time, its kind the
         // message's (0 the staged script's, 1 the shot's).
         if self.gamebreaker_task.is_none() {
