@@ -142,6 +142,9 @@ impl Plugin for AmbiencePlugin {
                 )
                     .chain()
                     .after(crate::game::crowd_step)
+                    // The camera is a task; the effects run after the task
+                    // list (the object manager `FUN_00320e10`).
+                    .after(crate::view::step_camera)
                     .run_if(in_state(Screen::Playing))
                     .run_if(|p: Res<Paused>| !p.on),
             );

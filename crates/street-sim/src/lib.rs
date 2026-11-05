@@ -1359,6 +1359,13 @@ impl World {
         &self.rng
     }
 
+    /// [`World::generator`], for the presentation's callers that keep a
+    /// working copy (the camera's placements, `street-game`'s `view.rs`):
+    /// they draw from it and hand it back.
+    pub fn generator_mut(&mut self) -> &mut rng::Rng {
+        &mut self.rng
+    }
+
     /// One value of the shared generator (`FUN_003a16b8`) for the game's
     /// presentation: the court's effects and the crowd take theirs from it
     /// after each update's gameplay, as the original's do (docs/TRACE.md

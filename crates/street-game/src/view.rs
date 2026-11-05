@@ -1381,8 +1381,10 @@ impl Default for NativeWideRandom {
 
 impl NativeWideRandom {
     /// The words at `0x4309f0` in the ELF, which the seeding routine at
-    /// `0x3a1790` produces for seed zero. The original shares this generator
-    /// with every other caller, so its in-match sequence is not reproduced.
+    /// `0x3a1790` produces for seed zero. In a match [`step_camera`] loads
+    /// the match's own generator here before each update and hands it back
+    /// after, as the original's placements share it with every other
+    /// caller.
     pub const ELF_STATE: [u32; 6] = [
         0xf22d_0e56,
         0x8831_26e9,
@@ -4632,12 +4634,12 @@ pub fn native_camera_row(front_end_mode: u32, users: usize, saved: u8) -> usize 
 /// The 60 Hz camera update: gathers the manager's inputs from the match.
 #[allow(clippy::too_many_arguments)]
 pub fn step_camera(
-    sim: Res<Sim>,
+    mut sim: ResMut<Sim>,
     options: Option<Res<crate::options::Options>>,
     clips: Res<GameClips>,
     intro: Option<Res<crate::intro::MatchIntro>>,
     replay: Option<Res<Replay>>,
-    tape: Option<Res<crate::tape::Tape>>,
+    mut tape: Option<ResMut<crate::tape::Tape>>,
     gamebreaker_task: Option<Res<crate::tape::GamebreakerTask>>,
     control: Option<Res<Control>>,
     setup: Option<Res<setup::MatchSetup>>,
@@ -4745,7 +4747,23 @@ pub fn step_camera(
         explosive_rims: cheats.as_ref().is_some_and(|c| c.0.explosive_rims()),
         seated: &seated,
     };
+    // The placements draw from the match's shared generator
+    // (`FUN_003a16b8`) and the attract's coins from its `rand()`
+    // (`FUN_003b42a0`), the live world's while a replay shows a recorded
+    // one; online the client's copy of the match, which the next update
+    // replaces.
+    {
+        let live = tape.as_deref().and_then(|t| t.live()).unwrap_or(tick.world);
+        let manager = &mut active_camera.manager;
+        manager.placement_random = NativeWideRandom(live.generator().state());
+        manager.coin_random = crate::progression_trace::NativeRandom::new(live.libc);
+    }
     update_camera_step(&tick, &mut active_camera);
+    let placed = active_camera.manager.placement_random.0;
+    let coin = active_camera.manager.coin_random.state();
+    let w = crate::draws::live(&mut sim, tape.as_deref_mut());
+    *w.generator_mut() = street_sim::Rng::from_state(placed);
+    w.libc = coin;
 }
 
 /// The renderer's half of the camera: the published pose, with the lens
@@ -6893,6 +6911,19 @@ mod camera_pose_tests {
         mgr.select_positioned(Some(3));
         mgr.update(&tick(&w));
         assert_eq!(mgr.active_helper, CameraHelperKind::Row);
+    }
+
+    /// The camera's working copy and the match's generator are the same
+    /// routine (`FUN_003a16b8`), so a copy loaded from the match draws the
+    /// match's next values.
+    #[test]
+    fn the_cameras_copy_draws_the_matchs_values() {
+        let mut ours = street_sim::Rng::new(20_455);
+        let mut copy = NativeWideRandom(ours.state());
+        for _ in 0..1000 {
+            assert_eq!(copy.draw(), ours.next_u32());
+        }
+        assert_eq!(copy.0, ours.state());
     }
 
     #[test]

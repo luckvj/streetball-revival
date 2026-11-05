@@ -20,6 +20,11 @@ impl NativeRandom {
         self.0 = self.0.wrapping_mul(1_103_515_245).wrapping_add(12_345);
         self.0 & 0x7fff_ffff
     }
+
+    /// The generator's word.
+    pub fn state(&self) -> u32 {
+        self.0
+    }
 }
 
 /// Field 15 stores `tier * 11 + progress`. Tier 5 is the terminal tier;

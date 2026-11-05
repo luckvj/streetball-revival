@@ -14495,3 +14495,28 @@ Two placements come from `drawlog-attract3`:
 Slot 76's floor contacts come from the posed rig, which only the
 renderer has, so they still pick after the update. Online, every peer's
 match draws the same picks, since the group count comes from the court.
+
+## The camera's placements on the match's generators (2026-11-04)
+
+The camera manager's courtside eye (`FUN_00303c80`: four shared draws,
+`0x303d48`, `0x303de4`, `0x303e4c`, `0x303ebc`), its baseline view
+(`0x303f98..0x3043ac`) and the attract's coins (`FUN_003b42a0() & 1`)
+draw from the game's two generators. The two logged attracts hold 59
+courtside placements; most fall inside the game update, after a shot's
+roll (`0x15e6b4`) and before the faces (`0x159844`). The rewrite's
+camera had drawn from copies of its own (`NativeWideRandom` from the
+ELF's seed-zero words, a `rand()` word of 1), so after its first
+placement every later gameplay draw took other values than the
+original's. `view::step_camera` now loads the match's shared generator
+and `rand()` word into those copies before each manager update and
+writes them back after (the live world's while a replay shows a recorded
+one), and the court's effects run after the camera, as the original's
+object manager runs after its task list. Online the camera draws from
+the client's copy of the match, which the next update replaces, so the
+peers' cameras decide nothing the match keeps.
+
+Still differing: the camera runs after the update, not at the message
+inside it, so a placement's four draws come after the rest of the
+update's gameplay draws rather than before them (the count is right, so
+the next update starts on the original's value). Moving the manager's
+event handlers into the step would need the camera's state there.

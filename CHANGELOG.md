@@ -5,6 +5,11 @@ its version's part.
 
 ## Unreleased
 
+- The camera's random placements (the courtside and baseline views, the
+  demo's cuts) take their random numbers from the game's own, as on the
+  PS2, so the players' choices after a camera cut no longer drift from
+  the original's.
+
 - The crowd's reactions pick their spectators at the moment of the
   basket, block or steal, inside the game's update as on the PS2, so the
   random numbers the players draw after them in the same update match
