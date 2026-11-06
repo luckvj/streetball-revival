@@ -80,18 +80,26 @@ words! {
     }
 }
 
+/// The pad's stick as the simulation's.
+pub(super) fn stick_of(pad: &Pad) -> [i8; 2] {
+    if pad.strength > 0 {
+        let d = direction(pad.angle);
+        let s = pad.strength.min(64) as f32 / 64.0;
+        Input::moving([d[0] * s, d[1] * s]).stick
+    } else {
+        [0, 0]
+    }
+}
+
 /// The pad as the simulation's [`Input`]: the turbo combos keep the
 /// original's mask (the sim's trick slots read L1 0x4000, R1 0x8000, L2
 /// 0x10000, R2 0x20000, `NativeTricks::slot`), so a combo the original
 /// picks plays the same slot here.
 pub(super) fn to_input(ctx: &Ctx, i: usize, pad: &Pad) -> Input {
     let b = pad.buttons;
-    let mut out = if pad.strength > 0 {
-        let d = direction(pad.angle);
-        let s = pad.strength.min(64) as f32 / 64.0;
-        Input::moving([d[0] * s, d[1] * s])
-    } else {
-        Input::default()
+    let mut out = Input {
+        stick: stick_of(pad),
+        ..Input::default()
     };
     let mut held = 0;
     let combos = [

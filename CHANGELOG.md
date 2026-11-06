@@ -20,6 +20,9 @@ its version's part.
   the PS2's own angle rounding, so they try trick steals on the same
   updates as the original. A computer player who catches a pass waits the
   PS2's one extra update before he starts to dribble.
+- Computer passers stop as they wind up a pass instead of drifting toward
+  the receiver, and the passer and receiver glance at each other on the
+  press, as on the PS2.
 
 ## v0.1.6-beta
 

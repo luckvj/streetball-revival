@@ -746,6 +746,16 @@ pub struct State {
     pub(crate) brains: Vec<Brain>,
 }
 
+impl State {
+    /// Computer `i`'s stick as his pad holds it, before [`pad::to_input`]
+    /// points it at a pass's receiver (the sim picks the receiver by the
+    /// stick): the stick his locomotion reads. None for no brain.
+    pub fn pad_stick(&self, i: usize) -> Option<[i8; 2]> {
+        let b = self.brains.get(i)?;
+        Some(pad::stick_of(&b.pad))
+    }
+}
+
 impl Default for State {
     fn default() -> Self {
         Self {

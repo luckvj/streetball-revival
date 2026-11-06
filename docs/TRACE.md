@@ -14789,3 +14789,27 @@ his pass: the PS2 runs his locomotion first (the standing dribble's
 `r % 11` at `0x168944`, a gait draw), then the pass, then two looks
 (`0x159844`/`0x15992c`, the holder's and actor 4's); the rewrite starts the
 pass first.
+
+Ported (same day), draws matching through update 879:
+- The free holder's pass goes in after his locomotion (`FUN_0015a060`
+  calls `FUN_0015f930` at `0x15b9c0`, after its `FUN_00163d40`), and its
+  script ends a stand the locomotion began that update (`FUN_0019c2f8`),
+  its blend from what the channel showed before it (the walk).
+- A computer's pad points its stick at the receiver only for the rewrite's
+  pick by the stick: the locomotion and the pass row's carry filter read the
+  pad's own stick, at rest under the pass node's `stop`
+  (`ai::State::pad_stick`).
+- `FUN_0015f930` runs the locomotion again with its first argument 1
+  (`0x15fbe0`; `0x167570` skips the stand path for the record's selection,
+  one draw) for a passer still moving (actor+0x40, zeroed first on the
+  floor with the stick's last strength +0x90 under 16).
+- The look's pass event reads the windup's ends: state 4 begins with the
+  held windup, so passer (event 1) and receiver (event 2) pick their looks
+  on the press.
+- The receiver makes no record selection while the pass is his (the spot
+  run steers him, `0x15a4a8..0x15ab50`).
+
+Open at 880: the passer turns +6 on his pass's start (its `91 0x820002`
+has the heading match) and then to a wanted facing of 278, toward no
+player (the pass's aim spot?); the rewrite turns him toward his old 344,
+34 about his planted foot.

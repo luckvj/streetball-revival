@@ -322,10 +322,17 @@ impl World {
             });
         } else if state == 4 && l.last_state != 4 {
             // A pass let go: to him 2, from him 1 (`0x159518..0x159548`).
-            if let (BallState::Pass, Some(p)) = (self.ball.state, self.ball.pass) {
-                if p.to == i {
+            // State 4 begins with the held windup, its ends set at the
+            // press (the attract capture's passer and receiver both pick
+            // a look on the press, update 873).
+            let ends = match (self.ball.state, self.ball.pass) {
+                (BallState::Pass, Some(p)) => Some((p.from, p.to)),
+                _ => self.windup.map(|w| (w.from, w.to)),
+            };
+            if let Some((from, to)) = ends {
+                if to == i {
                     event = Some(2);
-                } else if p.from == i {
+                } else if from == i {
                     event = Some(1);
                 }
             }

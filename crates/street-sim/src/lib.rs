@@ -1703,6 +1703,8 @@ impl World {
             // `FUN_00156f48` counts the fumble's wait down before the
             // dispatch (`0x157168`).
             self.players[i].fumble_timer = self.players[i].fumble_timer.saturating_sub(1);
+            let press_input = input;
+            let mut late_pass = None;
             if self.phase == Phase::Live && self.fumble_tick(i) {
                 // The fumble ends his update (`0x15a3ec`).
             } else if self.phase == Phase::Live {
@@ -1710,7 +1712,7 @@ impl World {
                 // buttons start while it plays ([`advanced`]).
                 self.advanced_tick(i);
                 if !self.advanced.is_some_and(|a| a.player == i && !a.finishing) {
-                    self.buttons(i, &input, pressed, &before, calls, &start);
+                    late_pass = self.buttons(i, &input, pressed, &before, calls, &start);
                 }
             } else if restarting
                 && pressed & button::PASS != 0
@@ -1761,7 +1763,8 @@ impl World {
                                 .is_some_and(|r| r.flags & 0x4000 != 0)
                         }
                 });
-            let input = match self.receiver_stick(i) {
+            let steered = self.receiver_stick(i);
+            let input = match steered {
                 Some(stick) => Input { stick, ..input },
                 None => input,
             };
@@ -1769,6 +1772,18 @@ impl World {
             let input = if standing {
                 Input {
                     stick: [0, 0],
+                    ..input
+                }
+            } else {
+                input
+            };
+            // A computer's pass button points the stick at its receiver
+            // ([`ai`]'s pad, for the sim's pick by the stick); his
+            // locomotion reads his pad's own stick (the pass node's `stop`
+            // leaves it at rest, its press and the windup's alike).
+            let input = if press_input.is_computer() && press_input.buttons & button::PASS != 0 {
+                Input {
+                    stick: self.ai.pad_stick(i).unwrap_or(input.stick),
                     ..input
                 }
             } else {
@@ -1816,8 +1831,30 @@ impl World {
                 let v = self.players[i].velocity();
                 [v[0] / 60.0, v[1] / 60.0]
             };
-            self.select_gait(i, &walk, held, stance);
+            // The receiver's own update steers him while the pass is his
+            // (`0x15a4a8..0x15ab50`): his record is kept, no selection draws
+            // (the attract capture's receiver at updates 873 and 874).
+            if steered.is_none() {
+                self.select_gait(i, &walk, held, stance);
+            }
             self.stand_path(i, &input);
+            // A free holder's pass goes in after his locomotion
+            // (`FUN_0015a060` calls `FUN_0015f930` at `0x15b9c0`, after its
+            // `FUN_00163d40`): the stand or walk his stick asked for draws
+            // first and the pass row replaces it.
+            if let Some(aimed) = late_pass {
+                // `FUN_0015f930` (`0x15faf0..0x15fbe4`): a passer still
+                // moving (actor+0x40; zeroed first on the floor with the
+                // stick's last strength, +0x90, under 16) and his channel
+                // free runs the locomotion with its first argument 1, the
+                // gait record's selection alone.
+                let moving = carried != [0.0; 2]
+                    && (self.players[i].height > 0.0 || before.strength() >= 16);
+                if moving && !self.caught_row_holds(i) {
+                    self.select_gait_with(i, &walk, held, stance, true);
+                }
+                self.pass_button(i, &press_input, aimed, &start);
+            }
             let p = &mut self.players[i];
             if let Some(s) = p.stand.as_mut()
                 && s.run.tick < 0
@@ -2098,6 +2135,20 @@ impl World {
     /// whether he holds the ball, or a guard's record, kept while still
     /// eligible.
     fn select_gait(&mut self, i: usize, input: &Input, held: bool, stance: Option<guard::Stance>) {
+        self.select_gait_with(i, input, held, stance, false);
+    }
+
+    /// [`World::select_gait`]; `forced` is the locomotion called with its
+    /// first argument 1 (`FUN_00163d40(actor, 1, 1)`, `0x167570`): the
+    /// record's selection whatever the stick, no stand path.
+    fn select_gait_with(
+        &mut self,
+        i: usize,
+        input: &Input,
+        held: bool,
+        stance: Option<guard::Stance>,
+        forced: bool,
+    ) {
         let p = &self.players[i];
         let walks = match p.action {
             Action::None | Action::Passing { .. } | Action::Stealing { .. } => true,
@@ -2105,7 +2156,7 @@ impl World {
             Action::Trick { play, .. } => play.run.tick < 0,
             _ => false,
         };
-        if !walks || !input.moves() || self.locomotion_held(i, input) {
+        if !walks || !(forced || input.moves()) || self.locomotion_held(i, input) {
             return;
         }
         let channel = &p.gait_channel;
@@ -2274,7 +2325,7 @@ impl World {
         before: &Input,
         calls: bool,
         start: &[[f32; 2]],
-    ) {
+    ) -> Option<bool> {
         use tuning::*;
         // The right stick pushed home is a pass press of its own (the
         // held word's 0x400, [`passing::aim_pressed`]): the give 'n go.
@@ -2305,16 +2356,16 @@ impl World {
                 if !went {
                     self.players[i].action = before;
                 }
-                return;
+                return None;
             }
             // The give 'n go's call is the pad builder's (`FUN_001587d8`),
             // not the actor's: it went in whatever move the caller is in,
             // his pass's follow-through included ([`World::call_for_ball`]).
             if calls {
-                return;
+                return None;
             }
             self.busy_buttons(i, pressed, input);
-            return;
+            return None;
         }
         self.players[i].action_buttons = input.buttons;
         let turbos = if self.players[i].turbo > 0.0 {
@@ -2326,7 +2377,7 @@ impl World {
             if self.shoots(input, pressed) {
                 self.shoot_button(i, input);
             } else if pass_press {
-                self.pass_button(i, input, aimed, start);
+                return Some(aimed);
             } else if pressed & button::TRICK != 0 {
                 self.juke_press(i, input, turbos);
             } else if pressed & button::SELECT != 0 {
@@ -2374,7 +2425,7 @@ impl World {
                 } else {
                     self.no_turbo(i);
                 }
-                return;
+                return None;
             }
             let swipe = self.start_swipe(i);
             // The swiper's face (`FUN_00159190(swiper, 2, fps Ã— 2)`,
@@ -2425,9 +2476,7 @@ impl World {
             } else if self.poses.get().is_some() {
                 // `FUN_0015d3a0`'s script ([`block`]); the turbo block
                 // without half a bar is no jump at all.
-                let Some(jump) = self.start_block_jump(i, turbos) else {
-                    return;
-                };
+                let jump = self.start_block_jump(i, turbos)?;
                 self.players[i].action = Action::Jumping {
                     elapsed: 0.0,
                     high: jump.turbo,
@@ -2446,6 +2495,7 @@ impl World {
                 block: !rebound,
             });
         }
+        None
     }
 
     /// `FUN_0015a060`'s pick press off the ball (pad +0x7c & 0x4000000,

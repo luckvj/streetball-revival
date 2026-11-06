@@ -318,10 +318,15 @@ impl World {
     /// it starts from, his live hand and his side, for [`World::channel`].
     pub(crate) fn begin_script(&mut self, i: usize, address: u32) {
         self.release_box_out(i);
-        let from = self.channel(i).and_then(|c| match c.shown.blend {
-            Some(_) => c.from,
-            None => c.shown.record.map(|r| (r, c.shown.frame)),
-        });
+        // What the channel showed (`FUN_001935c8` copies the last output):
+        // a stand begun this update has not posed yet, so its own source.
+        let from = match self.players[i].stand {
+            Some(s) if s.run.tick <= 0 => s.from,
+            _ => self.channel(i).and_then(|c| match c.shown.blend {
+                Some(_) => c.from,
+                None => c.shown.record.map(|r| (r, c.shown.frame)),
+            }),
+        };
         let p = &mut self.players[i];
         p.channel_start = Some(ChannelStart {
             script: address,
@@ -329,6 +334,10 @@ impl World {
             left: p.gait_channel.hand == 2,
             side: other_side(p),
         });
+        // The script replaces the channel's (`FUN_0019c2f8`): a stand his
+        // locomotion started this update (a free holder's pass goes in
+        // after it) ends with it.
+        p.stand = None;
     }
 
     /// A dunk's or lay-up's script about to start (`row` of

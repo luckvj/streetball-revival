@@ -311,7 +311,17 @@ impl World {
         // stick let go (as the filter reads it).
         let r = &crate::timing::PASS_ROWS[usize::from(row)];
         if r.flags & 0x400 == 0 && crate::jump::scripted(&self.players[i].action) {
-            let still = crate::timing::stick_strength(self, i, input) < crate::input::MOVES;
+            // A computer's pad points its stick at the receiver for the
+            // sim's pick ([`crate::ai`]); the filter reads the pad's own.
+            let pad = if input.is_computer() {
+                Input {
+                    stick: self.ai.pad_stick(i).unwrap_or(input.stick),
+                    ..*input
+                }
+            } else {
+                *input
+            };
+            let still = crate::timing::stick_strength(self, i, &pad) < crate::input::MOVES;
             let p = &mut self.players[i];
             let [vx, vz] = if still { [0.0; 2] } else { p.velocity() };
             let dt = crate::TICK_SECONDS;
