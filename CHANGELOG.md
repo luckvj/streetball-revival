@@ -5,153 +5,78 @@ its version's part.
 
 ## Unreleased
 
-- Players turn as on the PS2 when a new animation starts: a player
-  settling into his stance or starting to walk takes the new clip's
-  facing at once (and pivots on his planted foot), instead of turning
-  slowly the short way round. A defender after the opening tip used to
-  turn the wrong way and drift out of place; he now follows the PS2's
-  path within a few hundredths of a unit.
-- Each side's three take their places as on the PS2: the tallest of the
-  centres jumps, the best ball handler of the guards plays the third
-  slot, the other the second (the rewrite kept the line-up's order, so a
-  team like Minnesota or Indiana had its forward and guard swapped, with
-  each other's spots, sizes and ratings).
-- The tip-off jump moves as on the PS2, checked against the PS2's own
-  positions update by update: the run-up carries the jumpers forward on
-  the clip, the take-off comes one update later, the aim faces down the
-  court, the take-off settles the body, and after landing the clip's
-  play-out slides them on. Both jumpers now follow the PS2 within 0.03
-  from the run-up to their first steps afterwards.
-- A stand that replaces another blends from the clip the player was
-  showing, not from his walk.
-- The tip-off comes in the PS2's update: the jumper's hands are tested
-  as the last update posed them (the rewrite tipped one update early in
-  all three captured openings). The loser is barred from the ball for the
-  rest of the toss's fall and the taker for 70 updates, and the jumpers
-  stay on their tip scripts until the clip plays out after landing.
-- The players around the tip stand as on the PS2: the sixth of the six
-  stands is the placement script (clip 65, swaying on its root) rather
-  than no stand, and the warm-up, kick and stretch don't plant a foot
-  during the opening, so they hold still through their first blend.
-- A player's stand and gait choices come before his catch and steal
-  tests in his update, as on the PS2 (the tests still see last update's
-  pose), and a standing catch row keeps its catcher still until it ends.
-- The fast break's spot past half court is the paint spot by the row's
-  own deep flag, without the extra near/far coin.
+## v0.1.6-beta
 
-- The camera's random placements (the courtside and baseline views, the
-  demo's cuts) take their random numbers from the game's own, as on the
-  PS2, so the players' choices after a camera cut no longer drift from
-  the original's.
-  A gamebreaker's camera and the shot-clock violation's take theirs at
-  the moment it happens, inside the game's update, as on the PS2.
+Matches now play much closer to the PS2's, checked update by update
+against the original running in an emulator. This release also brings
+PlayStation controller support, Xbox button prompts and an Unlock
+Everything option. Online, everyone in a match needs this version.
 
-- The crowd's reactions pick their spectators at the moment of the
-  basket, block or steal, inside the game's update as on the PS2, so the
-  random numbers the players draw after them in the same update match
-  the original's. After a basket the players' faces now draw before the
-  instant replay's roll, in the PS2's order.
-
-- The court camera no longer bobs up and down following a loose ball
-  bouncing on the floor, as on the PS2.
-
-- The shot clock runs at the PS2's speed: its 24 seconds tick down in 16
-  real seconds, one and a half times as fast as before.
-- The defence's "21 on the clock" call now takes its chance from the
-  game's own random numbers at the PS2's moment, so the court's litter
-  and other effects that share them follow the original's.
-
-- After a pass goes loose, players who were watching it keep looking at
-  the intended receiver as on the PS2, instead of turning their heads
-  back to their animation.
-
-- Level 2 gamebreaker sequences play the PS2's extra sound cue at the
-  shot, the take-off and a high pass.
-
-- An alley-oop lob the leaper hasn't caught by the end of its flight
-  slows to half speed for its last few updates as on the PS2, instead of
-  flying on at full speed.
-- The commentator calls an advanced dunk's finish a dunk, as on the PS2,
-  not an alley-oop.
-- Computer players read a dribble picked up by a pump fake as the PS2's
-  do: the ball handler no longer steers off the baseline out of it, and
-  a defender no longer backs off him as from a live dribbler.
-
-- The running forward pass picks up the passer's stride as on the PS2:
-  its animation starts on the frame that matches the step he was in,
-  instead of always from its first frame.
-
-- A player who passes or switches to a lay-up in mid-air loses half his
-  speed as on the PS2, so he drifts and lands where the original's does.
-
-- Advanced dunks play as on the PS2: from 8.5 or more out with four turbo
-  bars the dunker tosses the ball up off the backboard while he walks on,
-  then leaps for it, catches it in the air and slams it on the original's
-  updates. A toss from outside the board's zone comes off the glass loose,
-  as it does on the PS2. (Before, a drawn ordinary dunk played in its
-  place.)
-
-- A diving player hops at the original's speed (a tall player's dive was
-  about 7% too fast) and stays on the court in the air as on the PS2.
-- Level 2 gamebreaker replays end on exactly the original's frame.
-- Online matches no longer stop with an "invalid state" fault when a
-  Level 2 gamebreaker ends in a dunk.
-- A dribbler who stops now slides into his stance as on the PS2: a
-  quarter of his speed through the stance's blend, and after a long run
-  away from the basket one of the three dribble-stop animations, which
-  carry him further.
-- A player leaping for an alley-oop turns toward the rim as fast as on
-  the PS2 (twice the old rate), so his run-up and the lob to him land
-  where the original's do.
-- A standing catch that plays its clip out to the end (`catch_stand_5`)
-  now holds the catch for its own clip's length (12 updates) instead of
-  another catch's (9), as on the PS2.
-- The match intros pick their scripts as the PS2 does, from the game's
-  own random numbers, and a streetball legend's own intro plays for the
-  same side's legend the PS2 picks it for. The intros' dunks take their
-  random numbers from the game's too (the dunker's face, the make roll,
-  the crowd's cheer), so a match's choices follow the original's from the
-  first update.
-- The match intros' ball follows the scripts again (in the players'
-  hands, passed and shot) instead of sitting at centre court.
-- PlayStation controllers (DualSense, DualSense Edge, DualShock 4) now
-  connect on Windows even when Windows' own game-controller layer doesn't
-  hand them to the game: they're read straight from the pad, over USB or
-  Bluetooth, with PlayStation button names and vibration over USB.
-- The opening tip runs as the PS2's does: the players take their own
-  standing poses at their spots (the jumpers one of the two tip-off
-  stances), their faces keep time through the referee's wait, and the
-  others start reacting the moment the tip is caught. A match's random
-  choices now follow the original's through the whole tip.
-- Street School's games have no spectators, as on the PS2 (the stands
-  were full behind the lessons).
-- The court's effects (steam, litter, breath, the hoop's fire, the
-  gamebreaker ball's sparks) and the crowd take their random numbers from
-  the game's own, after each frame's play, as the PS2 does, so the
-  computer's later choices in a match follow the original's sequence. The
-  sparks now start, drift and blink as the original's do.
-- Each match lines its six players up in the original's update order,
-  drawn as the PS2 draws it while building the game, so who reacts first
-  within a frame (a lob's leaper, a pass's receiver) follows the
-  original's.
-- Players look as they do on the PS2: no lighting on the first pass, then
-  the original's gloss from each court's own specular maps (skin and
-  clothes), so shoulders and arms catch the highlight as they should. The
-  ball gets the same treatment with its own map.
-- Courts, crowds and players keep their exact colours: the 3D picture no
-  longer goes through a tone curve and dither the original never had, and
-  it now blends and shades in the PS2's own colour values, so shadows,
-  fences, nets, the crowd and effects come out as dark or light as on the
-  PS2 (shadows were too light).
-- Xbox button prompts (issue #3): every button picture on the screens
-  (the menus' legends, the pause screen, Help, Street School) shows A, B,
-  X and Y in their colours, LB/RB/LT/RT and View/Menu when an Xbox-style
-  pad is in use, including Steam Input and the Steam Deck. PC Settings has
-  a new Button Prompts row: Auto (follow the controller), PlayStation or
-  Xbox.
-- Unlock Everything (issue #3): a PC Settings row that gives you every
-  reward card at once (legends, courts, jerseys, codes and tips). Press
-  it twice to confirm; the original's unlock codes still work too.
+- **PlayStation controllers on Windows.** DualSense, DualSense Edge and
+  DualShock 4 pads now connect even when Windows' own controller layer
+  doesn't pass them to the game. They're read straight from the pad over
+  USB or Bluetooth, with PlayStation button names, and vibration over
+  USB.
+- **Xbox button prompts** (issue #3). Every button picture in the menus,
+  the pause screen, Help and Street School shows A, B, X, Y, LB/RB/LT/RT
+  and View/Menu when an Xbox-style pad is in use, including Steam Input
+  and the Steam Deck. PC Settings has a new Button Prompts row: Auto,
+  PlayStation or Xbox.
+- **Unlock Everything** (issue #3). A PC Settings row that gives you
+  every reward card at once (legends, courts, jerseys, codes and tips).
+  Press it twice to confirm. The original's unlock codes still work too.
+- **Players and courts look like the PS2's.** The players get the
+  original's gloss from each court's own highlight maps, so shoulders and
+  arms catch the light as they should; the ball too. The picture keeps
+  the PS2's exact colours, with no extra tone curve or dither, so
+  shadows, fences, nets and the crowd are as dark or light as the
+  original's (shadows were too light).
+- **The opening tip plays as on the PS2.** Each side's three take their
+  original places (the tallest centre jumps, the best ball handler takes
+  the third spot; some teams had two players swapped, with each other's
+  sizes and ratings). The players stand in their own poses at their
+  spots, the jumpers move exactly as the original's from run-up to
+  landing, the tip lands in the same update, and everyone starts
+  reacting the moment it's caught.
+- **Players turn as on the PS2** when a new animation starts: settling
+  into a stance or starting to walk, they take the new clip's facing at
+  once and pivot on the planted foot, instead of turning slowly the
+  short way round.
+- **The shot clock runs at the PS2's speed:** its 24 seconds tick down
+  in 16 real seconds, one and a half times as fast as before.
+- **Advanced dunks play as on the PS2:** from 8.5 or more out with four
+  turbo bars, the dunker tosses the ball off the backboard, leaps for it,
+  catches it in the air and slams it. (Before, an ordinary dunk played
+  in its place.) The commentator now calls it a dunk.
+- **Movement closer to the original's:**
+  - A player who passes or switches to a lay-up in mid-air loses half his
+    speed, so he lands where the original's does.
+  - A dribbler who stops slides into his stance, and after a long run
+    plays one of the three dribble-stop animations.
+  - A running pass picks up the passer's stride.
+  - An alley-oop leaper turns toward the rim twice as fast as before.
+  - A tall player's dive was about 7% too fast.
+  - A lob nobody caught slows down at the end of its flight.
+  - A standing catch that plays its clip out holds for the right length.
+- **The computer's choices follow the original's.** The camera's cuts,
+  the crowd's reactions, the court's effects (steam, litter, breath, the
+  hoop's fire, gamebreaker sparks), the match intros and the "21 on the
+  clock" call now take their random numbers from the game's own at the
+  PS2's moments, and the six players update in the original's order. So
+  a match's random choices stay in step with the original's for much
+  longer.
+- **Fixes:**
+  - Online matches no longer stop with an "invalid state" fault when a
+    Level 2 gamebreaker ends in a dunk.
+  - Level 2 gamebreaker replays end on the original's frame, and play
+    the PS2's extra sound cue at the shot, the take-off and a high pass.
+  - The match intros' ball follows the scripts again (in the players'
+    hands, passed and shot) instead of sitting at centre court.
+  - The court camera no longer bobs following a loose ball bouncing.
+  - Street School's games have no spectators, as on the PS2.
+  - After a pass goes loose, players watching it keep looking at the
+    intended receiver.
+  - Computer players read a pump-faked dribble as the PS2's do.
 
 ## v0.1.5-beta
 
