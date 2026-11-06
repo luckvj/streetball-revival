@@ -1177,6 +1177,21 @@ impl World {
                 .is_some_and(|c| c.player == i && self.tick < c.until)
     }
 
+    /// [`World::catch_holds`] as `i`'s own think reads it: the catch row's
+    /// `9c 0x200` clears bit 9 in his channel's step, after his think, so
+    /// his think sees it an update longer (the attract capture's receiver
+    /// stands at 871 and dribbles only at 872).
+    pub(crate) fn catch_holds_thinking(&self, i: usize) -> bool {
+        self.ball.state == BallState::Held(i)
+            && self
+                .players
+                .get(i)
+                .is_some_and(|p| matches!(p.action, Action::None))
+            && self
+                .catch
+                .is_some_and(|c| c.player == i && self.tick <= c.until)
+    }
+
     /// Actor `i`'s state bits (actor+0xa4) as the simulation's actions show
     /// them: 3 a jump shot or a lay-up, 4 a pass's throw, 6 a swipe or the
     /// take after a counter (`FUN_0016e9a0`), 7 a dunk, 8 a rebound jump, 9

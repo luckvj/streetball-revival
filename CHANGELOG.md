@@ -16,6 +16,10 @@ its version's part.
   replaces), so players stop, start and change pace in step with the
   original. A player who catches a pass standing keeps stepping with the
   catch animation after the catch, as on the PS2.
+- Defenders judge whether they stand in front of the ball handler with
+  the PS2's own angle rounding, so they try trick steals on the same
+  updates as the original. A computer player who catches a pass waits the
+  PS2's one extra update before he starts to dribble.
 
 ## v0.1.6-beta
 

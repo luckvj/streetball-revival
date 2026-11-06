@@ -2008,7 +2008,10 @@ fn a_caught_pass_holds_its_receiver_for_the_catch() {
             break;
         }
     }
-    assert_eq!(held, hold);
+    // His own think sees it one update more: the row's `9c 0x200` clears
+    // it in his channel's step, after the think (the attract capture's
+    // receiver stands the update his row ends and dribbles the next).
+    assert_eq!(held, hold + 1);
 }
 
 #[test]

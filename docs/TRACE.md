@@ -14770,3 +14770,22 @@ other checks in 240..264 agree either way. His turbo is the side's bar
 table (`FUN_0013fed0`, game+0x2cc, the game mode's slot 0x120 in
 `FUN_0013d868`) reads the actors' `+0x30` every update, so the stale angle
 is not yet explained.
+
+Explained (same day): the pair table holds each pair once, from the lower
+table index (team × 3 + member) toward the higher, truncated toward zero
+(`cvt.w.s`) before the mask, and the other way as that less 512
+(`0x1401f8..0x14020c`). Actor 1 toward the holder (5) is 327.5006 less
+512, -184.4994, which truncates to -184 (840); the holder toward him is
+then 328, a unit past the direct 327, out of the counter's 71
+(`Ctx::angle_between`, through the native arc tangent). Draws then match
+through update 870.
+
+At 871 the receiver's think still saw bit 9: the catch row's `9c 0x200`
+runs in his channel's step after his think, so the update his row ends
+he stands (the held stand's `r % 6`) and dribbles only the next
+(`World::catch_holds_thinking` for the AI's `catching`; the locomotion's
+hold ends as before). Draws match through 872. At 873 the holder presses
+his pass: the PS2 runs his locomotion first (the standing dribble's
+`r % 11` at `0x168944`, a gait draw), then the pass, then two looks
+(`0x159844`/`0x15992c`, the holder's and actor 4's); the rewrite starts the
+pass first.

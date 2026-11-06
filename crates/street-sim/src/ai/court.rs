@@ -90,9 +90,32 @@ impl Ctx<'_> {
         dist(self.pos(a), self.pos(b))
     }
 
-    /// game+0x2cc (`FUN_0017de28`): the angle from `a` toward `b`.
+    /// game+0x2cc (`FUN_0017de28`): the angle from `a` toward `b`, as the
+    /// update's pair table holds it (`FUN_0013fed0`, `0x13ffb8..0x140214`):
+    /// each pair once, from the lower table index (team × 3 + member,
+    /// `FUN_001408e0`) toward the higher, through the native arc tangent
+    /// and truncated toward zero before the mask; the other way is that
+    /// less 512. So a reverse angle can sit a unit past the direct one
+    /// (the attract capture's actor 1 off the holder at update 864: 328,
+    /// not 327, out of the counter's 71).
     pub fn angle_between(&self, a: usize, b: usize) -> i32 {
-        angle_toward(self.pos(a), self.pos(b))
+        let (ka, kb) = (self.table_index(a), self.table_index(b));
+        let (lo, hi) = if ka <= kb { (a, b) } else { (b, a) };
+        let (p, q) = (self.pos(lo), self.pos(hi));
+        let forward = crate::ordinary::native_heading([p[0], 0.0, p[1]], [q[0], 0.0, q[1]]);
+        if lo == a {
+            forward
+        } else {
+            (forward - 0x200) & 0x3ff
+        }
+    }
+
+    /// `i`'s index in the game's pair tables: his team × 3 plus his place
+    /// among its players.
+    fn table_index(&self, i: usize) -> usize {
+        let team = self.team(i);
+        let place = (0..i).filter(|&j| self.team(j) == team).count();
+        team * 3 + place
     }
 
     /// game+0x3d4 (`FUN_0018d160`): the distance to the ball on the floor.
@@ -277,7 +300,7 @@ impl Ctx<'_> {
                 self.w.ball.pass.is_some_and(|p| p.to == i)
                     && !self.w.catching.is_some_and(|c| c.player == i && c.parked)
             }
-            _ => self.w.catch_holds(i),
+            _ => self.w.catch_holds_thinking(i),
         }
     }
 
