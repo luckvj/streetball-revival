@@ -1580,6 +1580,13 @@ impl World {
             }
             if left == toss::WAIT_UPDATES + 1 {
                 self.tip_stands();
+                // The placement starts each stand on his channel before
+                // the channel's step, so its first step comes in this
+                // update (the log's blend counter is 1 the update after;
+                // a step later, every stand's clock ran a frame behind).
+                for &i in &order {
+                    self.stand_tick(i);
+                }
             }
             frozen = true;
             if left > 1 {
@@ -1869,6 +1876,10 @@ impl World {
             };
             self.tip_root(i);
             let facing_before = self.players[i].heading;
+            let gait_before = {
+                let c = &self.players[i].gait_channel;
+                (c.row, c.phase, c.blend_counter, c.moving)
+            };
             match self.players[i].step(&moved, held, stance) {
                 Some(player::Moment::Release(hoop)) => self.release_shot(i, hoop),
                 Some(player::Moment::Slam(hoop)) => self.slam(i, hoop),
@@ -1878,6 +1889,9 @@ impl World {
             }
             if !frozen && self.players[i].heading != facing_before {
                 self.stand_replant(i);
+            }
+            if !frozen {
+                self.gait_root(i, gait_before, facing_before);
             }
             self.contain(i);
             if let Some(script) = rebound

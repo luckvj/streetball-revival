@@ -648,6 +648,49 @@ impl World {
         self.stand_tick_turning(i, false);
     }
 
+    /// `FUN_0019a658` on the gait's scripts: their `91 0x20000` frees the
+    /// root on x and z, so the clip's root change carries a walker (the
+    /// walk clips' sway; times the height scale, turned by the facing the
+    /// update began with), none while a blend runs (`before`: the row,
+    /// frame and blend counter and whether he walked, as the update found
+    /// them). The defender after the tip steps 0.0025 to 0.0088 aside an
+    /// update this way from the end of his walk's blend.
+    pub(crate) fn gait_root(&mut self, i: usize, before: (u16, f32, i32, bool), facing: f32) {
+        let p = &self.players[i];
+        let c = &p.gait_channel;
+        let (row, time, counter, moving) = before;
+        if p.stand.is_some()
+            || p.action != Action::None
+            || p.height != 0.0
+            || !moving
+            || !c.moving
+            || c.row != row
+            || counter > 1
+            || c.blend_counter > 0
+        {
+            return;
+        }
+        let Some(poses) = self.poses.get() else {
+            return;
+        };
+        let at = |time: f32| {
+            poses.root(crate::pose::Frame {
+                record: row,
+                time,
+                looping: true,
+            })
+        };
+        let (Some(a), Some(b)) = (at(time), at(c.phase)) else {
+            return;
+        };
+        let step = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        let m = crate::trick::root_motion(step, p.body(), timing::facing_word(facing));
+        let p = &mut self.players[i];
+        p.position[0] += m[0];
+        p.position[1] += m[1];
+        p.clamp_to_court();
+    }
+
     /// The planted feet held after the update's turn (the pose step,
     /// `0x157800..0x157954`, comes after `FUN_00168ea8`): a turn on a
     /// planted foot swings him round it.

@@ -14688,3 +14688,32 @@ Left: from 207 his course turns every two or three updates where the
 PS2's turns every update (the defence's stick), so he stops one update
 early at 217; the stand clip's wait also runs one update behind the
 PS2's frame (26.86 against 27.00 in the tip's update).
+
+### The opening's stand clocks and the walk's sway (2026-11-05)
+
+Two more from the position log, both ported:
+- The placement starts each tip stand on his channel before the channel's
+  step, so its first step comes in the same update (the log's blend
+  counter is 1 the update after the placement). The rewrite stepped them
+  from the next update, so every stand's clock had run a frame behind
+  (26.86 against 27.00): the six now follow the PS2 within 0.008 through
+  the opening, most of them exactly.
+- The gait's scripts (`91 0x20000`, no 0x1000) free the root on x and z,
+  so the walk clip's root change carries a walker as a stand's does: from
+  the end of the walk's blend (the first step measured from the blend's
+  frame), times the height scale, turned by the facing the update began
+  with, none while a blend runs. Defender 2's steps beside his velocity
+  (0.0025, 0.0040, 0.0062, 0.0079, 0.0101, 0.0089 an update) are row 1's
+  root from frame 4 at 0.66 a frame (`World::gait_root`).
+
+Found, not ported: every blend holds the incoming clip at its start frame
+until its last update, which plays on from there (actor 4's walk, row 3
+from frame 5: 5.39 after the blend, the rewrite 2.71); with that hold
+actor 4 follows the PS2 within 0.007, but defender 2's stop at 218 then
+swings wrongly: his stand (script 7) plants one foot by `95 f4 07 03`
+(the f3/f4 test is the PS2's: the feet along the pelvis's facing, f3 the
+one ahead, f4 behind), and the PS2's 0.27-a-step swing fits a pivot on
+bone 3, 1.2 out, where the rewrite's pose (stop clip 21 at frame 0 alone,
+not the PS2's blend of the walk at 7.82 and the stop) puts bone 3 ahead
+and plants bone 7. The blend's held pose (FUN_001935c8's copy into
+`+0xbc`) has to be ported before the hold.

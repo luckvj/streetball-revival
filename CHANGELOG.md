@@ -5,6 +5,11 @@ its version's part.
 
 ## Unreleased
 
+- Walking players sway with their walk animation as on the PS2 (the
+  clip's own sideways drift now carries them), and the players around the
+  opening tip keep the PS2's exact time on their standing animations, so
+  all six now stand where the original's do through the whole opening.
+
 ## v0.1.6-beta
 
 Matches now play much closer to the PS2's, checked update by update
