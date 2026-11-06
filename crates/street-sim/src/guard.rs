@@ -35,6 +35,9 @@ pub const FOLD: i32 = 0x1e4;
 /// an update (0x2e; 34, 23 and 11 for clips and moves the walk never
 /// plays).
 pub const TURN: i32 = 46;
+/// `FUN_00168ea8`'s turn on a planted foot (channel flag 0x80000,
+/// `0x420a886f`, 34.63).
+pub const PLANTED_TURN: i32 = 34;
 /// `FUN_00168ea8`'s turn for a posting holder (`0x41ba0b3f`, 23.26).
 pub const POST_TURN: i32 = 23;
 /// Its turn on the post defence's rows within 57 of the wanted facing

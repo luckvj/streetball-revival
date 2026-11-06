@@ -176,6 +176,10 @@ pub struct Standing {
     /// sets none, so he coasts on it until the script's `97` (a dribble
     /// stand's after its six-update blend; the others' first).
     pub coast: [f32; 2],
+    /// Units the held clip's root is turned through its blend: a heading
+    /// match turns the outgoing pose as far as it turns the facing
+    /// (`FUN_00196698`'s `+0xbc`).
+    pub turn: i32,
 }
 
 impl Standing {
@@ -549,6 +553,7 @@ impl World {
             from,
             plant,
             coast: [0.0; 2],
+            turn: 0,
         });
     }
 
@@ -640,6 +645,40 @@ impl World {
     /// blend from the gait's frame, where the off-ball offence's stands
     /// plant nothing and he stops.
     pub(crate) fn stand_tick(&mut self, i: usize) {
+        self.stand_tick_turning(i, false);
+    }
+
+    /// The planted feet held after the update's turn (the pose step,
+    /// `0x157800..0x157954`, comes after `FUN_00168ea8`): a turn on a
+    /// planted foot swings him round it.
+    pub(crate) fn stand_replant(&mut self, i: usize) {
+        let Some(s) = self.players[i].stand else {
+            return;
+        };
+        let Some((bones, at)) = s.plant else {
+            return;
+        };
+        let Some(poses) = self.poses.get() else {
+            return;
+        };
+        let (body, place) = (self.players[i].body(), self.place(i));
+        let Some(pose) =
+            crate::trick::pose_turned(poses, s.run.shown(), s.from, s.turn, body, place)
+        else {
+            return;
+        };
+        let [a, b] =
+            bones.map(|k| pose.joints[usize::from(k).min(crate::pose::BONES - 1)].position);
+        let p = &mut self.players[i];
+        p.position[0] += at[0] - (a[0] + b[0]) * 0.5;
+        p.position[1] += at[1] - (a[2] + b[2]) * 0.5;
+    }
+
+    /// [`World::stand_tick`] in a live update (`live`): a blend there
+    /// matches his facing to its clip (`91`'s 0x800000, `FUN_00196698`),
+    /// before the update's turn; the opening's frozen stands keep the
+    /// facing their placement gave.
+    pub(crate) fn stand_tick_turning(&mut self, i: usize, live: bool) {
         let Some(mut s) = self.players[i].stand else {
             return;
         };
@@ -649,14 +688,14 @@ impl World {
         let posed = |w: &World, s: &Standing| {
             let p = poses.as_ref()?;
             let (body, place) = (w.players[i].body(), w.place(i));
-            crate::trick::pose(p, s.run.shown(), s.from, body, place).or_else(|| {
+            crate::trick::pose_turned(p, s.run.shown(), s.from, s.turn, body, place).or_else(|| {
                 let (record, time) = s.from?;
                 let frame = crate::pose::Frame {
                     record,
                     time,
                     looping: true,
                 };
-                p.pose(frame, body, place)
+                p.pose_turned(frame, s.turn, body, place)
             })
         };
         let prev = posed(self, &s);
@@ -679,6 +718,39 @@ impl World {
         } else if ran.set_bits & 0x800 != 0 {
             // `into_backdown` runs into the side dribble's `9b 0x820`.
             self.players[i].posting = true;
+        }
+        // `FUN_00196698(channel, 1)` at the blend's start: the facing put
+        // the incoming clip's root on the pelvis he showed; the planted
+        // foot below swings him round it.
+        if let Some((record, start)) = ran.matched
+            && live
+            && let (Some(p), Some(shown)) = (poses.as_deref(), prev.as_ref())
+            && let Some(record) = if record == crate::trick::CURRENT {
+                s.run.record.or(before.record)
+            } else {
+                Some(record)
+            }
+        {
+            let start = if start == crate::trick::FOOT_SYNC {
+                s.run.foot
+            } else {
+                start
+            };
+            let body = self.players[i].body();
+            if let Some(new) = crate::trick::matched_word(p, shown, record, f32::from(start), body)
+            {
+                let p = &mut self.players[i];
+                let word = timing::facing_word(p.heading);
+                // The model turns by the facing word halved
+                // (`FUN_00154560`): an odd word shows a unit short.
+                let matched = crate::trick::heading_match(word, new - (word & 1));
+                if matched != word {
+                    p.heading = crate::restart::heading_radians(matched);
+                    // The held clip turns back as far, so the world pose
+                    // holds.
+                    s.turn = (s.turn + word - matched) & 0x3ff;
+                }
+            }
         }
         if ran.toward_ball {
             let (p, b) = (&self.players[i], self.ball.position);
@@ -751,10 +823,11 @@ impl World {
         }
         if ran.face
             && let Some(poses) = self.poses.get()
-            && let Some(pose) = crate::trick::pose(
+            && let Some(pose) = crate::trick::pose_turned(
                 poses,
                 s.run.shown(),
                 s.from,
+                s.turn,
                 self.players[i].body(),
                 self.place(i),
             )

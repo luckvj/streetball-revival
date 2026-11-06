@@ -407,6 +407,10 @@ pub struct Ran {
     /// A [`Step::Hang`] met with [`Run::hang`] unanswered (its hang
     /// skipped): callback 28 is due this update.
     pub hang_test: bool,
+    /// A blend started with `91`'s 0x800000 set before it (`0x1984a0`):
+    /// its record and start frame, for the facing's match to the incoming
+    /// clip (`FUN_00196698(channel, 1)`, [`crate::World::match_heading`]).
+    pub matched: Option<(u16, u8)>,
 }
 
 /// What the channel shows: the record and frame (a blend's incoming clip
@@ -597,6 +601,9 @@ impl Run {
     }
 
     fn run(&mut self, steps: &[Step], height: f32, ran: &mut Ran, roll: &mut dyn FnMut() -> u32) {
+        // `91`'s 0x800000, which the next blend's start takes and clears
+        // (`0x19849c..0x1984c4`): every script sets it just before its `8e`.
+        let mut heading = false;
         loop {
             loop {
                 if let Some((at, to)) = self.join
@@ -705,7 +712,11 @@ impl Run {
                     true
                 }
                 Step::Blend { n, start, records } => {
-                    self.blend(n, start, records[usize::from(self.left)])
+                    let record = records[usize::from(self.left)];
+                    if std::mem::take(&mut heading) {
+                        ran.matched = Some((record, start));
+                    }
+                    self.blend(n, start, record)
                 }
                 Step::Pick {
                     n,
@@ -717,7 +728,11 @@ impl Run {
                         Select::Handed => self.handed,
                         Select::Side => self.side,
                     };
-                    self.blend(n, start, records[usize::from(alternate)])
+                    let record = records[usize::from(alternate)];
+                    if std::mem::take(&mut heading) {
+                        ran.matched = Some((record, start));
+                    }
+                    self.blend(n, start, record)
                 }
                 Step::Wait { to, n } => self.wait(to, u16::from(n), None),
                 Step::PlayOut { per_frame, to, n } => {
@@ -790,8 +805,12 @@ impl Run {
                     }
                     true
                 }
-                Step::Flags(_)
-                | Step::Rise(_)
+                Step::Flags(w) => {
+                    heading |= w & 0x80_0000 != 0;
+                    ran.ops.push(step);
+                    true
+                }
+                Step::Rise(_)
                 | Step::Aim(_)
                 | Step::Reach(_)
                 | Step::Carry(_)
@@ -979,18 +998,32 @@ pub fn pose(
     body: Body,
     place: Place,
 ) -> Option<Pose> {
+    pose_turned(poses, shown, from, 0, body, place)
+}
+
+/// [`pose`] with the held clip turned `turn` units (a heading match's,
+/// [`matched_word`]).
+pub fn pose_turned(
+    poses: &Poses,
+    shown: Shown,
+    from: Option<(u16, f32)>,
+    turn: i32,
+    body: Body,
+    place: Place,
+) -> Option<Pose> {
     let to = Frame {
         record: shown.record?,
         time: shown.frame,
         looping: false,
     };
     match (shown.blend, from) {
-        (Some(w), Some((record, time))) => poses.blend(
+        (Some(w), Some((record, time))) => poses.blend_turned(
             Frame {
                 record,
                 time,
                 looping: true,
             },
+            turn,
             to,
             w,
             body,
@@ -1031,6 +1064,54 @@ pub fn root_motion(step: [f32; 3], body: Body, word: i32) -> [f32; 2] {
     let (s, c) = (crate::math::sin(theta), crate::math::cos(theta));
     let (x, z) = (step[0] * body.height, step[2] * body.height);
     [x * c + z * s, -x * s + z * c]
+}
+
+/// `FUN_00196698`'s tolerance: `0x41ba0b3f` (23.255491) truncated.
+pub const HEADING_TOLERANCE: i32 = 23;
+
+/// `FUN_00196698(channel, 1)` at a blend's start: the facing word that puts
+/// the incoming clip's root (`record` at frame `start`, `+0xc0`) on the
+/// pelvis as the model last showed it (`shown`, `FUN_00154230`).
+pub fn matched_word(
+    poses: &Poses,
+    shown: &Pose,
+    record: u16,
+    start: f32,
+    body: Body,
+) -> Option<i32> {
+    let incoming = poses.pose(
+        Frame {
+            record,
+            time: start.max(0.0),
+            looping: false,
+        },
+        body,
+        Place {
+            position: [0.0; 3],
+            word: 0,
+        },
+    )?;
+    // A root whose axis stands upright has no heading (the test banks'
+    // unrotated clips); every clip on the disc lays it flat.
+    let flat = |pose: &Pose| {
+        let v = pose::rotate(pose.joints[0].rotation, [0.0, 1.0, 0.0]);
+        v[0].abs() + v[2].abs() > 1e-3
+    };
+    if !flat(shown) || !flat(&incoming) {
+        return None;
+    }
+    Some((pelvis_word(shown) - pelvis_word(&incoming)) & 0x3ff)
+}
+
+/// `FUN_00196698`'s test: the facing `word` becomes `new` unless the two
+/// are within [`HEADING_TOLERANCE`] of each other.
+pub fn heading_match(word: i32, new: i32) -> i32 {
+    let delta = (word - new) & 0x3ff;
+    if (HEADING_TOLERANCE..=0x400 - HEADING_TOLERANCE).contains(&delta) {
+        new
+    } else {
+        word & 0x3ff
+    }
 }
 
 /// `FUN_00154230` (callback 7): the facing word of the pelvis's local +y
@@ -2357,10 +2438,18 @@ impl World {
             Action::Stealing {
                 stance: Some(s), ..
             } => (s.run.shown(), s.from),
-            // A stand ([`crate::stand`]).
+            // A stand ([`crate::stand`]), its held clip turned by a
+            // heading match.
             Action::None => {
                 let s = self.players[i].stand?;
-                (s.run.shown(), s.from)
+                return pose_turned(
+                    poses,
+                    s.run.shown(),
+                    s.from,
+                    s.turn,
+                    self.players[i].body(),
+                    self.place(i),
+                );
             }
             _ => return None,
         };

@@ -526,8 +526,40 @@ impl Poses {
         body: Body,
         place: Place,
     ) -> Option<Pose> {
+        self.blend_turned(from, 0, to, weight, body, place)
+    }
+
+    /// `frame`'s local pose with its root turned `turn` units about the
+    /// vertical: a blend's outgoing pose after a heading match turned it
+    /// (`FUN_00196698`'s `+0xbc`), so the world pose holds while the
+    /// facing jumps.
+    fn turned(&self, frame: Frame, turn: i32) -> Option<Local> {
+        let mut local = self.local(frame)?;
+        if turn != 0 {
+            let theta = turn as f32 * std::f32::consts::TAU / 1024.0;
+            let yaw = [0.0, math::sin(theta * 0.5), 0.0, math::cos(theta * 0.5)];
+            local.rotations[0] = qmul(yaw, local.rotations[0]);
+        }
+        Some(local)
+    }
+
+    /// `frame` posed as [`Poses::pose`], its root turned `turn` units.
+    pub fn pose_turned(&self, frame: Frame, turn: i32, body: Body, place: Place) -> Option<Pose> {
+        Some(self.place(&self.turned(frame, turn)?, body, place))
+    }
+
+    /// [`Poses::blend`] from an outgoing pose turned `turn` units.
+    pub fn blend_turned(
+        &self,
+        from: Frame,
+        turn: i32,
+        to: Frame,
+        weight: f32,
+        body: Body,
+        place: Place,
+    ) -> Option<Pose> {
         let b = self.local(to)?;
-        let Some(a) = self.local(from) else {
+        let Some(a) = self.turned(from, turn) else {
             return Some(self.place(&b, body, place));
         };
         let w = weight.clamp(0.0, 1.0);
@@ -689,7 +721,7 @@ impl crate::World {
                 looping: true,
             };
             let weight = (GAIT_BLEND + 1 - g.blend_counter) as f32 / GAIT_BLEND as f32;
-            return poses.blend(from, self.gait_frame(i), weight, body, place);
+            return poses.blend_turned(from, g.blend_turn, self.gait_frame(i), weight, body, place);
         }
         poses.pose(self.gait_frame(i), body, place)
     }

@@ -1439,28 +1439,7 @@ impl Player {
                 Gait::Walk
             }
         };
-        // `FUN_00168ea8`: the facing turns toward the wanted facing, at
-        // most 46 units an update; 23 for a posting holder (bit 11 and
-        // +0x70, `0x168f38..0x168f60`), 11 on the post defence's rows
-        // within 57 of it (`0x168f9c..0x168fec`).
-        let (now, to) = (
-            crate::timing::facing_word(self.heading),
-            crate::timing::facing_word(self.wanted),
-        );
-        let d = crate::guard::turn(to, now);
-        let row = self.stand.and_then(|s| s.run.shown().record);
-        let rate = if self.posting && held {
-            crate::guard::POST_TURN
-        } else if matches!(row, Some(718 | 719)) && d.abs() <= f32::from_bits(0x4265_8e0f) as i32 {
-            crate::guard::STANCE_TURN
-        } else {
-            crate::guard::TURN
-        };
-        if d.abs() > rate {
-            self.heading = crate::restart::heading_radians(now + rate * d.signum());
-        } else if d != 0 {
-            self.heading = self.wanted;
-        }
+        self.turn_to_wanted(held);
         self.gait = if self.speed < 0.5 && gait == Gait::Stand {
             Gait::Stand
         } else if gait == Gait::Stand {
@@ -1488,6 +1467,34 @@ impl Player {
             body_scale_x,
         );
         self.clamp_to_court();
+    }
+
+    /// `FUN_00168ea8`: the facing turns toward the wanted facing, at most
+    /// 46 units an update; 34 on a planted foot (channel flag 0x80000,
+    /// which a stand's `95` sets, `0x19471c`), 23 for a posting holder
+    /// (bit 11 and +0x70, `0x168f38..0x168f60`), 11 on the post defence's
+    /// rows within 57 of it (`0x168f9c..0x168fec`).
+    pub(crate) fn turn_to_wanted(&mut self, held: bool) {
+        let (now, to) = (
+            crate::timing::facing_word(self.heading),
+            crate::timing::facing_word(self.wanted),
+        );
+        let d = crate::guard::turn(to, now);
+        let row = self.stand.and_then(|s| s.run.shown().record);
+        let rate = if self.stand.is_some_and(|s| s.plant.is_some()) {
+            crate::guard::PLANTED_TURN
+        } else if self.posting && held {
+            crate::guard::POST_TURN
+        } else if matches!(row, Some(718 | 719)) && d.abs() <= f32::from_bits(0x4265_8e0f) as i32 {
+            crate::guard::STANCE_TURN
+        } else {
+            crate::guard::TURN
+        };
+        if d.abs() > rate {
+            self.heading = crate::restart::heading_radians(now + rate * d.signum());
+        } else if d != 0 {
+            self.heading = self.wanted;
+        }
     }
 
     /// Move along the course at the current speed, staying on the court.

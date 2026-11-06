@@ -471,14 +471,15 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
     // once the post man's call posted him, seed 16's none once the
     // distance tables kept actor order within a unit, seed 17's and 18's none
     // once the opening's pregame updates, stands and faces drew, seed 19's
-    // none once a leaper turned at the walk's rate).
+    // none once a leaper turned at the walk's rate, seed 20's none once a
+    // blend's heading match turned the players to their clips).
     let tables = disc().unwrap();
     let teams: Vec<usize> = (0..tables.tables().teams.len())
         .filter(|&t| tables.tables().teams[t].roster.len() >= 3)
         .collect();
     disc_match(
         [teams[12], teams[20]],
-        20,
+        21,
         15_000,
         Conditions {
             loss: 0.10,

@@ -15,6 +15,35 @@
 //! record already playing answers and some record is a candidate
 //! (`0x168b7c`, `0x168de0`).
 
+/// The rows callback 52 (`FUN_00177270`, argument 1) calls moving: those
+/// with flag 1 in the row classes (`0x43f0e8`, 144 entries).
+pub const MOVING_ROWS: [u16; 133] = [
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 21, 22, 23, 24, 25, 26, 27, 28,
+    29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+    91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
+    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130,
+    131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 142, 143, 144, 145, 146, 147, 148, 149, 150,
+    151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169,
+    170, 171, 172, 173, 957,
+];
+
+/// The walk's own records (rows 0, 1, 2, 3 and BPJOG's 957, table
+/// `0x3e7378`): their script asks callback 52 whether the channel plays a
+/// moving row; from one, a blend synced to its step (`8e 06 -19`), else a
+/// blend from frame 4 (row 3's 5) with `91 0x820000`, which matches the
+/// facing to the walk's clip (`FUN_00196698`). The start frame of that
+/// match, if `row` starts it from `playing`.
+pub fn walk_start(row: u16, playing: Option<u16>) -> Option<f32> {
+    if playing.is_some_and(|r| MOVING_ROWS.contains(&r)) {
+        return None;
+    }
+    match row {
+        0 | 1 | 2 | 957 => Some(4.0),
+        3 => Some(5.0),
+        _ => None,
+    }
+}
+
 /// One runtime gait record, as the selector reads it.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GaitRecord {

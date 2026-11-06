@@ -1851,7 +1851,7 @@ impl World {
             let ended = self.trick_tick(i, &input, held);
             self.reaction_tick(i);
             if !frozen {
-                self.stand_tick(i);
+                self.stand_tick_turning(i, true);
             }
             self.counter_tick(i);
             self.scoop_tick(i);
@@ -1868,12 +1868,16 @@ impl World {
                 _ => None,
             };
             self.tip_root(i);
+            let facing_before = self.players[i].heading;
             match self.players[i].step(&moved, held, stance) {
                 Some(player::Moment::Release(hoop)) => self.release_shot(i, hoop),
                 Some(player::Moment::Slam(hoop)) => self.slam(i, hoop),
                 Some(player::Moment::Swipe(_)) => self.swipe(i),
                 Some(player::Moment::LayupRelease(hoop)) => self.release_layup(i, hoop),
                 None => {}
+            }
+            if !frozen && self.players[i].heading != facing_before {
+                self.stand_replant(i);
             }
             self.contain(i);
             if let Some(script) = rebound
@@ -2101,6 +2105,18 @@ impl World {
         if held && stance.is_none() && self.game_phase.phase == game_phase::phase::RESTART {
             request = 0x201;
         }
+        // The row his channel plays (a blend's incoming one), as callback
+        // 52 reads it (`FUN_00177270`).
+        let playing = {
+            let p = &self.players[i];
+            match p.stand {
+                Some(s) => s.run.shown().record,
+                None if p.gait_channel.moving => {
+                    p.gait_channel.record.map(|_| p.gait_channel.record_row())
+                }
+                None => Some(p.gait_channel.row),
+            }
+        };
         let p = &mut self.players[i];
         let channel = &mut p.gait_channel;
         let profile = config.profiles.get(i).copied().unwrap_or_default();
@@ -2109,6 +2125,44 @@ impl World {
         let index = gait_select::select_drawing(&config.records, current, request, profile, || {
             rng.next_u32()
         });
+        // The clip the walk's blend holds: a stand's (its blend's dominant
+        // side), turned by the heading match.
+        let mut walk_from = None;
+        if let Some(record) = config.records.get(index)
+            && channel.record != Some(index as u16)
+            && !playing.is_some_and(|r| record.rows.contains(&r))
+            && p.action == Action::None
+            && let Some(start) = gait_select::walk_start(record.rows[0], playing)
+        {
+            // The walk's own scripts (table `0x3e7378`): from a still clip
+            // the blend matches his facing to the walk's clip
+            // (`FUN_00196698`), before this update's turn.
+            let body = p.body();
+            let row = record.rows[0];
+            if let Some(poses) = self.poses.get()
+                && let Some(shown) = self.actor_pose(i)
+                && let Some(new) = trick::matched_word(poses, &shown, row, start, body)
+            {
+                // The model turns by the facing word halved
+                // (`FUN_00154560`): an odd word shows a unit short.
+                let p = &mut self.players[i];
+                let word = timing::facing_word(p.heading);
+                let matched = trick::heading_match(word, new - (word & 1));
+                if matched != word {
+                    p.heading = restart::heading_radians(matched);
+                }
+                if let Some(s) = p.stand {
+                    let shown = s.run.shown();
+                    let held = match (shown.blend, s.from) {
+                        (Some(w), Some(from)) if w < 0.5 => Some(from),
+                        _ => shown.record.map(|r| (r, shown.frame)),
+                    };
+                    walk_from = held.map(|h| (h, (s.turn + word - matched) & 0x3ff));
+                }
+            }
+        }
+        let p = &mut self.players[i];
+        let channel = &mut p.gait_channel;
         if let Some(record) = config.records.get(index) {
             // A record started anew runs its script's `9b`: only the
             // backdown's (`dribble_backdown_1`, `9b 0x820`) posts up.
@@ -2125,6 +2179,17 @@ impl World {
             channel.rows = record.rows;
             channel.root_distance = record.root_distance;
             channel.motion = record.motion;
+            // The walk's blend from the stand's clip (the channel's own
+            // row change would hold the gait's row): the update's step
+            // counts it from 6.
+            if let Some((from, turn)) = walk_from {
+                channel.row = channel.record_row();
+                channel.blend_from = Some(from);
+                channel.blend_turn = turn;
+                channel.blend_counter = 7;
+                channel.phase = 0.0;
+                channel.integer = 0;
+            }
         }
     }
 

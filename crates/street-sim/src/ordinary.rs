@@ -569,6 +569,9 @@ pub struct PlayerGaitChannel {
     /// blend of 6 updates), while [`PlayerGaitChannel::blend_counter`]
     /// runs ([`crate::World::actor_pose`]).
     pub blend_from: Option<(u16, f32)>,
+    /// Units that held clip's root is turned: a walk's heading match turns
+    /// the outgoing pose as far as the facing (`FUN_00196698`'s `+0xbc`).
+    pub blend_turn: i32,
 }
 
 impl PlayerGaitChannel {
@@ -598,6 +601,7 @@ impl Default for PlayerGaitChannel {
             hand: 2,
             trick_side: 0,
             blend_from: None,
+            blend_turn: 0,
         }
     }
 }
@@ -621,6 +625,7 @@ impl PlayerGaitChannel {
         };
         if wanted_row != self.row {
             self.blend_from = Some((self.row, self.phase));
+            self.blend_turn = 0;
             self.row = wanted_row;
             self.blend_counter = 6;
             self.phase = 0.0;

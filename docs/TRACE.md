@@ -14643,3 +14643,48 @@ Findings, each now ported:
 Left: actor 2 after the tip (a 0.127 step and a 33-unit turn in the
 tip's update, then a +101 facing snap at the walk's start, likely the
 pelvis facing): the draw mismatch at 855 is his gait.
+
+## A blend's heading match (2026-11-05)
+
+The position log, with each actor's +0xac/+0xb4 (the second facing pair
+FUN_00168ea8 turns), his quaternion +0x50 and the first quaternion of the
+channel's buffers +0xb4, +0xbc and +0xc0, found what turned defender 2
+after the tip: `FUN_00196698`, which a blend's start calls
+(`0x1984a0..0x1984c4`) when the channel's flags hold 0x800000 (`91`'s
+high half, cleared there). Every stand script with a plant sets it just
+before its `8e`, as do the walk's own records' from-a-still-clip scripts.
+
+- It takes the pelvis's heading (`FUN_00154230`: bone 0's world matrix,
+  the model turned by the facing word halved, so an odd word shows a
+  unit short) less the incoming clip's root heading at the blend's start
+  frame (`+0xc0`, `(int)(atan2(x, z) × 162.97 + 0.5)`, 1024 added when not
+  positive, + 0x200): that is the new facing (+0xa8), unless it is within
+  23 of the old (0x41ba0b3f truncated). +0xac moves by as much. With its
+  second argument 1 it turns the blend's outgoing pose (`+0xbc`) back as
+  far, so the world pose holds: after every match the log's `+0xbc`
+  equals `+0xc0` within two units.
+- Order: the channel's step (and the match) comes before FUN_00168ea8's
+  turn, and the pose step's planted feet after it. Defender 2 in the
+  tip's update: 769 matched to 702, then the turn on a planted foot (34,
+  channel flag 0x80000 from the stand's `95`) to 736, pivoting him 0.127
+  round the foot. The next update the walk's script matched 736 to 791,
+  and the turn went on to 837 the long way round to 264.
+- The walk's records whose rows are 0, 1, 2, 3 and BPJOG's 957 run
+  scripts from table `0x3e7378` that ask callback 52 (`FUN_00177270`):
+  does the channel play a row whose class (`0x43f0e8`) has flag 1 (a
+  moving clip)? From one, a blend synced to its step (`8e 06 -19`) without
+  the flag; else `91 0x820000` and a 6-update blend from frame 4 (row 3's
+  5).
+- The opening's placement stands keep the facing their placement gave
+  (the log's actors hold it), so the frozen updates match nothing.
+
+Ported (`trick::matched_word`, `trick::heading_match`, `Ran::matched`,
+`Standing::turn`, `PlayerGaitChannel::blend_turn`,
+`gait_select::walk_start`, `World::stand_replant`, `guard::PLANTED_TURN`).
+Defender 2 now follows the PS2 within 0.05 through update 218 (it was off
+by 0.13 to 1.3), and the draws match the draw log through 863 (was 854).
+
+Left: from 207 his course turns every two or three updates where the
+PS2's turns every update (the defence's stick), so he stops one update
+early at 217; the stand clip's wait also runs one update behind the
+PS2's frame (26.86 against 27.00 in the tip's update).

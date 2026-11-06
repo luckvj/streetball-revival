@@ -5,6 +5,12 @@ its version's part.
 
 ## Unreleased
 
+- Players turn as on the PS2 when a new animation starts: a player
+  settling into his stance or starting to walk takes the new clip's
+  facing at once (and pivots on his planted foot), instead of turning
+  slowly the short way round. A defender after the opening tip used to
+  turn the wrong way and drift out of place; he now follows the PS2's
+  path within a few hundredths of a unit.
 - Each side's three take their places as on the PS2: the tallest of the
   centres jumps, the best ball handler of the guards plays the third
   slot, the other the second (the rewrite kept the line-up's order, so a

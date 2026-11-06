@@ -120,8 +120,9 @@ use crate::{
 /// crowd's groups and the update's calls ([`crate::crowd`]); 115: the
 /// camera's draws ([`crate::camera`]); 116: the placement script among
 /// the stands (the flair's up one), the toss's flight words
-/// ([`crate::Tip::toss_flight`]), the tip jump's landing.
-const VERSION: u8 = 116;
+/// ([`crate::Tip::toss_flight`]), the tip jump's landing; 117: a stand's
+/// held clip turned by a heading match, as a walk's ([`crate::ordinary`]).
+const VERSION: u8 = 117;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1283,6 +1284,7 @@ fn player(w: &mut Writer, p: &Player) {
             }
             w.f(s.coast[0]);
             w.f(s.coast[1]);
+            w.uv(s.turn as u64);
         }
     }
     w.uv(u64::from(*stand_count));
@@ -1518,6 +1520,7 @@ fn gait_channel_out(w: &mut Writer, c: &crate::ordinary::PlayerGaitChannel) {
             w.f(time);
         }
     }
+    w.uv(c.blend_turn as u64);
 }
 
 fn profiles_out(w: &mut Writer, profiles: &[crate::gait_select::GaitProfile]) {
@@ -1616,6 +1619,7 @@ fn gait_channel_in(r: &mut Reader) -> Result<crate::ordinary::PlayerGaitChannel,
         )),
         k => return Err(format!("bad gait blend flag {k}")),
     };
+    let blend_turn = i32::try_from(r.uv()?).map_err(|_| "invalid gait blend turn")? & 0x3ff;
     Ok(crate::ordinary::PlayerGaitChannel {
         row,
         phase,
@@ -1633,6 +1637,7 @@ fn gait_channel_in(r: &mut Reader) -> Result<crate::ordinary::PlayerGaitChannel,
         hand,
         trick_side,
         blend_from,
+        blend_turn,
     })
 }
 
@@ -1786,6 +1791,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                     k => return Err(format!("bad plant flag {k}")),
                 },
                 coast: [r.f()?, r.f()?],
+                turn: i32::try_from(r.uv()?).map_err(|_| "invalid stand turn")? & 0x3ff,
             }),
             k => return Err(format!("bad stand flag {k}")),
         },
