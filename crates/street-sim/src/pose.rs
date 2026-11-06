@@ -268,10 +268,30 @@ pub struct Frame {
     pub looping: bool,
 }
 
-/// Local rotations and the root of one sampled frame.
-struct Local {
-    rotations: [[f32; 4]; BONES],
-    root: [f32; 3],
+/// Local rotations and the root of one sampled frame, or of what a
+/// channel showed: the outgoing pose a blend holds (`+0xbc`, which
+/// `FUN_001935c8` copies from the channel's output as the blend starts,
+/// so a blend begun inside another holds their mix).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Held {
+    pub rotations: [[f32; 4]; BONES],
+    pub root: [f32; 3],
+}
+
+type Local = Held;
+
+impl Held {
+    /// The pose with its root turned `turn` units about the vertical
+    /// (`FUN_00196698`'s turn of `+0xbc`: the world pose holds while the
+    /// facing jumps).
+    pub fn turned(mut self, turn: i32) -> Self {
+        if turn & 0x3ff != 0 {
+            let theta = turn as f32 * std::f32::consts::TAU / 1024.0;
+            let yaw = [0.0, math::sin(theta * 0.5), 0.0, math::cos(theta * 0.5)];
+            self.rotations[0] = qmul(yaw, self.rotations[0]);
+        }
+        self
+    }
 }
 
 pub(crate) fn qmul(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {
@@ -534,13 +554,41 @@ impl Poses {
     /// (`FUN_00196698`'s `+0xbc`), so the world pose holds while the
     /// facing jumps.
     fn turned(&self, frame: Frame, turn: i32) -> Option<Local> {
-        let mut local = self.local(frame)?;
-        if turn != 0 {
-            let theta = turn as f32 * std::f32::consts::TAU / 1024.0;
-            let yaw = [0.0, math::sin(theta * 0.5), 0.0, math::cos(theta * 0.5)];
-            local.rotations[0] = qmul(yaw, local.rotations[0]);
-        }
-        Some(local)
+        Some(self.local(frame)?.turned(turn))
+    }
+
+    /// `frame`'s local pose, its root turned `turn` units: what a channel
+    /// showing it alone holds for a blend.
+    pub fn held(&self, frame: Frame, turn: i32) -> Option<Held> {
+        self.turned(frame, turn)
+    }
+
+    /// The channel step's blend in local terms: `from` held, `to` mixed in
+    /// by `weight`, bone by bone.
+    pub fn mixed(&self, from: &Held, to: Frame, weight: f32) -> Option<Held> {
+        let b = self.local(to)?;
+        let w = weight.clamp(0.0, 1.0);
+        Some(Held {
+            rotations: std::array::from_fn(|i| nearer_mix(from.rotations[i], b.rotations[i], w)),
+            root: std::array::from_fn(|k| from.root[k] + (b.root[k] - from.root[k]) * w),
+        })
+    }
+
+    /// A held pose posed for a body standing at `place`.
+    pub fn place_held(&self, held: &Held, body: Body, place: Place) -> Pose {
+        self.place(held, body, place)
+    }
+
+    /// [`Poses::blend`] from a held pose.
+    pub fn blend_held(
+        &self,
+        from: &Held,
+        to: Frame,
+        weight: f32,
+        body: Body,
+        place: Place,
+    ) -> Option<Pose> {
+        Some(self.place(&self.mixed(from, to, weight)?, body, place))
     }
 
     /// `frame` posed as [`Poses::pose`], its root turned `turn` units.
@@ -708,22 +756,34 @@ impl crate::World {
         if let crate::Action::Stealing { swipe: Some(s), .. } = self.players[i].action {
             return s.pose(poses, body, place);
         }
-        // A change of gait row blends from the old row's clip held at its
-        // frame over 6 updates (the channel step's blend, flag 0x200000:
-        // the counter +0x70 over the length +0x6c, 1 on its first update).
+        Some(poses.place_held(&self.gait_local(i)?, body, place))
+    }
+
+    /// `i`'s gait channel in local terms: a change of gait row blends from
+    /// the old row's clip held at its frame (or the pose a walk's start
+    /// held) over 6 updates (the channel step's blend, flag 0x200000: the
+    /// counter +0x70 over the length +0x6c, 1 on its first update).
+    pub fn gait_local(&self, i: usize) -> Option<Held> {
+        let poses = self.poses.get()?;
         let g = &self.players[i].gait_channel;
-        if (1..=GAIT_BLEND).contains(&g.blend_counter)
-            && let Some((record, time)) = g.blend_from
-        {
-            let from = Frame {
-                record,
-                time,
-                looping: true,
-            };
+        let to = self.gait_frame(i);
+        if (1..=GAIT_BLEND).contains(&g.blend_counter) {
             let weight = (GAIT_BLEND + 1 - g.blend_counter) as f32 / GAIT_BLEND as f32;
-            return poses.blend_turned(from, g.blend_turn, self.gait_frame(i), weight, body, place);
+            if let Some(held) = g.blend_held.as_ref() {
+                return poses.mixed(held, to, weight);
+            }
+            if let Some((record, time)) = g.blend_from {
+                let from = Frame {
+                    record,
+                    time,
+                    looping: true,
+                };
+                if let Some(held) = poses.held(from, 0) {
+                    return poses.mixed(&held, to, weight);
+                }
+            }
         }
-        poses.pose(self.gait_frame(i), body, place)
+        poses.held(to, 0)
     }
 }
 

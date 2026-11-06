@@ -14717,3 +14717,56 @@ bone 3, 1.2 out, where the rewrite's pose (stop clip 21 at frame 0 alone,
 not the PS2's blend of the walk at 7.82 and the stop) puts bone 3 ahead
 and plants bone 7. The blend's held pose (FUN_001935c8's copy into
 `+0xbc`) has to be ported before the hold.
+
+## Held poses, blend holds and the gait records' starts (2026-11-06)
+
+Read against the attract capture's PS2 position log (`drawpos5`, channel 0's
+`+0x60` start, `+0x64` frame, `+0x68` rate, `+0x70` counter and the first
+quaternion of the buffers `+0xb4`, `+0xbc`, `+0xc0`):
+
+- `+0xbc` at a blend's start is what the channel showed: `FUN_001935c8`
+  copies the output pose into it (`0x198424`). Defender 2's stand at 219
+  holds 1018, the 5/6 mix of the walk at 7.82 (1022) and the stop clip at
+  its start (1017). The rewrite holds that pose (`pose::Held`): a stand's
+  blends hold `Standing::held` (caught at the stand's start and at each
+  blend's start, turned back by a heading match), a record's blend holds
+  `PlayerGaitChannel::blend_held`.
+- The incoming clip holds at its start frame through the blend (`+0xc0`
+  is posed once, `+0x64` keeps the outgoing frame) and plays on from the
+  update after: actor 4's walk is row 3 at 5.00 through the blend's six
+  updates, then 5.39 (`ordinary::PlayerGaitChannel::update` advances the
+  phase only with the counter at 0).
+- Every gait record's script (table `0x3e7370`, 111 scripts) starts its
+  clip at its own frame: from a still clip `91 0x820000` and a fixed frame
+  (`walk_1` 5, `walk_cocky_2` 8, the dribble runs 13..35); the scripts that
+  ask callback 52 blend from a moving row at `-19` instead
+  (`gait_select::RECORD_SCRIPTS`, `record_start`).
+- `-19` (`0x197fd0..0x198088`) is not the step-matched `-9`: the outgoing
+  frame plus the blend's length times `+0x68`, wrapped once past the last
+  frame, as a share of the outgoing clip's length, on the incoming clip,
+  truncated. `+0x68` there is the new record's rate at the update's speed
+  (the record and its rate are set before its script runs); while a blend
+  runs, the running blend's start frame (`+0x60`, an int) of its target at
+  0.8 a frame. All 16 such blends in the log match
+  (`gait_select::share_start`, resolved in the gait's step once the rate is
+  known); our `-9` port had matched 2. `+0x60` holds the start as an int,
+  so a float read of it shows 0.00.
+- A standing catch row (one opening with `97`) runs on past the catch,
+  its flight wait to the catch frame and its play-out, and its root moves
+  the catcher as it did in the flight (`World::caught_root`): the
+  `catch_stand_3r` receiver walks 0.6 on after his catch.
+
+With these, defender 2 follows the PS2 within 0.03 through update 253 (he
+was off by up to 2.6 from 219 with the hold alone), actor 4 within 0.008
+through 256, the receiver exactly through 253. Draws still match through
+update 863.
+
+Open: at update 864 (step 248) the PS2's second defender (actor 1) skips
+his counter check's reach, where ours rolls it. His angle off the holder's
+facing is 71 on the update's positions (the limit, `|turn| <= 71`,
+`0x107bec`: 71.61 truncated) and 72 on the positions an update older; the
+other checks in 240..264 agree either way. His turbo is the side's bar
+(`FUN_00142098`), full in the capture, and no teammate counters. The pair
+table (`FUN_0013fed0`, game+0x2cc, the game mode's slot 0x120 in
+`FUN_0013d868`) reads the actors' `+0x30` every update, so the stale angle
+is not yet explained.

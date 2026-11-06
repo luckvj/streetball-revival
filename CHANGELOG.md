@@ -9,6 +9,13 @@ its version's part.
   clip's own sideways drift now carries them), and the players around the
   opening tip keep the PS2's exact time on their standing animations, so
   all six now stand where the original's do through the whole opening.
+- Players blend into a new animation from the exact pose they were
+  showing, and the new animation holds its first frame through the blend,
+  as on the PS2. Each walk, run and dribble now starts its animation at
+  the PS2's own frame (from a standstill, or in step with the stride it
+  replaces), so players stop, start and change pace in step with the
+  original. A player who catches a pass standing keeps stepping with the
+  catch animation after the catch, as on the PS2.
 
 ## v0.1.6-beta
 

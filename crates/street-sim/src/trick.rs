@@ -411,6 +411,9 @@ pub struct Ran {
     /// its record and start frame, for the facing's match to the incoming
     /// clip (`FUN_00196698(channel, 1)`, [`crate::World::match_heading`]).
     pub matched: Option<(u16, u8)>,
+    /// A blend started (its outgoing pose is what the channel showed,
+    /// `FUN_001935c8`).
+    pub blended: bool,
 }
 
 /// What the channel shows: the record and frame (a blend's incoming clip
@@ -716,6 +719,7 @@ impl Run {
                     if std::mem::take(&mut heading) {
                         ran.matched = Some((record, start));
                     }
+                    ran.blended = true;
                     self.blend(n, start, record)
                 }
                 Step::Pick {
@@ -732,6 +736,7 @@ impl Run {
                     if std::mem::take(&mut heading) {
                         ran.matched = Some((record, start));
                     }
+                    ran.blended = true;
                     self.blend(n, start, record)
                 }
                 Step::Wait { to, n } => self.wait(to, u16::from(n), None),
@@ -2438,18 +2443,10 @@ impl World {
             Action::Stealing {
                 stance: Some(s), ..
             } => (s.run.shown(), s.from),
-            // A stand ([`crate::stand`]), its held clip turned by a
-            // heading match.
+            // A stand ([`crate::stand`]), blending from its held pose.
             Action::None => {
                 let s = self.players[i].stand?;
-                return pose_turned(
-                    poses,
-                    s.run.shown(),
-                    s.from,
-                    s.turn,
-                    self.players[i].body(),
-                    self.place(i),
-                );
+                return s.pose(poses, self.players[i].body(), self.place(i));
             }
             _ => return None,
         };

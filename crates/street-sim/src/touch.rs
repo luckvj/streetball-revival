@@ -334,7 +334,7 @@ impl World {
         let poses = self.poses.get()?;
         let g = &self.players[to].gait_channel;
         let time = if g.blend_counter > 0 {
-            0.0
+            g.phase
         } else {
             let n = poses.frames(g.row)?.max(1) as f32;
             (g.integer as f32 + g.frame_step * flight as f32).rem_euclid(n)

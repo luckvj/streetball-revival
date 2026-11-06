@@ -442,7 +442,8 @@ fn ordinary_gait_channel_row_selection_and_stepping() {
     channel.update(false, true, 6.0, &mut pos, [heading; 2], 1.0);
     assert_eq!(channel.row, UNHELD_GAIT_ROW);
     assert_eq!(channel.blend_counter, 6);
-    assert!(channel.phase > 0.0);
+    // The blend holds the incoming clip at its start frame.
+    assert_eq!(channel.phase, 0.0);
     assert!(pos[1] > 0.0); // moved in +z direction
 
     // Continue moving unheld
@@ -454,7 +455,7 @@ fn ordinary_gait_channel_row_selection_and_stepping() {
     channel.update(true, true, 6.0, &mut pos, [heading; 2], 1.0);
     assert_eq!(channel.row, HELD_GAIT_ROW);
     assert_eq!(channel.blend_counter, 6);
-    assert_eq!(channel.phase, channel.frame_step);
+    assert_eq!(channel.phase, 0.0);
 
     // Stop moving
     channel.update(true, false, 0.0, &mut pos, [heading; 2], 1.0);

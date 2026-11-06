@@ -569,16 +569,36 @@ pub struct PlayerGaitChannel {
     /// blend of 6 updates), while [`PlayerGaitChannel::blend_counter`]
     /// runs ([`crate::World::actor_pose`]).
     pub blend_from: Option<(u16, f32)>,
-    /// Units that held clip's root is turned: a walk's heading match turns
-    /// the outgoing pose as far as the facing (`FUN_00196698`'s `+0xbc`).
-    pub blend_turn: i32,
+    /// The pose a walk's blend holds in place of that clip: what a stand
+    /// showed as the walk began (`FUN_001935c8`'s `+0xbc`), turned back as
+    /// far as the heading match turned the facing (`FUN_00196698`).
+    pub blend_held: Option<crate::pose::Held>,
+    /// A record's blend starting at the step's share (`-19`,
+    /// [`crate::gait_select::share_start`]) whose start waits for the
+    /// update's rate (`+0x68`, the new record's clip at the update's
+    /// speed): the outgoing frame, a running blend's fixed rate, and the
+    /// two clips' lengths.
+    pub share: Option<Share>,
+}
+
+/// A pending `-19` start ([`PlayerGaitChannel::share`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Share {
+    pub frame: f32,
+    pub rate: Option<f32>,
+    pub frames: [u16; 2],
 }
 
 impl PlayerGaitChannel {
     /// The row the record plays: its 0xf8 alternate on hand 2
     /// (`FUN_001978b0`), else its primary.
     pub fn record_row(&self) -> u16 {
-        self.rows[usize::from(self.hand == 2)]
+        self.record_row_of(self.rows)
+    }
+
+    /// [`PlayerGaitChannel::record_row`] for a record's `rows`.
+    pub fn record_row_of(&self, rows: [u16; 2]) -> u16 {
+        rows[usize::from(self.hand == 2)]
     }
 }
 
@@ -601,7 +621,8 @@ impl Default for PlayerGaitChannel {
             hand: 2,
             trick_side: 0,
             blend_from: None,
-            blend_turn: 0,
+            blend_held: None,
+            share: None,
         }
     }
 }
@@ -625,7 +646,7 @@ impl PlayerGaitChannel {
         };
         if wanted_row != self.row {
             self.blend_from = Some((self.row, self.phase));
-            self.blend_turn = 0;
+            self.blend_held = None;
             self.row = wanted_row;
             self.blend_counter = 6;
             self.phase = 0.0;
@@ -644,10 +665,25 @@ impl PlayerGaitChannel {
             _ => 0.582450,
         };
         self.frame_step = calculate_gait_frame_step(root_distance, speed, body_scale_x);
+        if let Some(share) = self.share.take() {
+            self.phase = crate::gait_select::share_start(
+                share.frame,
+                share.rate.unwrap_or(self.frame_step),
+                crate::gait_select::RECORD_BLEND,
+                usize::from(share.frames[0]),
+                usize::from(share.frames[1]),
+            );
+        }
 
         // The channel's clock runs standing too: the idle row's cycle (and
-        // the standing dribble drawn from it) keeps going.
-        self.phase += self.frame_step;
+        // the standing dribble drawn from it) keeps going. A blend holds
+        // the incoming clip at its start frame through its updates (`+0xc0`
+        // is posed once, as the blend starts, and the frame `+0x64` stays
+        // the outgoing clip's): the clock runs on from the update after
+        // (the attract capture's walk starts: frame 4, then 4 plus a step).
+        if self.blend_counter == 0 {
+            self.phase += self.frame_step;
+        }
         self.integer = self.phase as i32;
         if moving {
             // Along the velocity, which the stick points (`0x167d88`),

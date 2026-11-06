@@ -5144,8 +5144,13 @@ fn stops_slide_as_the_originals_by_role() {
         // first re-capture's 1.16; 0.77..0.84 before). Since the dribble
         // stops and the stands' coast (`stand`, checked stop by stop by
         // the played test `the_dribblers_stops_coast_into_their_stands_as_the_original`)
-        // the rewrite's own games give 0.79..0.82.
-        let spread = if k == 0 { 0.4 } else { 0.3 };
+        // the rewrite's own games give 0.79..0.82. With the gait records'
+        // own start frames (`gait_select::RECORD_SCRIPTS`, every start in
+        // the attract log matched) the holders' dribbles change cadence
+        // and the rewrite's own games give 0.77, 0.94 and 1.03, inside the
+        // original's own spread over the three captures (0.64..1.16): the
+        // holder's tolerance covers that spread.
+        let spread = if k == 0 { 0.65 } else { 0.3 };
         if native.by[k].len() >= 20 {
             assert!(
                 (o - n).abs() <= n * spread + 0.1,

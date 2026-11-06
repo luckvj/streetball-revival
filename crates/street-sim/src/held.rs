@@ -410,6 +410,53 @@ impl World {
         Some(run.shown())
     }
 
+    /// The catch row's clip root after the catch (`FUN_0019a658`): a
+    /// standing row's script (one opening with `97`, [`crate::touch::
+    /// Catching::holds`]) runs on past the catch, its flight wait and its
+    /// play-out, and its root moves him as it did in the flight (the
+    /// attract capture's `catch_stand_3r` receiver walks 0.6 on after his
+    /// catch).
+    pub(crate) fn caught_root(&mut self, i: usize) {
+        let Some(c) = self.catch.filter(|c| c.player == i && self.tick < c.until) else {
+            return;
+        };
+        if self.catching.is_some_and(|k| k.player == i) {
+            return;
+        }
+        let Some(row) = timing::CATCH_ROWS.get(usize::from(c.row)) else {
+            return;
+        };
+        let steps = crate::touch::CATCH_SCRIPTS[usize::from(c.row)];
+        if steps.first() != Some(&Step::Stop) {
+            return;
+        }
+        let Some(poses) = self.poses.arc() else {
+            return;
+        };
+        let first = self.players[i]
+            .channel_start
+            .filter(|s| s.script == row.script);
+        let (left, side) = first.map_or((false, false), |s| (s.left, s.side));
+        let updates = (self.tick as i64 - c.since as i64 + 1).clamp(0, 600) as i32;
+        let flight = i32::from(c.flight);
+        let run = |n: i32| {
+            replay(steps, n, left, false, side, -1, None, |k| {
+                (flight - k).clamp(1, 255) as u8
+            })
+            .0
+        };
+        let (before, after) = (run(updates - 1), run(updates));
+        if before.done {
+            return;
+        }
+        let step = trick::root_step(&poses, before.shown(), after.shown());
+        let p = &mut self.players[i];
+        let m = trick::root_motion(step, p.body(), timing::facing_word(p.heading));
+        p.position[0] += m[0];
+        p.position[1] += m[1];
+        p.clamp_to_court();
+    }
+
     /// What `i`'s channel 0 shows: a trick's or a reaction's script, a
     /// catch row's (in the flight or after the catch), a shot's, a dunk's,
     /// a lay-up's or a pass's ([`SHOT_STEPS`]..), else his gait. None

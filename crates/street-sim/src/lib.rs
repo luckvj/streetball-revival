@@ -1822,6 +1822,7 @@ impl World {
             if !caught_started {
                 self.catching_tick(i);
             }
+            self.caught_root(i);
             self.passout_tick(i);
             // A rebound jump's callback 36 at its script's jump tick; a
             // block jump's callback 35 at its own.
@@ -2139,23 +2140,59 @@ impl World {
         let index = gait_select::select_drawing(&config.records, current, request, profile, || {
             rng.next_u32()
         });
-        // The clip the walk's blend holds: a stand's (its blend's dominant
-        // side), turned by the heading match.
+        // A record started anew runs its script (table `0x3e7370`): a blend
+        // of 6 from the pose the channel shows (`FUN_001935c8`: a stand's,
+        // else the gait's own), the incoming clip held at its start frame.
         let mut walk_from = None;
+        let p = &self.players[i];
+        let channel = &p.gait_channel;
         if let Some(record) = config.records.get(index)
             && channel.record != Some(index as u16)
             && !playing.is_some_and(|r| record.rows.contains(&r))
             && p.action == Action::None
-            && let Some(start) = gait_select::walk_start(record.rows[0], playing)
+            && let Some(how) = gait_select::record_start(record.rows[0], playing)
+            && let Some(poses) = self.poses.arc()
         {
-            // The walk's own scripts (table `0x3e7378`): from a still clip
-            // the blend matches his facing to the walk's clip
-            // (`FUN_00196698`), before this update's turn.
+            let row = channel.record_row_of(record.rows);
             let body = p.body();
-            let row = record.rows[0];
-            if let Some(poses) = self.poses.get()
+            // From a moving row: the step's share (`-19`), the gait's clip
+            // (or its running blend's start) looked ahead at the rate the
+            // update's step sets.
+            let mut share = None;
+            let start = match how {
+                gait_select::RecordStart::Frame { frame, .. } => frame,
+                gait_select::RecordStart::Share => {
+                    let frames =
+                        |r: u16| poses.frames(r).unwrap_or(1).min(usize::from(u16::MAX)) as u16;
+                    share = Some(ordinary::Share {
+                        frame: if channel.blend_counter > 0 {
+                            channel.phase.trunc()
+                        } else {
+                            channel.phase
+                        },
+                        rate: (channel.blend_counter > 0).then_some(gait_select::SHARE_BLEND_RATE),
+                        frames: [frames(channel.row), frames(row)],
+                    });
+                    0.0
+                }
+            };
+            let held = match p.stand {
+                Some(s) => s.local(&poses).map(|h| {
+                    let shown = s.run.shown();
+                    (shown.record.map(|r| (r, shown.frame)).or(s.from), h)
+                }),
+                None => {
+                    let from = (channel.row, channel.phase);
+                    self.gait_local(i).map(|h| (Some(from), h))
+                }
+            };
+            let mut turn = 0;
+            // From a still clip the blend matches his facing to the
+            // incoming clip (`91 0x820000`, `FUN_00196698`), before this
+            // update's turn.
+            if let gait_select::RecordStart::Frame { heading: true, .. } = how
                 && let Some(shown) = self.actor_pose(i)
-                && let Some(new) = trick::matched_word(poses, &shown, row, start, body)
+                && let Some(new) = trick::matched_word(&poses, &shown, row, start, body)
             {
                 // The model turns by the facing word halved
                 // (`FUN_00154560`): an odd word shows a unit short.
@@ -2164,15 +2201,11 @@ impl World {
                 let matched = trick::heading_match(word, new - (word & 1));
                 if matched != word {
                     p.heading = restart::heading_radians(matched);
+                    turn = word - matched;
                 }
-                if let Some(s) = p.stand {
-                    let shown = s.run.shown();
-                    let held = match (shown.blend, s.from) {
-                        (Some(w), Some(from)) if w < 0.5 => Some(from),
-                        _ => shown.record.map(|r| (r, shown.frame)),
-                    };
-                    walk_from = held.map(|h| (h, (s.turn + word - matched) & 0x3ff));
-                }
+            }
+            if let Some((Some(from), held)) = held {
+                walk_from = Some((from, held.turned(turn), start, share));
             }
         }
         let p = &mut self.players[i];
@@ -2193,16 +2226,17 @@ impl World {
             channel.rows = record.rows;
             channel.root_distance = record.root_distance;
             channel.motion = record.motion;
-            // The walk's blend from the stand's clip (the channel's own
-            // row change would hold the gait's row): the update's step
-            // counts it from 6.
-            if let Some((from, turn)) = walk_from {
+            // The record's blend (the channel's own row change would start
+            // its clip at 0 from the gait's row): the update's step counts
+            // it from 6.
+            if let Some((from, held, start, share)) = walk_from {
                 channel.row = channel.record_row();
                 channel.blend_from = Some(from);
-                channel.blend_turn = turn;
+                channel.blend_held = Some(held);
                 channel.blend_counter = 7;
-                channel.phase = 0.0;
-                channel.integer = 0;
+                channel.phase = start;
+                channel.integer = start as i32;
+                channel.share = share;
             }
         }
     }

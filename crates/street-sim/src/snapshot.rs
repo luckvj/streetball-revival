@@ -122,7 +122,7 @@ use crate::{
 /// the stands (the flair's up one), the toss's flight words
 /// ([`crate::Tip::toss_flight`]), the tip jump's landing; 117: a stand's
 /// held clip turned by a heading match, as a walk's ([`crate::ordinary`]).
-const VERSION: u8 = 117;
+const VERSION: u8 = 118;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1284,7 +1284,7 @@ fn player(w: &mut Writer, p: &Player) {
             }
             w.f(s.coast[0]);
             w.f(s.coast[1]);
-            w.uv(s.turn as u64);
+            held_out(w, s.held.as_ref());
         }
     }
     w.uv(u64::from(*stand_count));
@@ -1520,7 +1520,23 @@ fn gait_channel_out(w: &mut Writer, c: &crate::ordinary::PlayerGaitChannel) {
             w.f(time);
         }
     }
-    w.uv(c.blend_turn as u64);
+    held_out(w, c.blend_held.as_ref());
+    match c.share {
+        None => w.u8(0),
+        Some(s) => {
+            w.u8(1);
+            w.f(s.frame);
+            match s.rate {
+                None => w.u8(0),
+                Some(r) => {
+                    w.u8(1);
+                    w.f(r);
+                }
+            }
+            w.uv(u64::from(s.frames[0]));
+            w.uv(u64::from(s.frames[1]));
+        }
+    }
 }
 
 fn profiles_out(w: &mut Writer, profiles: &[crate::gait_select::GaitProfile]) {
@@ -1619,7 +1635,23 @@ fn gait_channel_in(r: &mut Reader) -> Result<crate::ordinary::PlayerGaitChannel,
         )),
         k => return Err(format!("bad gait blend flag {k}")),
     };
-    let blend_turn = i32::try_from(r.uv()?).map_err(|_| "invalid gait blend turn")? & 0x3ff;
+    let blend_held = held_in(r)?;
+    let share = match r.u8()? {
+        0 => None,
+        1 => Some(crate::ordinary::Share {
+            frame: r.f()?,
+            rate: match r.u8()? {
+                0 => None,
+                1 => Some(r.f()?),
+                k => return Err(format!("bad share rate flag {k}")),
+            },
+            frames: [
+                u16::try_from(r.uv()?).map_err(|_| "invalid share frames")?,
+                u16::try_from(r.uv()?).map_err(|_| "invalid share frames")?,
+            ],
+        }),
+        k => return Err(format!("bad share flag {k}")),
+    };
     Ok(crate::ordinary::PlayerGaitChannel {
         row,
         phase,
@@ -1637,7 +1669,8 @@ fn gait_channel_in(r: &mut Reader) -> Result<crate::ordinary::PlayerGaitChannel,
         hand,
         trick_side,
         blend_from,
-        blend_turn,
+        blend_held,
+        share,
     })
 }
 
@@ -1791,7 +1824,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                     k => return Err(format!("bad plant flag {k}")),
                 },
                 coast: [r.f()?, r.f()?],
-                turn: i32::try_from(r.uv()?).map_err(|_| "invalid stand turn")? & 0x3ff,
+                held: held_in(r)?,
             }),
             k => return Err(format!("bad stand flag {k}")),
         },
@@ -2008,6 +2041,45 @@ fn clip_in(r: &mut Reader) -> Result<Option<(u16, f32)>, String> {
         0 => None,
         1 => Some((u16::try_from(r.uv()?).map_err(|_| "invalid clip")?, r.f()?)),
         k => return Err(format!("bad clip flag {k}")),
+    })
+}
+
+fn held_out(w: &mut Writer, held: Option<&crate::pose::Held>) {
+    match held {
+        None => w.u8(0),
+        Some(h) => {
+            w.u8(1);
+            for q in &h.rotations {
+                for &c in q {
+                    w.f(c);
+                }
+            }
+            for &c in &h.root {
+                w.f(c);
+            }
+        }
+    }
+}
+
+fn held_in(r: &mut Reader) -> Result<Option<crate::pose::Held>, String> {
+    Ok(match r.u8()? {
+        0 => None,
+        1 => {
+            let mut h = crate::pose::Held {
+                rotations: [[0.0; 4]; crate::pose::BONES],
+                root: [0.0; 3],
+            };
+            for q in &mut h.rotations {
+                for c in q.iter_mut() {
+                    *c = r.f()?;
+                }
+            }
+            for c in &mut h.root {
+                *c = r.f()?;
+            }
+            Some(h)
+        }
+        k => return Err(format!("bad held pose flag {k}")),
     })
 }
 
@@ -3802,8 +3874,10 @@ mod tests {
         // its count and the box-out three, the C library's word five
         // (version 74); each look a dozen (version 76); the two rims, their
         // rigs and each player's hold on the rim about 420 (version 91);
-        // each look's aim and its picks' count two or more (version 92).
-        assert!(bytes.len() < 2450, "{} bytes", bytes.len());
+        // each look's aim and its picks' count two or more (version 92);
+        // each player's held poses' and pending share's flags (version
+        // 118: a held pose itself is 91 floats while a blend holds it).
+        assert!(bytes.len() < 2470, "{} bytes", bytes.len());
         assert!(World::from_snapshot(&bytes[..bytes.len() - 1]).is_err());
         let mut longer = bytes.clone();
         longer.push(0);

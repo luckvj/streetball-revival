@@ -27,22 +27,179 @@ pub const MOVING_ROWS: [u16; 133] = [
     170, 171, 172, 173, 957,
 ];
 
-/// The walk's own records (rows 0, 1, 2, 3 and BPJOG's 957, table
-/// `0x3e7378`): their script asks callback 52 whether the channel plays a
-/// moving row; from one, a blend synced to its step (`8e 06 -19`), else a
-/// blend from frame 4 (row 3's 5) with `91 0x820000`, which matches the
-/// facing to the walk's clip (`FUN_00196698`). The start frame of that
-/// match, if `row` starts it from `playing`.
-pub fn walk_start(row: u16, playing: Option<u16>) -> Option<f32> {
-    if playing.is_some_and(|r| MOVING_ROWS.contains(&r)) {
-        return None;
-    }
-    match row {
-        0 | 1 | 2 | 957 => Some(4.0),
-        3 => Some(5.0),
-        _ => None,
-    }
+/// A gait record's script (the table at `0x3e7370`, script and name, keyed
+/// here by its blend's primary row): the blend's start frame from a still
+/// clip and whether `91` sets 0x800000 before it (the facing matched to
+/// the incoming clip, `FUN_00196698`); whether the script asks callback 52
+/// (`FUN_00177270`) first, which from a moving row blends at `-19`
+/// instead ([`share_start`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RecordScript {
+    pub row: u16,
+    pub still: u8,
+    pub heading: bool,
+    pub share: bool,
 }
+
+/// How a record's blend starts.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum RecordStart {
+    /// From this frame, the facing matched or not.
+    Frame { frame: f32, heading: bool },
+    /// At the outgoing clip's share of its step ([`share_start`]).
+    Share,
+}
+
+/// How the record whose primary row is `row` starts from the row the
+/// channel plays (`playing`); None for a row no script names.
+pub fn record_start(row: u16, playing: Option<u16>) -> Option<RecordStart> {
+    let script = RECORD_SCRIPTS.iter().find(|s| s.row == row)?;
+    if script.share && playing.is_some_and(|r| MOVING_ROWS.contains(&r)) {
+        return Some(RecordStart::Share);
+    }
+    Some(RecordStart::Frame {
+        frame: f32::from(script.still),
+        heading: script.heading,
+    })
+}
+
+/// A blend's start `-19` (`0x197fd0..0x198088`): the outgoing clip looked
+/// ahead by the blend's length in updates at its rate, wrapped once past
+/// its last frame, as a share of its length, on the incoming clip, the
+/// share truncated. The outgoing clip is the channel's frame (`+0x64`) of
+/// its clip, at the rate the new record's clip plays (`+0x68`, set before
+/// the script runs), or, while a blend runs, that blend's start frame
+/// (`+0x60`) of its target at 0.8 a frame. Matches the attract capture's 16
+/// such blends.
+pub fn share_start(frame: f32, rate: f32, length: u8, from_frames: usize, to_frames: usize) -> f32 {
+    let n = from_frames.max(1) as f32;
+    let mut f = frame + f32::from(length) * rate;
+    if n - 1.0 < f {
+        f -= n - 1.0;
+    }
+    ((f / n * to_frames as f32) as i32) as f32
+}
+
+/// The blend length of every gait record's script.
+pub const RECORD_BLEND: u8 = 6;
+
+/// The rate `-19` reads while a blend runs (`0x197fec`).
+pub const SHARE_BLEND_RATE: f32 = 0.8;
+
+#[rustfmt::skip]
+pub const RECORD_SCRIPTS: [RecordScript; 111] = [
+    RecordScript { row: 0, still: 4, heading: true, share: true }, // run_1
+    RecordScript { row: 1, still: 4, heading: true, share: true }, // run_3
+    RecordScript { row: 2, still: 4, heading: true, share: true }, // run_4
+    RecordScript { row: 957, still: 4, heading: true, share: true }, // run_5
+    RecordScript { row: 3, still: 5, heading: true, share: true }, // run_7
+    RecordScript { row: 4, still: 5, heading: true, share: true }, // run_bishop
+    RecordScript { row: 5, still: 4, heading: true, share: true }, // run_thegirl
+    RecordScript { row: 7, still: 4, heading: true, share: true }, // run_thekid
+    RecordScript { row: 8, still: 6, heading: true, share: true }, // run_hookup
+    RecordScript { row: 9, still: 6, heading: true, share: true }, // run_penthouse
+    RecordScript { row: 10, still: 6, heading: true, share: true }, // run_drj
+    RecordScript { row: 11, still: 5, heading: true, share: true }, // run_bird
+    RecordScript { row: 12, still: 5, heading: true, share: true }, // run_magic
+    RecordScript { row: 13, still: 4, heading: true, share: true }, // run_pistol
+    RecordScript { row: 14, still: 5, heading: true, share: true }, // run_dawkins
+    RecordScript { row: 15, still: 5, heading: true, share: true }, // run_female_2
+    RecordScript { row: 16, still: 4, heading: true, share: true }, // run_female_3
+    RecordScript { row: 17, still: 4, heading: true, share: true }, // run_wilt
+    RecordScript { row: 21, still: 5, heading: true, share: true }, // walk_1
+    RecordScript { row: 22, still: 5, heading: true, share: true }, // walk_cocky_1
+    RecordScript { row: 23, still: 8, heading: true, share: true }, // walk_cocky_2
+    RecordScript { row: 28, still: 9, heading: true, share: true }, // walk_cocky_3
+    RecordScript { row: 29, still: 7, heading: true, share: true }, // walk_bishop
+    RecordScript { row: 30, still: 7, heading: true, share: true }, // walk_thegirl
+    RecordScript { row: 24, still: 7, heading: true, share: true }, // walk_thekid
+    RecordScript { row: 26, still: 7, heading: true, share: true }, // walk_hookup
+    RecordScript { row: 27, still: 7, heading: true, share: true }, // walk_penthouse
+    RecordScript { row: 32, still: 6, heading: true, share: true }, // walk_drj
+    RecordScript { row: 33, still: 7, heading: true, share: true }, // walk_bird
+    RecordScript { row: 34, still: 7, heading: true, share: true }, // walk_magic
+    RecordScript { row: 35, still: 7, heading: true, share: true }, // walk_pistol
+    RecordScript { row: 36, still: 7, heading: true, share: true }, // walk_dawkins
+    RecordScript { row: 37, still: 7, heading: true, share: true }, // walk_female_2
+    RecordScript { row: 38, still: 7, heading: true, share: true }, // walk_female_3
+    RecordScript { row: 39, still: 6, heading: true, share: true }, // walk_wilt
+    RecordScript { row: 18, still: 0, heading: false, share: true }, // jogbackwards_1
+    RecordScript { row: 19, still: 0, heading: false, share: true }, // jogbackwards_2
+    RecordScript { row: 20, still: 0, heading: false, share: true }, // jogbackwards_3
+    RecordScript { row: 40, still: 0, heading: false, share: false }, // shuffle_right_1
+    RecordScript { row: 41, still: 0, heading: false, share: false }, // shuffle_left_1
+    RecordScript { row: 42, still: 0, heading: false, share: false }, // shuffle_forward_1
+    RecordScript { row: 44, still: 0, heading: false, share: false }, // shuffle_back_1
+    RecordScript { row: 713, still: 0, heading: true, share: false }, // into_backdown
+    RecordScript { row: 714, still: 5, heading: true, share: false }, // from_backdown_back
+    RecordScript { row: 708, still: 0, heading: true, share: false }, // backdown_spinout
+    RecordScript { row: 710, still: 0, heading: false, share: false }, // backdown_stepout
+    RecordScript { row: 48, still: 12, heading: true, share: false }, // stop_to_dribble
+    RecordScript { row: 176, still: 0, heading: true, share: false }, // dribble_to_stop_1
+    RecordScript { row: 174, still: 0, heading: true, share: false }, // dribble_to_stop_2
+    RecordScript { row: 47, still: 11, heading: true, share: false }, // dribble_to_stop_3
+    RecordScript { row: 706, still: 0, heading: true, share: false }, // dribble_stand_side_1
+    RecordScript { row: 75, still: 0, heading: true, share: false }, // dribble_stand_1
+    RecordScript { row: 77, still: 0, heading: true, share: false }, // dribble_stand_2
+    RecordScript { row: 667, still: 0, heading: true, share: false }, // dribble_stand_flair_1
+    RecordScript { row: 669, still: 12, heading: true, share: false }, // dribble_stand_flair_2
+    RecordScript { row: 670, still: 0, heading: true, share: false }, // dribble_stand_flair_3
+    RecordScript { row: 673, still: 0, heading: true, share: false }, // dribble_stand_flair_4
+    RecordScript { row: 674, still: 0, heading: true, share: false }, // dribble_stand_flair_5
+    RecordScript { row: 680, still: 0, heading: true, share: false }, // dribble_stand_flair_6
+    RecordScript { row: 677, still: 0, heading: true, share: false }, // dribble_stand_dance
+    RecordScript { row: 678, still: 0, heading: true, share: false }, // dribble_stand_elbow
+    RecordScript { row: 141, still: 8, heading: true, share: false }, // dribble_crouch
+    RecordScript { row: 704, still: 0, heading: true, share: false }, // dribble_backdown_1
+    RecordScript { row: 79, still: 35, heading: true, share: true }, // dribble_run_1
+    RecordScript { row: 80, still: 15, heading: true, share: true }, // dribble_run_3
+    RecordScript { row: 88, still: 16, heading: true, share: true }, // dribble_run_4
+    RecordScript { row: 90, still: 15, heading: true, share: true }, // dribble_run_bishop
+    RecordScript { row: 92, still: 16, heading: true, share: true }, // dribble_run_thegirl
+    RecordScript { row: 82, still: 13, heading: true, share: true }, // dribble_run_thekid
+    RecordScript { row: 84, still: 16, heading: true, share: true }, // dribble_run_hookup
+    RecordScript { row: 86, still: 16, heading: true, share: true }, // dribble_run_penthouse
+    RecordScript { row: 94, still: 15, heading: true, share: true }, // dribble_run_drj
+    RecordScript { row: 96, still: 14, heading: true, share: true }, // dribble_run_bird
+    RecordScript { row: 98, still: 14, heading: true, share: true }, // dribble_run_magic
+    RecordScript { row: 100, still: 15, heading: true, share: true }, // dribble_run_pistol
+    RecordScript { row: 102, still: 14, heading: true, share: true }, // dribble_run_dawkins
+    RecordScript { row: 104, still: 14, heading: true, share: true }, // dribble_run_female
+    RecordScript { row: 106, still: 13, heading: true, share: true }, // dribble_run_female_2
+    RecordScript { row: 108, still: 13, heading: true, share: true }, // dribble_run_wilt
+    RecordScript { row: 126, still: 18, heading: true, share: true }, // dribble_skip_4
+    RecordScript { row: 111, still: 7, heading: true, share: true }, // dribble_cocky_1
+    RecordScript { row: 113, still: 21, heading: true, share: true }, // dribble_cocky_2
+    RecordScript { row: 142, still: 24, heading: true, share: true }, // dribble_walk_2
+    RecordScript { row: 156, still: 21, heading: true, share: true }, // dribble_walk_3
+    RecordScript { row: 144, still: 23, heading: true, share: true }, // dribble_walk_bishop
+    RecordScript { row: 146, still: 21, heading: true, share: true }, // dribble_walk_thegirl
+    RecordScript { row: 148, still: 23, heading: true, share: true }, // dribble_walk_thekid
+    RecordScript { row: 152, still: 24, heading: true, share: true }, // dribble_walk_hookup
+    RecordScript { row: 154, still: 22, heading: true, share: true }, // dribble_walk_penthouse
+    RecordScript { row: 158, still: 21, heading: true, share: true }, // dribble_walk_drj
+    RecordScript { row: 160, still: 22, heading: true, share: true }, // dribble_walk_bird
+    RecordScript { row: 162, still: 19, heading: true, share: true }, // dribble_walk_magic
+    RecordScript { row: 164, still: 19, heading: true, share: true }, // dribble_walk_pistol
+    RecordScript { row: 166, still: 21, heading: true, share: true }, // dribble_walk_dawkins
+    RecordScript { row: 168, still: 18, heading: true, share: true }, // dribble_walk_female
+    RecordScript { row: 170, still: 17, heading: true, share: true }, // dribble_walk_female_2
+    RecordScript { row: 172, still: 20, heading: true, share: true }, // dribble_walk_wilt
+    RecordScript { row: 114, still: 0, heading: true, share: true }, // dribble_2hand_underleg
+    RecordScript { row: 129, still: 3, heading: true, share: true }, // dribble_2hand_xover
+    RecordScript { row: 116, still: 2, heading: true, share: true }, // dribble_2hand_creep
+    RecordScript { row: 121, still: 3, heading: true, share: true }, // dribble_2hand_creep_2
+    RecordScript { row: 118, still: 1, heading: true, share: true }, // dribble_fakepass
+    RecordScript { row: 123, still: 0, heading: true, share: true }, // dribble_underleg
+    RecordScript { row: 131, still: 5, heading: true, share: true }, // dribble_dance
+    RecordScript { row: 132, still: 22, heading: true, share: true }, // dribble_elbow
+    RecordScript { row: 136, still: 6, heading: true, share: true }, // dribble_behind
+    RecordScript { row: 140, still: 1, heading: true, share: true }, // dribble_underknee
+    RecordScript { row: 138, still: 15, heading: true, share: true }, // dribble_thrulegs_behindback
+    RecordScript { row: 134, still: 18, heading: true, share: true }, // dribble_spin
+    RecordScript { row: 120, still: 13, heading: true, share: true }, // dribble_2hand_skip
+    RecordScript { row: 125, still: 6, heading: true, share: true }, // dribble_2hand_hop
+];
 
 /// One runtime gait record, as the selector reads it.
 #[derive(Clone, Copy, Debug, PartialEq)]

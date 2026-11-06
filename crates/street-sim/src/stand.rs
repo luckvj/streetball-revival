@@ -34,6 +34,7 @@ pub const FLAIR_ROWS: [(u16, f32); 7] = [
     (956, 2.0),
 ];
 
+use crate::pose::{Body, Frame, Held, Place, Pose, Poses};
 use crate::trick::{Run, Select::Handed, Select::Side, Step, Step::*};
 use crate::{Action, BallState, Input, World, jump, timing};
 
@@ -176,15 +177,52 @@ pub struct Standing {
     /// sets none, so he coasts on it until the script's `97` (a dribble
     /// stand's after its six-update blend; the others' first).
     pub coast: [f32; 2],
-    /// Units the held clip's root is turned through its blend: a heading
-    /// match turns the outgoing pose as far as it turns the facing
-    /// (`FUN_00196698`'s `+0xbc`).
-    pub turn: i32,
+    /// The outgoing pose its blend holds (`+0xbc`): what the channel showed
+    /// as the stand or its latest blend began (`FUN_001935c8`), turned back
+    /// as far as a heading match turned the facing (`FUN_00196698`). None
+    /// without the disc's animations.
+    pub held: Option<Held>,
 }
 
 impl Standing {
     pub fn steps(&self) -> &'static [Step] {
         STAND_SCRIPTS[usize::from(self.script)].steps
+    }
+
+    /// What his channel shows in local terms: the script's clip at its
+    /// frame, mixed in from the held pose while a blend runs; before the
+    /// first blend, the held pose (what the channel showed as the stand
+    /// began).
+    pub fn local(&self, poses: &Poses) -> Option<Held> {
+        let shown = self.run.shown();
+        let held = self.held.or_else(|| {
+            let (record, time) = self.from?;
+            poses.held(
+                Frame {
+                    record,
+                    time,
+                    looping: true,
+                },
+                0,
+            )
+        });
+        let Some(record) = shown.record else {
+            return held;
+        };
+        let to = Frame {
+            record,
+            time: shown.frame,
+            looping: false,
+        };
+        match (shown.blend, held) {
+            (Some(w), Some(h)) => poses.mixed(&h, to, w),
+            _ => poses.held(to, 0),
+        }
+    }
+
+    /// [`Standing::local`] posed for a body standing at `place`.
+    pub fn pose(&self, poses: &Poses, body: Body, place: Place) -> Option<Pose> {
+        Some(poses.place_held(&self.local(poses)?, body, place))
     }
 }
 
@@ -547,13 +585,21 @@ impl World {
         // The channel's flags outlive the script: a plant holds into the
         // next stand until its `96`.
         let plant = self.players[i].stand.and_then(|s| s.plant);
+        // What the channel shows now: its first blend holds it.
+        let held = self
+            .poses
+            .arc()
+            .and_then(|poses| match self.players[i].stand {
+                Some(s) => s.local(&poses),
+                None => self.gait_local(i),
+            });
         self.players[i].stand = Some(Standing {
             script,
             run,
             from,
             plant,
             coast: [0.0; 2],
-            turn: 0,
+            held,
         });
     }
 
@@ -705,9 +751,7 @@ impl World {
             return;
         };
         let (body, place) = (self.players[i].body(), self.place(i));
-        let Some(pose) =
-            crate::trick::pose_turned(poses, s.run.shown(), s.from, s.turn, body, place)
-        else {
+        let Some(pose) = s.pose(poses, body, place) else {
             return;
         };
         let [a, b] =
@@ -731,17 +775,10 @@ impl World {
         let posed = |w: &World, s: &Standing| {
             let p = poses.as_ref()?;
             let (body, place) = (w.players[i].body(), w.place(i));
-            crate::trick::pose_turned(p, s.run.shown(), s.from, s.turn, body, place).or_else(|| {
-                let (record, time) = s.from?;
-                let frame = crate::pose::Frame {
-                    record,
-                    time,
-                    looping: true,
-                };
-                p.pose_turned(frame, s.turn, body, place)
-            })
+            s.pose(p, body, place)
         };
         let prev = posed(self, &s);
+        let shown_local = poses.as_deref().and_then(|p| s.local(p));
         // Callback 11's `84 0b` reads the game as each loop reaches it.
         if matches!(s.script, WARMUP | KICK | STRETCH) {
             s.run.asked = self.opening_quiet();
@@ -761,6 +798,11 @@ impl World {
         } else if ran.set_bits & 0x800 != 0 {
             // `into_backdown` runs into the side dribble's `9b 0x820`.
             self.players[i].posting = true;
+        }
+        // A blend's start holds what the channel showed (`FUN_001935c8`
+        // into `+0xbc`).
+        if ran.blended && shown_local.is_some() {
+            s.held = shown_local;
         }
         // `FUN_00196698(channel, 1)` at the blend's start: the facing put
         // the incoming clip's root on the pelvis he showed; the planted
@@ -791,7 +833,7 @@ impl World {
                     p.heading = crate::restart::heading_radians(matched);
                     // The held clip turns back as far, so the world pose
                     // holds.
-                    s.turn = (s.turn + word - matched) & 0x3ff;
+                    s.held = s.held.map(|h| h.turned(word - matched));
                 }
             }
         }
@@ -866,14 +908,7 @@ impl World {
         }
         if ran.face
             && let Some(poses) = self.poses.get()
-            && let Some(pose) = crate::trick::pose_turned(
-                poses,
-                s.run.shown(),
-                s.from,
-                s.turn,
-                self.players[i].body(),
-                self.place(i),
-            )
+            && let Some(pose) = s.pose(poses, self.players[i].body(), self.place(i))
         {
             self.players[i].heading =
                 crate::restart::heading_radians(crate::trick::pelvis_word(&pose));
