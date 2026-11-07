@@ -1236,13 +1236,15 @@ mod tests {
             .map(|&(frame, draw)| (start + frame, draw))
             .collect();
         use crate::intro::Draw::*;
+        // The take-off's face lands on actor 1 (the PS2's actor +0x240 2,
+        // +0x244 40 from that update: `drawpos6-attract3`).
         assert_eq!(
             at,
             [
                 (
                     493,
                     TakeOff {
-                        player: 4,
+                        player: 1,
                         updates: 40
                     }
                 ),

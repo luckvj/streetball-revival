@@ -519,12 +519,14 @@ pub fn parts(
             warn!("intro playback: {error}");
             return;
         }
-        // A fixed cast (kind 0, every court and generic script) keeps actor
-        // k in slot k for the loader's team 1 and swaps the sides for team
-        // 0 (`0x337cc8`'s table `0x49d0c0`: 3, 4, 5, 0, 1, 2), side 1 in
-        // slots 0..2; the others look the featured record up on the
+        // A fixed cast (kind 0, every court and generic script) puts the
+        // loader's team in slots 0..2 (`0x337be0`, `0x337cc8`'s table
+        // `0x49d0c0`: 3, 4, 5, 0, 1, 2 over the loader's actor list, team 1
+        // first): the attract's generic script's slot-1 dunker takes his
+        // face on actor 1 (the PS2's actor +0x240/+0x244, kind 2 for 40
+        // at the take-off). The others look the featured record up on the
         // loader's team (`FUN_00140920`).
-        let side = if plan.kind == 0 { 1 - team } else { team };
+        let side = team;
         let lead = if side == 0 { &home } else { &away };
         // The featured legend leads (role 0); else that side's first.
         // The record's actor: the actors take their slots by role

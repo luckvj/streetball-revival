@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- The match intro's dunk goes to the right player again (the side that
+  loads the script fills its first three places, as the PS2's own memory
+  shows), and a receiver who catches on the run keeps running through
+  the catch instead of stopping to a stand under it.
 - A passer now turns as on the PS2 when his pass starts: his facing snaps
   to the pass animation, and he turns toward where the receiver will be
   when the ball arrives. The receiver starts his run toward the ball the

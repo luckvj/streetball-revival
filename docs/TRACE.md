@@ -14843,10 +14843,22 @@ Explained and ported (same day), draws matching through update 890
 - A pass row's `91 0x2` keeps the passer's locomotion off (`0x15b084`)
   until its `91 0`: no record selection while it holds.
 
-Open at 891 (step 275): actor 1's idle face (`FUN_00159240`) fires at
-step 275 in the rewrite (set at 156, `fps + r % fps` = 119) and at 299 on
-the PS2. Its timer (+0x244) is written only by `FUN_00159190` (always a
-draw), the idle face and the actor reset (`FUN_00156870`, fps, vt+0x58,
-from the placement `FUN_00156ab0`); `FUN_00159240` runs every update
-outside the script manager. `work/drawpos.py` now logs +0x240/+0x244 for
-a capture to settle it.
+Settled (same day) with a capture that logs each actor's face kind and
+time (+0x240/+0x244, `work/drawpos6-attract3.jsonl`): the face at step
+156 was actor 4's, not actor 1's. Actor 1 takes kind 2 for 40 at step
+-122, the intro's take-off (`0x19981c..0x199838`): the generic intro
+script's slot-1 dunker is actor 1. A fixed cast (kind 0) fills slots
+0..2 from the loader's team (`street-game` `intro::parts`; the earlier
+"actor 4" came from the draw order alone, before the actors' slots were
+ported). Draws then match through update 924 (step 308) once a running
+catch keeps channel 0 on the run (`0x15aacc`, the row on channel 2):
+his record, its cycle at its rate and his velocity hold from the update
+the row starts to the one the catch ends it, where the rewrite's walk
+under the row's lock had dropped him to a stand (`World::step`'s
+`run_kept`).
+
+Open at 925 (step 309): the PS2's new holder runs on at 139 for 11
+updates after the catch (his wanted facing turns at step 320); the
+rewrite's AI turns him at once (wanted 477, a record change and two
+draws). Bit 9's hold after a running catch (`timing::catch_hold`, the
+captures' tail of 9) is the first suspect.

@@ -1745,7 +1745,22 @@ impl World {
             // starts before his tests ([`touch::Catching`]); its channel
             // steps after them.
             self.receiver_run(i);
+            // A running catch (its row on channel 2) leaves channel 0 on his
+            // run, cycling at its rate, and his velocity as it was
+            // (`0x15aacc`, a2 = 2): the walk under the row's lock changes
+            // neither, from the update it starts to the one its row ends
+            // (the catch, before his walk).
+            let running = |w: &World| {
+                w.catch_row_playing(i)
+                    .filter(|c| c.lower.is_some())
+                    .map(|_| {
+                        let p = &w.players[i];
+                        (p.gait, p.gait_channel, p.speed, p.course)
+                    })
+            };
+            let run_kept = running(self);
             let caught_started = self.catching_start(i);
+            let run_kept = run_kept.or_else(|| running(self));
             // A receiver on a standing catch row (0x4000) stands for it:
             // the row's script, started at the release (`FUN_001611d8`),
             // holds him through the flight whatever his behaviour asks. With
@@ -1933,7 +1948,22 @@ impl World {
                 let c = &self.players[i].gait_channel;
                 (c.row, c.phase, c.blend_counter, c.moving)
             };
-            match self.players[i].step(&moved, held, stance) {
+            let stepped = self.players[i].step(&moved, held, stance);
+            if let Some((gait, mut channel, speed, course)) = run_kept {
+                let frames = self
+                    .poses
+                    .get()
+                    .and_then(|poses| poses.frames(channel.row))
+                    .map_or(f32::MAX, |n| n.max(1) as f32);
+                channel.phase = (channel.phase + channel.frame_step).rem_euclid(frames);
+                channel.integer = channel.phase as i32;
+                let p = &mut self.players[i];
+                p.gait = gait;
+                p.gait_channel = channel;
+                p.speed = speed;
+                p.course = course;
+            }
+            match stepped {
                 Some(player::Moment::Release(hoop)) => self.release_shot(i, hoop),
                 Some(player::Moment::Slam(hoop)) => self.slam(i, hoop),
                 Some(player::Moment::Swipe(_)) => self.swipe(i),
