@@ -71,11 +71,11 @@
           "path": "crates/street-game/src/game.rs",
           "locator": "results: MatchOutcome",
           "note": "The charts now take the side's stats 11/12/13 from the sim (the Level 2 count used to be gamebreakers started, not scored).",
-          "sha256": "87006ae25469ed44e5bf151e36a23cd949ec890a26a7c6e96540b8164c9750e7"
+          "sha256": "b5cd97fda33d07d0fed504df51368d684b88739b5d844015e13e90820d5a8561"
         }
       ],
       "tolerance": "Exact discrete decisions and values; no tolerance.",
-      "limitations": "Static. The charts' inputs are the sim's stats (street_sim::stats), whose own unported listeners (assists, passout specials, picks) and the rewrite's trick-point awards bound them; no original runtime capture. 2026-10-20 (the load back): the results' end goes through the load back to the front end (presentation.ui_return_loading). 2026-10-20 (the card's messages): a won tournament's results return to its bracket, whose Cross opens Update Team (presentation.ui_card_save_points). 2026-10-20 (the idle demo's pass): the idle demo's game counts for nothing: results leaves before the outcome (presentation.ui_idle_attract). Last re-pinned 2026-11-07 after the catch filter's note (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Static. The charts' inputs are the sim's stats (street_sim::stats), whose own unported listeners (assists, passout specials, picks) and the rewrite's trick-point awards bound them; no original runtime capture. 2026-10-20 (the load back): the results' end goes through the load back to the front end (presentation.ui_return_loading). 2026-10-20 (the card's messages): a won tournament's results return to its bracket, whose Cross opens Update Team (presentation.ui_card_save_points). 2026-10-20 (the idle demo's pass): the idle demo's game counts for nothing: results leaves before the outcome (presentation.ui_idle_attract). Last re-pinned 2026-11-07 after the floor contact's gasp (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the career block's +0xce4 lines and +0x30 after story games with known stats.",
       "match_type": "structural"
     },
