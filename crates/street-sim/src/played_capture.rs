@@ -5471,6 +5471,8 @@ fn captured_start(w: &mut World, k: usize, script: u32, before: &Update) {
         from,
         left: before.word(k, "hand") == 2,
         side: crate::held::other_side(p),
+        pelvis: None,
+        turn: 0,
     });
 }
 

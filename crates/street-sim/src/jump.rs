@@ -708,6 +708,13 @@ impl World {
         }
         let stepped = !(m.script == f.script && m.updates == f.updates);
         let fresh = m.script != f.script;
+        // A blend begun under `91`'s 0x800000 (`FUN_00196698(channel, 1)`,
+        // in the channel's step before `FUN_00168ea8`'s turn): his facing
+        // matched to the incoming clip on the pelvis as the model last
+        // showed it, the held clip turned back.
+        if stepped && let Some((record, start)) = m.ran.matched {
+            self.match_move_heading(i, &mut m, fresh, record, start);
+        }
         // The knock window's count down, then this update's `a6 1`; the
         // jump's clock.
         f.knock = f.knock.saturating_sub(1);
@@ -874,6 +881,55 @@ impl World {
         }
     }
 
+    /// [`World::flight_tick`]'s heading match for the blend to `record` at
+    /// `start`: the script's first blend on the pelvis taken as it went in
+    /// ([`crate::held::ChannelStart::pelvis`]), a later one on the model as
+    /// the update before left it.
+    fn match_move_heading(
+        &mut self,
+        i: usize,
+        m: &mut crate::held::MoveSteps,
+        fresh: bool,
+        record: u16,
+        start: u8,
+    ) {
+        let Some(poses) = self.poses.arc() else {
+            return;
+        };
+        let first = self.players[i]
+            .channel_start
+            .filter(|s| s.script == m.script);
+        let shown = match (fresh || m.before.is_none(), first) {
+            (true, Some(s)) => s.pelvis.map(i32::from),
+            (true, None) => None,
+            (false, _) => self
+                .previous_pose(i, m)
+                .map(|pose| crate::trick::pelvis_word(&pose)),
+        };
+        let body = self.players[i].body();
+        let Some(new) =
+            shown.and_then(|w| crate::trick::matched_on(&poses, w, record, f32::from(start), body))
+        else {
+            return;
+        };
+        // The model turns by the facing word halved (`FUN_00154560`): an
+        // odd word shows a unit short.
+        let p = &mut self.players[i];
+        let word = timing::facing_word(p.heading);
+        let matched = crate::trick::heading_match(word, new - (word & 1));
+        if matched == word {
+            return;
+        }
+        p.heading = crate::restart::heading_radians(matched);
+        if m.before.is_none()
+            && let Some(s) = p.channel_start.as_mut().filter(|s| s.script == m.script)
+        {
+            let turn = ((i32::from(s.turn) + word - matched + 0x200) & 0x3ff) - 0x200;
+            s.turn = turn as i16;
+            m.turn = turn;
+        }
+    }
+
     /// The model as `i`'s channel showed it the update before, at his place
     /// before he moves: the script's last frame, or at its first update the
     /// clip the channel played before it.
@@ -882,7 +938,7 @@ impl World {
         let p = &self.players[i];
         let place = self.place(i);
         match m.before {
-            Some(shown) => crate::trick::pose(poses, shown, m.from, p.body(), place),
+            Some(shown) => crate::trick::pose_turned(poses, shown, m.from, m.turn, p.body(), place),
             None => {
                 let (record, time) = m.from?;
                 poses.pose(
@@ -908,7 +964,8 @@ impl World {
         };
         let p = &self.players[i];
         let f = p.flight;
-        let Some(pose) = crate::trick::pose(&poses, m.after, m.from, p.body(), self.place(i))
+        let Some(pose) =
+            crate::trick::pose_turned(&poses, m.after, m.from, m.turn, p.body(), self.place(i))
         else {
             return;
         };

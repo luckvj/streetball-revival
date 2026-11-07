@@ -277,12 +277,20 @@ impl World {
     /// as the game is concerned: its event and trick points come now (the
     /// pass setup posts its sound at the press). A lob to a leaper plays
     /// the alley-oop rows (flag 0x8000: `allyoop_1`'s callback 38 at 12).
-    pub(crate) fn wind_up(&mut self, i: usize, to: usize, style: PassStyle, input: &Input) {
+    pub(crate) fn wind_up(
+        &mut self,
+        i: usize,
+        to: usize,
+        style: PassStyle,
+        input: &Input,
+        start: &[[f32; 2]],
+    ) {
         // The row filter and draw (`0x160870..0x160ebc`): the row's script
         // lets go at its callback 38. A handoff to a teammate within 5
         // calls the release at once (`0x160ea0`).
         let aim = self.pass_aim(i, to);
         self.spot_at_press(i, to, &aim);
+        let estimate = crate::timing::pass_estimate(self, i, to, &aim, input);
         let pick = crate::timing::pass_row(self, i, to, &aim, input);
         // A lob to a leaper is an Oop from its press (its row's kind).
         let style = if self.players[to].leaping() {
@@ -297,6 +305,30 @@ impl World {
         };
         self.players[i].pass_kind = style.release().kind;
         self.begin_script(i, crate::timing::PASS_ROWS[usize::from(row)].script);
+        // On the floor his wanted facing becomes the pelvis's as the model
+        // showed it (`sp+0x234`, `FUN_00154230` at `0x16010c`, stored at
+        // `0x160eb0` under `sp+0x238`); a pass from the air (a jump's rows
+        // 71 and 72, `FUN_0016eab0`, with height) keeps his wanted facing.
+        // Not carried: the passer-record list `0x43f870`'s class 6
+        // (`sp+0x210`), read as clear as the aim does.
+        if self.players[i].height <= 0.0
+            && let Some(w) = self.players[i].channel_start.and_then(|s| s.pelvis)
+        {
+            self.players[i].wanted = crate::restart::heading_radians(i32::from(w));
+        }
+        // The script's callback 39 (`FUN_001753a0`) before its first blend,
+        // in this update's channel step.
+        let steps = crate::held::PASS_STEPS
+            .get(usize::from(row))
+            .copied()
+            .unwrap_or_default();
+        if steps
+            .iter()
+            .any(|s| matches!(s, crate::trick::Step::Call(39)))
+        {
+            let word = self.toward_receiver(i, to, estimate, start);
+            self.players[i].wanted = crate::restart::heading_radians(word);
+        }
         // The passer's face (`0x1610ec..0x161110`: `FUN_00159190(passer,
         // r & 1 ? 1 : 2, fps × 2)`).
         self.rng.next_u32();
@@ -337,6 +369,44 @@ impl World {
             aim,
         });
         self.after_throw(i, to, style);
+    }
+
+    /// Callback 39 (`FUN_001753a0`, raw `0x1753a0..0x175700`) in live play
+    /// (game+0x160 is -2 but at a restart, whose one pass row has no
+    /// callback 39): the passer's wanted facing toward the receiver, the
+    /// pair table's angle (`FUN_0016f508`, game+0x2cc, built on the places
+    /// the update began with) plus the callback's word (0 in all 25 rows)
+    /// for one standing still (actor+0x40 the zero vector), else toward
+    /// where he will be after the press's flight estimate (`DAT_003d65a0`,
+    /// stored truncated at `0x160010`; `FUN_001636c0`), on the velocity the
+    /// pass start gave him ([`World::spot_at_press`]).
+    fn toward_receiver(&self, i: usize, to: usize, estimate: f32, start: &[[f32; 2]]) -> i32 {
+        let from = self.players[i].position;
+        let r = &self.players[to];
+        if !r.moving() || r.velocity() == [0.0; 2] {
+            let at = |k: usize| start.get(k).copied().unwrap_or(self.players[k].position);
+            let index = |k: usize| {
+                let team = self.players[k].team.min(1);
+                team * 3
+                    + (0..k)
+                        .filter(|&j| self.players[j].team.min(1) == team)
+                        .count()
+            };
+            let (lo, hi) = if index(i) <= index(to) {
+                (i, to)
+            } else {
+                (to, i)
+            };
+            let (p, q) = (at(lo), at(hi));
+            let forward = crate::ordinary::native_heading([p[0], 0.0, p[1]], [q[0], 0.0, q[1]]);
+            return if lo == i {
+                forward
+            } else {
+                (forward - 0x200) & 0x3ff
+            };
+        }
+        let spot = self.lead_spot(to, estimate as i32);
+        crate::ordinary::native_heading([from[0], 0.0, from[1]], [spot[0], 0.0, spot[1]])
     }
 
     /// The players' floor positions, as the game's distance table
@@ -614,10 +684,10 @@ impl World {
             PassChoice::Pass { to, style }
                 if style == PassStyle::Normal && self.give_and_go == Some((to, i)) =>
             {
-                self.wind_up(i, to, PassStyle::GiveAndGo, input);
+                self.wind_up(i, to, PassStyle::GiveAndGo, input, start);
                 self.give_and_go = None;
             }
-            PassChoice::Pass { to, style } => self.wind_up(i, to, style, input),
+            PassChoice::Pass { to, style } => self.wind_up(i, to, style, input, start),
             PassChoice::Heezay { defender, to } => self.heezay(i, defender, to),
             // Callback 53 to himself, callback 38 to a teammate.
             PassChoice::Glass { to, point } => self.passout_press(i, to, point),

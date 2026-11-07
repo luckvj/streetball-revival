@@ -14813,3 +14813,40 @@ Open at 880: the passer turns +6 on his pass's start (its `91 0x820002`
 has the heading match) and then to a wanted facing of 278, toward no
 player (the pass's aim spot?); the rewrite turns him toward his old 344,
 34 about his planted foot.
+
+Explained and ported (same day), draws matching through update 890
+(step 274):
+- The heading match on a scripted move's blend (`FUN_00196698(channel,
+  1)` under `91`'s 0x800000, in the channel's step before
+  `FUN_00168ea8`'s turn): the first blend on the pelvis the model showed
+  when the script went in (`held::ChannelStart::pelvis`, `FUN_00154230`
+  on the last update's matrices), later blends on the model the update
+  before; the held clip turned back (`ChannelStart::turn`,
+  `Channel::turn`, `trick::pose_turned`). The passer went 302 to 342
+  (+40, `+0xc0` 977 = the incoming root's -47 in the log), then 34 toward
+  his wanted facing: 308.
+- On the floor the pass start sets the wanted facing to the pelvis's
+  (`sp+0x234`, stored at `0x160eb0` under `sp+0x238`); 25 of the 93 pass
+  rows then run callback 39 (`FUN_001753a0`) before their first blend:
+  in live play (game+0x160 is -2 but at a restart) the wanted facing
+  toward the receiver (ball+0x100), the pair table's angle (`FUN_0016f508`)
+  plus the callback's word for one standing still, else toward
+  `FUN_001636c0`'s spot after the press's flight estimate
+  (`DAT_003d65a0`, truncated at `0x160010`).
+- The pass start's aim calls `FUN_0016c970`, which runs the receiver's
+  locomotion at once (`FUN_00163d40(receiver, 0, 1)`, `0x16cd08`): his
+  velocity and wanted facing are the spot run's before the flight
+  estimate and the row filter read them. With it the estimate is 46.4,
+  not 49.4, and callback 39 gives 278, the log's (`World::spot_at_press`).
+- A running catch with `DAT_003d70b0` set runs his locomotion before the
+  face (`0x15aac0`): a record selection draw on the run's stick.
+- A pass row's `91 0x2` keeps the passer's locomotion off (`0x15b084`)
+  until its `91 0`: no record selection while it holds.
+
+Open at 891 (step 275): actor 1's idle face (`FUN_00159240`) fires at
+step 275 in the rewrite (set at 156, `fps + r % fps` = 119) and at 299 on
+the PS2. Its timer (+0x244) is written only by `FUN_00159190` (always a
+draw), the idle face and the actor reset (`FUN_00156870`, fps, vt+0x58,
+from the placement `FUN_00156ab0`); `FUN_00159240` runs every update
+outside the script manager. `work/drawpos.py` now logs +0x240/+0x244 for
+a capture to settle it.

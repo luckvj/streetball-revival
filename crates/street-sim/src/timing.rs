@@ -660,6 +660,19 @@ pub(crate) fn pass_sector(
     sector(facing_word(w.players[i].heading), reach.from, reach.catch)
 }
 
+/// The press's flight estimate (`FUN_0015f930`, `0x15ff10..0x15ff54`): what
+/// [`pass_reach`] gives for the filter's velocity, before truncation.
+pub(crate) fn pass_estimate(
+    w: &World,
+    i: usize,
+    to: usize,
+    aim: &crate::passing::PassAim,
+    input: &Input,
+) -> f32 {
+    let v = passer_velocity(w, i, filter_moving(w, i, input));
+    pass_reach(w, i, to, aim, v, None).flight
+}
+
 /// What a pass press decides at once (`FUN_0015f930`): the row and when
 /// the row's script lets the ball go, or no row and the release at once
 /// (a handoff to a teammate within 5, `0x160ea0`).

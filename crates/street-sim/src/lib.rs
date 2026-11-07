@@ -2151,7 +2151,10 @@ impl World {
     ) {
         let p = &self.players[i];
         let walks = match p.action {
-            Action::None | Action::Passing { .. } | Action::Stealing { .. } => true,
+            Action::None | Action::Stealing { .. } => true,
+            // A pass row's `91` turns the locomotion off (flag 0x2 without
+            // 0x10, `0x15b084`) from its first update to its `91 0`.
+            Action::Passing { .. } => jump::walks(p.flight.flags),
             // A trick's press update: its gait still runs.
             Action::Trick { play, .. } => play.run.tick < 0,
             _ => false,

@@ -150,12 +150,46 @@ impl World {
             let word = timing::angle_units(math::atan2(p[0] - aim.spot[0], p[1] - aim.spot[1]));
             (to, word, run_intensity(distance(p, aim.spot)))
         });
+        // `FUN_0016c970` runs his locomotion on that run at once
+        // (`FUN_00163d40(receiver, 0, 1)`, `0x16cd08`), inside the passer's
+        // update: his velocity and wanted facing are the run's for the rest
+        // of the pass start (its flight estimate and row filter, callback
+        // 39). He moves, his gait steps and his facing turns in his own
+        // update (`FUN_00156f48`, `FUN_00168ea8`).
+        if let Some(stick) = self.steer_stick(to)
+            && self.players[to].action == crate::Action::None
+        {
+            let input = crate::Input {
+                stick,
+                ..self.previous_inputs[to]
+            };
+            let mut ran = self.players[to].clone();
+            ran.walk(&input, 1.0, false, None);
+            let r = &mut self.players[to];
+            r.speed = ran.speed;
+            r.course = ran.course;
+            r.wanted = ran.wanted;
+        }
+    }
+
+    /// The stick of [`SpotRun::steer`] for `i`, while it is his.
+    pub(crate) fn steer_stick(&self, i: usize) -> Option<[i8; 2]> {
+        let (who, word, intensity) = self.spot_run.steer?;
+        if who != i {
+            return None;
+        }
+        let s = intensity.min(64) as f32 / 64.0;
+        let d = [
+            -crate::input::native_sin_1024(word) * s,
+            -crate::input::native_cos_1024(word) * s,
+        ];
+        Some(crate::Input::moving(d).stick)
     }
 
     /// The stick receiver `i` runs on while a pass is his
     /// ([`SpotRun::steer`]): pressed (the windup) or flying.
     pub(crate) fn receiver_stick(&mut self, i: usize) -> Option<[i8; 2]> {
-        let (who, word, intensity) = self.spot_run.steer?;
+        let (who, _, _) = self.spot_run.steer?;
         if who != i {
             return None;
         }
@@ -168,12 +202,7 @@ impl World {
             self.spot_run.steer = None;
             return None;
         }
-        let s = intensity.min(64) as f32 / 64.0;
-        let d = [
-            -crate::input::native_sin_1024(word) * s,
-            -crate::input::native_cos_1024(word) * s,
-        ];
-        Some(crate::Input::moving(d).stick)
+        self.steer_stick(i)
     }
 
     /// The receiver's velocity in units an update: his coast on a catch

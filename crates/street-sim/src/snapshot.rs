@@ -122,7 +122,7 @@ use crate::{
 /// the stands (the flair's up one), the toss's flight words
 /// ([`crate::Tip::toss_flight`]), the tip jump's landing; 117: a stand's
 /// held clip turned by a heading match, as a walk's ([`crate::ordinary`]).
-const VERSION: u8 = 118;
+const VERSION: u8 = 119;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1315,6 +1315,8 @@ fn player(w: &mut Writer, p: &Player) {
             clip_out(w, c.from);
             w.bool(c.left);
             w.bool(c.side);
+            w.iv(c.pelvis.map_or(-1, i64::from));
+            w.iv(i64::from(c.turn));
         }
     }
     w.f(*course);
@@ -1866,6 +1868,11 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                 from: clip_in(r)?,
                 left: r.bool()?,
                 side: r.bool()?,
+                pelvis: match r.iv()? {
+                    -1 => None,
+                    v => Some(i16::try_from(v).map_err(|_| "invalid channel pelvis")?),
+                },
+                turn: i16::try_from(r.iv()?).map_err(|_| "invalid channel turn")?,
             }),
             k => return Err(format!("bad channel start flag {k}")),
         },

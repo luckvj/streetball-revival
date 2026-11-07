@@ -77,6 +77,13 @@ pub struct ChannelStart {
     /// The live left hand (`f8`) and his side (`ec`) at the press.
     pub left: bool,
     pub side: bool,
+    /// The pelvis's facing word as the model showed it when the script
+    /// went in (`FUN_00154230` on the matrices the last update left), for
+    /// its first blend's heading match.
+    pub pelvis: Option<i16>,
+    /// The units that match turned the held clip (`FUN_00196698(channel,
+    /// 1)` turns +0xbc back so the world pose holds).
+    pub turn: i16,
 }
 
 /// What a player's channel 0 shows this update.
@@ -91,6 +98,8 @@ pub struct Channel {
     pub counter: Option<(u16, u16)>,
     /// His gait (the cycle wraps): no script.
     pub gait: bool,
+    /// The units the first blend's heading match turned the held clip.
+    pub turn: i32,
 }
 
 /// The ball's offset from its holder in his own frame, stored by a blend's
@@ -309,6 +318,8 @@ pub(crate) struct MoveSteps {
     pub land_at: i16,
     /// The clip held through its first blend.
     pub from: Option<(u16, f32)>,
+    /// The units its heading match turned that clip.
+    pub turn: i32,
     /// The script has run out (its `End` this update or before).
     pub done: bool,
 }
@@ -327,12 +338,17 @@ impl World {
                 None => c.shown.record.map(|r| (r, c.shown.frame)),
             }),
         };
+        let pelvis = self
+            .actor_pose(i)
+            .map(|pose| trick::pelvis_word(&pose) as i16);
         let p = &mut self.players[i];
         p.channel_start = Some(ChannelStart {
             script: address,
             from,
             left: p.gait_channel.hand == 2,
             side: other_side(p),
+            pelvis,
+            turn: 0,
         });
         // The script replaces the channel's (`FUN_0019c2f8`): a stand his
         // locomotion started this update (a free holder's pass goes in
@@ -478,6 +494,7 @@ impl World {
             from,
             counter: run.blend_counter(),
             gait: false,
+            turn: 0,
         };
         match &p.action {
             Action::Trick { play, .. } => return Some(of(&play.run, play.from)),
@@ -498,6 +515,7 @@ impl World {
                     from: j.from,
                     counter: j.blend().map(|_| (j.tick + 1, j.blend_len())),
                     gait: false,
+                    turn: 0,
                 });
             }
             _ => {}
@@ -561,7 +579,10 @@ impl World {
             if run.done {
                 return Some(self.gait_channel_shown(i));
             }
-            return Some(of(&run, from));
+            return Some(Channel {
+                turn: first.map_or(0, |s| i32::from(s.turn)),
+                ..of(&run, from)
+            });
         }
         // The catch row holding him after the catch: its script from the
         // release (the display's clock, `street_game::channel`).
@@ -675,6 +696,7 @@ impl World {
             ran,
             land_at,
             from,
+            turn: first.map_or(0, |x| i32::from(x.turn)),
             done: after.done,
         })
     }
@@ -696,6 +718,7 @@ impl World {
             from: if blending { g.blend_from } else { None },
             counter: blending.then_some((g.blend_counter as u16, n as u16)),
             gait: true,
+            turn: 0,
         }
     }
 
@@ -707,10 +730,11 @@ impl World {
         if c.gait {
             return None;
         }
-        trick::pose(
+        trick::pose_turned(
             poses,
             c.shown,
             c.from,
+            c.turn,
             self.players[i].body(),
             self.place(i),
         )
@@ -770,7 +794,7 @@ impl World {
                 let at = if crate::dribble::dribbles(&poses, record) && state & 0xc == 0 {
                     crate::dribble::ball_point(&poses, record, start, body, place, radius)
                 } else {
-                    trick::pose(&poses, c.shown, c.from, body, place).map(|pose| {
+                    trick::pose_turned(&poses, c.shown, c.from, c.turn, body, place).map(|pose| {
                         crate::dribble::in_hand(&pose, record, start as i32, state, body, radius)
                     })
                 };

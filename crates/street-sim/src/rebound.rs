@@ -624,6 +624,7 @@ impl World {
             from: c.blend.and_then(|(from, _)| from),
             counter: c.blend.map(|_| (tick + 1, BLEND)),
             gait: false,
+            turn: 0,
         })
     }
 

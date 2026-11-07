@@ -1108,6 +1108,27 @@ pub fn matched_word(
     Some((pelvis_word(shown) - pelvis_word(&incoming)) & 0x3ff)
 }
 
+/// [`matched_word`] from the shown pelvis's facing word itself.
+pub fn matched_on(poses: &Poses, shown: i32, record: u16, start: f32, body: Body) -> Option<i32> {
+    let incoming = poses.pose(
+        Frame {
+            record,
+            time: start.max(0.0),
+            looping: false,
+        },
+        body,
+        Place {
+            position: [0.0; 3],
+            word: 0,
+        },
+    )?;
+    let v = pose::rotate(incoming.joints[0].rotation, [0.0, 1.0, 0.0]);
+    if v[0].abs() + v[2].abs() <= 1e-3 {
+        return None;
+    }
+    Some((shown - pelvis_word(&incoming)) & 0x3ff)
+}
+
 /// `FUN_00196698`'s test: the facing `word` becomes `new` unless the two
 /// are within [`HEADING_TOLERANCE`] of each other.
 pub fn heading_match(word: i32, new: i32) -> i32 {

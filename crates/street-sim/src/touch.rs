@@ -410,6 +410,18 @@ impl World {
         }
         c.parked = false;
         self.players[i].received_flight = -1;
+        // A running catch with `DAT_003d70b0` set (1 on the disc) runs his
+        // locomotion first (`FUN_00163d40(actor, 0, 1)`, `0x15aac0`): his
+        // record's selection on the run's stick, its draw before the face's.
+        if self.running_catch(i, c.floor)
+            && let Some(stick) = self.steer_stick(i)
+        {
+            let input = crate::Input {
+                stick,
+                ..self.previous_inputs[i]
+            };
+            self.select_gait(i, &input, false, None);
+        }
         self.begin_script(i, CATCH_ROWS[usize::from(c.row)].script);
         // His face (`FUN_00159190(receiver, 1, fps × 2)`, `0x15ab24..
         // 0x15ab38`).

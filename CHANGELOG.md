@@ -5,6 +5,12 @@ its version's part.
 
 ## Unreleased
 
+- A passer now turns as on the PS2 when his pass starts: his facing snaps
+  to the pass animation, and he turns toward where the receiver will be
+  when the ball arrives. The receiver starts his run toward the ball the
+  moment the pass is pressed, so the pass is judged on that run. A
+  receiver catching on the run keeps his stride's footing, and a passer
+  no longer starts walking before his pass animation lets him.
 - Walking players sway with their walk animation as on the PS2 (the
   clip's own sideways drift now carries them), and the players around the
   opening tip keep the PS2's exact time on their standing animations, so
