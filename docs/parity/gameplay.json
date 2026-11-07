@@ -275,7 +275,7 @@
           "path": "crates/street-render/src/animation.rs",
           "locator": "tests::native_mirror_uses_root_permutation_and_body_z_reflection; tests::native_mirrored_state_swaps_exclusive_pairs_and_preserves_other_bits",
           "note": "Live display and sampler implement the recovered mapping.",
-          "sha256": "430934b21a83d9aedf5000add0eb48e62dfa468f5ed9bb8ce1a292a181f7667b"
+          "sha256": "672f07a1455dad310ebf053c17614093602662bffb928ed3e6a53a84c63cde86"
         },
         {
           "path": "crates/street-assets/src/clip.rs",
@@ -285,7 +285,7 @@
         }
       ],
       "tolerance": "Exact component/permutation/state mapping for recognized native bone layout.",
-      "limitations": "Generic skeleton fallback and auxiliary bones are excluded. Display normalization, full native pose evaluation and runtime mirrored channel timing are separate. 2026-10-20 (online on the disc): mirrored_rotation, mirror_layout and the clip's state mirroring moved, unchanged, from street-render's animation.rs to street-assets' clip.rs (one implementation for the renderer and the tables every machine builds: gameplay.online_rules_equal_local); the tests stay in animation.rs. Last re-pinned 2026-11-07 after the running catch's two channels (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Generic skeleton fallback and auxiliary bones are excluded. Display normalization, full native pose evaluation and runtime mirrored channel timing are separate. 2026-10-20 (online on the disc): mirrored_rotation, mirror_layout and the clip's state mirroring moved, unchanged, from street-render's animation.rs to street-assets' clip.rs (one implementation for the renderer and the tables every machine builds: gameplay.online_rules_equal_local); the tests stay in animation.rs. Last re-pinned 2026-11-07 after the running catch's end blend (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture mirrored/forward live poses with every active channel and compare production evaluated joints.",
       "match_type": "structural"
     },
@@ -329,7 +329,7 @@
           "path": "crates/street-render/src/animation.rs",
           "locator": "tests::fractional_qfast_preserves_raw_lengths_until_display_conversion",
           "note": "Production display method retains unequal raw key lengths through interpolation.",
-          "sha256": "430934b21a83d9aedf5000add0eb48e62dfa468f5ed9bb8ce1a292a181f7667b"
+          "sha256": "672f07a1455dad310ebf053c17614093602662bffb928ed3e6a53a84c63cde86"
         },
         {
           "path": "crates/street-assets/src/clip.rs",
@@ -339,7 +339,7 @@
         }
       ],
       "tolerance": "Same component interpolation operation; display normalizes the resulting quaternion.",
-      "limitations": "This case matches the bounded interpolation operation. It does not establish full pose parity or bit-exact native physics authority; offline fractional review retains 3688 nonmatches. 2026-10-20 (online on the disc): Clip::rotation moved, unchanged, from street-render's animation.rs to street-assets' clip.rs (gameplay.online_rules_equal_local); the test stays in animation.rs. Last re-pinned 2026-11-07 after the running catch's two channels (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "This case matches the bounded interpolation operation. It does not establish full pose parity or bit-exact native physics authority; offline fractional review retains 3688 nonmatches. 2026-10-20 (online on the disc): Clip::rotation moved, unchanged, from street-render's animation.rs to street-assets' clip.rs (gameplay.online_rules_equal_local); the test stays in animation.rs. Last re-pinned 2026-11-07 after the running catch's end blend (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Run production display sampling against atomic captured local poses with all channel/downstream writes recorded.",
       "match_type": "structural"
     },
@@ -550,7 +550,7 @@
           "path": "crates/street-render/src/animation.rs",
           "locator": "Animator::advance",
           "note": "In-place presentation root behavior cannot supply native ordinary channel authority.",
-          "sha256": "430934b21a83d9aedf5000add0eb48e62dfa468f5ed9bb8ce1a292a181f7667b"
+          "sha256": "672f07a1455dad310ebf053c17614093602662bffb928ed3e6a53a84c63cde86"
         },
         {
           "path": "crates/street-assets/src/clip.rs",
@@ -566,7 +566,7 @@
         }
       ],
       "tolerance": "Matching gait table row selection for held/unheld locomotion, blend frame advancement, and frame stepping.",
-      "limitations": "Notes dated 2026-10-14 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): Clip::root moved, unchanged, from street-render's animation.rs to street-assets' clip.rs (gameplay.online_rules_equal_local); Animator::advance stays. 2026-10-23: the record's choice draws from the shared generator (gait_select::select_drawing), not the old stateless hash of the tick. 2026-10-24: the stop is the stand script's planted foot (the stand path sets no velocity; DECELERATION is the windup walk's), and the stand clips' roots carry the player (no stand's `91` sets 0x1000): standing players off the ball drift 0.020 and 0.017 an update against the original's 0.022..0.025 and 0.017..0.024 (ai::capture::standing_players_sway_on_their_stand_clips). The record and scale choice is still approximated. 2026-10-25: the frame step's scale is the skeleton's first word (0x167cd4, FUN_0019cd48), not height / 6.5, and the step matches the original's captured channel frames update for update (staged.rs gait_clock); row selection, the Jog family's hysteresis and the blends are not covered by that check. Last re-pinned 2026-11-07 after the running catch's two channels (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Notes dated 2026-10-14 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): Clip::root moved, unchanged, from street-render's animation.rs to street-assets' clip.rs (gameplay.online_rules_equal_local); Animator::advance stays. 2026-10-23: the record's choice draws from the shared generator (gait_select::select_drawing), not the old stateless hash of the tick. 2026-10-24: the stop is the stand script's planted foot (the stand path sets no velocity; DECELERATION is the windup walk's), and the stand clips' roots carry the player (no stand's `91` sets 0x1000): standing players off the ball drift 0.020 and 0.017 an update against the original's 0.022..0.025 and 0.017..0.024 (ai::capture::standing_players_sway_on_their_stand_clips). The record and scale choice is still approximated. 2026-10-25: the frame step's scale is the skeleton's first word (0x167cd4, FUN_0019cd48), not height / 6.5, and the step matches the original's captured channel frames update for update (staged.rs gait_clock); row selection, the Jog family's hysteresis and the blends are not covered by that check. Last re-pinned 2026-11-07 after the running catch's end blend (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture synchronized native continuous movement traces across transitions and compare against PlayerGaitChannel positions.",
       "audit_review": {
         "date": "2026-10-14",
