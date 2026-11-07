@@ -452,8 +452,9 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // one machine once the shot clock ran at the original's step;
         // 2028: 2027's blocked no shot once a free holder's pass went in
         // after his locomotion; 2029: 2028's blocked no shot once callback 1
-        // ran the locomotion at a script's end.)
-        2029,
+        // ran the locomotion at a script's end; 2030: 2029's blocked no
+        // shot once the block jumps flew to their landings.)
+        2030,
         15_000,
         Conditions {
             loss: 0.04,

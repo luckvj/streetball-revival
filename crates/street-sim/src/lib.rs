@@ -846,6 +846,12 @@ pub struct World {
     /// A running pass row's end on channel 2 (opcode `92`): its upper body
     /// blending back into the run ([`PassTail`]).
     pub pass_tail: Option<PassTail>,
+    /// Inside the contact manager (`FUN_00133bb0`, after the actors): a
+    /// reaction it starts runs its first update at once and none in the
+    /// actor's next update (the channel was stepped this frame: the third
+    /// attract match's knocked blocker holds his blend's counter at 1 for
+    /// update 971). Never set between updates.
+    pub(crate) contact_phase: bool,
     /// The tick each player last let go of each turbo button (L1, R1, L2,
     /// R2; `FUN_00130a28`'s controller+0xec), `u64::MAX` for none: one
     /// pressed again soon after dives ([`dive`]).
@@ -1398,6 +1404,7 @@ impl World {
             windup: None,
             catch: None,
             pass_tail: None,
+            contact_phase: false,
             turbo_releases: vec![[u64::MAX; 4]; n],
             rng: rng::Rng::new(seed),
             previous_inputs: vec![Input::default(); n],

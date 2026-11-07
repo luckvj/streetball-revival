@@ -2259,6 +2259,13 @@ impl World {
     pub(crate) fn react(&mut self, b: usize, script: u8) {
         self.begin_reaction(b, script);
         self.reaction_tick(b);
+        if self.contact_phase
+            && let Action::Stumbling {
+                reaction: Some(r), ..
+            } = &mut self.players[b].action
+        {
+            r.run.count = r.run.count.saturating_add(1);
+        }
     }
 
     /// `b`'s reaction `script` set on his channel, its first update his
@@ -2432,6 +2439,22 @@ impl World {
         let steps = r.steps();
         r.window = r.window.saturating_sub(1);
         let before = r.run.shown();
+        // A landing wait (`8d .. fe`, `0x1973e0..0x197438`) lasts
+        // `FUN_0019bed8(g, vy, y)` from his velocity and height as it
+        // starts (the third attract match's blocker knocked up to 5.4 waits
+        // 29 updates at update 979), not the hop's estimate.
+        // A launch in the same update (`a1`, `ad`) sets the velocity the
+        // wait reads: the run's own estimate then.
+        r.run.land_at = if matches!(steps.get(usize::from(r.run.pc)), Some(Step::Land { .. })) {
+            let height = self.players[i].height;
+            let vy = if r.up { r.vy } else { 0.0 };
+            r.run
+                .tick
+                .saturating_add(1)
+                .saturating_add(i16::from(timing::airtime(vy, height)))
+        } else {
+            -1
+        };
         // Callback 3's roll (the fall-forwards' get-up) on the C library's
         // `rand()`, as the stands'.
         let libc = &mut self.libc;
@@ -2501,7 +2524,11 @@ impl World {
                 }
             }
         }
-        if r.up {
+        // The flight's step is the actor update's (`FUN_00156f48`): a
+        // reaction the contact manager starts after it moves him from his
+        // next update (the knocked blocker's vy 0.0614 stands through
+        // update 970).
+        if r.up && !self.contact_phase {
             let g = crate::toss::JUMP_GRAVITY;
             p.height += r.vy - 0.5 * g;
             r.vy -= g;
@@ -2511,8 +2538,10 @@ impl World {
                 r.up = false;
             }
         }
-        p.position[0] += r.drift[0];
-        p.position[1] += r.drift[1];
+        if !self.contact_phase {
+            p.position[0] += r.drift[0];
+            p.position[1] += r.drift[1];
+        }
         // The resync (`0x19b684..0x19b704`): the model's root height as
         // the channel showed it before and now, a blend's mixed from the
         // clip it held; the third attract match's blocker knocked in the

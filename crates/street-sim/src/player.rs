@@ -1147,14 +1147,19 @@ impl Player {
                 *elapsed += TICK_SECONDS;
                 self.speed = 0.0;
                 self.gait = Gait::Stand;
-                if j.up && (self.height > 0.0 || j.flown == 0) {
+                // The motion step (`0x1573d8..0x157530`) lands him only
+                // at or under the floor with his rise spent: the takeoff's
+                // resync ([`crate::World::block_resync`]) can lower a rising
+                // jumper under it (the third attract match's rebounder on
+                // his second airborne update, 1006).
+                if j.up && (self.height > 0.0 || j.vy > 0.0 || j.flown == 0) {
                     let g = crate::toss::JUMP_GRAVITY;
                     self.height += j.vy - 0.5 * g;
                     j.vy -= g;
                     self.position[0] += j.drift[0];
                     self.position[1] += j.drift[1];
                     j.flown = j.flown.saturating_add(1);
-                    if self.height <= 0.0 {
+                    if self.height <= 0.0 && j.vy <= 0.0 {
                         self.height = 0.0;
                         j.vy = 0.0;
                         j.drift = [0.0; 2];

@@ -166,7 +166,7 @@ pub const SCRIPTS: [Script; 15] = [
         address: 0x44206c,
         records: [453, 452],
         blend: [4, 4],
-        start: 0,
+        start: 2,
         before: &[wait(5, Fixed(4))],
         frame: 12,
         after: &[wait(12, Meet(0)), wait(14, Fixed(8)), wait(21, Landing)],
@@ -176,7 +176,7 @@ pub const SCRIPTS: [Script; 15] = [
         address: 0x44211c,
         records: [455, 454],
         blend: [4, 4],
-        start: 0,
+        start: 1,
         before: &[wait(4, Fixed(4))],
         frame: 11,
         after: &[wait(9, Meet(-4)), wait(13, Fixed(8)), wait(23, Landing)],
@@ -187,7 +187,7 @@ pub const SCRIPTS: [Script; 15] = [
         address: 0x4421cc,
         records: [463, 462],
         blend: [4, 4],
-        start: 0,
+        start: 1,
         before: &[wait(5, Fixed(5))],
         frame: 13,
         after: &[wait(13, Meet(0)), wait(23, Landing)],
@@ -217,7 +217,7 @@ pub const SCRIPTS: [Script; 15] = [
         address: 0x44239b,
         records: [459, 458],
         blend: [4, 6],
-        start: 0,
+        start: 1,
         before: &[wait(4, Fixed(4))],
         frame: 14,
         after: &[wait(12, Meet(-3)), wait(18, Fixed(9)), wait(24, Landing)],
@@ -810,6 +810,22 @@ impl World {
         } else {
             self.block_branch(i, word)
         };
+        // `FUN_001935c8` copies what the channel showed into +0xbc, the
+        // pose the script's blend holds: mid-way through a gait blend, its
+        // mix (the third attract match's rebounder at update 996, one
+        // update into a turbo blend, blends from the run's frame 15.28).
+        let shown = self.shown_at_start(i).or_else(|| self.shown_local(i));
+        let p = &mut self.players[i];
+        p.channel_start = Some(crate::held::ChannelStart {
+            script: s.address,
+            from: Some((from.record, held)),
+            left: p.gait_channel.hand == 2,
+            side: false,
+            pelvis: None,
+            turn: 0,
+            held: shown,
+            asked: false,
+        });
         Jump {
             script,
             branch,
@@ -905,8 +921,10 @@ impl World {
     /// The clip's root across (`FUN_0019a658`, raw `0x19b4bc..0x19b70c`):
     /// with 0x1000 clear the channel's step moves the jumper by his clip's
     /// root change on x and z, times his height scale, turned by his
-    /// facing; none in the blend or on the step out of it (the clip held
-    /// is another record), nor for the glass pair from its aim on (`a9`
+    /// facing; none in the blend (its root, +0x90, the blend's mix: on the
+    /// step out of it, `0x19b618..0x19b67c`, the clip's change from its
+    /// start frame, which the blend's last update showed whole), nor for
+    /// the glass pair from its aim on (`a9`
     /// sets 0x1000 before the step, `0x199ef0`). The captures' jumpers move 0.02 to 0.76 before
     /// they leave the floor, their velocity stopped (`97`), by the script.
     /// Without the disc's animations, none.
@@ -922,10 +940,17 @@ impl World {
             up: j.up && j.tick > j.aim_tick(),
             ..j
         };
-        if j.blend().is_some() || before.blend().is_some() {
+        if j.blend().is_some() {
             return;
         }
         if SCRIPTS[usize::from(j.script)].glass && j.tick >= j.aim_tick() {
+            return;
+        }
+        // Nor once callback 35 has sent him up: the third attract match's
+        // rebounder flies his velocity alone from the update he leaves the
+        // floor (1006..1041, the clip at 5.47, 5.93, ... with its root
+        // across 0.4 from its frame 5 to 6), the contacts' pushes aside.
+        if j.up {
             return;
         }
         let Some(poses) = self.poses.get() else {

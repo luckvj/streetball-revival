@@ -72,6 +72,7 @@ impl World {
             windup,
             catch,
             pass_tail: _,
+            contact_phase: _,
             turbo_releases,
             rng: _,
             previous_inputs,

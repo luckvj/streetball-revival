@@ -5,6 +5,15 @@ its version's part.
 
 ## Unreleased
 
+- A player knocked over falls and slides as on the PS2: he lands where
+  the PS2 puts him, held back by whoever he hits on the way.
+- Block and rebound jumps fly as on the PS2: a jumper no longer sticks to
+  the floor right after takeoff, his crouch starts on the animation frame
+  the PS2 uses (several jumps leaned too far forward and pushed nearby
+  players away), he moves with his animation until he leaves the floor
+  and only with his jump after it, and the backboard stops holding him
+  as soon as he starts to come down. A rebounder who lands near the ball
+  after a basket now picks it up as on the PS2.
 - Computer players' footwork and runs follow the PS2 more closely: a
   run or dribble that starts out of another stride, out of a stand that
   is still settling, or right at the end of a stride's loop starts on the

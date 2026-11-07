@@ -270,6 +270,12 @@ impl World {
     /// overlap with it (raw `0x1344ac..0x1344cc`, `0x135c34..0x135c64`),
     /// along the line between where they stand now.
     pub(crate) fn step_contacts(&mut self, table: &[[f32; 2]]) {
+        self.contact_phase = true;
+        self.step_contacts_inner(table);
+        self.contact_phase = false;
+    }
+
+    fn step_contacts_inner(&mut self, table: &[[f32; 2]]) {
         // The box-outs' pairs drawn together, then the scripted contacts
         // (each pair's before its push): the trick moves' fake windows
         // ([`crate::trick`]).
@@ -339,7 +345,17 @@ impl World {
         let top = [21, 15, 19].map(y).into_iter().fold(-100.0f32, f32::max);
         let feet = y(3).min(y(7));
         let p = &self.players[i];
-        let rise = p.rise;
+        // Actor+0x44: a reaction's own vertical speed; a block jumper's
+        // after this update's gravity (the third attract match's rebounder
+        // at his peak, update 1025, already falling: the board no longer
+        // holds him, his speed across halved four times, not five).
+        let rise = match p.action {
+            Action::Stumbling {
+                reaction: Some(r), ..
+            } if r.up => r.vy,
+            Action::Jumping { block: Some(j), .. } if j.up => j.vy,
+            _ => p.rise,
+        };
         let before = p.position;
         let side = if before[0] >= 0.0 { 1.0 } else { -1.0 };
         let mut at = before;
@@ -400,6 +416,14 @@ impl World {
             Action::ReboundJump { drift, .. } => {
                 halve(&mut drift[0], push[0]);
                 halve(&mut drift[1], push[1]);
+            }
+            // A reaction's hop (the knocked blocker held against the
+            // dunker: x -0.035, -0.017, -0.009 at updates 971..973).
+            Action::Stumbling {
+                reaction: Some(r), ..
+            } => {
+                halve(&mut r.drift[0], push[0]);
+                halve(&mut r.drift[1], push[1]);
             }
             _ => {
                 halve(&mut p.flight.velocity[0], push[0]);

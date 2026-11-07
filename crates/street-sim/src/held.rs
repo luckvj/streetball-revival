@@ -659,7 +659,12 @@ impl World {
                     counter: j.blend().map(|_| (j.tick + 1, j.blend_len())),
                     gait: false,
                     turn: 0,
-                    held: None,
+                    held: p
+                        .channel_start
+                        .filter(|s| {
+                            s.script == crate::block::SCRIPTS[usize::from(j.script)].address
+                        })
+                        .and_then(|s| s.held),
                     lower: None,
                     upper_from: None,
                 });
