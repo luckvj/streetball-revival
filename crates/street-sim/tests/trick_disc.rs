@@ -2161,3 +2161,55 @@ fn the_call_for_the_ball_is_the_executables() {
         assert!((net[0] - r.root[0]).abs() < 1e-4 && (net[1] - r.root[1]).abs() < 1e-4);
     }
 }
+
+#[test]
+fn the_record_scripts_foot_sync_lists_are_the_executables() {
+    // Callback 15 (`FUN_00177208`, `84 0f`): channel 0's record against
+    // `0x3d9290`'s 158 (`FUN_00168e78`), in the record scripts of
+    // `0x3e7370` whose still path it splits (their primary row the first
+    // blend's record).
+    let Some(disc) = Disc::load() else {
+        return;
+    };
+    let list: Vec<u16> = (0..158)
+        .map(|k| disc.word(0x3d9290 + 4 * k) as u16)
+        .collect();
+    assert_eq!(list, street_sim::gait_select::SYNC_FROM);
+    let mut rows = Vec::new();
+    for k in 0..400 {
+        let script = disc.word(0x3e7370 + 8 * k);
+        if !(0x44_0000..0x46_0000).contains(&script) {
+            break;
+        }
+        // The still path: `a7`, `96`, `9b w`, then `84 34` (callback 52)
+        // and, on some, `84 0f`, before the first blend.
+        let mut pc = script;
+        let mut tests = false;
+        for _ in 0..12 {
+            match disc.byte(pc) {
+                0xa7 | 0x96 => pc += 1,
+                0x9b | 0x91 => pc += 5,
+                0x84 => {
+                    tests |= disc.unaligned(pc + 1) == 15;
+                    pc += 21;
+                }
+                0x8e => {
+                    let mut p = pc + 1;
+                    while matches!(disc.byte(p), 0xf2 | 0xf8 | 0xec | 0xf5 | 0xf4 | 0xf3) {
+                        p += 1;
+                    }
+                    if tests {
+                        rows.push(disc.unaligned(p + 5) as u16);
+                    }
+                    break;
+                }
+                _ => break,
+            }
+        }
+    }
+    rows.sort_unstable();
+    rows.dedup();
+    let mut ours = street_sim::gait_select::SYNC_ROWS.to_vec();
+    ours.sort_unstable();
+    assert_eq!(rows, ours);
+}

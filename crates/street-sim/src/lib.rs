@@ -2465,6 +2465,32 @@ impl World {
                 None => Some(p.gait_channel.row),
             }
         };
+        // The clip channel 0 shows with no blend running (record and
+        // frame), as callback 15 reads it (`FUN_00177208`).
+        let still = {
+            let p = &self.players[i];
+            match p.stand {
+                _ if script.is_some() => script.map(|s| s.from),
+                Some(s) => {
+                    let shown = s.run.shown();
+                    shown
+                        .record
+                        .filter(|_| shown.blend.is_none())
+                        .map(|r| (r, shown.frame))
+                }
+                None => {
+                    let c = &p.gait_channel;
+                    (c.blend_counter == 0).then(|| {
+                        let row = if c.record.is_some() && c.moving {
+                            c.record_row()
+                        } else {
+                            c.row
+                        };
+                        (row, c.phase)
+                    })
+                }
+            }
+        };
         // A record started anew runs its script (table `0x3e7370`): a blend
         // of 6 from the pose the channel shows (`FUN_001935c8`: a stand's,
         // else the gait's own), the incoming clip held at its start frame.
@@ -2475,7 +2501,8 @@ impl World {
             && channel.record != Some(index as u16)
             && !playing.is_some_and(|r| record.rows.contains(&r))
             && p.action == Action::None
-            && let Some(how) = gait_select::record_start(record.rows[0], playing)
+            && let Some(how) =
+                gait_select::record_start(record.rows[0], playing, still.map(|s| s.0))
             && let Some(poses) = self.poses.arc()
         {
             let row = channel.record_row_of(record.rows);
@@ -2486,6 +2513,11 @@ impl World {
             let mut share = None;
             let start = match how {
                 gait_select::RecordStart::Frame { frame, .. } => frame,
+                // `-9`: the step of the clip channel 0 shows matched.
+                gait_select::RecordStart::Sync => {
+                    let (r, f) = still.unwrap_or((row, 0.0));
+                    f32::from(crate::held::foot_sync(&poses, (r, f as i32), row))
+                }
                 gait_select::RecordStart::Share => {
                     let frames =
                         |r: u16| poses.frames(r).unwrap_or(1).min(usize::from(u16::MAX)) as u16;
@@ -2516,7 +2548,8 @@ impl World {
             // From a still clip the blend matches his facing to the
             // incoming clip (`91 0x820000`, `FUN_00196698`), before this
             // update's turn.
-            if let gait_select::RecordStart::Frame { heading: true, .. } = how
+            if let gait_select::RecordStart::Frame { heading: true, .. }
+            | gait_select::RecordStart::Sync = how
                 && let Some(shown) = script
                     .as_ref()
                     .map(|s| s.pose)

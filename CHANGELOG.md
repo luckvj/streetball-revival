@@ -40,6 +40,9 @@ its version's part.
   ball in, as on the PS2, instead of always the same side.
 - A player knocked flat gets up one of the PS2's two ways, picked at
   random as the original picks, instead of always the same one.
+- A player who dribbles off out of a trick move (a crossover, a
+  freestyle, a spin out of the post) starts his dribbling run in step with
+  his feet, as on the PS2, instead of from a fixed point of it.
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.

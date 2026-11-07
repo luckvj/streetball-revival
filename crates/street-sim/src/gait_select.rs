@@ -48,14 +48,47 @@ pub enum RecordStart {
     Frame { frame: f32, heading: bool },
     /// At the outgoing clip's share of its step ([`share_start`]).
     Share,
+    /// `-9` (`FOOT_SYNC`): the incoming clip's frame whose step matches
+    /// the clip channel 0 shows ([`crate::held::foot_sync`]), the facing
+    /// matched.
+    Sync,
 }
 
+/// The records whose script tests callback 15 (`FUN_00177208`, `84 0f`)
+/// between its still and moving paths: the dribble runs and walks, whose
+/// blend then starts at `-9` ([`RecordStart::Sync`]).
+pub const SYNC_ROWS: [u16; 48] = [
+    79, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 111, 113, 114, 116, 118,
+    120, 121, 123, 125, 126, 129, 131, 132, 134, 136, 138, 140, 142, 144, 146, 148, 152, 154, 156,
+    158, 160, 162, 164, 166, 168, 170, 172,
+];
+
+/// Callback 15's list (`0x3d9290`, 158 records, `FUN_00168e78`): the
+/// trick moves' clips (the crossovers, the freestyles, the juke's
+/// dropstep, the backdown's spin-out); channel 0 showing one of these
+/// (and no blend) takes the `-9` start.
+pub const SYNC_FROM: [u16; 158] = [
+    179, 178, 181, 180, 182, 183, 184, 185, 187, 186, 189, 188, 191, 190, 195, 194, 197, 196, 192,
+    193, 683, 682, 684, 685, 687, 686, 691, 690, 693, 692, 695, 694, 697, 696, 699, 698, 701, 700,
+    703, 702, 689, 688, 734, 735, 201, 200, 203, 202, 205, 204, 207, 206, 209, 208, 210, 211, 213,
+    212, 214, 215, 216, 217, 218, 219, 221, 220, 222, 223, 224, 225, 226, 227, 229, 228, 230, 231,
+    233, 232, 235, 234, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250,
+    251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269,
+    270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288,
+    289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 730, 731,
+    708, 709, 710, 711, 563, 564,
+];
+
 /// How the record whose primary row is `row` starts from the row the
-/// channel plays (`playing`); None for a row no script names.
-pub fn record_start(row: u16, playing: Option<u16>) -> Option<RecordStart> {
+/// channel plays (`playing`; `still` the record channel 0 shows when no
+/// blend runs, as callback 15 reads it); None for a row no script names.
+pub fn record_start(row: u16, playing: Option<u16>, still: Option<u16>) -> Option<RecordStart> {
     let script = RECORD_SCRIPTS.iter().find(|s| s.row == row)?;
     if script.share && playing.is_some_and(|r| MOVING_ROWS.contains(&r)) {
         return Some(RecordStart::Share);
+    }
+    if SYNC_ROWS.contains(&row) && still.is_some_and(|r| SYNC_FROM.contains(&r)) {
+        return Some(RecordStart::Sync);
     }
     Some(RecordStart::Frame {
         frame: f32::from(script.still),
