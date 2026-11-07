@@ -15037,3 +15037,23 @@ waits on callback `id` (the pc held on it while it returns 0): the jump
 shots' `86 13`, the shot gate, and the block jumps' `86 36`, which
 passes at once, both already carried. Not met in the rewrite's scripts:
 `8b`, `9d`, `a3`, `a8`, `99`, `a2`, `a4`, `a5`, `9a`.
+
+The script callbacks against the table (2026-11-07, after the opcodes):
+every `83`/`84`/`85` callback id in the scripts the rewrite reads, set
+against what the rewrite runs. Tests that chose a path the decoders had
+taken one way: callback 14 (`FUN_001777d8`, `jumpshot_360`: the model's
+yaw at or past the facing toward the rim, clip 329 against 328), 41
+(`FUN_00175770`, seven air passes: the target where `(wanted − pair word)
+& 0x3ff < 0x200`, 22 played air passes, 21 as predicted) and 50
+(`FUN_00178090`, `pass_allyoop_run_1`: his facing short of the pair word)
+each choose between two blends that differ in their record and meet, now
+`trick::Select::Asked` on `held::ChannelStart::asked`; callback 22
+(`FUN_00174e08`, the live hand the right) in five lay-ups and dunks
+chooses between two `a1 f0` hops of opposite turn, now
+`Step::TowardByHand` on the live hand as the hop runs; callback 3
+(`FUN_00172288`, the C library's `rand() % n`) on the fall-forwards'
+shared get-up (`0x44bc1b`: clip 653 or 655), now `Step::Roll` on
+`World::libc`. Callback 15 (the gait scripts' record list), 24 (the
+putback hangs' live hand, flipped by the court's side) and 42 (a catch
+row's end: callback 30 skipped in a shot or dunk) are left; 25 does
+nothing; 6, 29, 36, 37 and 44 were carried.
