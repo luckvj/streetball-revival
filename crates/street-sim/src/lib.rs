@@ -4846,10 +4846,13 @@ fn stand_blend_from_gait(s: &stand::Standing) -> bool {
 }
 
 /// The clip and start frame of a stand's first blend (its script's
-/// `Blend` step).
+/// `Blend` step), on the record its live hand picks (`f8`), as the
+/// script's own blend picks it ([`trick::Run`]).
 fn stand_blend_start(s: &stand::Standing) -> Option<(u16, f32)> {
     s.steps().iter().find_map(|step| match *step {
-        trick::Step::Blend { start, records, .. } => Some((records[0], f32::from(start))),
+        trick::Step::Blend { start, records, .. } => {
+            Some((records[usize::from(s.run.left)], f32::from(start)))
+        }
         _ => None,
     })
 }
