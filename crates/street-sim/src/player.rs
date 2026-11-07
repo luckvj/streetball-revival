@@ -535,6 +535,9 @@ pub struct Player {
     /// row's parked script has started (`0x15ab4c`). The catch row filter
     /// reads the passer's ([`crate::timing::catch_row`]).
     pub received_flight: i32,
+    /// His posed joint 10's height as his last update left it, for the
+    /// floor contact's test ([`crate::World::floor_contact`]).
+    pub floor_joint: Option<f32>,
     /// The record's weight in pounds (attribute 9, `FUN_001da4e0(record,
     /// 9)`), which the contact manager shares a push by
     /// ([`crate::contact`]). [`contact::WEIGHT`](crate::contact::WEIGHT)
@@ -646,6 +649,7 @@ impl Player {
             gait_channel: crate::ordinary::PlayerGaitChannel::default(),
             pass_kind: 4,
             received_flight: 0,
+            floor_joint: None,
             weight: crate::contact::WEIGHT as u16,
             body: None,
             rise: 0.0,

@@ -28,8 +28,8 @@
 //! | a trick that fakes a defender out | slot 13 `FUN_001a5a78` | 0x29 |
 //! | the tip-off's take | slot 22 `FUN_001a5d10` | 0x25 |
 //!
-//! Slot 76's floor contacts (`FUN_001a5348`, 0x29) come from the posed
-//! rig, which only the renderer has; they still draw after the update.
+//! Slot 76's floor contacts (`FUN_001a5348`, 0x29): the posed joint 10
+//! falling to the floor in the actor's update ([`World::floor_contact`]).
 
 use crate::{Event, Goal, World};
 
@@ -72,6 +72,28 @@ impl World {
             Goal::Gamebreaker(_) => (0, 0),
         };
         fraction(lead, to_win)
+    }
+
+    /// Slot 76's poster in `i`'s update (`FUN_00156f48`, class
+    /// `DAT_003c6930`): his posed joint 10 falling from above 1.5 to 1.5 or
+    /// below since his last update gasps the crowd (`FUN_001a5348`'s
+    /// `FUN_001a75a8(.., 0x29)`), its picks the shared generator's in his
+    /// update (the third attract match's blocker knocked out of the air
+    /// lands at update 1004 and five groups gasp). Not under a staged
+    /// sequence (the Script Manager's states 3..7).
+    pub(crate) fn floor_contact(&mut self, i: usize) {
+        if self.poses.get().is_none() || self.sequence.is_some() {
+            self.players[i].floor_joint = None;
+            return;
+        }
+        let now = self.actor_pose(i).map(|p| p.joints[10].position[1]);
+        let before = std::mem::replace(&mut self.players[i].floor_joint, now);
+        if let (Some(before), Some(now)) = (before, now)
+            && before > 1.5
+            && now <= 1.5
+        {
+            self.crowd_call(false);
+        }
     }
 
     /// `FUN_0030ca10`: the call's picks, drawn now.

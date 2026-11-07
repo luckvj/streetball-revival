@@ -1243,7 +1243,6 @@ fn floor_contacts(
     players: Query<(&crate::view::SimPlayer, &street_render::animation::Rig)>,
     joints: Query<&GlobalTransform>,
     camera: Query<&GlobalTransform, With<SidelineCamera>>,
-    mut crowd: Option<ResMut<street_render::crowd::CrowdReactions>>,
 ) {
     let (Some(mut fx), Some(mut contacts)) = (fx, contacts) else {
         return;
@@ -1272,14 +1271,7 @@ fn floor_contacts(
             .map(|joint| joint.translation().y);
         if let Some(intensity) = contacts.sample(actor.0, height) {
             let at = Vec3::new(p.position[0], p.height + 3.0, p.position[1]);
-            floor_contact(
-                &mut fx,
-                crowd.as_deref_mut(),
-                w,
-                actor.0,
-                place(cam, at),
-                intensity,
-            );
+            floor_contact(&mut fx, actor.0, place(cam, at), intensity);
         }
     }
 }
@@ -1288,22 +1280,11 @@ fn floor_contacts(
 /// 2 by the drop's strength), the crowd's call (`FUN_001a75a8` with 0x29: the
 /// AEMS event, which its `FUN_0019ed30` routing gives no arguments, and the
 /// spectators' gasp through `FUN_0030d618`), then the player's grunt.
-fn floor_contact(
-    fx: &mut Effects,
-    crowd: Option<&mut street_render::crowd::CrowdReactions>,
-    w: &street_sim::World,
-    player: usize,
-    (angle, distance): (i32, i32),
-    intensity: i32,
-) {
+fn floor_contact(fx: &mut Effects, player: usize, (angle, distance): (i32, i32), intensity: i32) {
     fx.fire(&[ev::BODY, angle, distance, intensity, 2]);
     fx.fire(&[ev::FALL_CROWD]);
-    if let Some(crowd) = crowd {
-        crowd.0.push(street_render::crowd::Reaction {
-            fraction: crate::game::crowd_fraction(w),
-            cheer: false,
-        });
-    }
+    // The spectators' gasp is the simulation's (`World::floor_contact`,
+    // its picks in the actor's update), shown with its calls.
     let voice = fx.voices.get(player).copied().unwrap_or(0);
     fx.fire(&[ev::EXERTION, angle, distance, voice]);
 }
@@ -2650,34 +2631,12 @@ mod tests {
         .expect("banks");
         fx.open_court();
         fx.play_starts();
-        let players = (0..6)
-            .map(|k| street_sim::Player::new(k / 3, [0.0, k as f32], 0.0))
-            .collect();
-        let hoop = |x: f32| street_sim::Hoop {
-            rim: [x, 11.75, 0.0],
-            rim_radius: 0.75,
-        };
-        let mut w = street_sim::World::new(
-            [hoop(37.0), hoop(-37.0)],
-            players,
-            street_sim::Rules::default(),
-            1,
-        );
-        w.score = [9, 4];
-        let mut crowd = street_render::crowd::CrowdReactions::default();
         let before = fx.next;
-        floor_contact(&mut fx, Some(&mut crowd), &w, 4, (0, 200), 250);
+        floor_contact(&mut fx, 4, (0, 200), 250);
         fx.run(50.0);
         assert!(
             fx.next > before,
             "the body, crowd and grunt events start voices"
-        );
-        assert_eq!(
-            crowd.0,
-            [street_render::crowd::Reaction {
-                fraction: crate::game::crowd_fraction(&w),
-                cheer: false,
-            }]
         );
     }
 

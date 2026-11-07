@@ -23,6 +23,9 @@ its version's part.
   dunking at the same point the PS2 does.
 - A player knocked over in the air (by a dunker, or tumbling forward)
   is thrown up and over as on the PS2, instead of dropping straight down.
+- The crowd's gasp when a player hits the floor is now part of the game
+  itself (as on the PS2) rather than only the sound, so the game's random
+  rolls after a hard fall stay the same as the PS2's.
 - A player who catches a pass on the run now keeps running underneath
   the catch, as on the PS2: his legs and hips stay on his run while his
   arms and head play the catch, and the ball sits in those hands (it had

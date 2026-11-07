@@ -1094,10 +1094,6 @@ pub(crate) fn crowd_step(
     w.crowd.calls = calls;
 }
 
-pub(crate) fn crowd_fraction(w: &street_sim::World) -> f32 {
-    w.crowd_fraction()
-}
-
 pub(crate) fn leave(
     mut time: ResMut<Time<Virtual>>,
     sim: Option<Res<Sim>>,

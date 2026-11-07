@@ -2138,6 +2138,7 @@ impl World {
             self.contain(i);
             // The head's look ([`look`], `0x157d9c`).
             self.head_look(i);
+            self.floor_contact(i);
             self.previous_inputs[i] = input;
             self.count_down_bars(i);
         }

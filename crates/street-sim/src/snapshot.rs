@@ -124,8 +124,9 @@ use crate::{
 /// held clip turned by a heading match, as a walk's ([`crate::ordinary`]);
 /// 122: a running pass row's end blend ([`crate::PassTail`]); 123: a
 /// script's own test answered as it starts ([`crate::held::ChannelStart`]);
-/// 124: a reaction's root resync ([`crate::trick::Reacting`]).
-const VERSION: u8 = 124;
+/// 124: a reaction's root resync ([`crate::trick::Reacting`]); 125: the
+/// floor contact's joint height ([`crate::Player::floor_joint`]).
+const VERSION: u8 = 125;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1196,6 +1197,7 @@ fn player(w: &mut Writer, p: &Player) {
         gait_channel,
         pass_kind,
         received_flight,
+        floor_joint,
         weight,
         body,
         rise,
@@ -1296,6 +1298,10 @@ fn player(w: &mut Writer, p: &Player) {
     gait_channel_out(w, gait_channel);
     w.uv(u64::from(*pass_kind));
     w.iv(i64::from(*received_flight));
+    w.bool(floor_joint.is_some());
+    if let Some(y) = floor_joint {
+        w.f(*y);
+    }
     w.uv(u64::from(*weight));
     match body {
         None => w.u8(0),
@@ -1847,6 +1853,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
         gait_channel: gait_channel_in(r)?,
         pass_kind: u32::try_from(r.uv()?).map_err(|_| "invalid pass_kind")?,
         received_flight: r.i32()?,
+        floor_joint: if r.bool()? { Some(r.f()?) } else { None },
         weight: u16::try_from(r.uv()?).map_err(|_| "invalid weight")?,
         body: match r.u8()? {
             0 => None,

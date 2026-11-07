@@ -553,6 +553,7 @@ impl World {
                 gait_channel,
                 pass_kind: _,
                 received_flight,
+                floor_joint,
                 weight,
                 body,
                 rise,
@@ -709,6 +710,7 @@ impl World {
                 (-1..=i32::from(u16::MAX)).contains(received_flight),
                 "player received flight",
             )?;
+            floats(&[floor_joint.unwrap_or(0.0)], "player floor joint")?;
             floats(&[action.elapsed()], "action elapsed")?;
             require(action.elapsed() >= 0.0, "action elapsed range")?;
             if let Action::Stealing {
