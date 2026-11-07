@@ -4788,9 +4788,11 @@ fn putbacks_start_on_their_records_and_some_catch_the_ball() {
     // seed 7's twenty putbacks caught none; with the rebound's clearout
     // (callback 37) seed 8's and 11's catch none, 9, 10 and 12..15 do.
     // With the shot clock at the original's step, 2026-11-04, seed 10's
-    // catch none; 9 and 12..16 do.)
+    // catch none; 9 and 12..16 do. With the dunks played to their
+    // scripts' ends, 2026-11-07, seed 9's, 13's and 15's catch none; 10,
+    // 11, 12, 14 and 16 do.)
     let (mut started, mut caught) = (0, 0);
-    let mut w = demo_match(9);
+    let mut w = demo_match(10);
     w.start_opening_toss();
     for _ in 0..20_000 {
         step_computer(&mut w);

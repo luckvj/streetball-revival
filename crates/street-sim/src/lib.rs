@@ -1281,7 +1281,7 @@ impl World {
                 _ => false,
             },
         );
-        set(7, matches!(p.action, Action::Dunking { layup: false, .. }));
+        set(7, p.dunk_bit());
         set(8, matches!(p.action, Action::ReboundJump { .. }));
         set(
             9,

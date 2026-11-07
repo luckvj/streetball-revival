@@ -2084,7 +2084,7 @@ impl World {
     /// within [`REACH`].
     fn knock_meets(&self, a: usize, b: usize) -> bool {
         let (p, q) = (&self.players[a], &self.players[b]);
-        let dunking = |x: &crate::Player| matches!(x.action, Action::Dunking { layup: false, .. });
+        let dunking = |x: &crate::Player| x.dunk_bit();
         if p.team == q.team
             || !(dunking(p) || p.leaping())
             || p.flight.met & (1 << b) != 0

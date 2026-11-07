@@ -879,11 +879,7 @@ impl World {
             && p.height <= 0.0
             && matches!(
                 p.action,
-                Action::Dunking {
-                    hang: Some(true),
-                    ..
-                } | Action::Dive { .. }
-                    | Action::Passing { .. }
+                Action::Dunking { .. } | Action::Dive { .. } | Action::Passing { .. }
             )
         {
             if let Action::Passing { row, .. } = p.action {

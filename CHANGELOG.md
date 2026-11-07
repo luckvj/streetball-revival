@@ -17,6 +17,10 @@ its version's part.
   rebound jump goes up after the jumper's stride is picked, and a dunker
   meeting a blocker in the air is matched against him at the same moment
   as on the PS2 (by their hips' heights), so the same man wins.
+- A dunk now plays its landing out in full as on the PS2 (the dunker
+  stays in his finish until his feet are down and his animation is over,
+  instead of being cut short), while the game stops counting him as
+  dunking at the same point the PS2 does.
 - A player who catches a pass on the run now keeps running underneath
   the catch, as on the PS2: his legs and hips stay on his run while his
   arms and head play the catch, and the ball sits in those hands (it had

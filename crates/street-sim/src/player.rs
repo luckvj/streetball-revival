@@ -712,6 +712,14 @@ impl Player {
     }
 
     /// Velocity on the floor, (x, z): along the course.
+    /// State bit 7, a dunk: from the press until his script's `9b 04`
+    /// sets the word to the landing's bit 2 ([`crate::jump::Flight::recover`];
+    /// dunk_2 clears it 81 updates in, then plays its landing out to 103).
+    pub fn dunk_bit(&self) -> bool {
+        matches!(self.action, Action::Dunking { layup: false, .. })
+            && !(crate::jump::scripted(&self.action) && self.flight.recover)
+    }
+
     pub fn velocity(&self) -> [f32; 2] {
         [
             math::sin(self.course) * self.speed,
@@ -968,7 +976,8 @@ impl Player {
                 let (hoop, now, from, to) = (*hoop, f32::from(*tick - 1), *from, *to);
                 let release = f32::from(*release);
                 let end = f32::from(*end).max(release + 1.0);
-                if crate::timing::move_row(*row).is_none() {
+                let scripted = crate::timing::move_row(*row).is_some();
+                if !scripted {
                     // The putback's own clock: straight up to the rim.
                     self.glide(from, to, now, release);
                     self.height = jump_height(
@@ -979,10 +988,18 @@ impl Player {
                         DUNK_HEIGHT,
                     );
                 }
-                // A row's flight is its script's ([`crate::jump`]), over
-                // once he is down.
-                if now >= end && (self.height <= 0.0 || now >= end + f32::from(LANDING_LIMIT as u8))
-                {
+                // A row's flight is its script's ([`crate::jump`]), which
+                // ends it once he is down and the script is over (its
+                // landing wait, `8d ee .. fe`, and its play-out, `8c`: the
+                // third attract match's dunk_2 runs 103 updates); the
+                // putback's own clock at its end.
+                let over = if scripted {
+                    now >= end + f32::from(LANDING_LIMIT as u8)
+                } else {
+                    now >= end
+                        && (self.height <= 0.0 || now >= end + f32::from(LANDING_LIMIT as u8))
+                };
+                if over {
                     self.action = Action::None;
                     self.height = 0.0;
                 }

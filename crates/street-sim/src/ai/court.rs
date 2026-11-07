@@ -267,10 +267,7 @@ impl Ctx<'_> {
 
     /// Bit 7 (`FUN_0016e9d0`, the AI's `FUN_00181670`): a dunk.
     pub fn dunking(&self, i: usize) -> bool {
-        matches!(
-            self.w.players[i].action,
-            Action::Dunking { layup: false, .. }
-        )
+        self.w.players[i].dunk_bit()
     }
 
     /// Bit 13 (`FUN_0016ea40`, the AI's `FUN_00181690`): a lay-up (a dunk
