@@ -2406,19 +2406,6 @@ impl World {
         if held && stance.is_none() && self.game_phase.phase == game_phase::phase::RESTART {
             request = 0x201;
         }
-        // The row his channel plays (a blend's incoming one), as callback
-        // 52 reads it (`FUN_00177270`).
-        let playing = {
-            let p = &self.players[i];
-            match p.stand {
-                _ if script.is_some() => script.as_ref().map(|s| s.from.0),
-                Some(s) => s.run.shown().record,
-                None if p.gait_channel.moving => {
-                    p.gait_channel.record.map(|_| p.gait_channel.record_row())
-                }
-                None => Some(p.gait_channel.row),
-            }
-        };
         let p = &mut self.players[i];
         let channel = &mut p.gait_channel;
         let profile = config.profiles.get(i).copied().unwrap_or_default();
@@ -2427,6 +2414,37 @@ impl World {
         let index = gait_select::select_drawing(&config.records, current, request, profile, || {
             rng.next_u32()
         });
+        self.start_gait_record(i, index, request, script.as_ref());
+    }
+
+    /// The gait record `index` (of [`GaitConfig::records`], table
+    /// `0x3e7370`) on his channel: a record started anew runs its script
+    /// (a blend of 6 from the pose the channel shows, the clip's start by
+    /// its branch), a record already playing goes on. `request` the flags
+    /// asked for.
+    pub(crate) fn start_gait_record(
+        &mut self,
+        i: usize,
+        index: usize,
+        request: u32,
+        script: Option<&ScriptShown>,
+    ) {
+        let Some(config) = self.gait.clone() else {
+            return;
+        };
+        // The row his channel plays (a blend's incoming one), as callback
+        // 52 reads it (`FUN_00177270`).
+        let playing = {
+            let p = &self.players[i];
+            match p.stand {
+                _ if script.is_some() => script.map(|s| s.from.0),
+                Some(s) => s.run.shown().record,
+                None if p.gait_channel.moving => {
+                    p.gait_channel.record.map(|_| p.gait_channel.record_row())
+                }
+                None => Some(p.gait_channel.row),
+            }
+        };
         // A record started anew runs its script (table `0x3e7370`): a blend
         // of 6 from the pose the channel shows (`FUN_001935c8`: a stand's,
         // else the gait's own), the incoming clip held at its start frame.
@@ -2464,7 +2482,7 @@ impl World {
                 }
             };
             let held = match p.stand {
-                _ if script.is_some() => script.as_ref().map(|s| (Some(s.from), s.held)),
+                _ if script.is_some() => script.map(|s| (Some(s.from), s.held)),
                 Some(s) => s.local(&poses).map(|h| {
                     let shown = s.run.shown();
                     (shown.record.map(|r| (r, shown.frame)).or(s.from), h)

@@ -304,6 +304,16 @@ impl World {
             return;
         };
         self.players[i].pass_kind = style.release().kind;
+        // A running row: channel 0 starts the run's gait record (its
+        // script's blend of 6 from the pose he shows; a record already
+        // playing goes on) and the row plays over it on channel 2.
+        if crate::timing::pass_over_run(usize::from(row)) {
+            let strength = crate::timing::stick_strength(self, i, input);
+            let record = crate::timing::pass_run_record(strength);
+            // Started by its script (`FUN_0019c2f8`), not the selector: no
+            // request, so no dribble begun.
+            self.start_gait_record(i, record, 0, None);
+        }
         self.begin_script(i, crate::timing::PASS_ROWS[usize::from(row)].script);
         // On the floor his wanted facing becomes the pelvis's as the model
         // showed it (`sp+0x234`, `FUN_00154230` at `0x16010c`, stored at

@@ -1044,6 +1044,23 @@ impl Player {
                     if !air && self.flight.script != script {
                         self.begin_flight();
                     }
+                    // Over the run (the row on channel 2): channel 0's run
+                    // record steps on at his speed (actor+0x190, its free
+                    // rate `ab -1`); the flight moves him.
+                    if crate::timing::pass_over_run(usize::from(row)) {
+                        let v = self.flight.velocity;
+                        let speed = math::len(v[0], v[2]) * crate::TICK_HZ as f32;
+                        let mut at = self.position;
+                        let body_scale_x = self.body().height;
+                        self.gait_channel.update(
+                            true,
+                            true,
+                            speed,
+                            &mut at,
+                            [self.heading, self.course],
+                            body_scale_x,
+                        );
+                    }
                     self.speed = 0.0;
                     self.gait = Gait::Stand;
                     return None;

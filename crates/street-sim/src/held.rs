@@ -674,9 +674,19 @@ impl World {
             if run.done {
                 return Some(self.gait_channel_shown(i));
             }
+            // A running pass's row on channel 2 over the run's gait record
+            // on channel 0 ([`timing::pass_over_run`]).
+            let lower = match p.action {
+                Action::Passing { row, .. } if timing::pass_over_run(usize::from(row)) => {
+                    let f = self.gait_frame(i);
+                    Some((f.record, f.time))
+                }
+                _ => None,
+            };
             return Some(Channel {
                 turn: first.map_or(0, |s| i32::from(s.turn)),
                 held: first.and_then(|s| s.held),
+                lower,
                 ..of(&run, from)
             });
         }

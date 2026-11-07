@@ -784,6 +784,53 @@ fn a_running_catch_rows_end_blends_his_arms_back_over_five_updates() {
 }
 
 #[test]
+fn a_running_pass_plays_its_row_over_his_run() {
+    // `0x160fdc..0x1610c4`: a running row (flag 0x100 without 0x2400)
+    // starts the run's gait record on channel 0 (`run_4` with the stick at
+    // 0x28 or more) and plays on channel 2: his legs stay on the run, which
+    // steps on through the windup, the row above the spine.
+    let mut over = 0;
+    for seed in 0..40 {
+        let Some(mut w) = pass_world(seed, [12.0, 0.0], 0.0) else {
+            return;
+        };
+        w.gait = crate::ai::capture::disc_gait();
+        if w.gait.is_none() {
+            return;
+        }
+        let mut inputs = vec![Input::default(); 3];
+        inputs[0].stick = [0, -127];
+        for _ in 0..30 {
+            w.step(&inputs);
+        }
+        inputs[0] = inputs[0].with(button::PASS);
+        w.step(&inputs);
+        let Action::Passing { row, .. } = w.players[0].action else {
+            continue;
+        };
+        if !crate::timing::pass_over_run(usize::from(row)) {
+            continue;
+        }
+        let records = &w.gait.as_ref().unwrap().records;
+        assert_eq!(
+            w.players[0].gait_channel.record,
+            Some(crate::timing::pass_run_record(64) as u16)
+        );
+        let c = w.channel(0).expect("channel");
+        let (record, time) = c.lower.expect("over the run");
+        assert!(records[2].rows.contains(&record), "{record}");
+        inputs[0] = Input::default();
+        w.step(&inputs);
+        let c2 = w.channel(0).expect("channel");
+        if let (Some((_, later)), Action::Passing { .. }) = (c2.lower, w.players[0].action) {
+            assert!(later >= time, "{later} {time}");
+        }
+        over += 1;
+    }
+    assert!(over > 0, "no running row drawn");
+}
+
+#[test]
 fn a_catch_row_in_play_survives_a_snapshot() {
     let Some(mut w) = pass_world(9, [10.0, 4.0], std::f32::consts::PI) else {
         return;

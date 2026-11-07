@@ -697,6 +697,24 @@ pub struct PassPick {
 /// carried: the legends' rows (`+0x04`), the dive and self-pass rows,
 /// landing within 10 updates (`0x20c`), and the running row's velocity
 /// along the facing.
+/// A pass row played over the run (`0x160fdc..0x1610c4`): flag 0x100
+/// without 0x2400 (on the floor, not landing soon, not heading out: the
+/// filter's own tests for its running rows). Channel 0 starts the run's
+/// gait record (`run_4`, record 2, with the stick at 0x28 or more, else
+/// `walk_cocky_2`, record 20) and the row's script runs on channel 2.
+pub fn pass_over_run(row: usize) -> bool {
+    PASS_ROWS
+        .get(row)
+        .is_some_and(|r| r.flags & 0x100 != 0 && r.flags & 0x2400 == 0)
+}
+
+/// The gait record channel 0 runs under a running pass (`0x161008..
+/// 0x161068`): `run_4` (2) with the stick at 0x28 or more, else
+/// `walk_cocky_2` (20).
+pub fn pass_run_record(strength: i32) -> usize {
+    if strength >= 0x28 { 2 } else { 20 }
+}
+
 pub(crate) fn pass_row(
     w: &mut World,
     i: usize,

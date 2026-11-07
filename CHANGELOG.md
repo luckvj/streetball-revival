@@ -16,6 +16,9 @@ its version's part.
 - A pass thrown on the run carries the passer on at the speed and in the
   direction the PS2 gives him as he lets go (his stick's speed for his
   run, along the way he turns to pass), instead of the speed he had.
+- A pass thrown on the run plays over the run, as on the PS2: the
+  passer's legs keep running (his run, or a jog with the stick only part
+  way) while his arms throw, and the ball stays in those hands.
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.
