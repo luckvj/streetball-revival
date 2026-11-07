@@ -27,6 +27,11 @@ its version's part.
 - The advanced dunk's toss is drawn: the player's arms throw the ball up
   off the board over his stand, as on the PS2, and the ball leaves the
   hand those arms show (he had kept walking with his arms down).
+- Moves started in the air keep the player up as long as the PS2 does:
+  a pass or tip-in in mid-air, a dunk turned into a lay-up, and a player
+  knocked flying forward all stay up for their animation's minimum time
+  (the original's "stay up" script step had been read wrongly and left
+  out), so they land when the original's do.
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.

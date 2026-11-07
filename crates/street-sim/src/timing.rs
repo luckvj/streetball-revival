@@ -495,6 +495,21 @@ pub(crate) fn shot_script(
 /// of `g t² + vy t + y` are taken, and the larger root beyond 1 is rounded
 /// up (`cvt.w.s` truncates, one added when it fell short). A jump of 0.25
 /// from the floor lands 45 updates later; 0.2125 in 38, 0.225 in 40.
+/// `ad n` (`FUN_00194a78`): with `n` updates at 60 a second as the frame
+/// rate's (`n × fps / 60`, at least 1), when [`airtime`] from rise `vy` and
+/// height `y` lands sooner, the rise that lands `n` updates on:
+/// `(−y − g n²) / n` with `airtime`'s `g`. None when he stays up long
+/// enough.
+pub fn hang(n: u16, vy: f32, y: f32) -> Option<f32> {
+    let n = (i32::from(n) * crate::TICK_HZ as i32 / 60).max(1);
+    if i32::from(airtime(vy, y)) >= n {
+        return None;
+    }
+    let g = f32::from_bits(0x4200_9be3) / (60.0 * 60.0) * f32::from_bits(0xbfa1_3ba4) * 0.5;
+    let n = n as f32;
+    Some((-y - g * n * n) / n)
+}
+
 pub fn airtime(vy: f32, y: f32) -> u8 {
     let g = f32::from_bits(0x4200_9be3) / (60.0 * 60.0) * f32::from_bits(0xbfa1_3ba4) * 0.5;
     let disc = vy * vy - 4.0 * g * y;

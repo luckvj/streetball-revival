@@ -612,13 +612,17 @@ impl Disc {
                 out.push(Step::Scale(f32::from_bits(self.unaligned(p))));
                 p + 4
             }
+            // `ad n` (`FUN_00194a78`): four bytes, the updates to stay up.
+            0xad => {
+                out.push(Step::StayUp(self.unaligned(p) as u16));
+                p + 4
+            }
             0x86 | 0x91 | 0xa2 | 0xa4 | 0xaa => p + 4,
             0x9f
             | 0x8b
             | 0xa3
             | 0x92
             | 0x9d
-            | 0xad
             | 0xa8
             | 0xac
             | 0xa9
@@ -631,7 +635,7 @@ impl Disc {
                 match op {
                     0x9f => p + 4,
                     0x8b | 0xa3 => p + 1,
-                    0x92 | 0x9d | 0xad => p + 3,
+                    0x92 | 0x9d => p + 3,
                     0xa8 => p + 9,
                     0xac => p + 13,
                     0xa9 => {
@@ -672,7 +676,7 @@ impl Disc {
                     }
                 }
             }
-            0x92 | 0x9d | 0xad => p + 3,
+            0x92 | 0x9d => p + 3,
             0xa6 => {
                 if self.byte(p) == 3 {
                     out.push(Step::Window {
@@ -1642,6 +1646,7 @@ fn spelled(s: &Step) -> String {
         ),
         Step::Carry(v) => format!("Carry({})", f(v)),
         Step::Scale(v) => format!("Scale({})", f(v)),
+        Step::StayUp(n) => format!("StayUp({n})"),
         Step::Want(w) => format!("Want({w})"),
         Step::Plant(p) => format!(
             "Plant(jump::Plant {{ hands: {}, keep: {}, pick: {:#x}, bones: [{}, {}] }})",

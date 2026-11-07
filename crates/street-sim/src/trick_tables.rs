@@ -9,7 +9,8 @@
 // when the disc's animations are not loaded.
 
 use Step::{
-    Bits, Blend, Call, Clear, End, Flight, Hop, Land, PlayOut, Shove, Stop, Test, Wait, Window,
+    Bits, Blend, Call, Clear, End, Flight, Hop, Land, PlayOut, Shove, StayUp, Stop, Test, Wait,
+    Window,
 };
 
 /// The 75 trick scripts (`0x3d7238`, 12 bytes a row: the script, a legend,
@@ -1438,6 +1439,7 @@ pub const REACTIONS: [Reaction; 85] = [
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
             Blend { n: 8, start: 0, records: [590, 590] },
             Land { to: 12 },
             Stop,
@@ -1459,6 +1461,7 @@ pub const REACTIONS: [Reaction; 85] = [
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
             Blend { n: 3, start: 0, records: [587, 587] },
             Land { to: 12 },
             Stop,
@@ -1480,6 +1483,7 @@ pub const REACTIONS: [Reaction; 85] = [
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
             Blend { n: 8, start: 0, records: [592, 592] },
             Land { to: 13 },
             Stop,
@@ -1501,6 +1505,7 @@ pub const REACTIONS: [Reaction; 85] = [
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
             Blend { n: 8, start: 0, records: [594, 594] },
             Land { to: 16 },
             Stop,
@@ -1851,6 +1856,7 @@ pub const REACTIONS: [Reaction; 85] = [
         steps: &[
             Bits(0x0),
             Hop { turn: 512, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
             Blend { n: 8, start: 3, records: [591, 591] },
             Land { to: 12 },
             Stop,
@@ -1866,6 +1872,7 @@ pub const REACTIONS: [Reaction; 85] = [
         steps: &[
             Bits(0x0),
             Hop { turn: 512, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
             Blend { n: 8, start: 0, records: [588, 588] },
             Land { to: 17 },
             Stop,
@@ -1881,6 +1888,7 @@ pub const REACTIONS: [Reaction; 85] = [
         steps: &[
             Bits(0x0),
             Hop { turn: 512, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
             Blend { n: 8, start: 0, records: [589, 589] },
             Land { to: 11 },
             Stop,
@@ -1896,6 +1904,7 @@ pub const REACTIONS: [Reaction; 85] = [
         steps: &[
             Bits(0x0),
             Hop { turn: 512, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
             Blend { n: 8, start: 0, records: [593, 593] },
             Land { to: 7 },
             Stop,
@@ -1954,21 +1963,22 @@ pub const REACTIONS: [Reaction; 85] = [
         address: 0x44bd94,
         root: [f32::from_bits(0x3f9991ba), f32::from_bits(0xbfbc7a86)],
         steps: &[
-        Bits(0x0),
-        Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
-        Blend { n: 8, start: 0, records: [599, 599] },
-        Land { to: 11 },
-        Stop,
-        Wait { to: 33, n: 33 },
-        Test(3),
-        Test(3),
-        Stop,
-        Bits(0x0),
-        Blend { n: 4, start: 0, records: [655, 655] },
-        PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 53, n: 80 },
-        Call(7),
-        Call(1),
-        End,
+            Bits(0x0),
+            Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
+            StayUp(20),
+            Blend { n: 8, start: 0, records: [599, 599] },
+            Land { to: 11 },
+            Stop,
+            Wait { to: 33, n: 33 },
+            Test(3),
+            Test(3),
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [655, 655] },
+            PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 53, n: 80 },
+            Call(7),
+            Call(1),
+            End,
         ],
     },
     Reaction {

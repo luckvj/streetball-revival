@@ -129,6 +129,12 @@ pub enum Step {
     /// dribble stands' 0.25: the stop's velocity a quarter through their
     /// blend).
     Scale(f32),
+    /// `ad n` (`FUN_00194a78`): at least `n` updates more in the air (at
+    /// 60 a second): a landing sooner than that relaunches the rise so he
+    /// lands `n` updates on, and the landing is timed again (actor+0x64,
+    /// +0x60 0). The mid-air tip-ins, the dunks turned lay-ups, the air
+    /// and dive passes, the fall-forwards.
+    StayUp(u16),
     /// Callback 4 (`FUN_00175248`): the wanted facing (actor+0xb0) toward
     /// the rim his team attacks (`FUN_0016f260`) plus its word.
     Want(i16),
@@ -720,6 +726,16 @@ impl Run {
                 Step::Dive { rise, .. } => {
                     ran.ops.push(step);
                     self.landing = self.tick + i16::from(crate::timing::airtime(rise, height));
+                    true
+                }
+                // `ad n`: a landing sooner than `n` updates on is moved to
+                // `n` on (the held moves time theirs from the flight).
+                Step::StayUp(n) => {
+                    ran.ops.push(step);
+                    let n = n.min(i16::MAX as u16) as i16;
+                    if self.landing.saturating_sub(self.tick) < n {
+                        self.landing = self.tick.saturating_add(n);
+                    }
                     true
                 }
                 // `a1 f0`, as the hop: the held moves land on their
@@ -2434,6 +2450,17 @@ impl World {
             ];
             r.vy = rise;
             r.up = true;
+        }
+        // `ad n` after the hop: a landing sooner than `n` updates on
+        // relaunches the rise.
+        for step in ran.ops.iter() {
+            if let Step::StayUp(n) = step {
+                let vy = if r.up { r.vy } else { 0.0 };
+                if let Some(v) = timing::hang(n, vy, p.height) {
+                    r.vy = v;
+                    r.up = true;
+                }
+            }
         }
         if r.up {
             let g = crate::toss::JUMP_GRAVITY;

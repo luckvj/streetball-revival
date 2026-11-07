@@ -672,6 +672,11 @@ impl World {
                     Step::Rise(v) => vy = v,
                     Step::Carry(k) => vy = f.moved[1] * k,
                     Step::Scale(k) => vy *= k,
+                    Step::StayUp(n) => {
+                        if let Some(v) = timing::hang(n, vy, self.players[i].height) {
+                            vy = v;
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -767,6 +772,7 @@ impl World {
                         | Step::Dive { .. }
                         | Step::Aim(_)
                         | Step::Reach(_)
+                        | Step::StayUp(_)
                 ) {
                     f.air = u16::from(timing::airtime(f.velocity[1], self.players[i].height));
                     f.aloft = 0;
@@ -1172,6 +1178,11 @@ impl World {
             // `ae k` (`FUN_00194960`): the velocity times `k` (the mid-air
             // lay-ups' and passes' 0.5), the landing timed again from it.
             Step::Scale(k) => f.velocity = f.velocity.map(|c| c * k),
+            Step::StayUp(n) => {
+                if let Some(v) = timing::hang(n, f.velocity[1], self.players[i].height) {
+                    f.velocity[1] = v;
+                }
+            }
             Step::Slide(k) => {
                 // `FUN_001957d8`: a negative value is the default 0.5.
                 f.slide = if k < 0.0 { 0.5 } else { k };
