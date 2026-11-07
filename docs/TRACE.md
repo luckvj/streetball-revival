@@ -14972,3 +14972,18 @@ from the press) instead of the log's later one (19 flown); with the
 flight's count his facing matches the log through step 296 (was 277).
 From 313 his aim runs 1..3 units off again, near his spot; the level at
 319 still drops an update late (his position 0.10 off).
+
+The computer's pump fakes (same day, nothing ported): the rewrite fakes
+0.2..0.6 times a match on capture 3's rosters, the captures never. The
+shoot node's fake (`0x101188..0x101238`) reads the same gates in the same
+order as the port: not faked, no Block lesson, `FUN_00181aa8` (ball, and
+none of bits 9, 6, 12 or 8, the pump fake word actor+0x1d0, the channel's
+0x40 or a juke), not dribbling (`FUN_001816b0`, actor+0x1a0 exactly 1),
+quality under 5, one draw in 16; then it presses 0x80 alone and waits
+out the move. A shot in flight is not excluded: the node keeps building
+0x80 every update of the gather (the captures' built word stays 0x2080
+with nothing newly pressed), so a fake drawn mid-gather lets go of the
+button and callback 20 fakes the shot. Only catch-and-shoot gathers can
+draw it (actor+0x1a0 0): 425 of the rewrite's 10,314 shooting updates
+over the four matches. Expected about 1.2 over the three captures, so
+none is chance (p ~0.3).
