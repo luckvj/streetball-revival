@@ -1038,6 +1038,7 @@ mod tests {
             buttons,
             view: (x as u16) & 0x3ff,
             off_screen: (x as u8) & 0x3f,
+            word: None,
         }
     }
 

@@ -1312,7 +1312,6 @@ impl Player {
             evaluate_gait_family_hysteresis,
         };
         use tuning::*;
-        let [sx, sz] = input.stick();
         // The stick's strength (actor+0x90; `FUN_00163d40` moves at 16 or
         // more and caps it at 64).
         let strength = input.strength().max(0) as u32;
@@ -1371,7 +1370,7 @@ impl Player {
                 ) * limit
             };
             if moves {
-                let turn = wrap_angle(math::atan2(sx, sz) - self.heading);
+                let turn = wrap_angle(input.heading() - self.heading);
                 let max = TURN_RATE * TICK_SECONDS;
                 self.heading = wrap_angle(self.heading + turn.clamp(-max, max));
             }
@@ -1426,7 +1425,7 @@ impl Player {
                 )
             };
             self.speed = phys * limit;
-            self.course = math::atan2(sx, sz);
+            self.course = input.heading();
             // The wanted facing: the stick's, or a guard's holder (steadied
             // by `FUN_00168a10` after the mode's first update).
             self.wanted = match stance {

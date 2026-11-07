@@ -2091,7 +2091,11 @@ fn the_pass_targets_near_the_rim_stand_7_from_it_on_his_line() {
     let rim = [36.0, 0.0];
     let near = |a: [f32; 2], b: [f32; 2]| court::dist(a, b) < 0.01;
     assert!(near(spots::near_rim([20.0, 0.0], rim), [29.0, 0.0]));
-    assert!(near(spots::near_rim([36.0, 20.0], rim), [36.0, 7.0]));
+    // Straight out from the rim along z the original's arc tangent
+    // (`FUN_0018ce78`: x exactly 0 over a negative z takes -pi) gives word
+    // 513, a unit past the line: 7 out, 0.04 to the side.
+    let side = spots::near_rim([36.0, 20.0], rim);
+    assert!(court::dist(side, [36.0, 7.0]) < 0.05, "{side:?}");
     // Within 7 he is the point.
     assert!(near(spots::near_rim([33.0, 0.0], rim), [33.0, 0.0]));
     // The post cut: the spot on his line to the rim, else his place.

@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- Computer players run in exactly the direction their AI picks, as on
+  the PS2 (the direction had been rounded through a stick and could be a
+  hair off), and their aim at a spot uses the original's own angle maths.
 - The ball sits in the holder's hands as on the PS2 while he stands, as a
   catch plays out and as a new walk blends in, and players who turn to
   watch the ball only do so when they are far enough off it, as the

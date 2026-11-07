@@ -15,9 +15,10 @@ pub(super) fn units(radians: f32) -> i32 {
     ((radians * 162.974_66 + 0.5) as i32) & 0x3ff
 }
 
-/// The stick angle that moves from `from` toward `to` (`FUN_0018ce78`).
+/// The stick angle that moves from `from` toward `to` (`FUN_0018ce78`,
+/// its own arc tangent).
 pub(super) fn angle_toward(from: [f32; 2], to: [f32; 2]) -> i32 {
-    units(crate::math::atan2(from[0] - to[0], from[1] - to[1]))
+    crate::ordinary::native_heading([from[0], 0.0, from[1]], [to[0], 0.0, to[1]])
 }
 
 /// The signed difference `a - b` wrapped to -512..=512 (`FUN_0018cd78`).

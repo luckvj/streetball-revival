@@ -77,6 +77,10 @@ pub struct Input {
     /// there is no camera: every actor on it. Carried in the view word's
     /// top six bits ([`Input::to_bytes`]).
     pub off_screen: u8,
+    /// A computer pad's heading word (actor+0x88), which the locomotion
+    /// takes as it is where the stick only approximates it
+    /// ([`Input::heading`]); not carried in [`Input::to_bytes`].
+    pub word: Option<u16>,
 }
 
 fn quantise(v: f32) -> i8 {
@@ -115,6 +119,29 @@ impl Input {
     /// The left stick as a court direction, length up to about 1.
     pub fn stick(&self) -> [f32; 2] {
         self.stick.map(|v| f32::from(v) / 127.0)
+    }
+
+    /// The direction the stick moves along, radians as `atan2(x, z)`: a
+    /// computer pad's own heading word when the stick still points its
+    /// way (within the stick's rounding), else the stick's.
+    pub fn heading(&self) -> f32 {
+        let [sx, sz] = self.stick();
+        let stick = crate::math::atan2(sx, sz);
+        if let Some(w) = self.word {
+            let w = i32::from(w);
+            let exact = crate::math::atan2(-native_sin_1024(w), -native_cos_1024(w));
+            let mut d = exact - stick;
+            while d > std::f32::consts::PI {
+                d -= std::f32::consts::TAU;
+            }
+            while d < -std::f32::consts::PI {
+                d += std::f32::consts::TAU;
+            }
+            if d.abs() < 0.02 {
+                return exact;
+            }
+        }
+        stick
     }
 
     pub fn aim(&self) -> [f32; 2] {
@@ -202,6 +229,7 @@ impl Input {
                 & (button::ALL | button::PICK | button::PICK_STANCE | button::COMPUTER),
             view: u16::from_le_bytes([b[6], b[7]]) & 0x3ff,
             off_screen: b[7] >> 2,
+            word: None,
         }
     }
 }

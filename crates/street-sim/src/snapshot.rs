@@ -122,7 +122,7 @@ use crate::{
 /// the stands (the flair's up one), the toss's flight words
 /// ([`crate::Tip::toss_flight`]), the tip jump's landing; 117: a stand's
 /// held clip turned by a heading match, as a walk's ([`crate::ordinary`]).
-const VERSION: u8 = 120;
+const VERSION: u8 = 121;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -330,6 +330,7 @@ impl World {
         w.uv(previous_inputs.len() as u64);
         for i in previous_inputs {
             w.0.extend_from_slice(&i.to_bytes());
+            w.iv(i.word.map_or(-1, i64::from));
         }
         // The match's own disc values, not the disc's tables.
         match gait {
@@ -563,6 +564,7 @@ impl World {
         }
         for pad in pad_before {
             w.0.extend_from_slice(&pad.to_bytes());
+            w.iv(pad.word.map_or(-1, i64::from));
         }
         match frozen {
             None => w.u8(0),
@@ -742,7 +744,14 @@ impl World {
         let previous_inputs = (0..n)
             .map(|_| {
                 let b: [u8; Input::BYTES] = r.take(Input::BYTES)?.try_into().expect("8 bytes");
-                Ok(Input::from_bytes(b))
+                let word = match r.iv()? {
+                    -1 => None,
+                    v => Some(u16::try_from(v).map_err(|_| "invalid input word")?),
+                };
+                Ok(Input {
+                    word,
+                    ..Input::from_bytes(b)
+                })
             })
             .collect::<Result<Vec<_>, String>>()?;
         let gait = match r.u8()? {
@@ -987,7 +996,14 @@ impl World {
         let mut pad_before = [Input::default(); 2];
         for pad in &mut pad_before {
             let b: [u8; Input::BYTES] = r.take(Input::BYTES)?.try_into().expect("8 bytes");
-            *pad = Input::from_bytes(b);
+            let word = match r.iv()? {
+                -1 => None,
+                v => Some(u16::try_from(v).map_err(|_| "invalid pad word")?),
+            };
+            *pad = Input {
+                word,
+                ..Input::from_bytes(b)
+            };
         }
         let frozen = match r.u8()? {
             0 => None,

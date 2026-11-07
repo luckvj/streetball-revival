@@ -99,6 +99,7 @@ pub(super) fn to_input(ctx: &Ctx, i: usize, pad: &Pad) -> Input {
     let b = pad.buttons;
     let mut out = Input {
         stick: stick_of(pad),
+        word: (pad.strength > 0).then_some((pad.angle & 0x3ff) as u16),
         ..Input::default()
     };
     let mut held = 0;

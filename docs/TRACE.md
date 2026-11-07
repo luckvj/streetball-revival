@@ -14937,3 +14937,15 @@ and the seven flairs that run into it pass 30, every other script 0
 (`Step::TowardBall`, decoded in `tests/trick_disc.rs`). The PS2's actor 2
 kept his wanted 780 against the ball's 776; with it his stand's slide
 drifts 0.012 from the log (was 0.085).
+
+The computers' heading (same day): the AI writes the pad's heading word
+(actor+0x88) and the locomotion moves along it; the rewrite passed it
+through an 8-bit stick and an arc tangent, a unit off at times (actor 1's
+wanted 84 for the log's 85 at step 201, then ones through 277). `Input`
+now carries a computer pad's word (`Input::word`, saved in snapshots, not
+on the wire) and the walk's direction is it while the stick still points
+its way (`Input::heading`). `ai::court::angle_toward` uses the original's
+arc tangent (`FUN_0018ce78`: straight out along z with x exactly 0 is word
+513, the -pi branch). Actor 1's facing then matches the log through step
+277; at 278, 1 from his spot, a few hundredths of position in the others
+turn his aim 3 units.
