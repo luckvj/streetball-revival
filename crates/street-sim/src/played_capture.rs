@@ -5657,6 +5657,122 @@ fn the_persons_shots_and_passes_hold_the_ball_on_their_clips_in_play() {
 }
 
 #[test]
+fn the_persons_running_passes_carry_him_on_the_rows_velocity() {
+    // A pass row with flag 0x100 (the `_run_` rows) plays on channel 2 over
+    // the run (`0x160fdc..0x1610c4`), and the pass start sets his velocity
+    // to his speed (actor+0x190, as `FUN_00163d40(actor, 1, 1)` left it)
+    // along his wanted facing (`0x160f90..0x160fd4`); it holds through the
+    // windup whatever the stick does. The person's running passes (channel
+    // 0 still on a gait script after the press) replayed from the press:
+    // the passer's step each update against the capture's actor+0x40.
+    let Some(captures) = load() else {
+        return;
+    };
+    if crate::pose::disc_bank().get().is_none() {
+        return;
+    }
+    let mut errors = Vec::new();
+    let mut rows = std::collections::BTreeMap::<String, u32>::new();
+    let mut passes = 0;
+    for cap in captures {
+        for u in &cap.updates {
+            if !matches!(u.phase(), 4 | 5) {
+                continue;
+            }
+            for (k, &controller) in u.controllers().iter().enumerate() {
+                if controller == 4
+                    || u.holder() != cap.actors[k]
+                    || u.word(k, "pressed") & 0x100 == 0
+                {
+                    continue;
+                }
+                let press = u.frame();
+                let (Some(after), Some(before)) = (cap.get(press + 1), cap.get(press - 1)) else {
+                    continue;
+                };
+                if cap.get(press - 1).is_some_and(|x| x.ball_state() == 4)
+                    || pass_row_at(after.pc(k)).is_some()
+                    || before.motion(k) < 0.1
+                {
+                    continue;
+                }
+                let mut w = dressed(
+                    replay_world_for(
+                        cap,
+                        u,
+                        k,
+                        before.word(k, "heading") as i32,
+                        before.motion(k),
+                        before.word(k, "hand"),
+                    ),
+                    cap,
+                );
+                let input_at = |n: i64, w: &World| {
+                    let mut all = vec![Input::default(); w.players.len()];
+                    let x = cap.get(press + n);
+                    let (h, i) = x.map_or((0, 0), |x| {
+                        (
+                            x.word(k, "requested_heading") as i32,
+                            x.word(k, "requested_intensity") as i32,
+                        )
+                    });
+                    let mut mine = Input::moving(stick(h, i));
+                    if x.is_some_and(|x| x.word(k, "held") & 0x100 != 0) {
+                        mine = mine.with(button::PASS);
+                    }
+                    all[k] = mine;
+                    all
+                };
+                passes += 1;
+                let mut last = w.players[k].position;
+                for n in 0..12i64 {
+                    w.step(&input_at(n, &w));
+                    let Some(x) = cap.get(press + n) else {
+                        break;
+                    };
+                    if n == 0 {
+                        let name = match w.players[k].action {
+                            Action::Passing { row, .. } => {
+                                let r = &timing::PASS_ROWS[usize::from(row)];
+                                format!("{row} {:#x}", r.flags)
+                            }
+                            _ => "none".into(),
+                        };
+                        *rows.entry(name).or_default() += 1;
+                    }
+                    let now = w.players[k].position;
+                    let m = &x.actor(k)["motion"];
+                    let (mx, mz) = (m[0].as_f64().unwrap() as f32, m[2].as_f64().unwrap() as f32);
+                    if n >= 1 && x.ball_state() == 4 && cap.actor_of(x.holder()) == Some(k) {
+                        errors.push(libm::hypotf(now[0] - last[0] - mx, now[1] - last[1] - mz));
+                    }
+                    last = now;
+                }
+            }
+        }
+    }
+    errors.sort_by(f32::total_cmp);
+    let q = |f: f32| {
+        errors
+            .get((errors.len() as f32 * f) as usize)
+            .copied()
+            .unwrap_or(0.0)
+    };
+    eprintln!(
+        "running passes {passes} steps {} median {:.4} p90 {:.4} rows {rows:?}",
+        errors.len(),
+        q(0.5),
+        q(0.9)
+    );
+    report(
+        "running_passes",
+        json!({"passes": passes, "steps": errors.len(), "median": q(0.5), "p90": q(0.9)}),
+    );
+    assert!(passes >= 5, "{passes}");
+    assert!(q(0.5) < 0.035, "{}", q(0.5));
+}
+
+#[test]
 fn the_live_hand_follows_the_held_clip_in_play() {
     // `FUN_0014e060`'s write of actor+0x25c ([`crate::dribble::live_hand`])
     // against the played captures: on every held update outside a blend,

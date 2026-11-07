@@ -316,6 +316,25 @@ impl World {
         {
             self.players[i].wanted = crate::restart::heading_radians(i32::from(w));
         }
+        // A running row (flag 0x100, `0x160f90..0x160fd4`): his velocity
+        // becomes his speed (actor+0x190) along that wanted facing, before
+        // the script's callback 39 turns it, and holds through the windup.
+        let run_velocity =
+            (crate::timing::PASS_ROWS[usize::from(row)].flags & 0x100 != 0).then(|| {
+                // `FUN_00163d40(actor, 1, 1)` left actor+0x190 at the record's
+                // motion for this update's stick (the moving passer's selection
+                // just ran), at once.
+                let p = &self.players[i];
+                let speed = if p.gait_channel.record.is_some() {
+                    p.record_speed(input)
+                } else {
+                    p.speed
+                };
+                crate::input::native_velocity_step(
+                    speed * crate::TICK_SECONDS,
+                    crate::timing::facing_word(p.wanted),
+                )
+            });
         // The script's callback 39 (`FUN_001753a0`) before its first blend,
         // in this update's channel step.
         let steps = crate::held::PASS_STEPS
@@ -355,9 +374,14 @@ impl World {
             };
             let still = crate::timing::stick_strength(self, i, &pad) < crate::input::MOVES;
             let p = &mut self.players[i];
-            let [vx, vz] = if still { [0.0; 2] } else { p.velocity() };
             let dt = crate::TICK_SECONDS;
-            p.flight = crate::jump::Flight::new([vx * dt, 0.0, vz * dt]);
+            p.flight = crate::jump::Flight::new(match run_velocity {
+                Some([vx, vz]) => [vx, 0.0, vz],
+                None => {
+                    let [vx, vz] = if still { [0.0; 2] } else { p.velocity() };
+                    [vx * dt, 0.0, vz * dt]
+                }
+            });
             p.flight.script = r.script;
         }
         self.windup = Some(Windup {

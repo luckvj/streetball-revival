@@ -1297,6 +1297,29 @@ impl Player {
 
     /// Steer by the stick, at up to `limit` of the usual top speeds. Turbo
     /// speed needs turbo in the bar and uses it up. A guard (`stance`,
+    /// `FUN_00163d40`'s moving path's speed (`0x167b70..0x167cb0`,
+    /// actor+0x190 a second): the playing gait record's motion by the
+    /// stick (by the speed rating for a run outside a restart), times the
+    /// turbo's factor while turbo is held with some bar left.
+    pub(crate) fn record_speed(&self, input: &crate::Input) -> f32 {
+        use crate::input::{
+            GaitFamily, combine_input_intensity, compute_physical_motion,
+            evaluate_gait_family_hysteresis,
+        };
+        let strength = input.strength().max(0) as u32;
+        let turbo = input.turbo() && self.turbo > 0.0;
+        let (_, capped) = combine_input_intensity(strength, 0);
+        let family = evaluate_gait_family_hysteresis(self.gait_channel.family, capped);
+        let family = if self.restart_walk {
+            GaitFamily::Walk
+        } else {
+            family
+        };
+        let [lo, hi] = self.gait_channel.motion.map(|m| m * crate::TICK_HZ as f32);
+        let rating = (self.ratings.speed * 99.0).round() as u32;
+        compute_physical_motion(family, capped, rating, lo, hi, turbo)
+    }
+
     /// [`crate::guard`]) faces the ball's holder and moves at his guarding
     /// record's speed.
     pub(crate) fn walk(
