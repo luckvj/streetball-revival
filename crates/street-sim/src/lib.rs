@@ -2127,6 +2127,15 @@ impl World {
                 // him on it.
                 // The record first, its motion range then sets the speed.
                 self.select_gait_with(i, &walk, held, stance, false, shown);
+                // The record's blend (counted from 7 for the update's step
+                // to take to 6) begins in this channel step, after the
+                // locomotion's step: its first update is this one (the third
+                // attract match's tip jumper starts his run at update 871,
+                // the counter 1 there, 6 at 876).
+                let channel = &mut self.players[i].gait_channel;
+                if channel.blend_counter == 7 {
+                    channel.blend_counter = 6;
+                }
                 let mut ran = self.players[i].clone();
                 ran.walk(&walk, 1.0, held, stance);
                 let p = &mut self.players[i];

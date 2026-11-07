@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A player who starts running straight out of a move (the jump ball, a
+  shot, a dunk) now settles into his stride at the same moment as on the
+  PS2, so his steps stay in time with the PS2's for the rest of the run.
 - A player knocked over falls and slides as on the PS2: he lands where
   the PS2 puts him, held back by whoever he hits on the way.
 - Block and rebound jumps fly as on the PS2: a jumper no longer sticks to
