@@ -5,6 +5,13 @@ its version's part.
 
 ## Unreleased
 
+- Computer players' footwork and runs follow the PS2 more closely: a
+  run or dribble that starts out of another stride, out of a stand that
+  is still settling, or right at the end of a stride's loop starts on the
+  same step as the PS2; a receiver running to a pass keeps his exact
+  line; a defender heading back to guard the rim aims at the same point
+  the PS2 does (just short of the rim); and a computer that shoots on the
+  move picks his stride before the shot, as the PS2 does.
 - A player who catches a pass on the run now keeps running underneath
   the catch, as on the PS2: his legs and hips stay on his run while his
   arms and head play the catch, and the ball sits in those hands (it had

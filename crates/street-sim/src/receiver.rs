@@ -161,6 +161,7 @@ impl World {
         {
             let input = crate::Input {
                 stick,
+                word: self.steer_word(to),
                 ..self.previous_inputs[to]
             };
             let mut ran = self.players[to].clone();
@@ -184,6 +185,15 @@ impl World {
             -crate::input::native_cos_1024(word) * s,
         ];
         Some(crate::Input::moving(d).stick)
+    }
+
+    /// The court word of [`SpotRun::steer`] for `i`, while it is his: the
+    /// pad's heading the run's stick carries ([`crate::Input::word`]), so
+    /// his course is the word's exactly (the third attract match's pass at
+    /// update 872: his velocity along word 139, not the axes' 138.85).
+    pub(crate) fn steer_word(&self, i: usize) -> Option<u16> {
+        let (who, word, _) = self.spot_run.steer?;
+        (who == i).then_some((word & 0x3ff) as u16)
     }
 
     /// The stick receiver `i` runs on while a pass is his

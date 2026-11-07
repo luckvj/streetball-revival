@@ -191,7 +191,10 @@ fn the_defenders_spot_follows_fun_00108148() {
         })
         .0
     };
-    let close = |a: f32, b: f32| (a - b).abs() < 1e-3;
+    // The spot's step is the gap over VU0's length of the man-to-rim
+    // vector with its w (`sqrt(20² + 1)`), short of the gap by that much.
+    let short = 20.0 / (20.0f32 * 20.0 + 1.0).sqrt();
+    let close = |a: f32, b: f32| (a - b * short).abs() < 1e-3;
     assert!(close(gap(&w, false, &|_| {}), 3.5));
     w.set_turbo(0, 1.0);
     assert!(close(gap(&w, false, &|d| d.sag = true), 6.8));

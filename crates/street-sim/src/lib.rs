@@ -1845,7 +1845,11 @@ impl World {
                 });
             let steered = self.receiver_stick(i);
             let input = match steered {
-                Some(stick) => Input { stick, ..input },
+                Some(stick) => Input {
+                    stick,
+                    word: self.steer_word(i),
+                    ..input
+                },
                 None => input,
             };
             let standing = standing || self.receiver_holds(i) || self.caught_row_holds(i);
@@ -1926,7 +1930,10 @@ impl World {
             // (`FUN_0015a060` calls `FUN_0015f930` at `0x15b9c0`, after its
             // `FUN_00163d40`): the stand or walk his stick asked for draws
             // first and the pass row replaces it.
-            if let Some(aimed) = late_pass {
+            if let Some(LatePress::Shoot) = late_pass {
+                self.shoot_button(i, &press_input);
+            }
+            if let Some(LatePress::Pass(aimed)) = late_pass {
                 // `FUN_0015f930` (`0x15faf0..0x15fbe4`): a passer still
                 // moving (actor+0x40; zeroed first on the floor with the
                 // stick's last strength, +0x90, under 16) and his channel
@@ -2458,6 +2465,10 @@ impl World {
             let p = &self.players[i];
             match p.stand {
                 _ if script.is_some() => script.map(|s| s.from.0),
+                // A stand still blending in from the gait: the row it
+                // leaves (`+0x50`; the third attract match's holder at
+                // update 936 starts his dribble at the stand blend's share).
+                Some(s) if stand_blend_from_gait(&s) => s.from.map(|f| f.0),
                 Some(s) => s.run.shown().record,
                 None if p.gait_channel.moving => {
                     p.gait_channel.record.map(|_| p.gait_channel.record_row())
@@ -2521,14 +2532,52 @@ impl World {
                 gait_select::RecordStart::Share => {
                     let frames =
                         |r: u16| poses.frames(r).unwrap_or(1).min(usize::from(u16::MAX)) as u16;
-                    share = Some(ordinary::Share {
-                        frame: if channel.blend_counter > 0 {
-                            channel.phase.trunc()
-                        } else {
-                            channel.phase
+                    // The channel's frame (`+0x64`) wraps by the clip's
+                    // length as it steps; ours runs on, so it is wrapped
+                    // here.
+                    let wrapped = {
+                        let n = f32::from(frames(channel.row).max(1));
+                        let mut f = channel.phase;
+                        while n <= f {
+                            f -= n;
+                        }
+                        f
+                    };
+                    // A stand blending in: its blend's start frame
+                    // (`+0x60`) of its clip (`+0x54`) at 0.8.
+                    let stand_blend = p
+                        .stand
+                        .filter(stand_blend_from_gait)
+                        .and_then(|s| stand_blend_start(&s));
+                    share = Some(match stand_blend {
+                        Some((clip, start)) => ordinary::Share {
+                            frame: start,
+                            rate: Some(gait_select::SHARE_BLEND_RATE),
+                            frames: [frames(clip), frames(row)],
                         },
-                        rate: (channel.blend_counter > 0).then_some(gait_select::SHARE_BLEND_RATE),
-                        frames: [frames(channel.row), frames(row)],
+                        // Past the clip's last frame its loop is pending
+                        // (`ab`: `+0x54` the clip again from `+0x60` 0, the
+                        // third attract match's defender at update 905), read
+                        // as a running blend: frame 0 at 0.8.
+                        None if channel.blend_counter == 0
+                            && f32::from(frames(channel.row)) - 1.0 < wrapped =>
+                        {
+                            ordinary::Share {
+                                frame: 0.0,
+                                rate: Some(gait_select::SHARE_BLEND_RATE),
+                                frames: [frames(channel.row), frames(row)],
+                            }
+                        }
+                        None => ordinary::Share {
+                            frame: if channel.blend_counter > 0 {
+                                wrapped.trunc()
+                            } else {
+                                wrapped
+                            },
+                            rate: (channel.blend_counter > 0)
+                                .then_some(gait_select::SHARE_BLEND_RATE),
+                            frames: [frames(channel.row), frames(row)],
+                        },
                     });
                     0.0
                 }
@@ -2621,7 +2670,7 @@ impl World {
         before: &Input,
         calls: bool,
         start: &[[f32; 2]],
-    ) -> Option<bool> {
+    ) -> Option<LatePress> {
         use tuning::*;
         // The right stick pushed home is a pass press of its own (the
         // held word's 0x400, [`passing::aim_pressed`]): the give 'n go.
@@ -2671,9 +2720,13 @@ impl World {
         };
         if self.ball.state == BallState::Held(i) {
             if self.shoots(input, pressed) {
-                self.shoot_button(i, input);
+                // After his locomotion, as the pass (`FUN_0015a060`:
+                // `FUN_00163d40` at `0x15b0d0`, the shoot press's move at
+                // `0x15b2f0`; the third attract match's dunker at update
+                // 945 draws his gait record's pick first).
+                return Some(LatePress::Shoot);
             } else if pass_press {
-                return Some(aimed);
+                return Some(LatePress::Pass(aimed));
             } else if pressed & button::TRICK != 0 {
                 self.juke_press(i, input, turbos);
             } else if pressed & button::SELECT != 0 {
@@ -4750,3 +4803,31 @@ mod played_capture;
 
 #[cfg(test)]
 mod row_capture;
+
+/// A stand whose script's first blend has not yet finished, begun from the
+/// gait (its `from` a moving row): callback 52 still reads the row it
+/// leaves.
+fn stand_blend_from_gait(s: &stand::Standing) -> bool {
+    let from_moving = s
+        .from
+        .is_some_and(|(row, _)| gait_select::MOVING_ROWS.contains(&row));
+    from_moving && (s.run.tick <= 0 || s.run.blend_counter().is_some())
+}
+
+/// The clip and start frame of a stand's first blend (its script's
+/// `Blend` step).
+fn stand_blend_start(s: &stand::Standing) -> Option<(u16, f32)> {
+    s.steps().iter().find_map(|step| match *step {
+        trick::Step::Blend { start, records, .. } => Some((records[0], f32::from(start))),
+        _ => None,
+    })
+}
+
+/// A free holder's press that goes in after his locomotion
+/// ([`World::buttons`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum LatePress {
+    /// The pass, `true` from the right stick.
+    Pass(bool),
+    Shoot,
+}

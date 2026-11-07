@@ -418,6 +418,7 @@ impl World {
         {
             let input = crate::Input {
                 stick,
+                word: self.steer_word(i),
                 ..self.previous_inputs[i]
             };
             self.select_gait(i, &input, false, None);

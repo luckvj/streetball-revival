@@ -1155,7 +1155,12 @@ impl Defense {
         let own = ctx.goal(1 - team);
         let m = ctx.pos(man);
         let to = [own[0] - m[0], own[1] - m[1]];
-        let far = crate::math::len(to[0], to[1]).max(1.0);
+        // The length is VU0's of the whole vector (`0x1081e4..0x1081f4`):
+        // the man's position carries w = 1 and the rim's w = 0, so it is
+        // `sqrt(x² + z² + 1)`, at least 1; the spot falls that much short
+        // of the rim (the third attract match's defender at update 912
+        // steers at it to the unit).
+        let far = (to[0] * to[0] + to[1] * to[1] + 1.0).sqrt().max(1.0);
         let has = ctx.has_ball(man);
         let press = has && self.standing(ctx, i) && 33.75 < ctx.hoop_dist(man);
         // `FUN_0013abb8`: a pass in flight to him (ball state 4, no holder).
@@ -1266,7 +1271,9 @@ impl Defense {
         if !picked && ctx.hoop_dist(man) < gap {
             gap = ctx.hoop_dist(man);
         }
-        [m[0] + to[0] / far * gap, m[1] + to[1] / far * gap]
+        // `(to · gap) · (1 / far)` (`0x108950..0x10897c`).
+        let inv = 1.0 / far;
+        [m[0] + to[0] * gap * inv, m[1] + to[1] * gap * inv]
     }
 
     /// team+0xc4 (`FUN_0018b340`): the side's best shot-blocker, height in
