@@ -14949,3 +14949,17 @@ arc tangent (`FUN_0018ce78`: straight out along z with x exactly 0 is word
 513, the -pi branch). Actor 1's facing then matches the log through step
 277; at 278, 1 from his spot, a few hundredths of position in the others
 turn his aim 3 units.
+
+Ruled out or measured (2026-11-07): actor 1's level at step 319 drops
+on the log when his distance to the rim crosses 2.816 (`thr(2, 0)`); the
+rewrite's is 2.853 there, his position 0.097 off, the drift from his
+aim at step 278 (3 units: his spot follows actor 4, 12 away, and jumps
+0.3 for one update at 277 as the spot's gap branches). The log's defence
+object words (+0x2c level, +0x30 held, +0x34 hold) match the rewrite's;
+its spot is not logged. Script blends weighted `(counter - 1) /
+(length - 1)` or lagged an update for the moves alone both break the
+draws at 856 or the passer's slide: the pass's first-update pose stays
+open (the log's bones may not be rebuilt that update). The tip jumpers'
+ankles differ 0.06..0.13 in the air and up to 0.28 after landing (the tip
+pose plays the plain clip; the original's aim pose is not ported), apart
+from the 0.02 shove both get at steps 200..202.
