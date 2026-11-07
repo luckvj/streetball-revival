@@ -625,6 +625,7 @@ impl World {
             counter: c.blend.map(|_| (tick + 1, BLEND)),
             gait: false,
             turn: 0,
+            held: None,
         })
     }
 

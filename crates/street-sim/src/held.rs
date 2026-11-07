@@ -84,6 +84,10 @@ pub struct ChannelStart {
     /// The units that match turned the held clip (`FUN_00196698(channel,
     /// 1)` turns +0xbc back so the world pose holds).
     pub turn: i16,
+    /// The pose the channel showed (`FUN_001935c8` copies the output to
+    /// +0xbc): a stand's or the gait's, blends and all; None for another
+    /// script's, which holds [`ChannelStart::from`].
+    pub held: Option<pose::Held>,
 }
 
 /// What a player's channel 0 shows this update.
@@ -100,6 +104,9 @@ pub struct Channel {
     pub gait: bool,
     /// The units the first blend's heading match turned the held clip.
     pub turn: i32,
+    /// The pose held through the first blend, when the channel showed one
+    /// ([`ChannelStart::held`]).
+    pub held: Option<pose::Held>,
 }
 
 /// The ball's offset from its holder in his own frame, stored by a blend's
@@ -320,6 +327,8 @@ pub(crate) struct MoveSteps {
     pub from: Option<(u16, f32)>,
     /// The units its heading match turned that clip.
     pub turn: i32,
+    /// The pose held in its place ([`ChannelStart::held`]).
+    pub held: Option<pose::Held>,
     /// The script has run out (its `End` this update or before).
     pub done: bool,
 }
@@ -341,6 +350,17 @@ impl World {
         let pelvis = self
             .actor_pose(i)
             .map(|pose| trick::pelvis_word(&pose) as i16);
+        let held = self
+            .poses
+            .get()
+            .and_then(|poses| match self.players[i].stand {
+                Some(s) if s.run.tick <= 0 => s.held,
+                Some(s) => s.local(poses),
+                None => match self.channel(i) {
+                    Some(c) if c.gait => self.gait_local(i),
+                    _ => None,
+                },
+            });
         let p = &mut self.players[i];
         p.channel_start = Some(ChannelStart {
             script: address,
@@ -349,6 +369,7 @@ impl World {
             side: other_side(p),
             pelvis,
             turn: 0,
+            held,
         });
         // The script replaces the channel's (`FUN_0019c2f8`): a stand his
         // locomotion started this update (a free holder's pass goes in
@@ -495,6 +516,7 @@ impl World {
             counter: run.blend_counter(),
             gait: false,
             turn: 0,
+            held: None,
         };
         match &p.action {
             Action::Trick { play, .. } => return Some(of(&play.run, play.from)),
@@ -516,6 +538,7 @@ impl World {
                     counter: j.blend().map(|_| (j.tick + 1, j.blend_len())),
                     gait: false,
                     turn: 0,
+                    held: None,
                 });
             }
             _ => {}
@@ -581,6 +604,7 @@ impl World {
             }
             return Some(Channel {
                 turn: first.map_or(0, |s| i32::from(s.turn)),
+                held: first.and_then(|s| s.held),
                 ..of(&run, from)
             });
         }
@@ -697,6 +721,7 @@ impl World {
             land_at,
             from,
             turn: first.map_or(0, |x| i32::from(x.turn)),
+            held: first.and_then(|x| x.held),
             done: after.done,
         })
     }
@@ -719,6 +744,7 @@ impl World {
             counter: blending.then_some((g.blend_counter as u16, n as u16)),
             gait: true,
             turn: 0,
+            held: None,
         }
     }
 
@@ -730,10 +756,11 @@ impl World {
         if c.gait {
             return None;
         }
-        trick::pose_turned(
+        trick::pose_from(
             poses,
             c.shown,
             c.from,
+            c.held.as_ref(),
             c.turn,
             self.players[i].body(),
             self.place(i),
@@ -794,7 +821,16 @@ impl World {
                 let at = if crate::dribble::dribbles(&poses, record) && state & 0xc == 0 {
                     crate::dribble::ball_point(&poses, record, start, body, place, radius)
                 } else {
-                    trick::pose_turned(&poses, c.shown, c.from, c.turn, body, place).map(|pose| {
+                    trick::pose_from(
+                        &poses,
+                        c.shown,
+                        c.from,
+                        c.held.as_ref(),
+                        c.turn,
+                        body,
+                        place,
+                    )
+                    .map(|pose| {
                         crate::dribble::in_hand(&pose, record, start as i32, state, body, radius)
                     })
                 };

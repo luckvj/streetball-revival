@@ -643,6 +643,9 @@ pub struct Catch {
     pub flight: u8,
     /// The update the pass was released in, when the script started.
     pub since: u64,
+    /// Caught on the run (the row on channel 2 over his run, its lock of
+    /// channel 0 held while bit 9 is).
+    pub running: bool,
 }
 
 /// [`World::update_order`] of a world made by [`World::new`]: the
@@ -1748,15 +1751,25 @@ impl World {
             // A running catch (its row on channel 2) leaves channel 0 on his
             // run, cycling at its rate, and his velocity as it was
             // (`0x15aacc`, a2 = 2): the walk under the row's lock changes
-            // neither, from the update it starts to the one its row ends
-            // (the catch, before his walk).
+            // neither, from the update it starts through bit 9's hold after
+            // the catch (the row's play-out on channel 2: the PS2's receiver
+            // ran on at 139 to his bit 9's end, his pad's heading turning
+            // meanwhile).
             let running = |w: &World| {
-                w.catch_row_playing(i)
-                    .filter(|c| c.lower.is_some())
-                    .map(|_| {
-                        let p = &w.players[i];
-                        (p.gait, p.gait_channel, p.speed, p.course)
-                    })
+                let caught = w
+                    .catch
+                    .is_some_and(|c| c.player == i && c.running && w.tick <= c.until);
+                (caught || w.catch_row_playing(i).is_some_and(|c| c.lower.is_some())).then(|| {
+                    let p = &w.players[i];
+                    (
+                        p.gait,
+                        p.gait_channel,
+                        p.speed,
+                        p.course,
+                        p.wanted,
+                        p.heading,
+                    )
+                })
             };
             let run_kept = running(self);
             let caught_started = self.catching_start(i);
@@ -1849,10 +1862,14 @@ impl World {
             // The receiver's own update steers him while the pass is his
             // (`0x15a4a8..0x15ab50`): his record is kept, no selection draws
             // (the attract capture's receiver at updates 873 and 874).
-            if steered.is_none() {
+            // Channel 0 locked under a running catch's row (its flag 2,
+            // `0x15b084`): no locomotion at all.
+            if steered.is_none() && run_kept.is_none() {
                 self.select_gait(i, &walk, held, stance);
             }
-            self.stand_path(i, &input);
+            if run_kept.is_none() {
+                self.stand_path(i, &input);
+            }
             // A free holder's pass goes in after his locomotion
             // (`FUN_0015a060` calls `FUN_0015f930` at `0x15b9c0`, after its
             // `FUN_00163d40`): the stand or walk his stick asked for draws
@@ -1948,8 +1965,9 @@ impl World {
                 let c = &self.players[i].gait_channel;
                 (c.row, c.phase, c.blend_counter, c.moving)
             };
+            let placed = self.players[i].position;
             let stepped = self.players[i].step(&moved, held, stance);
-            if let Some((gait, mut channel, speed, course)) = run_kept {
+            if let Some((gait, mut channel, speed, course, wanted, heading)) = run_kept {
                 let frames = self
                     .poses
                     .get()
@@ -1962,6 +1980,20 @@ impl World {
                 p.gait_channel = channel;
                 p.speed = speed;
                 p.course = course;
+                p.wanted = wanted;
+                p.heading = heading;
+                // His walk moves him nowhere: under the row he coasted
+                // ([`World::catching_coast`]); after the catch, through the
+                // row's play-out, he coasts on the velocity he kept
+                // (`FUN_00156f48`'s position += velocity).
+                p.position = placed;
+                if self.catch_row_playing(i).is_none() {
+                    let p = &mut self.players[i];
+                    let v = p.velocity();
+                    p.position[0] += v[0] * TICK_SECONDS;
+                    p.position[1] += v[1] * TICK_SECONDS;
+                    p.clamp_to_court();
+                }
             }
             match stepped {
                 Some(player::Moment::Release(hoop)) => self.release_shot(i, hoop),

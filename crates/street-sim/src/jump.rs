@@ -708,13 +708,6 @@ impl World {
         }
         let stepped = !(m.script == f.script && m.updates == f.updates);
         let fresh = m.script != f.script;
-        // A blend begun under `91`'s 0x800000 (`FUN_00196698(channel, 1)`,
-        // in the channel's step before `FUN_00168ea8`'s turn): his facing
-        // matched to the incoming clip on the pelvis as the model last
-        // showed it, the held clip turned back.
-        if stepped && let Some((record, start)) = m.ran.matched {
-            self.match_move_heading(i, &mut m, fresh, record, start);
-        }
         // The knock window's count down, then this update's `a6 1`; the
         // jump's clock.
         f.knock = f.knock.saturating_sub(1);
@@ -750,6 +743,15 @@ impl World {
                 .any(|s| matches!(s, Step::Plant(_)))
                 .then(|| self.previous_pose(i, &m))
                 .flatten();
+            // A blend begun under `91`'s 0x800000 (`FUN_00196698(channel,
+            // 1)`, in the channel's step before `FUN_00168ea8`'s turn): his
+            // facing matched to the incoming clip on the pelvis as the model
+            // last showed it, the held clip turned back. The scripts' `95`
+            // comes before their `8e`: its point is on the model before
+            // the match.
+            if let Some((record, start)) = m.ran.matched {
+                self.match_move_heading(i, &mut m, fresh, record, start);
+            }
             let shown = m.ran.mid.unwrap_or(m.after);
             for step in m.ran.ops.iter() {
                 self.flight_op(i, &mut f, step, shown, at, prev.as_ref());
@@ -938,7 +940,19 @@ impl World {
         let p = &self.players[i];
         let place = self.place(i);
         match m.before {
-            Some(shown) => crate::trick::pose_turned(poses, shown, m.from, m.turn, p.body(), place),
+            Some(shown) => crate::trick::pose_from(
+                poses,
+                shown,
+                m.from,
+                m.held.as_ref(),
+                m.turn,
+                p.body(),
+                place,
+            ),
+            None if m.held.is_some() => m
+                .held
+                .as_ref()
+                .map(|h| poses.place_held(h, p.body(), place)),
             None => {
                 let (record, time) = m.from?;
                 poses.pose(
@@ -964,9 +978,15 @@ impl World {
         };
         let p = &self.players[i];
         let f = p.flight;
-        let Some(pose) =
-            crate::trick::pose_turned(&poses, m.after, m.from, m.turn, p.body(), self.place(i))
-        else {
+        let Some(pose) = crate::trick::pose_from(
+            &poses,
+            m.after,
+            m.from,
+            m.held.as_ref(),
+            m.turn,
+            p.body(),
+            self.place(i),
+        ) else {
             return;
         };
         let [a, b] = f

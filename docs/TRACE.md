@@ -14857,8 +14857,24 @@ the row starts to the one the catch ends it, where the rewrite's walk
 under the row's lock had dropped him to a stand (`World::step`'s
 `run_kept`).
 
-Open at 925 (step 309): the PS2's new holder runs on at 139 for 11
-updates after the catch (his wanted facing turns at step 320); the
-rewrite's AI turns him at once (wanted 477, a record change and two
-draws). Bit 9's hold after a running catch (`timing::catch_hold`, the
-captures' tail of 9) is the first suspect.
+Explained (same day): the PS2's receiver keeps bit 9 to step 318 (+0xa4
+0x200 in the capture; the catch at 308), and his channel 0 stays locked
+on the run all that time: no locomotion (no record selection, no stand
+path), his facing on its wanted 139 and his velocity kept, though his
+pad's heading (+0x88) is already turning (485..540). Ported:
+`Catch::running` holds the run kept from the running catch through
+`catch.until`, with his position moved by the kept velocity
+(`World::step`'s `run_kept`). Draws match through update 934 (step 318),
+the receiver within 0.015 of the PS2.
+
+Also: a scripted move's first blend holds the pose the channel showed
+(`ChannelStart::held`, `FUN_001935c8`'s +0xbc: a stand's or the gait's,
+`trick::pose_from`), and the heading match comes after the `95` plant's
+pick (the scripts' `95` precede their `8e`). The passer's pass slide is
+0.56 off the PS2's (was 0.70); his planted foot's motion through the
+blend is not yet the original's.
+
+Open at 935 (step 319): the passer's locomotion resumes on the PS2 (a
+record selection with both draws, `0x168b84` and `0x168de8`) where the
+rewrite's makes none, and actor 1's selection draws twice on the PS2
+(no record already playing answers) but once here.

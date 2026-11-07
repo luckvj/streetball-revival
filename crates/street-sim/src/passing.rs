@@ -1595,6 +1595,15 @@ impl World {
         }
         let left = (self.ball.flight_left * crate::TICK_HZ as f32).round() as i32;
         let flight = self.ball.flight_ticks();
+        // A running catch (its row over his run, `Catching::lower`) is
+        // still running when the ball comes in: his run kept, on the floor,
+        // a row other than the standing ones (0x4000).
+        let r = &self.players[pass.to];
+        let running = r.moving()
+            && r.height <= 0.0
+            && crate::timing::CATCH_ROWS
+                .get(usize::from(pass.catch))
+                .is_some_and(|row| row.flags & 0x4000 == 0);
         self.take_ball(pass.to);
         if usize::from(pass.catch) < crate::timing::CATCH_ROWS.len() {
             let hold = crate::timing::catch_hold(usize::from(pass.catch), left);
@@ -1604,6 +1613,7 @@ impl World {
                 row: pass.catch,
                 flight: flight.clamp(0, i32::from(u8::MAX)) as u8,
                 since: pass.since,
+                running,
             });
         }
         self.events.push(Event::Catch { player: pass.to });

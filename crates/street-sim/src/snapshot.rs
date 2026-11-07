@@ -122,7 +122,7 @@ use crate::{
 /// the stands (the flair's up one), the toss's flight words
 /// ([`crate::Tip::toss_flight`]), the tip jump's landing; 117: a stand's
 /// held clip turned by a heading match, as a walk's ([`crate::ordinary`]).
-const VERSION: u8 = 119;
+const VERSION: u8 = 120;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -305,6 +305,7 @@ impl World {
                 row,
                 flight,
                 since,
+                running,
             }) => {
                 w.u8(1);
                 w.us(*player);
@@ -312,6 +313,7 @@ impl World {
                 w.u8(*row);
                 w.u8(*flight);
                 w.uv(*since);
+                w.bool(*running);
             }
         }
         w.uv(turbo_releases.len() as u64);
@@ -716,6 +718,7 @@ impl World {
                 row: r.u8()?,
                 flight: r.u8()?,
                 since: r.uv()?,
+                running: r.bool()?,
             }),
             k => return Err(format!("bad catch flag {k}")),
         };
@@ -1317,6 +1320,7 @@ fn player(w: &mut Writer, p: &Player) {
             w.bool(c.side);
             w.iv(c.pelvis.map_or(-1, i64::from));
             w.iv(i64::from(c.turn));
+            held_out(w, c.held.as_ref());
         }
     }
     w.f(*course);
@@ -1873,6 +1877,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                     v => Some(i16::try_from(v).map_err(|_| "invalid channel pelvis")?),
                 },
                 turn: i16::try_from(r.iv()?).map_err(|_| "invalid channel turn")?,
+                held: held_in(r)?,
             }),
             k => return Err(format!("bad channel start flag {k}")),
         },

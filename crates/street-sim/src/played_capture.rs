@@ -5473,6 +5473,7 @@ fn captured_start(w: &mut World, k: usize, script: u32, before: &Update) {
         side: crate::held::other_side(p),
         pelvis: None,
         turn: 0,
+        held: None,
     });
 }
 

@@ -1113,6 +1113,7 @@ impl World {
             row,
             flight: _,
             since,
+            running: _,
         }) = catch
         {
             player(*p)?;

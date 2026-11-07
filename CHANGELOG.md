@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- After a running catch the receiver keeps running in a straight line
+  until his catch animation lets go, as on the PS2, instead of turning at
+  once. Shots, dunks and passes now blend out of the exact pose the
+  player was showing.
 - The match intro's dunk goes to the right player again (the side that
   loads the script fills its first three places, as the PS2's own memory
   shows), and a receiver who catches on the run keeps running through

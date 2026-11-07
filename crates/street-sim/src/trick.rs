@@ -1038,6 +1038,28 @@ pub fn pose_turned(
     }
 }
 
+/// [`pose_turned`] holding `held` (the pose the channel showed, turned
+/// `turn`) in place of the clip `from` while a blend runs.
+pub fn pose_from(
+    poses: &Poses,
+    shown: Shown,
+    from: Option<(u16, f32)>,
+    held: Option<&crate::pose::Held>,
+    turn: i32,
+    body: Body,
+    place: Place,
+) -> Option<Pose> {
+    if let (Some(w), Some(h)) = (shown.blend, held) {
+        let to = Frame {
+            record: shown.record?,
+            time: shown.frame,
+            looping: false,
+        };
+        return poses.blend_held(&h.turned(turn), to, w, body, place);
+    }
+    pose_turned(poses, shown, from, turn, body, place)
+}
+
 /// The root's change from `before` to `after` (`FUN_0019a658`): none while
 /// a blend runs or across a change of clip; the first update after a blend
 /// measures from the blend's frame. In court units at scale 1, in the
