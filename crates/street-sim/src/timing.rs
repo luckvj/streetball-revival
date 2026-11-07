@@ -899,14 +899,15 @@ pub(crate) fn pass_verdicts(
 /// last pass he was thrown (`passer_flight`), and the first pass after the
 /// actors' reset (`DAT_003d65b8`, `0x162248`), which admits only rows with
 /// flag `0x20000` (`catch_stand_3r`/`3l`). The sector is measured in the
-/// original's frame from the passer's spot ([`catch_bit`]). Not carried:
-/// the spot's closeness test (`0x3d70b4`).
+/// original's frame from the passer's spot ([`catch_bit`]). A spot run
+/// (`DAT_003d70b4`, [`crate::receiver::SpotRun`]) empties the list for
+/// `catch_stand_1` alone, which the release takes (still drawing once).
 /// Board passes take only the 0x40000 rows and measure from the waypoint.
 ///
 /// With no row let through (`0x162380`: the count −1) there is no draw
 /// and no row: +0x1bc is cleared and the pass goes on at once
 /// (`0x1623a4..0x162400`), so `None`. (The list holds row 0 alone only
-/// through the spot's closeness test, not carried.)
+/// under a spot run, which the release handles before this.)
 pub(crate) fn catch_row(
     w: &mut World,
     from: usize,

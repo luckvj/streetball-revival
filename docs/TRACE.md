@@ -15057,3 +15057,10 @@ shared get-up (`0x44bc1b`: clip 653 or 655), now `Step::Roll` on
 putback hangs' live hand, flipped by the court's side) and 42 (a catch
 row's end: callback 30 skipped in a shot or dunk) are left; 25 does
 nothing; 6, 29, 36, 37 and 44 were carried.
+
+The swipe's test (`FUN_0016cf30`) against a teammate (2026-11-07): the
+original has no team check before its roll (`0x16d0d0`, `rand() % 100`)
+and its reach: only the ball's holder (ball+0xf4) and actor+0x23c. The
+rewrite's `swipe_test` returns before the roll when the holder is the
+swiper's teammate (a swipe under way as the possession turns), so it draws
+one fewer there. Left as the rewrite's own for now.
