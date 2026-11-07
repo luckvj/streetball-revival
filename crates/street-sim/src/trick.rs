@@ -2121,7 +2121,8 @@ impl World {
     /// `a` stands in about him) when `a` holds the ball, is coming down,
     /// stands within 200 of `b`'s facing and has more power (attribute 4).
     ///
-    /// In the air, within 2 of `b`'s height and at least a tenth into his
+    /// In the air, the two posed pelvises within 2 of each other and `a` at
+    /// least a tenth into his
     /// jump, each within 256 of the other's facing, it is a duel: `a`'s
     /// weight (field 9), twice his power and his dunks against `b`'s
     /// weight, twice his power and his blocks; `a`'s × 6/5 coming down,
@@ -2164,7 +2165,14 @@ impl World {
             return;
         }
         let f = self.players[a].flight;
-        if (self.players[a].height - self.players[b].height).abs() > 2.0
+        // The two models' bone 0 (the pelvis, as posed this update: model
+        // vt+0x18, `0x136984..0x1369e4`), within 2 of each other.
+        let pelvis = |w: &World, x: usize| {
+            w.actor_pose(x).map_or(w.players[x].height, |p| {
+                p.joints[crate::pose::PELVIS].position[1]
+            })
+        };
+        if (pelvis(self, a) - pelvis(self, b)).abs() > 2.0
             || f.air == 0
             || (f32::from(f.aloft) / f32::from(f.air)) < 0.1
             || off(self, b, a) > 256

@@ -4696,12 +4696,14 @@ fn a_man_near_the_rim_boxes_out_while_a_shot_is_up() {
     w.players[4].position = [rim[0] - 6.0, 2.0];
     w.ball = Ball::loose_at([rim[0] - 1.0, 12.0, 0.0]);
     w.ball.state = BallState::Shot;
-    w.stand_path(4, &Input::default());
+    let places = w.floor_positions();
+    w.stand_path(4, &Input::default(), &places);
     assert_eq!(w.players[4].stand.map(|s| s.script), Some(stand::BOX_OUT));
     w.stand_tick(4);
     assert!(w.players[4].boxing);
     w.ball.position = [rim[0] - 20.0, 3.0, 0.0];
-    w.stand_path(4, &Input::default());
+    let places = w.floor_positions();
+    w.stand_path(4, &Input::default(), &places);
     assert!(!w.players[4].boxing);
     assert_eq!(w.players[4].stand.map(|s| s.script), Some(stand::READY));
 }

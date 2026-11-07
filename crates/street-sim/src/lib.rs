@@ -1924,7 +1924,7 @@ impl World {
                 self.select_gait(i, &walk, held, stance);
             }
             if run_kept.is_none() {
-                self.stand_path(i, &input);
+                self.stand_path(i, &input, &start);
             }
             // A free holder's pass goes in after his locomotion
             // (`FUN_0015a060` calls `FUN_0015f930` at `0x15b9c0`, after its
@@ -1932,6 +1932,9 @@ impl World {
             // first and the pass row replaces it.
             if let Some(LatePress::Shoot) = late_pass {
                 self.shoot_button(i, &press_input);
+            }
+            if let Some(LatePress::Jump(turbos)) = late_pass {
+                self.jump_press(i, turbos);
             }
             if let Some(LatePress::Pass(aimed)) = late_pass {
                 // `FUN_0015f930` (`0x15faf0..0x15fbe4`): a passer still
@@ -2122,7 +2125,7 @@ impl World {
                 let p = &mut self.players[i];
                 (p.speed, p.course, p.wanted, p.gait) =
                     (ran.speed, ran.course, ran.wanted, ran.gait);
-                self.stand_path(i, &input);
+                self.stand_path(i, &input, &start);
                 // `FUN_00168ea8` after the channel's step: toward the wanted
                 // facing the locomotion just set.
                 self.players[i].turn_to_wanted(held);
@@ -2671,7 +2674,6 @@ impl World {
         calls: bool,
         start: &[[f32; 2]],
     ) -> Option<LatePress> {
-        use tuning::*;
         // The right stick pushed home is a pass press of its own (the
         // held word's 0x400, [`passing::aim_pressed`]): the give 'n go.
         let aimed = passing::aim_pressed(input, before);
@@ -2812,39 +2814,51 @@ impl World {
             // `FUN_0015a060`'s rebound press with two turbos: the putback
             // ([`putback`], `0x15b4c0..0x15b52c`).
         } else if pressed & button::JUMP != 0 {
-            // `FUN_0015da28`: at a rebound coming off (ball+0x180 0), a
-            // shot on the hoop (6) or a loose ball (1) a rebound jump
-            // (`FUN_0015ce50`, [`rebound`]); at any other a block jump
-            // (`FUN_0015d3a0`, the rewrite's own jump).
-            let rebound = matches!(
-                self.native_ball_state(),
-                game_phase::ball::REBOUND | game_phase::ball::RIM | game_phase::ball::LOOSE
-            );
-            if rebound {
-                self.start_rebound_jump(i);
-            } else if self.poses.get().is_some() {
-                // `FUN_0015d3a0`'s script ([`block`]); the turbo block
-                // without half a bar is no jump at all.
-                let jump = self.start_block_jump(i, turbos)?;
-                self.players[i].action = Action::Jumping {
-                    elapsed: 0.0,
-                    high: jump.turbo,
-                    block: Some(jump),
-                };
-            } else {
-                let high = turbos >= 2 && self.spend_turbo(i, TURBO_BLOCK_TURBO);
-                self.players[i].action = Action::Jumping {
-                    elapsed: 0.0,
-                    high,
-                    block: None,
-                };
-            }
-            self.events.push(Event::Jump {
-                player: i,
-                block: !rebound,
-            });
+            // After his locomotion (`FUN_0015da28`: `FUN_00163d40` at
+            // `0x15de58`, the block jump at `0x15e434`; the third attract
+            // match's blocker at update 960 draws his gait record's pick
+            // first).
+            return Some(LatePress::Jump(turbos));
         }
         None
+    }
+
+    /// The jump press off the ball, after the locomotion
+    /// ([`LatePress::Jump`]).
+    fn jump_press(&mut self, i: usize, turbos: u32) -> Option<()> {
+        use tuning::*;
+        // `FUN_0015da28`: at a rebound coming off (ball+0x180 0), a
+        // shot on the hoop (6) or a loose ball (1) a rebound jump
+        // (`FUN_0015ce50`, [`rebound`]); at any other a block jump
+        // (`FUN_0015d3a0`, the rewrite's own jump).
+        let rebound = matches!(
+            self.native_ball_state(),
+            game_phase::ball::REBOUND | game_phase::ball::RIM | game_phase::ball::LOOSE
+        );
+        if rebound {
+            self.start_rebound_jump(i);
+        } else if self.poses.get().is_some() {
+            // `FUN_0015d3a0`'s script ([`block`]); the turbo block
+            // without half a bar is no jump at all.
+            let jump = self.start_block_jump(i, turbos)?;
+            self.players[i].action = Action::Jumping {
+                elapsed: 0.0,
+                high: jump.turbo,
+                block: Some(jump),
+            };
+        } else {
+            let high = turbos >= 2 && self.spend_turbo(i, TURBO_BLOCK_TURBO);
+            self.players[i].action = Action::Jumping {
+                elapsed: 0.0,
+                high,
+                block: None,
+            };
+        }
+        self.events.push(Event::Jump {
+            player: i,
+            block: !rebound,
+        });
+        Some(())
     }
 
     /// `FUN_0015a060`'s pick press off the ball (pad +0x7c & 0x4000000,
@@ -4830,4 +4844,6 @@ enum LatePress {
     /// The pass, `true` from the right stick.
     Pass(bool),
     Shoot,
+    /// The block or rebound jump, with the turbos held.
+    Jump(u32),
 }

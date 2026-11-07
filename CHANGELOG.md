@@ -12,6 +12,11 @@ its version's part.
   line; a defender heading back to guard the rim aims at the same point
   the PS2 does (just short of the rim); and a computer that shoots on the
   move picks his stride before the shot, as the PS2 does.
+- A defender who comes to a stand picks his stance as on the PS2 (by the
+  way he means to face, not the way he happens to face), a block or
+  rebound jump goes up after the jumper's stride is picked, and a dunker
+  meeting a blocker in the air is matched against him at the same moment
+  as on the PS2 (by their hips' heights), so the same man wins.
 - A player who catches a pass on the run now keeps running underneath
   the catch, as on the PS2: his legs and hips stay on his run while his
   arms and head play the catch, and the ball sits in those hands (it had

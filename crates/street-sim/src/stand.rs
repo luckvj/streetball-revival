@@ -258,7 +258,7 @@ impl World {
     /// The stand path (`FUN_00163d40`, `0x1680ac..0x1689b0`) for `i`, on the
     /// floor with nothing else on his channel and his stick under 16 (or
     /// [`World::held_still`]); `input` his pad. Otherwise any stand stops.
-    pub(crate) fn stand_path(&mut self, i: usize, input: &Input) {
+    pub(crate) fn stand_path(&mut self, i: usize, input: &Input, start: &[[f32; 2]]) {
         let p = &self.players[i];
         let free = matches!(p.action, Action::None)
             && p.height == 0.0
@@ -343,7 +343,12 @@ impl World {
             let toward =
                 timing::angle_units(crate::math::atan2(hp[0] - his_rim[0], hp[1] - his_rim[1]));
             if fold(timing::facing_word(self.players[h].wanted) - toward) < 301 {
-                let off = fold(self.facing_units(i) - crate::contact::angle(me, hp));
+                // `FUN_0018d1f8`: his wanted facing (+0xb0) against the
+                // pair table's word to the holder (the third attract
+                // match's defender at update 951 faces the man he turns
+                // from: he breathes).
+                let wanted = timing::facing_word(self.players[i].wanted);
+                let off = fold(wanted - self.pair_word(i, h, start));
                 if off <= 200 {
                     pick = 1;
                 }
