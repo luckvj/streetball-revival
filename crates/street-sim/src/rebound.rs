@@ -627,6 +627,7 @@ impl World {
             turn: 0,
             held: None,
             lower: None,
+            upper_from: None,
         })
     }
 

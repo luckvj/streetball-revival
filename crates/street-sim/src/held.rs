@@ -111,6 +111,11 @@ pub struct Channel {
     /// the clip channel 0 carries on, record and frame: the pose step
     /// writes its root and bones 0..8 into the model.
     pub lower: Option<(u16, f32)>,
+    /// Opcode `92` at a running catch row's end (`FUN_00198540`): channel
+    /// 2 linked to channel 0 (+0x58 0) blends from the row's last pose
+    /// (record, frame, held at +0xbc) into channel 0's over 5 updates, the
+    /// weight of channel 0's on bones 9..21.
+    pub upper_from: Option<(u16, f32, f32)>,
 }
 
 /// The ball's offset from its holder in his own frame, stored by a blend's
@@ -521,6 +526,53 @@ impl World {
     /// the actor's own update in this step has stepped it (the held ball,
     /// placed after every actor's update).
     pub(crate) fn channel_ahead(&self, i: usize, ahead: i64) -> Option<Channel> {
+        let base = self.channel_base(i, ahead)?;
+        Some(Channel {
+            upper_from: self.catch_tail(i, ahead),
+            ..base
+        })
+    }
+
+    /// The running catch row's `92 00 05 00` (`FUN_00198540`, every
+    /// `catch_run_*` row's tail at 0x4438a2): from the update its script
+    /// ends, channel 2 blends from the row's last pose into channel 0's,
+    /// the counter 1 on that update, over 5. Only while he stands or runs
+    /// (no move of his own on channel 0).
+    fn catch_tail(&self, i: usize, ahead: i64) -> Option<(u16, f32, f32)> {
+        const LENGTH: i32 = 5;
+        let c = self
+            .catch
+            .filter(|c| c.player == i && c.running && self.tick <= c.until + 16)?;
+        if self.players[i].action != Action::None {
+            return None;
+        }
+        let row = timing::CATCH_ROWS.get(usize::from(c.row))?;
+        let steps = crate::touch::CATCH_SCRIPTS[usize::from(c.row)];
+        let first = self.players[i]
+            .channel_start
+            .filter(|s| s.script == row.script);
+        let (left, side) = first.map_or((false, false), |s| (s.left, s.side));
+        let flight = i32::from(c.flight);
+        let run_at = |updates: i32| {
+            replay(steps, updates, left, false, side, -1, None, |k| {
+                (flight - k + 1).clamp(1, 255) as u8
+            })
+            .0
+        };
+        let updates = (self.tick as i64 - c.since as i64 + 1 + ahead).clamp(0, 600) as i32;
+        if !run_at(updates).done {
+            return None;
+        }
+        for k in 0..LENGTH {
+            if !run_at(updates - k - 1).done {
+                let shown = run_at(updates - k).shown();
+                return Some((shown.record?, shown.frame, (k + 1) as f32 / LENGTH as f32));
+            }
+        }
+        None
+    }
+
+    fn channel_base(&self, i: usize, ahead: i64) -> Option<Channel> {
         self.poses.get()?;
         let p = &self.players[i];
         let of = |run: &Run, from: Option<(u16, f32)>| Channel {
@@ -531,6 +583,7 @@ impl World {
             turn: 0,
             held: None,
             lower: None,
+            upper_from: None,
         };
         match &p.action {
             Action::Trick { play, .. } => return Some(of(&play.run, play.from)),
@@ -554,6 +607,7 @@ impl World {
                     turn: 0,
                     held: None,
                     lower: None,
+                    upper_from: None,
                 });
             }
             _ => {}
@@ -637,6 +691,7 @@ impl World {
                 turn: 0,
                 held: st.held,
                 lower: None,
+                upper_from: None,
             });
         }
         // The catch row holding him after the catch: its script from the
@@ -786,6 +841,7 @@ impl World {
             turn: 0,
             held: if blending { g.blend_held } else { None },
             lower: None,
+            upper_from: None,
         }
     }
 
@@ -794,7 +850,7 @@ impl World {
     pub(crate) fn move_pose(&self, i: usize) -> Option<pose::Pose> {
         let poses = self.poses.get()?;
         let c = self.channel(i)?;
-        if c.gait {
+        if c.gait && c.upper_from.is_none() {
             return None;
         }
         channel_pose(poses, &c, self.players[i].body(), self.place(i))
@@ -837,7 +893,9 @@ impl World {
         // and `FUN_0014da20` reads the hand off the model's bones, which
         // the pose step wrote from both channels: the run below the
         // spine, the row above it ([`Channel::lower`]).
-        let overlay = c.lower.and_then(|_| channel_pose(&poses, &c, body, place));
+        let overlay = (c.lower.is_some() || c.upper_from.is_some())
+            .then(|| channel_pose(&poses, &c, body, place))
+            .flatten();
         let (point, hand) = match (c.shown.blend, overlay) {
             (_, Some(pose)) => {
                 let frame = c.shown.frame as i32;
@@ -957,42 +1015,77 @@ impl World {
     }
 }
 
-/// The model as channel `c` leaves it: its clip (blends and the held
-/// pose included), or under a running catch the pose step's two channels
-/// (`0x157618..0x157714`): [`Channel::lower`]'s clip for the root and
-/// bones 0..8, the row from the spine up, blended from the clip channel 0
-/// showed as the row went in.
+/// The model as channel `c` leaves it ([`channel_local`]), posed.
 pub(crate) fn channel_pose(
     poses: &pose::Poses,
     c: &Channel,
     body: pose::Body,
     place: pose::Place,
 ) -> Option<pose::Pose> {
-    let Some((record, time)) = c.lower else {
-        return trick::pose_from(poses, c.shown, c.from, c.held.as_ref(), c.turn, body, place);
-    };
-    let upper = pose::Frame {
+    Some(poses.place_held(&channel_local(poses, c)?, body, place))
+}
+
+/// The model's local pose as channel `c` leaves it: its clip (blends and
+/// the held pose included), or under a running catch the pose step's two
+/// channels (`0x157618..0x157714`): [`Channel::lower`]'s clip for the root
+/// and bones 0..8, the row from the spine up, blended from the clip
+/// channel 0 showed as the row went in; then opcode `92`'s blend of bones
+/// 9..21 from the row's last pose ([`Channel::upper_from`]).
+pub(crate) fn channel_local(poses: &pose::Poses, c: &Channel) -> Option<pose::Held> {
+    let to = pose::Frame {
         record: c.shown.record?,
         time: c.shown.frame,
-        looping: false,
+        looping: c.gait,
     };
-    let from = match (c.shown.blend, c.from) {
-        (Some(w), Some((record, time))) => Some((
+    let base = match (c.lower, c.shown.blend, c.held.as_ref(), c.from) {
+        (Some((record, time)), ..) => {
+            let from = match (c.shown.blend, c.from) {
+                (Some(w), Some((record, time))) => Some((
+                    pose::Frame {
+                        record,
+                        time,
+                        looping: true,
+                    },
+                    w,
+                )),
+                _ => None,
+            };
+            let lower = pose::Frame {
+                record,
+                time,
+                looping: true,
+            };
+            let upper = pose::Frame {
+                looping: false,
+                ..to
+            };
+            poses.overlay_local(lower, upper, from, crate::touch::UPPER_BODY)?
+        }
+        (None, Some(w), Some(h), _) => poses.mixed(&h.turned(c.turn), to, w)?,
+        (None, Some(w), None, Some((record, time))) => poses.blend_turned_local(
             pose::Frame {
                 record,
                 time,
                 looping: true,
             },
+            c.turn,
+            to,
             w,
-        )),
-        _ => None,
+        )?,
+        _ => poses.held(to, 0)?,
     };
-    let lower = pose::Frame {
-        record,
-        time,
-        looping: true,
+    let Some((record, time, w)) = c.upper_from else {
+        return Some(base);
     };
-    poses.overlay(lower, upper, from, crate::touch::UPPER_BODY, body, place)
+    let row = poses.held(
+        pose::Frame {
+            record,
+            time,
+            looping: false,
+        },
+        0,
+    )?;
+    Some(pose::mix_from(&base, &row, w, crate::touch::UPPER_BODY))
 }
 
 /// The blend's step-matched start (`8e` with start `-9`,

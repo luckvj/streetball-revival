@@ -112,6 +112,8 @@ pub struct Animator {
     /// running catch's row on channel 2): it poses the root and the bones
     /// below [`UPPER_BODY`], the clip (and its crossfade) the rest.
     pub lower: Option<Playing>,
+    /// The crossfade is [`Animator::set_tail`]'s, set again every frame.
+    tail: bool,
 }
 
 /// The first bone channel 2 writes over channel 0 (+0x74 9: the spine,
@@ -133,6 +135,7 @@ impl Animator {
             fade_seconds: 0.0,
             last_heading: 0.0,
             lower: None,
+            tail: false,
         }
     }
 
@@ -248,6 +251,24 @@ impl Animator {
     /// Drop the crossfade: the current clip alone.
     pub fn clear_fade(&mut self) {
         self.previous = None;
+    }
+
+    /// Opcode `92`'s blend (`FUN_00198540`): the second channel, linked to
+    /// the first, blends from `from` into it over its own bones (the
+    /// upper body) by `weight`, while the first channel's clip (the
+    /// current one) poses the root and the legs. Set every frame it runs.
+    pub fn set_tail(&mut self, from: Playing, weight: f32) {
+        self.lower = Some(self.current.clone());
+        self.previous = Some((from, weight.clamp(0.0, 1.0), None));
+        self.fade_seconds = f32::MAX;
+        self.tail = true;
+    }
+
+    /// Drop last frame's [`Animator::set_tail`] crossfade.
+    pub fn end_tail(&mut self) {
+        if std::mem::take(&mut self.tail) {
+            self.previous = None;
+        }
     }
 
     /// The clip fading out, to set what a blend holds.

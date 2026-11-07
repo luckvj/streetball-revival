@@ -3746,9 +3746,10 @@ pub fn sync_players(
     let ended = game_ended(w, tape.as_deref());
     for (index, mut transform, mut animator, mut visibility) in &mut players {
         let i = index.0;
-        // The running catch's run under its row, set again below while
-        // one plays.
+        // The running catch's run under its row and its end's blend, set
+        // again below while they play.
         animator.lower = None;
+        animator.end_tail();
         let Some(p) = w.players.get(i) else {
             continue;
         };
@@ -3832,6 +3833,7 @@ pub fn sync_players(
         // A trick's or a reaction's script on the sim's own clock of it.
         if let Some(shown) = channel::script_or_stand_shown(&clips, &p.action, p.stand.as_ref()) {
             channel::apply(&mut animator, &shown, heading);
+            channel::sim_tail(&clips, w, i, &mut animator);
             continue;
         }
         // A shot's, dunk's, lay-up's, pass's or catch row's script as the
@@ -4105,6 +4107,7 @@ pub fn sync_players(
             channel::apply(&mut animator, &shown, heading);
             animator.current.looping = true;
             animator.current.in_place = false;
+            channel::sim_tail(&clips, w, i, &mut animator);
             continue;
         }
         animator.play_with_mirror_and_heading(
@@ -4126,6 +4129,7 @@ pub fn sync_players(
         } else {
             animator.current.speed = 1.0;
         }
+        channel::sim_tail(&clips, w, i, &mut animator);
     }
 }
 

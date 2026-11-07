@@ -526,6 +526,35 @@ pub fn sim_lower(clips: &GameClips, w: &World, i: usize) -> Option<Playing> {
     })
 }
 
+/// A running catch row's end (`World::channel`'s `upper_from`, opcode
+/// `92`): the upper body blends from the row's last frame into what the
+/// animator now shows, its legs and root on that clip.
+pub fn sim_tail(clips: &GameClips, w: &World, i: usize, animator: &mut Animator) {
+    let Some((record, frame, weight)) = w.channel(i).and_then(|c| c.upper_from) else {
+        return;
+    };
+    let clock = ClipClock {
+        clips,
+        flight: None,
+        landing: None,
+        left_hand: false,
+    };
+    let Some((clip, mirrored)) = clock.clip(i32::from(record)) else {
+        return;
+    };
+    animator.set_tail(
+        Playing {
+            clip,
+            frame,
+            speed: 0.0,
+            looping: false,
+            in_place: true,
+            mirrored,
+        },
+        weight,
+    );
+}
+
 /// Put the channel's pose on the animator: the clip at its frame, held
 /// (the simulation's updates move it), with the script's blend as the
 /// renderer's crossfade at the script's weight.

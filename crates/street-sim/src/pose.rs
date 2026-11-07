@@ -268,6 +268,18 @@ pub struct Frame {
     pub looping: bool,
 }
 
+/// A channel blending over its own bone range from `from` toward what it
+/// links to (`held`), `weight` of the way: bones `first..` mixed, the rest
+/// and the root `held`'s (opcode `92`'s blend of channel 2 into channel 0).
+pub(crate) fn mix_from(held: &Held, from: &Held, weight: f32, first: usize) -> Held {
+    let w = weight.clamp(0.0, 1.0);
+    let mut out = *held;
+    for i in first..BONES {
+        out.rotations[i] = nearer_mix(from.rotations[i], held.rotations[i], w);
+    }
+    out
+}
+
 /// Local rotations and the root of one sampled frame, or of what a
 /// channel showed: the outgoing pose a blend holds (`+0xbc`, which
 /// `FUN_001935c8` copies from the channel's output as the blend starts,
@@ -606,16 +618,30 @@ impl Poses {
         body: Body,
         place: Place,
     ) -> Option<Pose> {
+        Some(self.place(
+            &self.blend_turned_local(from, turn, to, weight)?,
+            body,
+            place,
+        ))
+    }
+
+    /// [`Poses::blend_turned`] in local terms.
+    pub fn blend_turned_local(
+        &self,
+        from: Frame,
+        turn: i32,
+        to: Frame,
+        weight: f32,
+    ) -> Option<Held> {
         let b = self.local(to)?;
         let Some(a) = self.turned(from, turn) else {
-            return Some(self.place(&b, body, place));
+            return Some(b);
         };
         let w = weight.clamp(0.0, 1.0);
-        let local = Local {
+        Some(Local {
             rotations: std::array::from_fn(|i| nearer_mix(a.rotations[i], b.rotations[i], w)),
             root: std::array::from_fn(|k| a.root[k] + (b.root[k] - a.root[k]) * w),
-        };
-        Some(self.place(&local, body, place))
+        })
     }
 
     /// Two channels on one model: the pose step (`0x157618..0x157714`)
@@ -635,6 +661,17 @@ impl Poses {
         body: Body,
         place: Place,
     ) -> Option<Pose> {
+        Some(self.place(&self.overlay_local(lower, upper, from, first)?, body, place))
+    }
+
+    /// [`Poses::overlay`] in local terms.
+    pub fn overlay_local(
+        &self,
+        lower: Frame,
+        upper: Frame,
+        from: Option<(Frame, f32)>,
+        first: usize,
+    ) -> Option<Held> {
         let base = self.local(lower)?;
         let mut top = self.local(upper)?;
         if let Some((from, weight)) = from
@@ -654,7 +691,7 @@ impl Poses {
             }),
             root: base.root,
         };
-        Some(self.place(&local, body, place))
+        Some(local)
     }
 
     /// Bone `i`'s translation from its parent at `body`'s scales: the

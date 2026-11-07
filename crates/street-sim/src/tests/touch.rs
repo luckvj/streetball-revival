@@ -753,6 +753,37 @@ fn a_ball_caught_on_the_run_sits_in_the_hands_over_his_run() {
 }
 
 #[test]
+fn a_running_catch_rows_end_blends_his_arms_back_over_five_updates() {
+    // Every `catch_run_*` row ends `92 00 05 00` (`FUN_00198540`): channel
+    // 2, linked to channel 0, blends from the row's last pose into channel
+    // 0's over 5 updates, the counter 1 on the update the script ends (the
+    // attract log's ball at update 935 within 0.03 that way).
+    let Some(mut w) = pass_world(6, [8.0, 8.0], 0.0) else {
+        return;
+    };
+    let mut inputs = vec![Input::default(); 3];
+    inputs[1].stick = [0, -127];
+    for _ in 0..20 {
+        w.step(&inputs);
+    }
+    let mut aim = w.pass_aim(0, 1);
+    aim.lead = true;
+    let start = w.floor_positions();
+    w.throw_aimed(0, 1, crate::passing::PassStyle::Normal, aim, &start);
+    let mut weights = Vec::new();
+    for _ in 0..120 {
+        w.step(&inputs);
+        if let Some((_, _, weight)) = w.channel(1).and_then(|c| c.upper_from) {
+            weights.push(weight);
+        }
+    }
+    if !w.catch.is_some_and(|c| c.running) {
+        return;
+    }
+    assert_eq!(weights, vec![0.2, 0.4, 0.6, 0.8, 1.0], "{weights:?}");
+}
+
+#[test]
 fn a_catch_row_in_play_survives_a_snapshot() {
     let Some(mut w) = pass_world(9, [10.0, 4.0], std::f32::consts::PI) else {
         return;

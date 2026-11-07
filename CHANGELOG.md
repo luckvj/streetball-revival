@@ -10,6 +10,9 @@ its version's part.
   arms and head play the catch, and the ball sits in those hands (it had
   been drawn up to two feet off to one side, the whole body turned
   toward the pass).
+- When that catch finishes, his arms ease back into his run over five
+  frames as on the PS2, with the ball staying in his hands, instead of
+  snapping.
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.
