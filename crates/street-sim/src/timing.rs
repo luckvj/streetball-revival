@@ -693,10 +693,9 @@ pub struct PassPick {
 /// under 41 of 64, takes the standing rows), the airborne rows, the
 /// alley-oop rows for a leaping receiver, the back-court heave with 9 or
 /// more on the clock, and the handoff within 5; the sector and the
-/// distance band on the press's flight estimate ([`pass_reach`]). Not
-/// carried: the legends' rows (`+0x04`), the dive and self-pass rows,
-/// landing within 10 updates (`0x20c`), and the running row's velocity
-/// along the facing.
+/// distance band on the press's flight estimate ([`pass_reach`]), and in
+/// the air landing within 10 updates (`0x20c`) as on the floor. Not
+/// carried: the legends' rows (`+0x04`), the dive and self-pass rows.
 /// A pass row played over the run (`0x160fdc..0x1610c4`): flag 0x100
 /// without 0x2400 (on the floor, not landing soon, not heading out: the
 /// filter's own tests for its running rows). Channel 0 starts the run's
@@ -793,8 +792,14 @@ pub(crate) fn pass_verdicts(
     // `0x208`: a moving passer on the ground takes the standing rows when
     // he is running out of bounds, or barely moving the stick.
     let slow = p.speed * crate::TICK_SECONDS <= f32::from_bits(0x3ba3_d70a) || intensity < 41;
-    let standing_rows = !moving || airborne || (heading_out != slow);
-    let landing_soon = false;
+    // `0x208` (`0x16068c..0x1607c8`): only for a passer moving on the
+    // floor (left 0 otherwise): heading out of bounds within 10 updates,
+    // turned over when he barely moves or barely pushes the stick.
+    let flag208 = moving && !airborne && (heading_out != slow);
+    // `0x20c` (`0x15fc28..0x15fcbc`): in the air and landing within fps / 6
+    // updates (`FUN_0019bed8` on actor+0x44 and +0x34): he takes the rows
+    // on the floor.
+    let landing_soon = airborne && airtime(p.flight.velocity[1], p.height) <= 10;
     let handoff =
         distance(p.position, r.position) <= 5.0 && !matches!(r.action, Action::Dunking { .. });
     if handoff {
@@ -849,10 +854,13 @@ pub(crate) fn pass_verdicts(
             return Some("airborne");
         }
         if !kick {
-            if f & 0x200 != 0 && !standing_rows {
+            // `0x160c80..0x160d9c`: the standing rows need him still, the
+            // flag or a landing soon; the running rows need him moving,
+            // without the flag, not landing soon.
+            if f & 0x200 != 0 && !landing_soon && moving && !flag208 {
                 return Some("standing");
             }
-            if f & 0x100 != 0 && (!moving || standing_rows || landing_soon) {
+            if f & 0x100 != 0 && (!moving || flag208 || landing_soon) {
                 return Some("running");
             }
         }

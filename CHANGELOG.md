@@ -21,6 +21,9 @@ its version's part.
   way) while his arms throw, and the ball stays in those hands.
 - After a pass on the run his arms ease back into his run over five
   frames, as on the PS2, instead of snapping.
+- A pass thrown just before landing (within a sixth of a second) takes
+  the animations for passing on the ground, and a passer moving in the
+  air no longer gets the standing animations, as on the PS2.
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.
