@@ -277,6 +277,38 @@ impl Disc {
             // Callback 41's `84 29 -> T` (the air passes): a blend on each
             // path, differing in its record, both going on at the same
             // step; one pick by the script's own answer.
+            // Callback 22's `84 16 -> T` over two `a1 f0` hops (the live
+            // hand's side), both going on at the same step.
+            if paths.jumps && self.byte(pc) == 0x84 && self.unaligned(pc + 1) == 22 {
+                let target = self.unaligned(pc + 17);
+                let plain = pc + 21;
+                let hop = |at: u32| {
+                    assert_eq!(
+                        (self.byte(at), self.byte(at + 1)),
+                        (0xa1, 0xf0),
+                        "{at:#x}: the hop"
+                    );
+                    let float = |a: u32| f32::from_bits(self.unaligned(a));
+                    (float(at + 2) as i16, float(at + 6), float(at + 10))
+                };
+                let (left, speed, rise) = hop(plain);
+                let (right, speed2, rise2) = hop(target);
+                assert_eq!((speed, rise), (speed2, rise2), "{pc:#x}: the hops");
+                assert_eq!(
+                    self.byte(plain + 14),
+                    0x82,
+                    "{pc:#x}: the plain path's jump"
+                );
+                let meet = self.unaligned(plain + 15);
+                assert_eq!(meet, target + 14, "{pc:#x}: where the hops meet");
+                out.push(Step::TowardByHand {
+                    turns: [left, right],
+                    speed,
+                    rise,
+                });
+                pc = meet;
+                continue;
+            }
             if paths.jumps
                 && self.byte(pc) == 0x84
                 && matches!(self.unaligned(pc + 1), 14 | 41 | 50)
@@ -1657,6 +1689,13 @@ fn spelled(s: &Step) -> String {
         Step::End => "End".into(),
         Step::Flags(w) => format!("Flags({w:#x})"),
         Step::Rise(v) => format!("Rise({})", f(v)),
+        Step::TowardByHand { turns, speed, rise } => format!(
+            "TowardByHand {{ turns: [{}, {}], speed: {}, rise: {} }}",
+            turns[0],
+            turns[1],
+            f(speed),
+            f(rise)
+        ),
         Step::Toward { turn, speed, rise } => format!(
             "Toward {{ turn: {turn}, speed: {}, rise: {} }}",
             f(speed),

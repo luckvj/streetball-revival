@@ -59,7 +59,7 @@ use crate::trick::Select::{Asked, Handed, Side};
 use crate::trick::Step::{
     Aim, Bits, Blend, Call, Carry, Clear, Dive, Either, End, Flags, Flight, Hang, Hop, Knock, Land,
     Pick, Plant, PlayOut, Reach, Rise, Scale, Shove, Slide, StayUp, Stop, Test, Toward, TowardBall,
-    Unplant, Wait, Want,
+    TowardByHand, Unplant, Wait, Want,
 };
 
 include!("held_tables.rs");

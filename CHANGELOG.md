@@ -36,6 +36,8 @@ its version's part.
   play the animation for the side the receiver is on, and the spinning
   jump shot turns the way the PS2 picks from his facing toward the rim,
   as on the PS2 (each had always used one side's).
+- Five lay-ups and dunks leap to the side of the hand the player has the
+  ball in, as on the PS2, instead of always the same side.
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.

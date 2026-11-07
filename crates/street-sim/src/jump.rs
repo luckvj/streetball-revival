@@ -769,6 +769,7 @@ impl World {
                     Step::Rise(_)
                         | Step::Hop { .. }
                         | Step::Toward { .. }
+                        | Step::TowardByHand { .. }
                         | Step::Dive { .. }
                         | Step::Aim(_)
                         | Step::Reach(_)
@@ -1151,7 +1152,15 @@ impl World {
                     -speed * crate::input::native_cos_1024(a),
                 ];
             }
-            Step::Toward { turn, speed, rise } => {
+            Step::Toward { .. } | Step::TowardByHand { .. } => {
+                let (turn, speed, rise) = match step {
+                    Step::TowardByHand { turns, speed, rise } => {
+                        let right = self.players[i].gait_channel.hand == 1;
+                        (turns[usize::from(right)], speed, rise)
+                    }
+                    Step::Toward { turn, speed, rise } => (turn, speed, rise),
+                    _ => unreachable!(),
+                };
                 let a = self.to_rim(i, at) + i32::from(turn);
                 f.velocity = [
                     -speed * crate::input::native_sin_1024(a),

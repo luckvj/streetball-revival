@@ -109,6 +109,15 @@ pub enum Step {
     /// attacks (`FUN_0016f260`) turned by `turn` units, `speed` along it and
     /// `rise` up, units an update at 60 Hz.
     Toward { turn: i16, speed: f32, rise: f32 },
+    /// `84 16 -> T` over two `a1 f0` hops that differ in their turn and
+    /// meet (five lay-ups' and dunks'): callback 22 (`FUN_00174e08`, the
+    /// live hand the right, actor+0x25c 1) takes `turns[1]`, else
+    /// `turns[0]`, as [`Step::Toward`].
+    TowardByHand {
+        turns: [i16; 2],
+        speed: f32,
+        rise: f32,
+    },
     /// `a1 85 a v w` (`FUN_00194d58`, raw `0x194f0c..0x195378`): the
     /// dive's hop, `rise` up and at most `speed` along the line to where
     /// the loose ball will be when he comes down ([`crate::dive`]), units
@@ -744,7 +753,7 @@ impl Run {
                 }
                 // `a1 f0`, as the hop: the held moves land on their
                 // flight's own tick (`land_at`), a reaction on this.
-                Step::Toward { rise, .. } => {
+                Step::Toward { rise, .. } | Step::TowardByHand { rise, .. } => {
                     ran.ops.push(step);
                     self.landing = self.tick + i16::from(crate::timing::airtime(rise, height));
                     true
