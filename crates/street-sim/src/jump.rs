@@ -1395,7 +1395,7 @@ impl World {
 /// at its frame, in a blend mixed from the clip held (`from`) by its
 /// weight as the blend poses it ([`crate::pose::Poses::blend`]); `None`
 /// shown the held clip's own.
-fn root_y(
+pub(crate) fn root_y(
     poses: &crate::pose::Poses,
     shown: Option<crate::trick::Shown>,
     from: Option<(u16, f32)>,

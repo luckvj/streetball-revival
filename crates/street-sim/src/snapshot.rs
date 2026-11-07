@@ -123,8 +123,9 @@ use crate::{
 /// ([`crate::Tip::toss_flight`]), the tip jump's landing; 117: a stand's
 /// held clip turned by a heading match, as a walk's ([`crate::ordinary`]);
 /// 122: a running pass row's end blend ([`crate::PassTail`]); 123: a
-/// script's own test answered as it starts ([`crate::held::ChannelStart`]).
-const VERSION: u8 = 123;
+/// script's own test answered as it starts ([`crate::held::ChannelStart`]);
+/// 124: a reaction's root resync ([`crate::trick::Reacting`]).
+const VERSION: u8 = 124;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -2384,6 +2385,7 @@ fn action_out(w: &mut Writer, a: &Action) {
                     w.f(r.vy);
                     w.bool(r.up);
                     w.u8(r.window);
+                    w.bool(r.resync);
                 }
             }
         }
@@ -2593,6 +2595,7 @@ fn action_in(r: &mut Reader) -> Result<Action, String> {
                     vy: r.f()?,
                     up: r.bool()?,
                     window: r.u8()?,
+                    resync: r.bool()?,
                 }),
                 k => return Err(format!("bad reaction flag {k}")),
             },

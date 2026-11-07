@@ -21,6 +21,8 @@ its version's part.
   stays in his finish until his feet are down and his animation is over,
   instead of being cut short), while the game stops counting him as
   dunking at the same point the PS2 does.
+- A player knocked over in the air (by a dunker, or tumbling forward)
+  is thrown up and over as on the PS2, instead of dropping straight down.
 - A player who catches a pass on the run now keeps running underneath
   the catch, as on the PS2: his legs and hips stay on his run while his
   arms and head play the catch, and the ball sits in those hands (it had

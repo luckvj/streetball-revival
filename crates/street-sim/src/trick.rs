@@ -1019,7 +1019,17 @@ pub struct Reacting {
     /// The updates left of an `a6 2` window (the screener's, the
     /// clearout's arms: [`SCREENER`]).
     pub window: u8,
+    /// Channel flag 0x10000 (the script's first `91 0x830042`,
+    /// [`RESYNC_REACTIONS`]): his height lowered by his clip root's rise
+    /// until its first whole frame outside a blend
+    /// ([`crate::jump::RESYNC`]).
+    pub resync: bool,
 }
+
+/// The reactions whose first `91` sets 0x830042 (the root resync, the
+/// heading match): the knocks in the air and on the floor, the fall
+/// forwards.
+pub const RESYNC_REACTIONS: [u8; 9] = [0, 1, 2, 3, 28, 29, 30, 31, 35];
 
 impl Reacting {
     pub fn steps(&self) -> &'static [Step] {
@@ -2279,6 +2289,7 @@ impl World {
                 vy: 0.0,
                 up: false,
                 window: 0,
+                resync: RESYNC_REACTIONS.contains(&script),
             }),
         };
     }
@@ -2502,6 +2513,30 @@ impl World {
         }
         p.position[0] += r.drift[0];
         p.position[1] += r.drift[1];
+        // The resync (`0x19b684..0x19b704`): the model's root height as
+        // the channel showed it before and now, a blend's mixed from the
+        // clip it held; the third attract match's blocker knocked in the
+        // air rises 4.6 through his clip's blend (update 970).
+        if r.resync
+            && after.record.is_some()
+            && let Some(poses) = self.poses.get()
+        {
+            let now = crate::jump::root_y(poses, Some(after), r.from);
+            let then = match before.record {
+                Some(_) => crate::jump::root_y(poses, Some(before), r.from),
+                None => crate::jump::root_y(poses, None, r.from),
+            };
+            let p = &mut self.players[i];
+            if let (Some(now), Some(then)) = (now, then) {
+                p.height -= (now - then) * p.body().height;
+            }
+            if p.height < 0.0 && r.vy <= 0.0 {
+                p.height = 0.0;
+            }
+            if after.blend.is_none() && after.frame as i32 != before.frame as i32 {
+                r.resync = false;
+            }
+        }
         let step = match self.poses.get() {
             Some(poses) => root_step(poses, before, after),
             None if r.run.done => [0.0; 3],
