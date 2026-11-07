@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- Defenders guarding a pass's receiver close in on him on the PS2's
+  timing: the AI counts the pass's flight from the release, not from the
+  press.
 - Computer players run in exactly the direction their AI picks, as on
   the PS2 (the direction had been rounded through a stick and could be a
   hair off), and their aim at a spot uses the original's own angle maths.

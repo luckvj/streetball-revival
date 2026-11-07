@@ -84,7 +84,8 @@ words! {
         /// [`crate::game_phase::ball`]): 0 a rebound coming off, 1 loose, 3
         /// held, 4 passed, 5 shot, 6 on the rim, 7 the referee's toss.
         ball: i32,
-        /// Frames the ball has kept that state (ball+0x60).
+        /// Frames the ball has kept that state (ball+0x60; in a pass's
+        /// flight its updates flown).
         ball_age: i32,
         /// The holder and how long he has held it (game+0x490).
         holder: i32,
@@ -1129,6 +1130,12 @@ fn track(game: &mut Game, w: &World, computer: &[bool]) {
         game.ball_age += 1;
     } else {
         game.ball_age = 0;
+    }
+    // ball+0x60 is the flight's own count once the pass leaves the hand
+    // (the release starts it again: `0x161350`), not the frames since the
+    // press made the ball state 4.
+    if w.ball.state == crate::BallState::Pass {
+        game.ball_age = w.ball.flown_ticks();
     }
     let passed = game.ball == 4;
     game.ball = ball;

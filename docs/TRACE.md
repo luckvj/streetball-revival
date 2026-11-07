@@ -14963,3 +14963,12 @@ open (the log's bones may not be rebuilt that update). The tip jumpers'
 ankles differ 0.06..0.13 in the air and up to 0.28 after landing (the tip
 pose plays the plain clip; the original's aim pose is not ported), apart
 from the 0.02 shove both get at steps 200..202.
+
+The ball's age (same day): the AI reads ball+0x60, which a pass's release
+starts again (the flight's updates flown), where the rewrite counted the
+updates since the press made the ball state 4. Actor 1's spot (off his
+man by the gap) switched to the on-ball column at step 277 (19 counted
+from the press) instead of the log's later one (19 flown); with the
+flight's count his facing matches the log through step 296 (was 277).
+From 313 his aim runs 1..3 units off again, near his spot; the level at
+319 still drops an update late (his position 0.10 off).
