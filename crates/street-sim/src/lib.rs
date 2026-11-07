@@ -652,6 +652,22 @@ struct ScriptShown {
     from: (u16, f32),
 }
 
+/// Opcode `92 00 05 00` at a running pass row's end (`FUN_00198540`):
+/// channel 2, linked to channel 0, blends from the row's last pose into
+/// the run over `length` updates, the counter 1 on the update the script
+/// ends.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PassTail {
+    pub player: usize,
+    /// The row's clip as its script ended (record and frame).
+    pub record: u16,
+    pub frame: f32,
+    /// The world's tick of the update the script ended in.
+    pub tick: u64,
+    /// The blend's length (`92`'s second byte: 5, `pass_allyoop_run_1` 8).
+    pub length: u8,
+}
+
 /// The receiver of a caught pass and the tick his catch animation ends.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Catch {
@@ -827,6 +843,9 @@ pub struct World {
     /// A caught pass still holding its receiver in the catch animation
     /// (actor+0xa4 bit 9) until `until` ([`timing::catch_hold`]).
     pub catch: Option<Catch>,
+    /// A running pass row's end on channel 2 (opcode `92`): its upper body
+    /// blending back into the run ([`PassTail`]).
+    pub pass_tail: Option<PassTail>,
     /// The tick each player last let go of each turbo button (L1, R1, L2,
     /// R2; `FUN_00130a28`'s controller+0xec), `u64::MAX` for none: one
     /// pressed again soon after dives ([`dive`]).
@@ -1378,6 +1397,7 @@ impl World {
             rim_rigs: [rim::Rig::default(); 2],
             windup: None,
             catch: None,
+            pass_tail: None,
             turbo_releases: vec![[u64::MAX; 4]; n],
             rng: rng::Rng::new(seed),
             previous_inputs: vec![Input::default(); n],

@@ -121,8 +121,9 @@ use crate::{
 /// camera's draws ([`crate::camera`]); 116: the placement script among
 /// the stands (the flair's up one), the toss's flight words
 /// ([`crate::Tip::toss_flight`]), the tip jump's landing; 117: a stand's
-/// held clip turned by a heading match, as a walk's ([`crate::ordinary`]).
-const VERSION: u8 = 121;
+/// held clip turned by a heading match, as a walk's ([`crate::ordinary`]);
+/// 122: a running pass row's end blend ([`crate::PassTail`]).
+const VERSION: u8 = 122;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -162,6 +163,7 @@ impl World {
             rim_rigs,
             windup,
             catch,
+            pass_tail,
             turbo_releases,
             rng,
             previous_inputs,
@@ -296,6 +298,17 @@ impl World {
                 w.f2(spot);
                 w.u8(u8::from(*lead));
                 w.f(*reach);
+            }
+        }
+        match pass_tail {
+            None => w.u8(0),
+            Some(t) => {
+                w.u8(1);
+                w.us(t.player);
+                w.us(usize::from(t.record));
+                w.f(t.frame);
+                w.uv(t.tick);
+                w.u8(t.length);
             }
         }
         match catch {
@@ -713,6 +726,17 @@ impl World {
             }),
             k => return Err(format!("bad pass windup flag {k}")),
         };
+        let pass_tail = match r.u8()? {
+            0 => None,
+            1 => Some(crate::PassTail {
+                player: r.us()?,
+                record: u16::try_from(r.us()?).map_err(|e| e.to_string())?,
+                frame: r.f()?,
+                tick: r.uv()?,
+                length: r.u8()?,
+            }),
+            k => return Err(format!("bad pass tail flag {k}")),
+        };
         let catch = match r.u8()? {
             0 => None,
             1 => Some(crate::Catch {
@@ -1098,6 +1122,7 @@ impl World {
             rim_rigs,
             windup,
             catch,
+            pass_tail,
             turbo_releases,
             rng,
             previous_inputs,

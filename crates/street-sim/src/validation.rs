@@ -71,6 +71,7 @@ impl World {
             rim_rigs,
             windup,
             catch,
+            pass_tail: _,
             turbo_releases,
             rng: _,
             previous_inputs,

@@ -19,6 +19,8 @@ its version's part.
 - A pass thrown on the run plays over the run, as on the PS2: the
   passer's legs keep running (his run, or a jog with the stick only part
   way) while his arms throw, and the ball stays in those hands.
+- After a pass on the run his arms ease back into his run over five
+  frames, as on the PS2, instead of snapping.
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.

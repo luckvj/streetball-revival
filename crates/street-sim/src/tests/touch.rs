@@ -825,6 +825,18 @@ fn a_running_pass_plays_its_row_over_his_run() {
         if let (Some((_, later)), Action::Passing { .. }) = (c2.lower, w.players[0].action) {
             assert!(later >= time, "{later} {time}");
         }
+        // Its `92 00 05 00`: once the script ends, the row's last pose
+        // blends back into the run over 5 updates.
+        let mut weights = Vec::new();
+        for _ in 0..120 {
+            w.step(&inputs);
+            if let Some((_, _, weight)) = w.channel(0).and_then(|c| c.upper_from) {
+                weights.push(weight);
+            }
+        }
+        let n = if row == 59 { 8.0 } else { 5.0 };
+        let want: Vec<f32> = (1..=n as i32).map(|k| k as f32 / n).collect();
+        assert_eq!(weights, want, "row {row}");
         over += 1;
     }
     assert!(over > 0, "no running row drawn");

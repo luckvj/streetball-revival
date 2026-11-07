@@ -528,7 +528,9 @@ impl World {
     pub(crate) fn channel_ahead(&self, i: usize, ahead: i64) -> Option<Channel> {
         let base = self.channel_base(i, ahead)?;
         Some(Channel {
-            upper_from: self.catch_tail(i, ahead),
+            upper_from: self
+                .catch_tail(i, ahead)
+                .or_else(|| self.pass_tail(i, ahead)),
             ..base
         })
     }
@@ -570,6 +572,20 @@ impl World {
             }
         }
         None
+    }
+
+    /// A running pass row's `92` ([`crate::PassTail`]): the counter 1 on
+    /// the update its script ended, while he stands or runs.
+    fn pass_tail(&self, i: usize, ahead: i64) -> Option<(u16, f32, f32)> {
+        let t = self.pass_tail.filter(|t| t.player == i)?;
+        if self.players[i].action != Action::None {
+            return None;
+        }
+        let k = self.tick as i64 + ahead - t.tick as i64;
+        let n = i64::from(t.length);
+        (1..=n)
+            .contains(&k)
+            .then(|| (t.record, t.frame, k as f32 / n as f32))
     }
 
     fn channel_base(&self, i: usize, ahead: i64) -> Option<Channel> {

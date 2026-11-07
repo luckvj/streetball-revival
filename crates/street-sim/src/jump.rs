@@ -879,9 +879,25 @@ impl World {
                     | Action::Passing { .. }
             )
         {
-            if matches!(p.action, Action::Passing { .. }) {
+            if let Action::Passing { row, .. } = p.action {
                 p.speed = crate::math::len(f.velocity[0], f.velocity[2]) * crate::TICK_HZ as f32;
+                // A running row's `92` at its end: channel 2 blends back
+                // into the run, 8 updates for the alley-oop's, else 5.
+                if m.done
+                    && crate::timing::pass_over_run(usize::from(row))
+                    && let Some(record) = m.after.record
+                {
+                    let length = if row == 59 { 8 } else { 5 };
+                    self.pass_tail = Some(crate::PassTail {
+                        player: i,
+                        record,
+                        frame: m.after.frame,
+                        tick: self.tick,
+                        length,
+                    });
+                }
             }
+            let p = &mut self.players[i];
             p.action = Action::None;
             p.height = 0.0;
         }
