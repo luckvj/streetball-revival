@@ -385,6 +385,9 @@ pub struct Ran {
     pub slam_shake: bool,
     /// Callback 7: the facing from the pelvis.
     pub face: bool,
+    /// Callback 1 (`FUN_001722c0`): the locomotion at once
+    /// (`FUN_00163d40(actor, 0, 1)`), outside the script manager.
+    pub locomotion: bool,
     /// `9c 0x400`: bit 10 cleared.
     pub cleared: bool,
     /// `9b`/`9c`: the state bits (actor+0xa4) set and cleared.
@@ -653,6 +656,10 @@ impl Run {
                 }
                 Step::Call(7) => {
                     ran.face = true;
+                    true
+                }
+                Step::Call(1) => {
+                    ran.locomotion = true;
                     true
                 }
                 Step::Call(16) => {

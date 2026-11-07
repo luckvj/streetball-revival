@@ -631,6 +631,15 @@ pub enum Event {
     },
 }
 
+/// A scripted channel as it shows when its script calls the locomotion
+/// (callback 1): the model, its local pose and its clip.
+#[derive(Clone, Debug)]
+struct ScriptShown {
+    pose: pose::Pose,
+    held: pose::Held,
+    from: (u16, f32),
+}
+
 /// The receiver of a caught pass and the tick his catch animation ends.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Catch {
@@ -1883,7 +1892,7 @@ impl World {
                 let moving = carried != [0.0; 2]
                     && (self.players[i].height > 0.0 || before.strength() >= 16);
                 if moving && !self.caught_row_holds(i) {
-                    self.select_gait_with(i, &walk, held, stance, true);
+                    self.select_gait_with(i, &walk, held, stance, true, None);
                 }
                 self.pass_button(i, &press_input, aimed, &start);
             }
@@ -2027,7 +2036,40 @@ impl World {
             // after the release and the fadeaway's switch, then the court's
             // bound again.
             let before = self.players[i].position;
+            // Callback 1 at the script's end this update runs his
+            // locomotion in the channel's step (`FUN_001722c0`): the
+            // record's selection and the stand path on this update's stick.
+            let called = {
+                let f = self.players[i].flight;
+                self.move_steps(i, f.landing).is_some_and(|m| {
+                    m.ran.locomotion && !(m.script == f.script && m.updates == f.updates)
+                })
+            };
+            // The model as the script left it, for the new record's start
+            // (its row, its blend's held pose, the heading match).
+            let shown = if called { self.script_shown(i) } else { None };
             self.flight_tick(i, start.get(i).copied().unwrap_or(before));
+            if called && matches!(self.players[i].action, Action::None) {
+                // `FUN_00163d40` picks the record and sets his velocity and
+                // wanted facing; the motion step after the channel's moves
+                // him on it.
+                // The record first, its motion range then sets the speed.
+                self.select_gait_with(i, &walk, held, stance, false, shown);
+                let mut ran = self.players[i].clone();
+                ran.walk(&walk, 1.0, held, stance);
+                let p = &mut self.players[i];
+                (p.speed, p.course, p.wanted, p.gait) =
+                    (ran.speed, ran.course, ran.wanted, ran.gait);
+                self.stand_path(i, &input);
+                // `FUN_00168ea8` after the channel's step: toward the wanted
+                // facing the locomotion just set.
+                self.players[i].turn_to_wanted(held);
+                let p = &mut self.players[i];
+                let v = p.velocity();
+                p.position[0] += v[0] * TICK_SECONDS;
+                p.position[1] += v[1] * TICK_SECONDS;
+                p.clamp_to_court();
+            }
             self.contain(i);
             // The head's look ([`look`], `0x157d9c`).
             self.head_look(i);
@@ -2197,7 +2239,40 @@ impl World {
     /// whether he holds the ball, or a guard's record, kept while still
     /// eligible.
     fn select_gait(&mut self, i: usize, input: &Input, held: bool, stance: Option<guard::Stance>) {
-        self.select_gait_with(i, input, held, stance, false);
+        self.select_gait_with(i, input, held, stance, false, None);
+    }
+
+    /// What `i`'s scripted channel showed ([`ScriptShown`]).
+    fn script_shown(&self, i: usize) -> Option<ScriptShown> {
+        // The channel as the last update left it (this update's steps end
+        // the script): the model the matrices hold, its clip.
+        let poses = self.poses.get()?;
+        let m = self.move_steps(i, self.players[i].flight.landing)?;
+        let shown = m.before?;
+        let record = shown.record?;
+        let p = &self.players[i];
+        let pose = trick::pose_from(
+            poses,
+            shown,
+            m.from,
+            m.held.as_ref(),
+            m.turn,
+            p.body(),
+            self.place(i),
+        )?;
+        let held = poses.held(
+            pose::Frame {
+                record,
+                time: shown.frame,
+                looping: false,
+            },
+            0,
+        )?;
+        Some(ScriptShown {
+            pose,
+            held,
+            from: (record, shown.frame),
+        })
     }
 
     /// [`World::select_gait`]; `forced` is the locomotion called with its
@@ -2210,6 +2285,7 @@ impl World {
         held: bool,
         stance: Option<guard::Stance>,
         forced: bool,
+        script: Option<ScriptShown>,
     ) {
         let p = &self.players[i];
         let walks = match p.action {
@@ -2256,6 +2332,7 @@ impl World {
         let playing = {
             let p = &self.players[i];
             match p.stand {
+                _ if script.is_some() => script.as_ref().map(|s| s.from.0),
                 Some(s) => s.run.shown().record,
                 None if p.gait_channel.moving => {
                     p.gait_channel.record.map(|_| p.gait_channel.record_row())
@@ -2308,6 +2385,7 @@ impl World {
                 }
             };
             let held = match p.stand {
+                _ if script.is_some() => script.as_ref().map(|s| (Some(s.from), s.held)),
                 Some(s) => s.local(&poses).map(|h| {
                     let shown = s.run.shown();
                     (shown.record.map(|r| (r, shown.frame)).or(s.from), h)
@@ -2322,7 +2400,10 @@ impl World {
             // incoming clip (`91 0x820000`, `FUN_00196698`), before this
             // update's turn.
             if let gait_select::RecordStart::Frame { heading: true, .. } = how
-                && let Some(shown) = self.actor_pose(i)
+                && let Some(shown) = script
+                    .as_ref()
+                    .map(|s| s.pose)
+                    .or_else(|| self.actor_pose(i))
                 && let Some(new) = trick::matched_word(&poses, &shown, row, start, body)
             {
                 // The model turns by the facing word halved

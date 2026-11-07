@@ -451,8 +451,9 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // once the holders backed down; 2027: 2026's played no replay on
         // one machine once the shot clock ran at the original's step;
         // 2028: 2027's blocked no shot once a free holder's pass went in
-        // after his locomotion.)
-        2028,
+        // after his locomotion; 2029: 2028's blocked no shot once callback 1
+        // ran the locomotion at a script's end.)
+        2029,
         15_000,
         Conditions {
             loss: 0.04,
@@ -474,14 +475,15 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
     // distance tables kept actor order within a unit, seed 17's and 18's none
     // once the opening's pregame updates, stands and faces drew, seed 19's
     // none once a leaper turned at the walk's rate, seed 20's none once a
-    // blend's heading match turned the players to their clips).
+    // blend's heading match turned the players to their clips, seed 21's
+    // none once callback 1 ran the locomotion at a script's end).
     let tables = disc().unwrap();
     let teams: Vec<usize> = (0..tables.tables().teams.len())
         .filter(|&t| tables.tables().teams[t].roster.len() >= 3)
         .collect();
     disc_match(
         [teams[12], teams[20]],
-        21,
+        22,
         15_000,
         Conditions {
             loss: 0.10,

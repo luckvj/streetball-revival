@@ -14874,7 +14874,19 @@ pick (the scripts' `95` precede their `8e`). The passer's pass slide is
 0.56 off the PS2's (was 0.70); his planted foot's motion through the
 blend is not yet the original's.
 
-Open at 935 (step 319): the passer's locomotion resumes on the PS2 (a
-record selection with both draws, `0x168b84` and `0x168de8`) where the
-rewrite's makes none, and actor 1's selection draws twice on the PS2
-(no record already playing answers) but once here.
+Explained (same day): the pass script ends with callback 1
+(`FUN_001722c0`), which runs the locomotion at once,
+`FUN_00163d40(actor, 0, 1)`, outside the script manager. In the channel's
+step it picks the record (both of the selector's draws here), its start
+from the clip the script showed (516, a still row: the `91 0x820000`
+heading match, +27 to 305) and the velocity from the new record's motion,
+on which the motion step moves him (0.36 that update); `FUN_00168ea8` then
+turns him toward the wanted facing the locomotion set (`trick::Ran::
+locomotion`, `World::script_shown`, the step after `flight_tick`). The
+passer's facing now runs 305, 259 as the log's.
+
+Open at 935 (step 319): actor 1's speed level drops (pad intensity 64 to
+58) an update later than the PS2's. His spot is about his man, the
+passer, who is still 0.56 off the log from his pass's planted-foot blend
+(steps 258..262: the log's per-update slide is (-0.10, +0.12), the
+rewrite's (-0.09, +0.02)).

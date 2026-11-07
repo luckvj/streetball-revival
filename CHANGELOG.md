@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A player whose shot, pass or other move ends moves on at once in the
+  same update, as on the PS2 (the move's last step starts his run, turned
+  to his new direction), instead of standing for an extra frame.
 - After a running catch the receiver keeps running in a straight line
   until his catch animation lets go, as on the PS2, instead of turning at
   once. Shots, dunks and passes now blend out of the exact pose the
