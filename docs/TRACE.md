@@ -15020,3 +15020,20 @@ script's first step sets its clip). The whole-body clip lay 0.43 off.
 The replay's draws cannot pick the stand: the original drew 17 and 18
 times over the press's two updates, the replay 38 to 43 in one. The
 `0x44389d` early blend-out is not ported.
+
+The script opcodes against the VM's table (2026-11-07): the handlers at
+`0x3e8610` (op `0x80 + 4k`) checked against every script the rewrite
+reads. One was lost: `ad n` (`FUN_00194a78`, four bytes, a count of
+updates at 60 a second scaled to the frame rate, at least 1): when the
+actor would land sooner (`FUN_0019bed8` on actor+0x44 and +0x34) his
+rise becomes `(−y − g n²) / n`, so he lands `n` updates on, and the
+landing count is timed again (actor+0x64, +0x60 0). The decoders read
+three bytes and a no-op `00` and dropped it. It stands in the mid-air
+tip-ins (28, 34, 28), the dunks turned lay-ups (25..33), the air passes
+(24..30), the dive passes (10) and the nine fall-forward reactions (a hop
+of 0.04, then 20). Ported as `trick::Step::StayUp` (`timing::hang`), in
+the flight's ops, the landing wait's start and a reaction's rise. `86 id`
+waits on callback `id` (the pc held on it while it returns 0): the jump
+shots' `86 13`, the shot gate, and the block jumps' `86 36`, which
+passes at once, both already carried. Not met in the rewrite's scripts:
+`8b`, `9d`, `a3`, `a8`, `99`, `a2`, `a4`, `a5`, `9a`.
