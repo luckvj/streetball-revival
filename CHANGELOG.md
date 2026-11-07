@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A player who turns while his feet are planted (starting a pass, a
+  shot or a dunk) now swings round his planted foot one moment later,
+  as on the PS2, instead of sliding the instant he turns.
 - A player who starts running straight out of a move (the jump ball, a
   shot, a dunk) now settles into his stride at the same moment as on the
   PS2, so his steps stay in time with the PS2's for the rest of the run.

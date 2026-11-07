@@ -848,6 +848,7 @@ impl World {
         ];
         p.rise = f.velocity[1];
         // `FUN_00168ea8`: the facing toward the wanted one.
+        let facing_before = p.heading;
         let rate = turn_rate(&action, f.flags);
         let now = timing::facing_word(p.heading);
         let want = timing::facing_word(p.wanted);
@@ -867,7 +868,7 @@ impl World {
         p.flight = f;
         // The model posed, the planted points held (`0x157800..0x157954`).
         if f.flags & (PLANTED | NO_GRAVITY) != 0 {
-            self.hold_planted(i, &m);
+            self.hold_planted(i, &m, facing_before);
         }
         // A hang's move, and a dive, are over with their script once he is
         // down; a pass on the floor once its `91` gives the locomotion back
@@ -995,12 +996,19 @@ impl World {
     /// the model is posed): his x and z moved by the planted point less
     /// the planted bones' midpoint as the channel shows them at his place,
     /// his height too for the hands (0x40000).
-    fn hold_planted(&mut self, i: usize, m: &crate::held::MoveSteps) {
+    fn hold_planted(&mut self, i: usize, m: &crate::held::MoveSteps, facing: f32) {
         let Some(poses) = self.poses.arc() else {
             return;
         };
         let p = &self.players[i];
         let f = p.flight;
+        // The model's matrices as the channel's step posed them, before
+        // this update's turn (`FUN_00168ea8` at `0x1575e0`, the bones read
+        // at `0x157870`): a turn on planted feet pivots him an update later
+        // (the third attract match's passer at update 874 holds his free
+        // foot through the press's turn, then swings round at 875).
+        let mut place = self.place(i);
+        place.word = timing::facing_word(facing);
         let Some(pose) = crate::trick::pose_from(
             &poses,
             m.after,
@@ -1008,7 +1016,7 @@ impl World {
             m.held.as_ref(),
             m.turn,
             p.body(),
-            self.place(i),
+            place,
         ) else {
             return;
         };

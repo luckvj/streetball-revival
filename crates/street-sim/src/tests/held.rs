@@ -128,15 +128,18 @@ fn a_shot_holds_the_ball_on_its_clip_easing_through_the_blend() {
         if w.ball.state != BallState::Held(0) {
             break;
         }
-        held.push((w.channel(0).unwrap(), w.ball.position));
+        // The hand where he stands now: a turn on his planted feet
+        // pivots him an update late ([`crate::jump`]).
+        let hand = hand_on(&w, c.shown.record.unwrap(), 4);
+        held.push((w.channel(0).unwrap(), w.ball.position, hand));
     }
     let after = held
         .iter()
-        .find(|(c, _)| c.shown.blend.is_none())
+        .find(|(c, _, _)| c.shown.blend.is_none())
         .expect("the blend ends before the release");
-    assert!(distance(after.1, left) < 1e-3, "{after:?} {left:?}");
+    assert!(distance(after.1, after.2) < 1e-3, "{after:?}");
     // Every update of the blend lies between where it began and the hand.
-    for (c, at) in held.iter().filter(|(c, _)| c.shown.blend.is_some()) {
+    for (c, at, _) in held.iter().filter(|(c, _, _)| c.shown.blend.is_some()) {
         assert!(distance(*at, left) < distance(first, left) + 1e-3, "{c:?}");
     }
     let _ = script;
