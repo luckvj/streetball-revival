@@ -14896,3 +14896,21 @@ picks bone 3; bone 7 puts him 1.04 off), the held pose (its root heading
 1016 at word 0, the log's +0xbc 973 plus the match's 40 is 1013), and the
 root's translation (pinned in both: only its height shows). Left: the
 blend itself (its weights, the incoming clip's frame through it).
+
+Found (same day) with a capture of each actor's ankles (bones 3 and 7's
+world x/y/z, `*(model+0x54) + i * 0xb0`, `work/drawpos7-attract3.jsonl`):
+the passer's legs left the log at step 254, before his pass. He was
+playing out his earlier catch (`catch_stand_3r`, record 569): its flight
+wait's length is the flight still to come when it starts, counted as
+the flight does (`flight - k + 1`, the log's 0.441 a frame reaching 15
+at step 239), where the display's replay after the catch counted one
+short and ended the wait an update early (its root motion's replay
+keeps the old count: the positions follow it). The stand that followed
+(step 255) held his gait's pose instead of the catch row's last frame;
+now `start_stand` holds that, and stands and scripts hold the pose shown
+as the actor's update began (`World::shown_start`, not saved: taken
+again each update). The passer's ankles match the log through step 256
+and he ends his pass 0.007 off (was 0.56); through the pass's blend his
+free foot still runs ahead of the log's (0.18 at step 258: on the
+blend's first update the log's pose only turns, its weight seemingly 0,
+yet the blend ends on the same update as the rewrite's).

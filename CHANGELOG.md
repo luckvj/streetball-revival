@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A standing catch animation now plays out on the PS2's clock to its last
+  frame, and the stand that follows blends out of it, so a player who
+  catches and then passes keeps his feet where the original's are.
 - A player whose shot, pass or other move ends moves on at once in the
   same update, as on the PS2 (the move's last step starts his run, turned
   to his new direction), instead of standing for an extra frame.

@@ -206,6 +206,7 @@ impl World {
             staged_start,
             crowd,
             camera_draws,
+            shown_start: _,
         } = self;
         w.uv(*tick);
         for h in hoops {
@@ -1124,6 +1125,7 @@ impl World {
             staged_start,
             crowd,
             camera_draws,
+            shown_start: crate::ShownStart::default(),
         };
         world.validate()?;
         Ok(world)

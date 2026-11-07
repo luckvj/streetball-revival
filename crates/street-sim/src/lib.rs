@@ -631,6 +631,18 @@ pub enum Event {
     },
 }
 
+/// [`World::shown_start`]: taken afresh at the start of each actor's update
+/// before anything reads it, so it is not part of the world's state (two
+/// worlds that differ only here are the same game).
+#[derive(Clone, Debug, Default)]
+pub(crate) struct ShownStart(pub Vec<Option<(u64, pose::Held)>>);
+
+impl PartialEq for ShownStart {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
 /// A scripted channel as it shows when its script calls the locomotion
 /// (callback 1): the model, its local pose and its clip.
 #[derive(Clone, Debug)]
@@ -844,6 +856,11 @@ pub struct World {
     pub crowd: crowd::Crowd,
     /// This update's draws for the camera's courtside eyes ([`camera`]).
     pub camera_draws: Vec<u32>,
+    /// Each actor's pose as his channel showed it when his update began
+    /// (the output `FUN_001935c8` copies at a blend's start, whatever this
+    /// update's locomotion has since asked for), with the tick it was
+    /// taken; not saved (it is taken again each update).
+    pub(crate) shown_start: ShownStart,
     /// The combo manager (game+0xd0, [`combo::Manager`]): the match's one
     /// ring of events and the words its dispatchers keep ([`scoring`]).
     pub combo: combo::Manager,
@@ -1404,6 +1421,7 @@ impl World {
             staged_start: None,
             crowd: crowd::Crowd::default(),
             camera_draws: Vec::new(),
+            shown_start: ShownStart::default(),
         }
     }
 
@@ -1651,6 +1669,11 @@ impl World {
         // earlier in it and the last update's for one later.
         let order = self.actor_order();
         for (k, &i) in order.iter().enumerate() {
+            let shown = self.shown_local(i).map(|h| (self.tick, h));
+            if self.shown_start.0.len() < self.players.len() {
+                self.shown_start.0.resize(self.players.len(), None);
+            }
+            self.shown_start.0[i] = shown;
             // A pass pressed earlier in this update freezes its receiver's
             // stick before his own update.
             self.freeze_receiver();
@@ -2240,6 +2263,50 @@ impl World {
     /// eligible.
     fn select_gait(&mut self, i: usize, input: &Input, held: bool, stance: Option<guard::Stance>) {
         self.select_gait_with(i, input, held, stance, false, None);
+    }
+
+    /// `i`'s pose in local terms as his channel shows it: a stand's, a
+    /// script's (its first blend from the pose it held), else his gait's.
+    pub(crate) fn shown_local(&self, i: usize) -> Option<pose::Held> {
+        let poses = self.poses.get()?;
+        if let Some(s) = self.players[i].stand {
+            return s.local(poses);
+        }
+        let c = self.channel(i)?;
+        if c.gait {
+            return self.gait_local(i);
+        }
+        let to = pose::Frame {
+            record: c.shown.record?,
+            time: c.shown.frame,
+            looping: false,
+        };
+        match (c.shown.blend, c.held, c.from) {
+            (Some(w), Some(h), _) => poses.mixed(&h.turned(c.turn), to, w),
+            (Some(w), None, Some((record, time))) => {
+                let from = poses.held(
+                    pose::Frame {
+                        record,
+                        time,
+                        looping: true,
+                    },
+                    c.turn,
+                )?;
+                poses.mixed(&from, to, w)
+            }
+            _ => poses.held(to, 0),
+        }
+    }
+
+    /// `i`'s shown pose as his update began ([`World::shown_start`]).
+    pub(crate) fn shown_at_start(&self, i: usize) -> Option<pose::Held> {
+        self.shown_start
+            .0
+            .get(i)
+            .copied()
+            .flatten()
+            .filter(|&(tick, _)| tick == self.tick)
+            .map(|(_, h)| h)
     }
 
     /// What `i`'s scripted channel showed ([`ScriptShown`]).

@@ -114,6 +114,7 @@ impl World {
             staged_start,
             crowd,
             camera_draws: _,
+            shown_start: _,
         } = self;
         for c in &crowd.calls {
             require(

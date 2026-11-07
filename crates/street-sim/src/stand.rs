@@ -567,12 +567,20 @@ impl World {
     pub(crate) fn start_stand(&mut self, i: usize, script: u8) {
         self.release_box_out(i);
         // The clip his channel shows: a stand's running still (its clip
-        // at its frame, or its blend's target), else his gait's.
+        // at its frame, or its blend's target), a catch row's play-out
+        // after the catch, else his gait's.
+        let caught = self
+            .channel(i)
+            .filter(|c| !c.gait && self.players[i].stand.is_none() && c.shown.blend.is_none())
+            .and_then(|c| c.shown.record.map(|r| (r, c.shown.frame)));
         let from = self.poses.get().map(|_| {
             if let Some(shown) = self.players[i].stand.map(|s| s.run.shown())
                 && let Some(record) = shown.record
             {
                 return (record, shown.frame);
+            }
+            if let Some(clip) = caught {
+                return clip;
             }
             let f = self.gait_frame(i);
             (f.record, f.time)
@@ -590,8 +598,19 @@ impl World {
             .poses
             .arc()
             .and_then(|poses| match self.players[i].stand {
+                _ if self.shown_at_start(i).is_some() => self.shown_at_start(i),
                 Some(s) => s.local(&poses),
-                None => self.gait_local(i),
+                None => match caught {
+                    Some((record, time)) => poses.held(
+                        crate::pose::Frame {
+                            record,
+                            time,
+                            looping: false,
+                        },
+                        0,
+                    ),
+                    None => self.gait_local(i),
+                },
             });
         self.players[i].stand = Some(Standing {
             script,

@@ -354,6 +354,7 @@ impl World {
             .poses
             .get()
             .and_then(|poses| match self.players[i].stand {
+                _ if self.shown_at_start(i).is_some() => self.shown_at_start(i),
                 Some(s) if s.run.tick <= 0 => s.held,
                 Some(s) => s.local(poses),
                 None => match self.channel(i) {
@@ -610,7 +611,7 @@ impl World {
         }
         // The catch row holding him after the catch: its script from the
         // release (the display's clock, `street_game::channel`).
-        if let Some(c) = self.catch.filter(|c| c.player == i && self.tick < c.until)
+        if let Some(c) = self.catch.filter(|c| c.player == i && self.tick <= c.until)
             && let Some(row) = timing::CATCH_ROWS.get(usize::from(c.row))
         {
             let steps = crate::touch::CATCH_SCRIPTS[usize::from(c.row)];
@@ -619,7 +620,7 @@ impl World {
             let updates = (self.tick as i64 - c.since as i64 + 1).clamp(0, 600) as i32;
             let flight = i32::from(c.flight);
             let (run, _) = replay(steps, updates, left, false, side, -1, None, |k| {
-                (flight - k).clamp(1, 255) as u8
+                (flight - k + 1).clamp(1, 255) as u8
             });
             if !run.done {
                 let from = first.and_then(|s| s.from).or_else(|| {
