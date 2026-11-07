@@ -24,6 +24,9 @@ its version's part.
 - A pass thrown just before landing (within a sixth of a second) takes
   the animations for passing on the ground, and a passer moving in the
   air no longer gets the standing animations, as on the PS2.
+- The advanced dunk's toss is drawn: the player's arms throw the ball up
+  off the board over his stand, as on the PS2, and the ball leaves the
+  hand those arms show (he had kept walking with his arms down).
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.

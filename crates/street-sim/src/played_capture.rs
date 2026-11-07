@@ -2885,6 +2885,18 @@ fn step_matched_blends_start_on_the_originals_frame() {
     assert_eq!(exact, checked, "{rows:?}");
 }
 
+/// The stand script whose bytes hold channel 0's `pc`
+/// ([`crate::stand::STAND_ADDRESSES`]: the nearest start at or before it).
+fn captured_stand(pc: i64) -> Option<u8> {
+    let pc = u32::try_from(pc).ok()?;
+    crate::stand::STAND_ADDRESSES
+        .iter()
+        .enumerate()
+        .filter(|&(_, &a)| a <= pc && pc - a < 0x40)
+        .max_by_key(|&(_, &a)| a)
+        .map(|(k, _)| k as u8)
+}
+
 #[test]
 fn the_advanced_dunks_toss_and_finish_as_the_original() {
     // Every advanced dunk press of the person's (state bits 0x90 set: the
@@ -3010,6 +3022,18 @@ fn the_advanced_dunks_toss_and_finish_as_the_original() {
                         break;
                     };
                     w.step(&input(x));
+                    // Channel 0's stand under the toss as the capture shows
+                    // it (the dribbler's stand is a draw the replay's other
+                    // actors do not reproduce): the toss leaves the model's
+                    // hand, the stand's below the spine. Stepped once, as
+                    // its script's first step sets its clip.
+                    if t == 0
+                        && let Some(stand) = captured_stand(x.pc(k))
+                        && w.players[k].stand.is_some_and(|s| s.script != stand)
+                    {
+                        w.start_stand(k, stand);
+                        w.stand_tick(k);
+                    }
                     // The leg back queued (callback 31; the original sets
                     // the ball's timer to its 45 then, the toss flying on
                     // to the board first).

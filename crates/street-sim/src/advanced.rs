@@ -96,7 +96,12 @@ impl World {
         } else {
             490
         };
-        let from = self.hand_on(i, record, 9.0).unwrap_or(self.ball.position);
+        // On the model's bones: channel 0 below the spine, the toss above
+        // it.
+        let from = self
+            .bbpass_hand(i, 9.0)
+            .or_else(|| self.hand_on(i, record, 9.0))
+            .unwrap_or(self.ball.position);
         // The zone is the ball's place as he lets it go (ball+0x30 into
         // `0x3d6590`, `0x173fc0`): across by the hoop's side, and z.
         let [x, _, z] = from;
@@ -206,7 +211,12 @@ impl World {
             time: frame,
             looping: false,
         };
-        let pose = poses.pose(at, p.body(), place)?;
+        // On the model's bones: channel 0 below the spine, the toss above
+        // it (`FUN_0014da20` reads the model both channels wrote).
+        let pose = match self.advanced_channel(h, 0) {
+            Some(c) => crate::held::channel_pose(&poses, &c, p.body(), place)?,
+            None => poses.pose(at, p.body(), place)?,
+        };
         let state = poses.state(record, frame as i32);
         let point = crate::dribble::in_hand(
             &pose,
@@ -228,6 +238,59 @@ impl World {
                 std::array::from_fn(|k| (place.position[k] + o[k]) * (1.0 - f) + point[k] * f)
             }
             None => point,
+        })
+    }
+
+    /// `bbpass_1` on channel 2 (its `91 06 00 02 00`) while the toss
+    /// plays: records 490 (489 on the live left hand) blended in over three
+    /// updates from the pose channel 0 shows, held at frame 2, then frame
+    /// `tick − 1` through the wait; channel 0's clip (his stand or walk)
+    /// below the spine.
+    pub(crate) fn advanced_channel(&self, i: usize, ahead: i64) -> Option<crate::held::Channel> {
+        let a = self
+            .advanced
+            .filter(|a| a.player == i && !a.finishing && a.tick > 0)?;
+        let p = &self.players[i];
+        let record = if p.gait_channel.hand == 2 { 489 } else { 490 };
+        let zero = self.channel_zero(i, ahead)?.shown;
+        let under = (zero.record?, zero.frame);
+        let tick = u16::from(a.tick);
+        let blending = tick <= 3;
+        Some(crate::held::Channel {
+            shown: crate::trick::Shown {
+                record: Some(record),
+                frame: if blending { 2.0 } else { f32::from(tick) - 1.0 },
+                blend: blending.then(|| f32::from(tick) / 3.0),
+            },
+            from: blending.then_some(under),
+            counter: blending.then_some((tick, 3)),
+            gait: false,
+            turn: 0,
+            held: None,
+            lower: Some(under),
+            upper_from: None,
+        })
+    }
+
+    /// The hand of `i`'s model as the toss's channels pose it at the
+    /// clip's frame `frame` (the hand by its flags), or None.
+    fn bbpass_hand(&self, i: usize, frame: f32) -> Option<[f32; 3]> {
+        let poses = self.poses.get()?;
+        let mut c = self.advanced_channel(i, 0)?;
+        c.shown.frame = frame;
+        c.shown.blend = None;
+        c.from = None;
+        c.counter = None;
+        let p = &self.players[i];
+        let pose = crate::held::channel_pose(poses, &c, p.body(), self.place(i))?;
+        let record = c.shown.record?;
+        let state = poses.state(record, frame as i32);
+        let right = pose.joints[crate::pose::RIGHT_HAND].position;
+        let left = pose.joints[crate::pose::LEFT_HAND].position;
+        Some(match state & 0xc {
+            8 => right,
+            4 => left,
+            _ => std::array::from_fn(|k| (right[k] + left[k]) * 0.5),
         })
     }
 

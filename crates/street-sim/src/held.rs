@@ -589,6 +589,16 @@ impl World {
     }
 
     fn channel_base(&self, i: usize, ahead: i64) -> Option<Channel> {
+        // `bbpass_1` on channel 2 over channel 0 ([`crate::advanced`]).
+        if let Some(c) = self.advanced_channel(i, ahead) {
+            return Some(c);
+        }
+        self.channel_zero(i, ahead)
+    }
+
+    /// Channel 0's clip: his move's or reaction's script, a catch row, a
+    /// stand's script or his gait.
+    pub(crate) fn channel_zero(&self, i: usize, ahead: i64) -> Option<Channel> {
         self.poses.get()?;
         let p = &self.players[i];
         let of = |run: &Run, from: Option<(u16, f32)>| Channel {

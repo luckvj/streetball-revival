@@ -15006,13 +15006,17 @@ bones, which hold both channels.
 
 Ported: the running catches and their end blend, the running passes (the
 velocity of `0x160f90`: actor+0x190 as `FUN_00163d40(actor, 1, 1)`
-leaves it, along the pelvis's wanted facing). Not ported: `bbpass_1`'s
-overlay. Under it the original's channel 0 plays a dribble stand (school
+leaves it, along the pelvis's wanted facing), their end blend, and later
+the same day `bbpass_1`'s overlay (`World::advanced_channel`, channel 0's
+clip below the spine). Under it the original's channel 0 plays a dribble stand (school
 6's press 50380: `dribble_stand_flair_5_r`, records 674/675, the stick
 let go at the press) and with that stand at its frame (675 at 1.43) the
 model's hand at the toss's frame 9 lies 0.22 from the captured ball
 (x exact); the rewrite's replay of that press draws another stand (671,
 then 668 once the test sets 22), which puts the composite's hand 1.6
-off and its z past the zone's 8, so the second leg is lost. The
-whole-body clip the rewrite keeps lies 0.43 off. The `0x44389d` early
-blend-out and `pass_allyoop_run_1`'s tail are not ported either.
+off and its z past the zone's 8, so the second leg is lost; the played
+test now starts the captured stand at the press (stepped once, as a
+script's first step sets its clip). The whole-body clip lay 0.43 off.
+The replay's draws cannot pick the stand: the original drew 17 and 18
+times over the press's two updates, the replay 38 to 43 in one. The
+`0x44389d` early blend-out is not ported.
