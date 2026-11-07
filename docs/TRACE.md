@@ -14987,3 +14987,32 @@ button and callback 20 fakes the shot. Only catch-and-shoot gathers can
 draw it (actor+0x1a0 0): 425 of the rewrite's 10,314 shooting updates
 over the four matches. Expected about 1.2 over the three captures, so
 none is chance (p ~0.3).
+
+Channel 2 overlays (2026-11-07). Every script start on channel 2
+(`FUN_0019c2f8` with `a2 = 2`): the running catch rows (`0x15aad8`),
+the running pass rows (`0x161090`, rows with 0x100 and not 0x2400;
+channel 0 starts `run_4`, gait record 2, with the stick at 0x28 or more,
+else `walk_cocky_2`, record 20, both plain gait-record scripts: a blend
+of 6 and `ab -1`), the advanced dunk's toss `bbpass_1` (`0x169654`), and
+`0x44389d` (`91 4; 92 00 05 00`), which a juke press (`0x15ad74`) or a
+pass (`0x15ba0c`) runs to blend a running catch's row out early. Opcode
+`92` (`FUN_00198540`, VM table `0x3e8610`, op `0x80 + 4k`): the channel's
+link (+0x58) to the byte's channel, the shown pose held (+0xbc), a blend
+of the next byte's length into the linked channel's output, the ball's
+offset stored; every `catch_run_*` row and `bbpass_1` end `92 00 05 00`,
+`pass_allyoop_run_1` `92 00 08 00`. `FUN_0014e060` reads channel 2 when
+its flag 4 is set and its +0x58 is -1 and takes the hand off the model's
+bones, which hold both channels.
+
+Ported: the running catches and their end blend, the running passes (the
+velocity of `0x160f90`: actor+0x190 as `FUN_00163d40(actor, 1, 1)`
+leaves it, along the pelvis's wanted facing). Not ported: `bbpass_1`'s
+overlay. Under it the original's channel 0 plays a dribble stand (school
+6's press 50380: `dribble_stand_flair_5_r`, records 674/675, the stick
+let go at the press) and with that stand at its frame (675 at 1.43) the
+model's hand at the toss's frame 9 lies 0.22 from the captured ball
+(x exact); the rewrite's replay of that press draws another stand (671,
+then 668 once the test sets 22), which puts the composite's hand 1.6
+off and its z past the zone's 8, so the second leg is lost. The
+whole-body clip the rewrite keeps lies 0.43 off. The `0x44389d` early
+blend-out and `pass_allyoop_run_1`'s tail are not ported either.
