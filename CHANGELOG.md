@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- The opening tip's jumpers land and run off as on the PS2: the landing
+  animation plays to its last frame and their run starts from it, facing
+  the way the original turns them.
 - A standing catch animation now plays out on the PS2's clock to its last
   frame, and the stand that follows blends out of it, so a player who
   catches and then passes keeps his feet where the original's are.

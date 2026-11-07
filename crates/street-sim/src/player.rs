@@ -1200,13 +1200,15 @@ impl Player {
                 self.gait = Gait::Stand;
                 // Down, his script's `91 2` bars the locomotion while `8c`
                 // plays the clip out at a frame each 2 updates; then `91 0`
-                // and callback 1 hand him back to it.
+                // and callback 1 hand him back to it in the channel's step
+                // of the update after the last frame's ([`crate::World`]'s
+                // callback 1).
                 if *landed > 0 {
                     let rest = crate::toss::PLAYOUT_UPDATES
                         .get(usize::from(*script))
                         .copied()
                         .unwrap_or(0);
-                    if tick.saturating_sub(*landed) >= rest {
+                    if tick.saturating_sub(*landed) > rest {
                         self.action = Action::None;
                     }
                     return None;

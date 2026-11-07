@@ -14914,3 +14914,12 @@ and he ends his pass 0.007 off (was 0.56); through the pass's blend his
 free foot still runs ahead of the log's (0.18 at step 258: on the
 blend's first update the log's pose only turns, its weight seemingly 0,
 yet the blend ends on the same update as the rewrite's).
+
+The tip jumpers (same day): their scripts end with callback 1 too, in
+the channel's step of the update after the play-out's last frame (the
+log's jumper picks record 957 at step 251 with his facing matched to
+the tip clip's last frame, 755, then 801, 847, 893 at the walk's 46).
+The tip's pose now plays the landing out (`8c 2.0` from the landing's
+frame to the last, `World::tip_frame`), and the jump's end runs the
+callback-1 locomotion on it. Actor 3's drift from there halved (0.07);
+actor 0's bump into him at step 274 still comes an update late.
