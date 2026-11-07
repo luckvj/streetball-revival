@@ -488,15 +488,21 @@ impl World {
         if ran.clear_bits & 0x200 != 0 {
             c.catching = false;
         }
-        if ran.toward_ball {
-            // `FUN_00174eb0(0, 0)`: +0xb0 the angle to the ball; the
-            // facing turns to it at the walk's 46 an update
-            // ([`World::catching_turn`]).
+        if let Some(args) = ran.toward_ball {
+            // `FUN_00174eb0`: +0xb0 the angle to the ball; the facing turns
+            // to it at the walk's 46 an update ([`World::catching_turn`]).
             let p = &self.players[i];
             let b = self.ball.position;
-            let wanted = crate::math::atan2(b[0] - p.position[0], b[2] - p.position[1]);
-            self.players[i].wanted = wanted;
-            c.facing = Some(timing::facing_word(wanted));
+            let to = crate::math::atan2(b[0] - p.position[0], b[2] - p.position[1]);
+            if let Some(w) = crate::trick::toward_ball(
+                timing::facing_word(p.wanted),
+                timing::facing_word(to),
+                args,
+            ) {
+                let wanted = crate::restart::heading_radians(w);
+                self.players[i].wanted = wanted;
+                c.facing = Some(w);
+            }
         }
         if c.holds()
             && let Some(poses) = self.poses.get()

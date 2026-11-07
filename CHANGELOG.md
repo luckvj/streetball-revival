@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- The ball sits in the holder's hands as on the PS2 while he stands, as a
+  catch plays out and as a new walk blends in, and players who turn to
+  watch the ball only do so when they are far enough off it, as the
+  original's animations ask.
 - The opening tip's jumpers land and run off as on the PS2: the landing
   animation plays to its last frame and their run starts from it, facing
   the way the original turns them.

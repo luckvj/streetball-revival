@@ -6,7 +6,9 @@
 // flight) is a [`Step::Flight`], its length the pass's updates left when it
 // starts ([`Catching::step`]).
 
-use crate::trick::Step::{self, Bits, Blend, Call, Clear, End, Flight, PlayOut, Stop, Test, Wait};
+use crate::trick::Step::{
+    self, Bits, Blend, Call, Clear, End, Flight, PlayOut, Stop, Test, TowardBall, Wait,
+};
 
 /// The catch rows' scripts, by row of [`crate::timing::CATCH_ROWS`].
 pub const CATCH_SCRIPTS: [&[Step]; 39] = [
@@ -14,7 +16,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0x200),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 4, records: [565, 565] },
         Flight { to: 10 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 16, n: 9 },
@@ -316,7 +318,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0xa00),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [582, 582] },
         Flight { to: 7 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 11, n: 6 },
@@ -328,7 +330,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0xa00),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 5, records: [581, 581] },
         Flight { to: 11 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 25, n: 21 },
@@ -340,7 +342,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0xa00),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [584, 584] },
         Flight { to: 12 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 20, n: 12 },
@@ -352,7 +354,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0xa00),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [583, 583] },
         Flight { to: 12 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 20, n: 12 },
@@ -364,7 +366,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0xa00),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [586, 586] },
         Flight { to: 7 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 20, n: 20 },
@@ -376,7 +378,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0xa00),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [585, 585] },
         Flight { to: 7 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 20, n: 20 },
@@ -388,7 +390,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0xa00),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [580, 580] },
         Flight { to: 16 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 30, n: 21 },
@@ -400,7 +402,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0xa00),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [579, 579] },
         Flight { to: 16 },
         PlayOut { per_frame: f32::from_bits(0x3fc00000), to: 30, n: 21 },
@@ -412,7 +414,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0x200),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [554, 554] },
         Flight { to: 5 },
         Wait { to: 8, n: 6 },
@@ -425,7 +427,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0x200),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [553, 553] },
         Flight { to: 5 },
         Wait { to: 8, n: 6 },
@@ -438,7 +440,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0x200),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [560, 560] },
         Flight { to: 7 },
         Wait { to: 10, n: 6 },
@@ -451,7 +453,7 @@ pub const CATCH_SCRIPTS: [&[Step]; 39] = [
     &[
         Stop,
         Bits(0x200),
-        Call(5),
+        TowardBall { turn: 0, within: 0 },
         Blend { n: 6, start: 0, records: [559, 559] },
         Flight { to: 7 },
         Wait { to: 10, n: 6 },

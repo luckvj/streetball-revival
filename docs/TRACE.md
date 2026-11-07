@@ -14923,3 +14923,17 @@ The tip's pose now plays the landing out (`8c 2.0` from the landing's
 frame to the last, `World::tip_frame`), and the jump's end runs the
 callback-1 locomotion on it. Actor 3's drift from there halved (0.07);
 actor 0's bump into him at step 274 still comes an update late.
+
+Then (same day): the held ball (`FUN_0014e060`) sits on whatever channel
+0 shows, a stand's script included (`World::channel` now returns the
+stand's; it had fallen through to the gait's clip); placed after every
+actor's update it sees the catch row's clock this update has stepped
+(`World::channel_ahead`), and a gait blend's held pose
+(`Channel::held` for the gait). The ball matches the log within 0.02
+through step 257. Callback 5 is `FUN_00174eb0(actor, turn, within)`: the
+wanted facing goes to the ball's direction plus `turn` only when it is
+`within` or more off (`FUN_0018cd78`); the face-up stand (`0x4572ae`)
+and the seven flairs that run into it pass 30, every other script 0
+(`Step::TowardBall`, decoded in `tests/trick_disc.rs`). The PS2's actor 2
+kept his wanted 780 against the ball's 776; with it his stand's slide
+drifts 0.012 from the log (was 0.085).

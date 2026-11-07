@@ -90,6 +90,10 @@ pub enum Step {
     /// `83 id`: a game callback (1 the gait back, 4 the post-up's, 7 the
     /// facing from the pelvis, 53 the self-toss launch).
     Call(u8),
+    /// `83 05 turn within`: callback 5 (`FUN_00174eb0`), the wanted facing
+    /// to the ball turned `turn` units, unless it is already within
+    /// `within` of that.
+    TowardBall { turn: i16, within: i16 },
     /// `84`/`85 id`: a callback that decides a jump; the plain path.
     Test(u8),
     /// `81`.
@@ -394,7 +398,7 @@ pub struct Ran {
     pub set_bits: u32,
     pub clear_bits: u32,
     /// Callback 5 (`FUN_00174eb0`): the facing (+0xb0) toward the ball.
-    pub toward_ball: bool,
+    pub toward_ball: Option<(i16, i16)>,
     /// Callback 16 (`FUN_00175720`): the wanted facing (+0xb0) toward his
     /// nearest opponent (`FUN_00170dc0`).
     pub toward_nearest: bool,
@@ -647,7 +651,7 @@ impl Run {
                     true
                 }
                 Step::Call(5) => {
-                    ran.toward_ball = true;
+                    ran.toward_ball = Some((0, 0));
                     true
                 }
                 Step::Call(0) => {
@@ -656,6 +660,10 @@ impl Run {
                 }
                 Step::Call(7) => {
                     ran.face = true;
+                    true
+                }
+                Step::TowardBall { turn, within } => {
+                    ran.toward_ball = Some((turn, within));
                     true
                 }
                 Step::Call(1) => {
@@ -1043,6 +1051,14 @@ pub fn pose_turned(
         ),
         _ => poses.pose(to, body, place),
     }
+}
+
+/// Callback 5 (`FUN_00174eb0(actor, turn, within)`): the wanted facing
+/// `word` from the ball's (`FUN_0016f2b0`, here `to_ball`) plus `turn`,
+/// kept when it is already within `within` of that (`FUN_0018cd78`).
+pub fn toward_ball(wanted: i32, to_ball: i32, (turn, within): (i16, i16)) -> Option<i32> {
+    let word = (to_ball + i32::from(turn)) & 0x3ff;
+    (timing::angle_diff(wanted, word).abs() >= i32::from(within)).then_some(word)
 }
 
 /// [`pose_turned`] holding `held` (the pose the channel showed, turned

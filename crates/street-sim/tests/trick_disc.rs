@@ -563,6 +563,13 @@ impl Disc {
                 return None;
             }
             0x82 => self.unaligned(p),
+            0x83 if self.unaligned(p) == 5 => {
+                out.push(Step::TowardBall {
+                    turn: self.unaligned(p + 4) as i32 as i16,
+                    within: self.unaligned(p + 8) as i32 as i16,
+                });
+                p + 16
+            }
             0x83 => {
                 out.push(Step::Call(self.unaligned(p) as u8));
                 // Callback 1 hands the channel to the locomotion
@@ -1601,6 +1608,9 @@ fn spelled(s: &Step) -> String {
             f(rise)
         ),
         Step::Call(c) => format!("Call({c})"),
+        Step::TowardBall { turn, within } => {
+            format!("TowardBall {{ turn: {turn}, within: {within} }}")
+        }
         Step::Test(c) => format!("Test({c})"),
         Step::End => "End".into(),
         Step::Flags(w) => format!("Flags({w:#x})"),

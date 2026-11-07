@@ -856,13 +856,15 @@ impl World {
                 }
             }
         }
-        if ran.toward_ball {
+        if let Some(args) = ran.toward_ball {
             let (p, b) = (&self.players[i], self.ball.position);
             let word = timing::angle_units(crate::math::atan2(
                 p.position[0] - b[0],
                 p.position[1] - b[2],
             ));
-            self.players[i].wanted = crate::restart::heading_radians(word);
+            if let Some(w) = crate::trick::toward_ball(timing::facing_word(p.wanted), word, args) {
+                self.players[i].wanted = crate::restart::heading_radians(w);
+            }
         }
         let mut unplant = false;
         for step in ran.ops.iter() {

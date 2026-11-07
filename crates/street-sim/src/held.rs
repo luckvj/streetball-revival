@@ -58,8 +58,8 @@ use crate::trick::CURRENT;
 use crate::trick::Select::{Handed, Side};
 use crate::trick::Step::{
     Aim, Bits, Blend, Call, Carry, Clear, Dive, Either, End, Flags, Flight, Hang, Hop, Knock, Land,
-    Pick, Plant, PlayOut, Reach, Rise, Scale, Shove, Slide, Stop, Test, Toward, Unplant, Wait,
-    Want,
+    Pick, Plant, PlayOut, Reach, Rise, Scale, Shove, Slide, Stop, Test, Toward, TowardBall,
+    Unplant, Wait, Want,
 };
 
 include!("held_tables.rs");
@@ -509,6 +509,14 @@ impl World {
     /// a lay-up's or a pass's ([`SHOT_STEPS`]..), else his gait. None
     /// without the disc's animations.
     pub fn channel(&self, i: usize) -> Option<Channel> {
+        self.channel_ahead(i, 0)
+    }
+
+    /// [`World::channel`] with the catch row's clock (which runs on the
+    /// world's tick, counted at the step's end) `ahead` updates on: 1 once
+    /// the actor's own update in this step has stepped it (the held ball,
+    /// placed after every actor's update).
+    pub(crate) fn channel_ahead(&self, i: usize, ahead: i64) -> Option<Channel> {
         self.poses.get()?;
         let p = &self.players[i];
         let of = |run: &Run, from: Option<(u16, f32)>| Channel {
@@ -609,6 +617,18 @@ impl World {
                 ..of(&run, from)
             });
         }
+        // A stand's script on channel 0 ([`crate::stand`]), its first blend
+        // from the pose it held.
+        if let Some(st) = p.stand.filter(|_| p.action == Action::None) {
+            return Some(Channel {
+                shown: st.run.shown(),
+                from: st.from,
+                counter: st.run.blend_counter(),
+                gait: false,
+                turn: 0,
+                held: st.held,
+            });
+        }
         // The catch row holding him after the catch: its script from the
         // release (the display's clock, `street_game::channel`).
         if let Some(c) = self.catch.filter(|c| c.player == i && self.tick <= c.until)
@@ -617,7 +637,7 @@ impl World {
             let steps = crate::touch::CATCH_SCRIPTS[usize::from(c.row)];
             let first = started(row.script);
             let (left, side) = first.map_or((false, false), |s| (s.left, s.side));
-            let updates = (self.tick as i64 - c.since as i64 + 1).clamp(0, 600) as i32;
+            let updates = (self.tick as i64 - c.since as i64 + 1 + ahead).clamp(0, 600) as i32;
             let flight = i32::from(c.flight);
             let (run, _) = replay(steps, updates, left, false, side, -1, None, |k| {
                 (flight - k + 1).clamp(1, 255) as u8
@@ -745,7 +765,7 @@ impl World {
             counter: blending.then_some((g.blend_counter as u16, n as u16)),
             gait: true,
             turn: 0,
-            held: None,
+            held: if blending { g.blend_held } else { None },
         }
     }
 
@@ -790,7 +810,7 @@ impl World {
         let Some(poses) = self.poses.arc() else {
             return false;
         };
-        let Some(c) = self.channel(h) else {
+        let Some(c) = self.channel_ahead(h, 1) else {
             return false;
         };
         let p = &self.players[h];

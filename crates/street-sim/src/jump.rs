@@ -697,14 +697,18 @@ impl World {
         }
         // Callback 5 (`FUN_00174eb0(actor, 0, 0)`) on a dive: his wanted
         // facing to the ball (`FUN_0016f2b0`).
-        if m.ran.toward_ball && matches!(action, Action::Dive { .. }) {
+        if let Some(args) = m.ran.toward_ball
+            && matches!(action, Action::Dive { .. })
+        {
             let p = &self.players[i];
             let b = self.ball.position;
             let word = timing::angle_units(crate::math::atan2(
                 p.position[0] - b[0],
                 p.position[1] - b[2],
             ));
-            self.players[i].wanted = crate::restart::heading_radians(word);
+            if let Some(w) = crate::trick::toward_ball(timing::facing_word(p.wanted), word, args) {
+                self.players[i].wanted = crate::restart::heading_radians(w);
+            }
         }
         let stepped = !(m.script == f.script && m.updates == f.updates);
         let fresh = m.script != f.script;
