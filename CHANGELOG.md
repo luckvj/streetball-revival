@@ -43,6 +43,8 @@ its version's part.
 - A player who dribbles off out of a trick move (a crossover, a
   freestyle, a spin out of the post) starts his dribbling run in step with
   his feet, as on the PS2, instead of from a fixed point of it.
+- The tip-off's pass and a restart's pass are thrown at where the
+  receiver stands, as on the PS2, not to the spot he is heading for.
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.

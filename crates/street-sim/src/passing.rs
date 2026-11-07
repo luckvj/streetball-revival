@@ -490,16 +490,22 @@ impl World {
     /// still is led: the original's division by his speed (`0x15fd60`)
     /// gives the EE's largest float, which fails the test.
     ///
-    /// Not carried (the rewrite's own): the passer-record list `0x43f870`
-    /// gate (read as clear).
+    /// The tip's pass (the passer's clip one of `0x43f870`'s tip jumps)
+    /// and a restart's take his place too.
     pub(crate) fn pass_aim(&self, i: usize, to: usize) -> PassAim {
         let p = &self.players[i];
         let r = &self.players[to];
         let leaper = r.leaping();
         let mut spot = r.position;
+        // `0x15fcc0..0x15fd04`: the place also for the tip's pass (the
+        // passer's clip one of the tip jumps', `0x43f870`, `sp+0x210`) and
+        // in a restart (game+0x160 not −2, `sp+0x230`).
+        let tip = matches!(p.action, Action::TipJump { .. });
         if !leaper
             && to != i
             && !r.posting
+            && !tip
+            && !self.restarting()
             && self.passout.is_none_or(|po| po.passer != i || po.tossed)
         {
             let rim = self.rim_spot(target_hoop(self.possession.min(1)));
