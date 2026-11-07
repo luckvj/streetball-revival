@@ -14890,3 +14890,9 @@ Open at 935 (step 319): actor 1's speed level drops (pad intensity 64 to
 passer, who is still 0.56 off the log from his pass's planted-foot blend
 (steps 258..262: the log's per-update slide is (-0.10, +0.12), the
 rewrite's (-0.09, +0.02)).
+
+Ruled out for that slide (same day): the planted foot (`95 f4 07 03`
+picks bone 3; bone 7 puts him 1.04 off), the held pose (its root heading
+1016 at word 0, the log's +0xbc 973 plus the match's 40 is 1013), and the
+root's translation (pinned in both: only its height shows). Left: the
+blend itself (its weights, the incoming clip's frame through it).
