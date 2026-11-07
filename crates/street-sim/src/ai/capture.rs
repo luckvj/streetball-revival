@@ -3391,12 +3391,15 @@ const RECORDED_BOUNDS: Bounds = Bounds {
 /// 0.09; within 4 in tricks 0.353 (se 0.012) against 0.227, 0.165; block
 /// jumps at a dunker 8.3 (se 0.62) against 12, 6.0; knocks off a body 0.25
 /// (se 0.11) against 0, 1.0; passes knocked loose 0.5 (se 0.18) against 0,
-/// 1.5; passes loose at their timer 1.0 (se 0.18) against 0, 2.0.
+/// 1.5; passes loose at their timer 1.0 (se 0.18) against 0, 2.0. Within
+/// 4 in tricks set again by the rule on 2026-11-07, when the fall-forwards'
+/// get-up roll moved the C library's draws: 0.393 (se 0.020) against 0.227,
+/// 0.23 (the commit before, 0.383, se 0.017).
 const SECOND_BOUNDS: Bounds = Bounds {
     standing: 0.055,
     away: 0.09,
     length: 3.0,
-    in_tricks: 0.165,
+    in_tricks: 0.23,
     blend: 0.31,
     within: 0.065,
     turnovers: 3.0,

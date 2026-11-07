@@ -2413,7 +2413,13 @@ impl World {
         let steps = r.steps();
         r.window = r.window.saturating_sub(1);
         let before = r.run.shown();
-        let ran = r.run.step(steps, self.players[i].height);
+        // Callback 3's roll (the fall-forwards' get-up) on the C library's
+        // `rand()`, as the stands'.
+        let libc = &mut self.libc;
+        let ran = r.run.step_rolling(steps, self.players[i].height, &mut || {
+            *libc = libc.wrapping_mul(1_103_515_245).wrapping_add(12_345);
+            *libc & 0x7fff_ffff
+        });
         let after = r.run.shown();
         if let Some((_, n)) = ran.shove {
             r.window = n;

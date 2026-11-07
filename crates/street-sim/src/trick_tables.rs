@@ -9,7 +9,7 @@
 // when the disc's animations are not loaded.
 
 use Step::{
-    Bits, Blend, Call, Clear, End, Flight, Hop, Land, PlayOut, Shove, StayUp, Stop, Test, Wait,
+    Bits, Blend, Call, Clear, End, Flight, Hop, Land, PlayOut, Roll, Shove, StayUp, Stop, Wait,
     Window,
 };
 
@@ -1435,7 +1435,7 @@ pub const REACTIONS: [Reaction; 85] = [
     // standdunkfallforward
     Reaction {
         address: 0x44bcb8,
-        root: [f32::from_bits(0x3faa72c0), f32::from_bits(0x3ff3dcea)],
+        root: [f32::from_bits(0xbf56176e), f32::from_bits(0x3fbb0e58)],
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
@@ -1444,7 +1444,14 @@ pub const REACTIONS: [Reaction; 85] = [
             Land { to: 12 },
             Stop,
             Wait { to: 22, n: 20 },
-            Test(3),
+            Roll { n: 2, to: 15 },
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [653, 653] },
+            PlayOut { per_frame: f32::from_bits(0x40400000), to: 30, n: 90 },
+            Call(7),
+            Call(1),
+            End,
             Stop,
             Bits(0x0),
             Blend { n: 4, start: 0, records: [655, 655] },
@@ -1457,7 +1464,7 @@ pub const REACTIONS: [Reaction; 85] = [
     // jogdribblefallforward_notrans
     Reaction {
         address: 0x44bcef,
-        root: [f32::from_bits(0x3faaf66e), f32::from_bits(0x3eb9a2f0)],
+        root: [f32::from_bits(0xbf551012), f32::from_bits(0xbda65d60)],
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
@@ -1466,7 +1473,14 @@ pub const REACTIONS: [Reaction; 85] = [
             Land { to: 12 },
             Stop,
             Wait { to: 35, n: 28 },
-            Test(3),
+            Roll { n: 2, to: 15 },
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [653, 653] },
+            PlayOut { per_frame: f32::from_bits(0x40400000), to: 30, n: 90 },
+            Call(7),
+            Call(1),
+            End,
             Stop,
             Bits(0x0),
             Blend { n: 4, start: 0, records: [655, 655] },
@@ -1479,7 +1493,7 @@ pub const REACTIONS: [Reaction; 85] = [
     // standrestfallforward_notrans
     Reaction {
         address: 0x44bd26,
-        root: [f32::from_bits(0x3fb19a3b), f32::from_bits(0x4037a45f)],
+        root: [f32::from_bits(0xbf47c876), f32::from_bits(0x401b3d16)],
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
@@ -1488,7 +1502,14 @@ pub const REACTIONS: [Reaction; 85] = [
             Land { to: 13 },
             Stop,
             Wait { to: 24, n: 17 },
-            Test(3),
+            Roll { n: 2, to: 15 },
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [653, 653] },
+            PlayOut { per_frame: f32::from_bits(0x40400000), to: 30, n: 90 },
+            Call(7),
+            Call(1),
+            End,
             Stop,
             Bits(0x0),
             Blend { n: 4, start: 0, records: [655, 655] },
@@ -1501,7 +1522,7 @@ pub const REACTIONS: [Reaction; 85] = [
     // jogfallforward_notrans
     Reaction {
         address: 0x44bd5d,
-        root: [f32::from_bits(0x3faaa334), f32::from_bits(0x3fca0634)],
+        root: [f32::from_bits(0xbf55b682), f32::from_bits(0x3f9137a0)],
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
@@ -1510,7 +1531,14 @@ pub const REACTIONS: [Reaction; 85] = [
             Land { to: 16 },
             Stop,
             Wait { to: 23, n: 14 },
-            Test(3),
+            Roll { n: 2, to: 15 },
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [653, 653] },
+            PlayOut { per_frame: f32::from_bits(0x40400000), to: 30, n: 90 },
+            Call(7),
+            Call(1),
+            End,
             Stop,
             Bits(0x0),
             Blend { n: 4, start: 0, records: [655, 655] },
@@ -1961,7 +1989,7 @@ pub const REACTIONS: [Reaction; 85] = [
     },
     Reaction {
         address: 0x44bd94,
-        root: [f32::from_bits(0x3f9991ba), f32::from_bits(0xbfbc7a86)],
+        root: [f32::from_bits(0xbfdda9ef), f32::from_bits(0xbe8de770)],
         steps: &[
             Bits(0x0),
             Hop { turn: 0, speed: f32::from_bits(0x3e19999a), rise: f32::from_bits(0x3d23d70a) },
@@ -1970,8 +1998,18 @@ pub const REACTIONS: [Reaction; 85] = [
             Land { to: 11 },
             Stop,
             Wait { to: 33, n: 33 },
-            Test(3),
-            Test(3),
+            Roll { n: 2, to: 11 },
+            PlayOut { per_frame: f32::from_bits(0x40000000), to: 42, n: 84 },
+            Call(1),
+            End,
+            Roll { n: 2, to: 19 },
+            Stop,
+            Bits(0x0),
+            Blend { n: 4, start: 0, records: [653, 653] },
+            PlayOut { per_frame: f32::from_bits(0x40400000), to: 30, n: 90 },
+            Call(7),
+            Call(1),
+            End,
             Stop,
             Bits(0x0),
             Blend { n: 4, start: 0, records: [655, 655] },

@@ -277,6 +277,33 @@ impl Disc {
             // Callback 41's `84 29 -> T` (the air passes): a blend on each
             // path, differing in its record, both going on at the same
             // step; one pick by the script's own answer.
+            // Callback 3's `85 03 n -> T` on a plain path (the fall-forwards'
+            // get-ups): a roll of `rand() % n`, each path to its end.
+            if !paths.held && self.byte(pc) == 0x85 && self.unaligned(pc + 1) == 3 {
+                let n = self.unaligned(pc + 5) as u8;
+                let target = self.unaligned(pc + 17);
+                // Each path's own jumps counted from where it lands.
+                let shifted = |steps: Vec<Step>, by: usize| -> Vec<Step> {
+                    steps
+                        .into_iter()
+                        .map(|step| match step {
+                            Step::Roll { n, to } => Step::Roll {
+                                n,
+                                to: (usize::from(to) + by) as u8,
+                            },
+                            Step::Jump(to) => Step::Jump((usize::from(to) + by) as u8),
+                            other => other,
+                        })
+                        .collect()
+                };
+                let plain = self.steps_on(pc + 21, paths);
+                let at = out.len() + 1;
+                let other = at + plain.len();
+                out.push(Step::Roll { n, to: other as u8 });
+                out.extend(shifted(plain, at));
+                out.extend(shifted(self.steps_on(target, paths), other));
+                return out;
+            }
             // Callback 22's `84 16 -> T` over two `a1 f0` hops (the live
             // hand's side), both going on at the same step.
             if paths.jumps && self.byte(pc) == 0x84 && self.unaligned(pc + 1) == 22 {
@@ -981,7 +1008,8 @@ fn same_clock(disc: &Disc, address: u32, steps: &[Step], left: bool) {
     let program = playback::compile(&disc.elf, address, Path::Plain).unwrap();
     let mut channel = playback::Channel::new(&program);
     for _ in 0..512 {
-        run.step(steps, 0.0);
+        // A callback-3 roll takes its jump, as the display's model reads it.
+        run.step_rolling(steps, 0.0, &mut || 0);
         let clock = DiscClock {
             disc,
             landing: (run.landing >= 0).then_some(i32::from(run.landing)),
