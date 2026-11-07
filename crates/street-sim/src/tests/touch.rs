@@ -684,6 +684,75 @@ fn a_running_receiver_plays_his_row_over_his_run() {
 }
 
 #[test]
+fn a_ball_caught_on_the_run_sits_in_the_hands_over_his_run() {
+    // `FUN_0014e060` reads channel 2 for a running catch (flag 4, +0x58
+    // -1) and the hand off the model's bones (`FUN_0014da20`), which the
+    // pose step wrote from both channels: after the catch, through the
+    // row's play-out, the ball lies at the composite's hand, not the
+    // row's whole-body clip (whose pelvis turns to the ball). The attract
+    // log's running catch at update 924 (actor 4, row 16) matched the
+    // PS2's ball within 0.02 this way, against 2 off on the whole body.
+    let Some(mut w) = pass_world(6, [8.0, 8.0], 0.0) else {
+        return;
+    };
+    let mut inputs = vec![Input::default(); 3];
+    inputs[1].stick = [0, -127];
+    for _ in 0..20 {
+        w.step(&inputs);
+    }
+    let mut aim = w.pass_aim(0, 1);
+    aim.lead = true;
+    let start = w.floor_positions();
+    w.throw_aimed(0, 1, crate::passing::PassStyle::Normal, aim, &start);
+    let mut overlaid = 0;
+    for _ in 0..80 {
+        w.step(&inputs);
+        if w.ball.state != BallState::Held(1) || !w.catch.is_some_and(|c| c.running) {
+            continue;
+        }
+        let Some(c) = w.channel(1).filter(|c| c.lower.is_some()) else {
+            continue;
+        };
+        let poses = w.poses.arc().unwrap();
+        let (body, place) = (w.players[1].body(), w.place(1));
+        let pose = crate::held::channel_pose(&poses, &c, body, place).unwrap();
+        let record = c.shown.record.unwrap();
+        let frame = c.shown.frame as i32;
+        let hand = crate::dribble::in_hand(
+            &pose,
+            record,
+            frame,
+            poses.state(record, frame),
+            body,
+            w.ball.radius,
+        );
+        for k in 0..crate::touch::UPPER_BODY {
+            let lower = c.lower.unwrap();
+            let run = poses
+                .pose(
+                    crate::pose::Frame {
+                        record: lower.0,
+                        time: lower.1,
+                        looping: true,
+                    },
+                    body,
+                    place,
+                )
+                .unwrap();
+            let d: [f32; 3] =
+                std::array::from_fn(|q| pose.joints[k].position[q] - run.joints[k].position[q]);
+            assert!(crate::pose::length(d) < 1e-4, "bone {k} off the run");
+        }
+        // The ball as the update left it was placed a step ahead
+        // (`channel_ahead(h, 1)`); the channel read now is that clip.
+        let d: [f32; 3] = std::array::from_fn(|q| w.ball.position[q] - hand[q]);
+        assert!(crate::pose::length(d) < 0.05, "{d:?}");
+        overlaid += 1;
+    }
+    assert!(overlaid > 0, "no update showed the row over his run");
+}
+
+#[test]
 fn a_catch_row_in_play_survives_a_snapshot() {
     let Some(mut w) = pass_world(9, [10.0, 4.0], std::f32::consts::PI) else {
         return;

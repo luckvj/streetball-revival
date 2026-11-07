@@ -108,7 +108,15 @@ pub struct Animator {
     previous: Option<(Playing, f32, Option<Quat>)>,
     fade_seconds: f32,
     pub last_heading: f32,
+    /// A second channel under the clip (the original's channel 0 under a
+    /// running catch's row on channel 2): it poses the root and the bones
+    /// below [`UPPER_BODY`], the clip (and its crossfade) the rest.
+    pub lower: Option<Playing>,
 }
+
+/// The first bone channel 2 writes over channel 0 (+0x74 9: the spine,
+/// the arms and the head).
+pub const UPPER_BODY: usize = 9;
 
 impl Animator {
     pub fn new(clip: Arc<Clip>) -> Self {
@@ -124,6 +132,7 @@ impl Animator {
             previous: None,
             fade_seconds: 0.0,
             last_heading: 0.0,
+            lower: None,
         }
     }
 
@@ -248,6 +257,9 @@ impl Animator {
 
     fn advance(&mut self, dt: f32) {
         self.current.frame += dt * ANIM_FPS * self.current.speed;
+        if let Some(lower) = &mut self.lower {
+            lower.frame += dt * ANIM_FPS * lower.speed;
+        }
         if let Some((prev, t, _)) = &mut self.previous {
             prev.frame += dt * ANIM_FPS * prev.speed;
             *t += dt / self.fade_seconds;
@@ -293,6 +305,17 @@ pub fn pose_skeletons(
                         v
                     })
             };
+            if let Some(lower) = animator.lower.as_ref().filter(|_| bone < UPPER_BODY) {
+                if let Some(r) = sample_rotation(lower) {
+                    transform.rotation = r;
+                }
+                if bone == 0
+                    && let Some(tr) = sample_root(lower)
+                {
+                    transform.translation = tr;
+                }
+                continue;
+            }
             let mut rotation = sample_rotation(current);
             let mut translation = if bone == 0 {
                 sample_root(current)

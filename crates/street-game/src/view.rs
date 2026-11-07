@@ -3746,6 +3746,9 @@ pub fn sync_players(
     let ended = game_ended(w, tape.as_deref());
     for (index, mut transform, mut animator, mut visibility) in &mut players {
         let i = index.0;
+        // The running catch's run under its row, set again below while
+        // one plays.
+        animator.lower = None;
         let Some(p) = w.players.get(i) else {
             continue;
         };
@@ -3835,6 +3838,8 @@ pub fn sync_players(
         // simulation runs it (the clip it holds the ball on).
         if let Some(shown) = channel::sim_shown(&clips, w, i) {
             channel::apply(&mut animator, &shown, heading);
+            // A running catch: the row over the run carried on below it.
+            animator.lower = channel::sim_lower(&clips, w, i);
             continue;
         }
         if let Some(s) = channel::scripted(w, i) {

@@ -626,6 +626,7 @@ impl World {
             gait: false,
             turn: 0,
             held: None,
+            lower: None,
         })
     }
 

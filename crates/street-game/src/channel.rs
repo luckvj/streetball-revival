@@ -26,7 +26,7 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use street_assets::playback::{self, Clock, Path, Program};
-use street_render::animation::{Animator, Clip};
+use street_render::animation::{Animator, Clip, Playing};
 use street_sim::{Action, BallState, World, ball, rebound, timing, toss};
 
 use crate::setup::GameClips;
@@ -496,6 +496,33 @@ pub fn sim_shown(clips: &GameClips, w: &World, i: usize) -> Option<Shown> {
         frame: c.shown.frame,
         blend,
         callbacks: Vec::new(),
+    })
+}
+
+/// The clip under a running catch's row (`World::channel`'s `lower`, the
+/// original's channel 0 carried on under channel 2): the animator poses
+/// the root and the legs from it, held at the simulation's frame.
+pub fn sim_lower(clips: &GameClips, w: &World, i: usize) -> Option<Playing> {
+    let (record, frame) = w.channel(i)?.lower?;
+    let clock = ClipClock {
+        clips,
+        flight: None,
+        landing: None,
+        left_hand: false,
+    };
+    let (clip, mirrored) = clock.clip(i32::from(record))?;
+    let total = clip.frames() as f32;
+    Some(Playing {
+        clip,
+        frame: if total > 0.0 {
+            frame.rem_euclid(total)
+        } else {
+            0.0
+        },
+        speed: 0.0,
+        looping: true,
+        in_place: false,
+        mirrored,
     })
 }
 

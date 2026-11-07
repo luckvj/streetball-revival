@@ -5,6 +5,11 @@ its version's part.
 
 ## Unreleased
 
+- A player who catches a pass on the run now keeps running underneath
+  the catch, as on the PS2: his legs and hips stay on his run while his
+  arms and head play the catch, and the ball sits in those hands (it had
+  been drawn up to two feet off to one side, the whole body turned
+  toward the pass).
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.

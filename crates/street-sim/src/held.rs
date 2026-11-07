@@ -107,6 +107,10 @@ pub struct Channel {
     /// The pose held through the first blend, when the channel showed one
     /// ([`ChannelStart::held`]).
     pub held: Option<pose::Held>,
+    /// Under a running catch's row (channel 2 with flag 4, bones 9..21)
+    /// the clip channel 0 carries on, record and frame: the pose step
+    /// writes its root and bones 0..8 into the model.
+    pub lower: Option<(u16, f32)>,
 }
 
 /// The ball's offset from its holder in his own frame, stored by a blend's
@@ -526,6 +530,7 @@ impl World {
             gait: false,
             turn: 0,
             held: None,
+            lower: None,
         };
         match &p.action {
             Action::Trick { play, .. } => return Some(of(&play.run, play.from)),
@@ -548,12 +553,16 @@ impl World {
                     gait: false,
                     turn: 0,
                     held: None,
+                    lower: None,
                 });
             }
             _ => {}
         }
         if let Some(c) = self.catch_row_playing(i) {
-            return Some(of(&c.run, c.from));
+            return Some(Channel {
+                lower: c.lower.map(|(record, time, _)| (record, time)),
+                ..of(&c.run, c.from)
+            });
         }
         let start = p.channel_start;
         let started = |address: u32| start.filter(|s| s.script == address);
@@ -627,6 +636,7 @@ impl World {
                 gait: false,
                 turn: 0,
                 held: st.held,
+                lower: None,
             });
         }
         // The catch row holding him after the catch: its script from the
@@ -647,7 +657,16 @@ impl World {
                     let f = self.gait_frame(i);
                     Some((f.record, f.time))
                 });
-                return Some(of(&run, from));
+                // Caught on the run: the row stays on channel 2 over the
+                // run channel 0 keeps ([`Catch::running`]).
+                let lower = c.running.then(|| {
+                    let f = self.gait_frame(i);
+                    (f.record, f.time)
+                });
+                return Some(Channel {
+                    lower,
+                    ..of(&run, from)
+                });
             }
         }
         Some(self.gait_channel_shown(i))
@@ -766,6 +785,7 @@ impl World {
             gait: true,
             turn: 0,
             held: if blending { g.blend_held } else { None },
+            lower: None,
         }
     }
 
@@ -777,15 +797,7 @@ impl World {
         if c.gait {
             return None;
         }
-        trick::pose_from(
-            poses,
-            c.shown,
-            c.from,
-            c.held.as_ref(),
-            c.turn,
-            self.players[i].body(),
-            self.place(i),
-        )
+        channel_pose(poses, &c, self.players[i].body(), self.place(i))
     }
 
     /// The ball's offset from `h` in his own frame, as the update begins
@@ -821,8 +833,21 @@ impl World {
             return false;
         };
         let mut dribbled = None;
-        let (point, hand) = match c.shown.blend {
-            None => {
+        // A running catch: channel 2 (flag 4, +0x58 -1) names the clip,
+        // and `FUN_0014da20` reads the hand off the model's bones, which
+        // the pose step wrote from both channels: the run below the
+        // spine, the row above it ([`Channel::lower`]).
+        let overlay = c.lower.and_then(|_| channel_pose(&poses, &c, body, place));
+        let (point, hand) = match (c.shown.blend, overlay) {
+            (_, Some(pose)) => {
+                let frame = c.shown.frame as i32;
+                let state = poses.state(record, frame);
+                let at = crate::dribble::in_hand(&pose, record, frame, state, body, radius);
+                let hand =
+                    crate::dribble::live_hand(&poses, record, c.shown.frame, p.gait_channel.hand);
+                (Some(at), hand)
+            }
+            (None, None) => {
                 let at =
                     crate::dribble::ball_place(&poses, record, c.shown.frame, body, place, radius)
                         .map(|(at, d)| {
@@ -833,7 +858,7 @@ impl World {
                     crate::dribble::live_hand(&poses, record, c.shown.frame, p.gait_channel.hand);
                 (at, hand)
             }
-            Some(_) => {
+            (Some(_), None) => {
                 // The target at its start frame, on the model posed in the
                 // blend (`0x14e23c..0x14e318`, `0x14f13c..0x14f17c`).
                 let start = c.shown.frame;
@@ -930,6 +955,44 @@ impl World {
             });
         }
     }
+}
+
+/// The model as channel `c` leaves it: its clip (blends and the held
+/// pose included), or under a running catch the pose step's two channels
+/// (`0x157618..0x157714`): [`Channel::lower`]'s clip for the root and
+/// bones 0..8, the row from the spine up, blended from the clip channel 0
+/// showed as the row went in.
+pub(crate) fn channel_pose(
+    poses: &pose::Poses,
+    c: &Channel,
+    body: pose::Body,
+    place: pose::Place,
+) -> Option<pose::Pose> {
+    let Some((record, time)) = c.lower else {
+        return trick::pose_from(poses, c.shown, c.from, c.held.as_ref(), c.turn, body, place);
+    };
+    let upper = pose::Frame {
+        record: c.shown.record?,
+        time: c.shown.frame,
+        looping: false,
+    };
+    let from = match (c.shown.blend, c.from) {
+        (Some(w), Some((record, time))) => Some((
+            pose::Frame {
+                record,
+                time,
+                looping: true,
+            },
+            w,
+        )),
+        _ => None,
+    };
+    let lower = pose::Frame {
+        record,
+        time,
+        looping: true,
+    };
+    poses.overlay(lower, upper, from, crate::touch::UPPER_BODY, body, place)
 }
 
 /// The blend's step-matched start (`8e` with start `-9`,
