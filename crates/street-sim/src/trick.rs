@@ -196,6 +196,10 @@ pub enum Select {
     /// `ec`: his z against the side his team attacks (`FUN_001404e0`'s
     /// sign): the alternate when they differ (z × side below 0).
     Side,
+    /// `84 29 -> T` over two blends that differ in their record and meet
+    /// (the air passes'): callback 41 (`FUN_00175770`, [`Run::asked`]),
+    /// the test's branch the alternate.
+    Asked,
 }
 
 /// A blend's target record meaning the record already on the channel
@@ -762,6 +766,7 @@ impl Run {
                     let alternate = match by {
                         Select::Handed => self.handed,
                         Select::Side => self.side,
+                        Select::Asked => self.asked,
                     };
                     let record = records[usize::from(alternate)];
                     if std::mem::take(&mut heading) {

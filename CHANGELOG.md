@@ -32,6 +32,10 @@ its version's part.
   knocked flying forward all stay up for their animation's minimum time
   (the original's "stay up" script step had been read wrongly and left
   out), so they land when the original's do.
+- A pass thrown in the air, and the alley-oop pass thrown on the run,
+  play the animation for the side the receiver is on, and the spinning
+  jump shot turns the way the PS2 picks from his facing toward the rim,
+  as on the PS2 (each had always used one side's).
 - Defenders guarding a pass's receiver close in on him on the PS2's
   timing: the AI counts the pass's flight from the release, not from the
   press.

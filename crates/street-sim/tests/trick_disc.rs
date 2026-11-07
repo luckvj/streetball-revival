@@ -274,6 +274,44 @@ impl Disc {
                 pc = self.either(pc, paths, &mut record, &mut frame, &mut out);
                 continue;
             }
+            // Callback 41's `84 29 -> T` (the air passes): a blend on each
+            // path, differing in its record, both going on at the same
+            // step; one pick by the script's own answer.
+            if paths.jumps
+                && self.byte(pc) == 0x84
+                && matches!(self.unaligned(pc + 1), 14 | 41 | 50)
+            {
+                let target = self.unaligned(pc + 17);
+                let plain = pc + 21;
+                let blend = |at: u32| {
+                    assert_eq!(self.byte(at), 0x8e, "{at:#x}: the side's blend");
+                    (
+                        self.byte(at + 1),
+                        self.unaligned(at + 2) as u8,
+                        self.unaligned(at + 6) as u16,
+                    )
+                };
+                let (n, start, a) = blend(plain);
+                let (n2, start2, b) = blend(target);
+                assert_eq!((n, start), (n2, start2), "{pc:#x}: the side's blends");
+                assert_eq!(
+                    self.byte(plain + 10),
+                    0x82,
+                    "{pc:#x}: the plain path's jump"
+                );
+                let meet = self.unaligned(plain + 11);
+                assert_eq!(meet, target + 10, "{pc:#x}: where the paths meet");
+                record = u32::from(a);
+                frame = i32::from(start);
+                out.push(Step::Pick {
+                    n,
+                    start,
+                    records: [a, b],
+                    by: trick::Select::Asked,
+                });
+                pc = meet;
+                continue;
+            }
             if paths.jumps && matches!(self.byte(pc), 0x84 | 0x85) && self.unaligned(pc + 1) == 28 {
                 match self.hang(pc, paths, &mut record, &mut frame, &mut out) {
                     Some(next) => pc = next,

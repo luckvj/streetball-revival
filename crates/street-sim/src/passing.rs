@@ -345,6 +345,21 @@ impl World {
                     crate::timing::facing_word(p.wanted),
                 )
             });
+        // Callback 41 (`FUN_00175770`, the air passes' `84 29`): the pass's
+        // target (ball+0x100) on the side of his wanted facing where
+        // `(wanted − pair word) & 0x3ff < 0x200` takes the test's branch,
+        // the other clip.
+        // `pass_allyoop_run_1`'s `84 32` (callback 50, `FUN_00178090`): his
+        // facing (actor+0xa8) short of the pair word to the target.
+        let pair = self.pair_word(i, to, start);
+        let side = if row == 59 {
+            crate::timing::angle_diff(crate::timing::facing_word(self.players[i].heading), pair) < 0
+        } else {
+            (crate::timing::facing_word(self.players[i].wanted) - pair) & 0x3ff < 0x200
+        };
+        if let Some(s) = self.players[i].channel_start.as_mut() {
+            s.asked = side;
+        }
         // The script's callback 39 (`FUN_001753a0`) before its first blend,
         // in this update's channel step.
         let steps = crate::held::PASS_STEPS
@@ -418,29 +433,37 @@ impl World {
         let from = self.players[i].position;
         let r = &self.players[to];
         if !r.moving() || r.velocity() == [0.0; 2] {
-            let at = |k: usize| start.get(k).copied().unwrap_or(self.players[k].position);
-            let index = |k: usize| {
-                let team = self.players[k].team.min(1);
-                team * 3
-                    + (0..k)
-                        .filter(|&j| self.players[j].team.min(1) == team)
-                        .count()
-            };
-            let (lo, hi) = if index(i) <= index(to) {
-                (i, to)
-            } else {
-                (to, i)
-            };
-            let (p, q) = (at(lo), at(hi));
-            let forward = crate::ordinary::native_heading([p[0], 0.0, p[1]], [q[0], 0.0, q[1]]);
-            return if lo == i {
-                forward
-            } else {
-                (forward - 0x200) & 0x3ff
-            };
+            return self.pair_word(i, to, start);
         }
         let spot = self.lead_spot(to, estimate as i32);
         crate::ordinary::native_heading([from[0], 0.0, from[1]], [spot[0], 0.0, spot[1]])
+    }
+
+    /// The pair table's word from `i` toward `to` (`FUN_0016f508`,
+    /// game+0x2cc, built on the places the update began with, `start`):
+    /// each pair once from the lower table index (team × 3 + member), the
+    /// other way that less 512.
+    pub(crate) fn pair_word(&self, i: usize, to: usize, start: &[[f32; 2]]) -> i32 {
+        let at = |k: usize| start.get(k).copied().unwrap_or(self.players[k].position);
+        let index = |k: usize| {
+            let team = self.players[k].team.min(1);
+            team * 3
+                + (0..k)
+                    .filter(|&j| self.players[j].team.min(1) == team)
+                    .count()
+        };
+        let (lo, hi) = if index(i) <= index(to) {
+            (i, to)
+        } else {
+            (to, i)
+        };
+        let (p, q) = (at(lo), at(hi));
+        let forward = crate::ordinary::native_heading([p[0], 0.0, p[1]], [q[0], 0.0, q[1]]);
+        if lo == i {
+            forward
+        } else {
+            (forward - 0x200) & 0x3ff
+        }
     }
 
     /// The players' floor positions, as the game's distance table

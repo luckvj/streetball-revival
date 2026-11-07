@@ -5498,6 +5498,7 @@ fn captured_start(w: &mut World, k: usize, script: u32, before: &Update) {
         pelvis: None,
         turn: 0,
         held: None,
+        asked: false,
     });
 }
 
@@ -5794,6 +5795,92 @@ fn the_persons_running_passes_carry_him_on_the_rows_velocity() {
     );
     assert!(passes >= 5, "{passes}");
     assert!(q(0.5) < 0.035, "{}", q(0.5));
+}
+
+#[test]
+fn the_air_passes_pick_their_clip_by_the_receivers_side() {
+    // Callback 41 (`FUN_00175770`, the air passes' `84 29`): the pass's
+    // target where `(wanted − pair word) & 0x3ff < 0x200` takes the
+    // test's branch (the second record). Every air pass in the played
+    // captures: the clip channel 0 played against the side read from the
+    // update the script started (actor+0xb0 and the places).
+    let Some(captures) = load() else {
+        return;
+    };
+    let pairs: [(u16, u16); 7] = [
+        (501, 500),
+        (503, 502),
+        (505, 504),
+        (506, 507),
+        (509, 508),
+        (514, 513),
+        (525, 526),
+    ];
+    let (mut checked, mut off) = (0, Vec::new());
+    for cap in captures {
+        for n in 1..cap.updates.len() {
+            let (b, u) = (&cap.updates[n - 1], &cap.updates[n]);
+            if u.frame() != b.frame() + 1 {
+                continue;
+            }
+            for k in 0..6 {
+                let record =
+                    |x: &Update| x.actor(k)["channels"][0]["record"].as_i64().unwrap_or(-1);
+                let now = record(u);
+                let Some(&(plain, branch)) = pairs
+                    .iter()
+                    .find(|(a, c)| now == i64::from(*a) || now == i64::from(*c))
+                else {
+                    continue;
+                };
+                if pairs
+                    .iter()
+                    .any(|(a, c)| record(b) == i64::from(*a) || record(b) == i64::from(*c))
+                {
+                    continue;
+                }
+                let Some(to) = cap.actor_of(u.ball()["target_player"].as_u64().unwrap_or(0)) else {
+                    continue;
+                };
+                let floor = |x: &Update, j: usize| x.floor(j);
+                let index = |j: usize| {
+                    let team = cap.records[j].team.min(1);
+                    team * 3
+                        + (0..j)
+                            .filter(|&m| cap.records[m].team.min(1) == team)
+                            .count()
+                };
+                let (lo, hi) = if index(k) <= index(to) {
+                    (k, to)
+                } else {
+                    (to, k)
+                };
+                let (p, q) = (floor(b, lo), floor(b, hi));
+                let forward = crate::ordinary::native_heading([p[0], 0.0, p[1]], [q[0], 0.0, q[1]]);
+                let word = if lo == k {
+                    forward
+                } else {
+                    (forward - 0x200) & 0x3ff
+                };
+                let wanted = u.actor(k)["facing"].as_i64().unwrap_or(0) as i32;
+                let side = (wanted - word) & 0x3ff < 0x200;
+                let want = if side { branch } else { plain };
+                checked += 1;
+                if i64::from(want) != now {
+                    off.push((cap.name.clone(), u.frame(), k, now, want, wanted, word));
+                }
+            }
+        }
+    }
+    eprintln!("air passes {checked} off {}: {off:?}", off.len());
+    report(
+        "air_pass_sides",
+        json!({"checked": checked, "off": off.len()}),
+    );
+    // pads-1's 6879 sits 7 units from the side's boundary (505 against
+    // 512) as the capture samples his facing.
+    assert!(checked >= 15, "{checked}");
+    assert!(off.len() * 10 <= checked, "{off:?}");
 }
 
 #[test]

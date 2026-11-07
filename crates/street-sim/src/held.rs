@@ -55,7 +55,7 @@ use crate::{Action, BallState, Player, World, timing};
 
 use crate::jump;
 use crate::trick::CURRENT;
-use crate::trick::Select::{Handed, Side};
+use crate::trick::Select::{Asked, Handed, Side};
 use crate::trick::Step::{
     Aim, Bits, Blend, Call, Carry, Clear, Dive, Either, End, Flags, Flight, Hang, Hop, Knock, Land,
     Pick, Plant, PlayOut, Reach, Rise, Scale, Shove, Slide, StayUp, Stop, Test, Toward, TowardBall,
@@ -88,7 +88,13 @@ pub struct ChannelStart {
     /// +0xbc): a stand's or the gait's, blends and all; None for another
     /// script's, which holds [`ChannelStart::from`].
     pub held: Option<pose::Held>,
+    /// The script's own test answered as it starts ([`trick::Run::asked`]:
+    /// an air pass's callback 41, the target's side).
+    pub asked: bool,
 }
+
+/// `jumpshot_360`'s script, the one with callback 14's test.
+const JUMPSHOT_360: u32 = 0x44e6a7;
 
 /// What a player's channel 0 shows this update.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -290,7 +296,17 @@ fn replay(
     hang: Option<bool>,
     flight: impl Fn(i32) -> u8,
 ) -> (Run, trick::Ran) {
-    replay_footed(steps, updates, left, handed, side, land_at, hang, flight, 0)
+    replay_footed(
+        steps,
+        updates,
+        left,
+        handed,
+        side,
+        land_at,
+        hang,
+        flight,
+        (0, false),
+    )
 }
 
 /// [`replay`] with the [`FOOT_SYNC`] blends' start `foot`.
@@ -304,9 +320,10 @@ fn replay_footed(
     land_at: i16,
     hang: Option<bool>,
     flight: impl Fn(i32) -> u8,
-    foot: u8,
+    (foot, asked): (u8, bool),
 ) -> (Run, trick::Ran) {
     let mut run = Run::new(left, 0).picking(handed, side).footed(foot);
+    run.asked = asked;
     run.land_at = land_at;
     run.hang = hang;
     let mut ran = trick::Ran::default();
@@ -371,6 +388,16 @@ impl World {
                     _ => None,
                 },
             });
+        // `jumpshot_360`'s `84 0e` (callback 14, `FUN_001777d8`): the
+        // model's yaw as the update before left it (`FUN_00154230`) at or
+        // past the facing toward the rim (`FUN_0016f260`) takes the test's
+        // branch, the other clip. (The passes' tests are answered by the
+        // pass start, [`World::wind_up`].)
+        let asked = address == JUMPSHOT_360 && {
+            let p = &self.players[i];
+            let yaw = pelvis.map_or(timing::facing_word(p.heading), i32::from);
+            timing::angle_diff(yaw, self.to_rim(i, p.position)) >= 0
+        };
         let p = &mut self.players[i];
         p.channel_start = Some(ChannelStart {
             script: address,
@@ -380,6 +407,7 @@ impl World {
             pelvis,
             turn: 0,
             held,
+            asked,
         });
         // The script replaces the channel's (`FUN_0019c2f8`): a stand his
         // locomotion started this update (a free holder's pass goes in
@@ -436,7 +464,7 @@ impl World {
             p.flight.landing,
             s.hang,
             |_| 0,
-            foot,
+            (foot, first.is_some_and(|x| x.asked)),
         );
         Some(run)
     }
@@ -461,7 +489,7 @@ impl World {
             p.flight.landing,
             s.hang,
             |_| 0,
-            foot,
+            (foot, first.is_some_and(|x| x.asked)),
         );
         Some(run.shown())
     }
@@ -695,7 +723,7 @@ impl World {
                 landing,
                 s.hang,
                 |_| 0,
-                foot,
+                (foot, first.is_some_and(|x| x.asked)),
             );
             if run.done {
                 return Some(self.gait_channel_shown(i));
@@ -795,7 +823,7 @@ impl World {
             land_at,
             s.hang,
             |_| 0,
-            foot,
+            (foot, first.is_some_and(|x| x.asked)),
         );
         let before = (s.updates > 1).then(|| {
             replay_footed(
@@ -807,7 +835,7 @@ impl World {
                 land_at,
                 s.hang,
                 |_| 0,
-                foot,
+                (foot, first.is_some_and(|x| x.asked)),
             )
             .0
             .shown()

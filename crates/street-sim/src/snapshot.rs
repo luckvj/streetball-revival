@@ -122,8 +122,9 @@ use crate::{
 /// the stands (the flair's up one), the toss's flight words
 /// ([`crate::Tip::toss_flight`]), the tip jump's landing; 117: a stand's
 /// held clip turned by a heading match, as a walk's ([`crate::ordinary`]);
-/// 122: a running pass row's end blend ([`crate::PassTail`]).
-const VERSION: u8 = 122;
+/// 122: a running pass row's end blend ([`crate::PassTail`]); 123: a
+/// script's own test answered as it starts ([`crate::held::ChannelStart`]).
+const VERSION: u8 = 123;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1364,6 +1365,7 @@ fn player(w: &mut Writer, p: &Player) {
             w.iv(c.pelvis.map_or(-1, i64::from));
             w.iv(i64::from(c.turn));
             held_out(w, c.held.as_ref());
+            w.bool(c.asked);
         }
     }
     w.f(*course);
@@ -1921,6 +1923,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                 },
                 turn: i16::try_from(r.iv()?).map_err(|_| "invalid channel turn")?,
                 held: held_in(r)?,
+                asked: r.bool()?,
             }),
             k => return Err(format!("bad channel start flag {k}")),
         },
