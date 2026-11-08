@@ -477,7 +477,7 @@
           "path": "crates/street-sim/src/player.rs",
           "locator": "Action::Trick; Player::step's Trick arm",
           "note": "Action::Trick carries the script's run (trick::Play); Player::step holds the gait while it runs.",
-          "sha256": "4e86cb729d83b947119e627dd828d4312981cde2bfcc312d38c255ee32b24a06"
+          "sha256": "6d3926f93260e89f401c862444c754bc1b82e4dd4c6940ac49934b249ab6c29e"
         },
         {
           "path": "crates/street-sim/src/tests.rs",
@@ -499,7 +499,7 @@
         }
       ],
       "tolerance": "Matching 54-tick update sequence: 6 startup, 14 launch prep, 28 ball flight, same-player catch at tick 47, 6 followthrough.",
-      "limitations": "Notes dated 2026-10-14 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. Last re-pinned 2026-11-08 after the stand under a catch tail (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Notes dated 2026-10-14 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. Last re-pinned 2026-11-08 after the stored rate (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture live native multi-player callback-53 bounce and planner trajectories and compare in World.",
       "audit_review": {
         "date": "2026-10-14",
@@ -538,13 +538,13 @@
           "path": "crates/street-sim/src/player.rs",
           "locator": "Player::step; Player::walk; PlayerGaitChannel",
           "note": "Player owns and steps PlayerGaitChannel during movement, driving row selection and root displacement.",
-          "sha256": "4e86cb729d83b947119e627dd828d4312981cde2bfcc312d38c255ee32b24a06"
+          "sha256": "6d3926f93260e89f401c862444c754bc1b82e4dd4c6940ac49934b249ab6c29e"
         },
         {
           "path": "crates/street-sim/src/ordinary_tests.rs",
           "locator": "ordinary_gait_channel_row_selection_and_stepping",
           "note": "Unit test of PlayerGaitChannel on its fallback rows (88/89 moving, 65 standing, used without the gait records): row selection, the 6-update blend, root progression and the per-update frame step.",
-          "sha256": "c07e1230964e8941c43f12e07421d3e17e9fbc147e040d89cd5c6b21e0078ece"
+          "sha256": "ef197d4b0fd9d2081e0801dbe80705c3bef846e1329196295d32998d6517f8bc"
         },
         {
           "path": "crates/street-render/src/animation.rs",
@@ -566,7 +566,7 @@
         }
       ],
       "tolerance": "Matching gait table row selection for held/unheld locomotion, blend frame advancement, and frame stepping.",
-      "limitations": "Notes dated 2026-10-14 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): Clip::root moved, unchanged, from street-render's animation.rs to street-assets' clip.rs (gameplay.online_rules_equal_local); Animator::advance stays. 2026-10-23: the record's choice draws from the shared generator (gait_select::select_drawing), not the old stateless hash of the tick. 2026-10-24: the stop is the stand script's planted foot (the stand path sets no velocity; DECELERATION is the windup walk's), and the stand clips' roots carry the player (no stand's `91` sets 0x1000): standing players off the ball drift 0.020 and 0.017 an update against the original's 0.022..0.025 and 0.017..0.024 (ai::capture::standing_players_sway_on_their_stand_clips). The record and scale choice is still approximated. 2026-10-25: the frame step's scale is the skeleton's first word (0x167cd4, FUN_0019cd48), not height / 6.5, and the step matches the original's captured channel frames update for update (staged.rs gait_clock); row selection, the Jog family's hysteresis and the blends are not covered by that check. Last re-pinned 2026-11-07 after the block jumps' flight (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Notes dated 2026-10-14 to 2026-10-18 (how this case was built and re-pinned) were moved out on 2026-10-26 to keep the scorecard under the publish check's size limit; `git log -p docs/parity/gameplay.json` keeps them. The notes that follow state the current limits. 2026-10-20 (online on the disc): Clip::root moved, unchanged, from street-render's animation.rs to street-assets' clip.rs (gameplay.online_rules_equal_local); Animator::advance stays. 2026-10-23: the record's choice draws from the shared generator (gait_select::select_drawing), not the old stateless hash of the tick. 2026-10-24: the stop is the stand script's planted foot (the stand path sets no velocity; DECELERATION is the windup walk's), and the stand clips' roots carry the player (no stand's `91` sets 0x1000): standing players off the ball drift 0.020 and 0.017 an update against the original's 0.022..0.025 and 0.017..0.024 (ai::capture::standing_players_sway_on_their_stand_clips). The record and scale choice is still approximated. 2026-10-25: the frame step's scale is the skeleton's first word (0x167cd4, FUN_0019cd48), not height / 6.5, and the step matches the original's captured channel frames update for update (staged.rs gait_clock); row selection, the Jog family's hysteresis and the blends are not covered by that check. Last re-pinned 2026-11-08 after the stored rate (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture synchronized native continuous movement traces across transitions and compare against PlayerGaitChannel positions.",
       "audit_review": {
         "date": "2026-10-14",
@@ -2397,17 +2397,17 @@
           "path": "crates/street-sim/src/ordinary.rs",
           "locator": "module doc; place; update_primary; apply_effects; PlayerGaitChannel::update",
           "note": "The channel VM's projection is test-staged with no production caller (its module doc: row handles, pose/root evaluation, action callbacks and facial scheduling need production owners); the live gait is PlayerGaitChannel::update's formulas.",
-          "sha256": "5a7fbe82532ca229cc550da1897fe8e79751235e0e6870ee89c5c54d9e94b467"
+          "sha256": "42e79489ed259a895862b479aa9d5d68d220c855593fe160a4d3602c6dae6ad9"
         },
         {
           "path": "crates/street-sim/src/player.rs",
           "locator": "Full parity audit F03; live integration paths cited in report",
           "note": "Existing native recovery and current source show the audited integration boundary.",
-          "sha256": "4e86cb729d83b947119e627dd828d4312981cde2bfcc312d38c255ee32b24a06"
+          "sha256": "6d3926f93260e89f401c862444c754bc1b82e4dd4c6940ac49934b249ab6c29e"
         }
       ],
       "tolerance": "Exact native discrete state, event order and tick boundary; output tolerance must be declared before paired measurement.",
-      "limitations": "New audit coverage gap (F03). No complete paired original/current-production output comparison is asserted. Re-pinned 2026-10-15 (player.rs): the gait family and record motion now live in PlayerGaitChannel and the turbo bar is per update. ordinary.rs is left unpinned: its pinned hash matches no committed revision, so the reviewed state cannot be reconstructed and its claim is unverifiable until re-reviewed. Re-pinned 2026-10-15 after the shot-leads pass: player.rs's `Action::Shooting` doc and `Player::step`'s shot branch now ask `timing::gate_waits`; `Player::step` changed in its shot branch only. Re-pinned 2026-10-16 after the pass flight pass: player.rs gained `Action::TipJump` (an arm in `Player::step`) and `Player::received_flight`; player.rs's live paths are unchanged apart from the tip jump's arm. Re-pinned 2026-10-16 after the defenders' gait pass: player.rs's `Player` carries the course, the wanted facing and the guarding state, `Player::walk` moves along the stick at the record's speed at once and turns the facing 46 an update, and `velocity`/`advance` follow the course; `PlayerGaitChannel::update` takes the facing and the course, and `Player::walk` moves along the stick; the rest is unchanged. 2026-10-18 (the scorecard's review): ordinary.rs re-read and pinned at its committed state (994bef7; the old pin matched no committed revision). Nothing outside the module calls the channel VM (place, update_primary, apply_effects); the live actor runs PlayerGaitChannel::update for the gait and the moves' own scripts on street_sim::trick's Run, so the original's primary channel is still not the live driver; the known difference stands and counts again. Last re-pinned 2026-11-07 after the block jumps' flight (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "New audit coverage gap (F03). No complete paired original/current-production output comparison is asserted. Re-pinned 2026-10-15 (player.rs): the gait family and record motion now live in PlayerGaitChannel and the turbo bar is per update. ordinary.rs is left unpinned: its pinned hash matches no committed revision, so the reviewed state cannot be reconstructed and its claim is unverifiable until re-reviewed. Re-pinned 2026-10-15 after the shot-leads pass: player.rs's `Action::Shooting` doc and `Player::step`'s shot branch now ask `timing::gate_waits`; `Player::step` changed in its shot branch only. Re-pinned 2026-10-16 after the pass flight pass: player.rs gained `Action::TipJump` (an arm in `Player::step`) and `Player::received_flight`; player.rs's live paths are unchanged apart from the tip jump's arm. Re-pinned 2026-10-16 after the defenders' gait pass: player.rs's `Player` carries the course, the wanted facing and the guarding state, `Player::walk` moves along the stick at the record's speed at once and turns the facing 46 an update, and `velocity`/`advance` follow the course; `PlayerGaitChannel::update` takes the facing and the course, and `Player::walk` moves along the stick; the rest is unchanged. 2026-10-18 (the scorecard's review): ordinary.rs re-read and pinned at its committed state (994bef7; the old pin matched no committed revision). Nothing outside the module calls the channel VM (place, update_primary, apply_effects); the live actor runs PlayerGaitChannel::update for the gait and the moves' own scripts on street_sim::trick's Run, so the original's primary channel is still not the live driver; the known difference stands and counts again. Last re-pinned 2026-11-08 after the stored rate (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the original and current production at the same initial state/input/tick boundary and retain all failures/exclusions.",
       "audit_review": {
         "date": "2026-10-14",
@@ -4507,7 +4507,7 @@
           "path": "crates/street-sim/src/ai/capture.rs",
           "locator": "step_game; computer_behaviours_by_phase_against_the_captured_original",
           "note": "The comparison with the replays.",
-          "sha256": "5b6e92dcaf6b13a49e41e9e239c7b9034eba7f3073dc8c5d3cc6aac293f58cf2"
+          "sha256": "c213267c658df558b509cc2537779f4cdef74aa6cdee5983171e069d821779a4"
         },
         {
           "path": "$EVIDENCE/street-native-ai-attract-1.jsonl",
@@ -4517,7 +4517,7 @@
         }
       ],
       "tolerance": "The snap at the same update; restarts with it 80..93.",
-      "limitations": "How many restarts have one is each game's replay draws (the rewrite's games 0..27%, the original's 18..29%). Last re-pinned 2026-11-07 after the knock get-up (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "How many restarts have one is each game's replay draws (the rewrite's games 0..27%, the original's 18..29%). Last re-pinned 2026-11-08 after the stored rate (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "The replay rolls side by side on a replayed match."
     },
     {
