@@ -635,7 +635,10 @@ pub enum Event {
 /// before anything reads it, so it is not part of the world's state (two
 /// worlds that differ only here are the same game).
 #[derive(Clone, Debug, Default)]
-pub(crate) struct ShownStart(pub Vec<Option<(u64, pose::Held)>>);
+pub(crate) struct ShownStart(
+    pub Vec<Option<(u64, pose::Held)>>,
+    pub Vec<Option<(u64, u16, f32)>>,
+);
 
 impl PartialEq for ShownStart {
     fn eq(&self, _: &Self) -> bool {
@@ -1705,6 +1708,17 @@ impl World {
                 self.shown_start.0.resize(self.players.len(), None);
             }
             self.shown_start.0[i] = shown;
+            // The clip a scripted channel showed (+0x54, +0x64), out of its
+            // blend: what a stand started after the script ends this update
+            // blends from ([`World::start_stand`]).
+            let clip = self
+                .channel(i)
+                .filter(|c| !c.gait && self.players[i].stand.is_none() && c.shown.blend.is_none())
+                .and_then(|c| c.shown.record.map(|r| (self.tick, r, c.shown.frame)));
+            if self.shown_start.1.len() < self.players.len() {
+                self.shown_start.1.resize(self.players.len(), None);
+            }
+            self.shown_start.1[i] = clip;
             // A pass pressed earlier in this update freezes its receiver's
             // stick before his own update.
             self.freeze_receiver();
@@ -2395,6 +2409,18 @@ impl World {
         }
     }
 
+    /// The scripted clip `i`'s channel showed as his update began, when a
+    /// script (out of its blend) was running then ([`World::shown_start`]).
+    pub(crate) fn clip_at_start(&self, i: usize) -> Option<(u16, f32)> {
+        self.shown_start
+            .1
+            .get(i)
+            .copied()
+            .flatten()
+            .filter(|&(tick, ..)| tick == self.tick)
+            .map(|(_, r, f)| (r, f))
+    }
+
     /// `i`'s shown pose as his update began ([`World::shown_start`]).
     pub(crate) fn shown_at_start(&self, i: usize) -> Option<pose::Held> {
         self.shown_start
@@ -2606,7 +2632,16 @@ impl World {
                     let stand_blend = p
                         .stand
                         .filter(stand_blend_from_gait)
-                        .and_then(|s| stand_blend_start(&s));
+                        .and_then(|s| stand_blend_start(&s))
+                        .or_else(|| {
+                            // A stand blending in from a script's clip: that
+                            // clip (+0x54) at the blend's start frame, the
+                            // third attract match's dunker at update 1050
+                            // (record 790 -> start 4; the stand's clip gave 6).
+                            let s = p.stand.filter(stand_blend_from_script)?;
+                            let (clip, _) = s.from?;
+                            stand_blend_start(&s).map(|(_, start)| (clip, start))
+                        });
                     share = Some(match stand_blend {
                         Some((clip, start)) => ordinary::Share {
                             frame: start,
@@ -4973,6 +5008,21 @@ mod row_capture;
 /// A stand whose script's first blend has not yet finished, begun from the
 /// gait (its `from` a moving row): callback 52 still reads the row it
 /// leaves.
+/// A stand still in its first blend from a clip no gait row plays (a
+/// script's, [`World::clip_at_start`]).
+fn stand_blend_from_script(s: &stand::Standing) -> bool {
+    let from_script = s.from.is_some_and(|(row, _)| {
+        !gait_select::MOVING_ROWS.contains(&row)
+            && !gait_select::RECORD_SCRIPTS.iter().any(|r| r.row == row)
+            && !stand::STAND_SCRIPTS.iter().any(|t| {
+                t.steps.iter().any(|step| {
+                    matches!(step, trick::Step::Blend { records, .. } if records.contains(&row))
+                })
+            })
+    });
+    from_script && (s.run.tick <= 0 || s.run.blend_counter().is_some())
+}
+
 fn stand_blend_from_gait(s: &stand::Standing) -> bool {
     let from_moving = s
         .from

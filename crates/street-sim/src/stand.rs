@@ -587,7 +587,8 @@ impl World {
         let caught = self
             .channel(i)
             .filter(|c| !c.gait && self.players[i].stand.is_none() && c.shown.blend.is_none())
-            .and_then(|c| c.shown.record.map(|r| (r, c.shown.frame)));
+            .and_then(|c| c.shown.record.map(|r| (r, c.shown.frame)))
+            .or_else(|| self.clip_at_start(i));
         let from = self.poses.get().map(|_| {
             if let Some(shown) = self.players[i].stand.map(|s| s.run.shown())
                 && let Some(record) = shown.record
