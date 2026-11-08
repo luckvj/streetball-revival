@@ -515,7 +515,12 @@ impl Poses {
                     if clip.raw_pose {
                         nearer_mix(a, b, u)
                     } else {
-                        normalized(std::array::from_fn(|k| a[k] + (b[k] - a[k]) * u))
+                        // Left at its length (`0x38d834..0x38d84c`); the
+                        // hierarchy's plain products (`FUN_0019d4c8`) then
+                        // shorten the bones it turns, as on the PS2 (the
+                        // third attract match's rebounder's hand under the
+                        // board, within 0.001 of the capture's).
+                        std::array::from_fn(|k| a[k] + (b[k] - a[k]) * u)
                     }
                 }
                 None => self.skeleton[i].rotation,

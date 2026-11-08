@@ -125,8 +125,9 @@ use crate::{
 /// 122: a running pass row's end blend ([`crate::PassTail`]); 123: a
 /// script's own test answered as it starts ([`crate::held::ChannelStart`]);
 /// 124: a reaction's root resync ([`crate::trick::Reacting`]); 125: the
-/// floor contact's joint height ([`crate::Player::floor_joint`]).
-const VERSION: u8 = 125;
+/// floor contact's joint height ([`crate::Player::floor_joint`]); 126: a
+/// block jump's play-out after the landing ([`crate::block::Script::out`]).
+const VERSION: u8 = 126;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -2361,6 +2362,8 @@ fn action_out(w: &mut Writer, a: &Action) {
                     w.uv(u64::from(j.airtime));
                     w.uv(u64::from(j.flown));
                     w.bool(j.turbo);
+                    w.u8(j.last[0]);
+                    w.u8(j.last[1]);
                 }
             }
         }
@@ -2575,6 +2578,7 @@ fn action_in(r: &mut Reader) -> Result<Action, String> {
                     airtime: u16::try_from(r.uv()?).map_err(|_| "invalid block airtime")?,
                     flown: u16::try_from(r.uv()?).map_err(|_| "invalid block flight")?,
                     turbo: r.bool()?,
+                    last: [r.u8()?, r.u8()?],
                 }),
                 k => return Err(format!("bad block flag {k}")),
             },

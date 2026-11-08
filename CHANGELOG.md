@@ -5,6 +5,16 @@ its version's part.
 
 ## Unreleased
 
+- Players' limbs between two animation frames now sit where the PS2 puts
+  them: the in-between turns are no longer stretched back to full length,
+  so hands and heads match the PS2 (a rebounder's hand under the
+  backboard was 0.03 too high and the board held him back).
+- A block or rebound-goaltend jump plays its landing out as on the PS2:
+  the jumper finishes the animation after touching down, moved by it and
+  turning where his stick points, before he can run again; his last frames
+  in the air are no longer one moment behind.
+- A player's idle face after a jump comes back at the same moment as on
+  the PS2.
 - The two jump-ball jumpers bump each other as on the PS2 once the ball is
   tipped: they share the push instead of one taking all of it, so neither
   drifts off his line through the rest of the opening play.

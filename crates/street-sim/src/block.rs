@@ -64,7 +64,7 @@ const fn wait(frame: u8, span: Span) -> Wait {
 }
 
 /// One block jump script, read from its bytes.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Script {
     pub address: u32,
     /// The blend's record on callback 48's plain path, then on its branch
@@ -80,6 +80,11 @@ pub struct Script {
     pub frame: u8,
     /// The waits after it, the last until he lands.
     pub after: &'static [Wait],
+    /// After the landing, `91 2` (no locomotion), `97` and `8c out`: the
+    /// clip plays on from the landing's frame to its last at a frame every
+    /// `out` updates, the jumper moved by its root; then `9c 0x1000`,
+    /// `91 0`, callback 7 and callback 1 hand him back to the gait.
+    pub out: f32,
     /// The glass pair (callback 29 and `a9` in place of callbacks 5, 48
     /// and 35; `9b` sets bit 19 with bit 12, so their hands catch).
     pub glass: bool,
@@ -99,6 +104,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(2, Fixed(3))],
         frame: 13,
         after: &[wait(13, Meet(0)), wait(19, Landing)],
+        out: 2.0,
         glass: false,
     },
     Script {
@@ -109,6 +115,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(1, Fixed(2))],
         frame: 13,
         after: &[wait(13, Meet(0)), wait(19, Landing)],
+        out: 2.0,
         glass: false,
     },
     // The turbo block (and kind 11, under the basket): no callback 48.
@@ -120,6 +127,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(4, Fixed(6))],
         frame: 10,
         after: &[wait(10, Meet(0)), wait(22, Landing)],
+        out: 3.0,
         glass: false,
     },
     Script {
@@ -130,6 +138,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(2, Fixed(3))],
         frame: 9,
         after: &[wait(9, Meet(0)), wait(23, Landing)],
+        out: 2.0,
         glass: false,
     },
     Script {
@@ -140,6 +149,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(2, Fixed(3))],
         frame: 10,
         after: &[wait(10, Meet(0)), wait(24, Landing)],
+        out: 2.0,
         glass: false,
     },
     Script {
@@ -150,6 +160,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(4, Fixed(4))],
         frame: 26,
         after: &[wait(16, Meet(-10)), wait(32, Fixed(16)), wait(41, Landing)],
+        out: 1.0,
         glass: false,
     },
     Script {
@@ -160,6 +171,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(4, Fixed(5))],
         frame: 15,
         after: &[wait(15, Meet(0)), wait(20, Landing)],
+        out: 1.5,
         glass: false,
     },
     Script {
@@ -170,6 +182,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(5, Fixed(4))],
         frame: 12,
         after: &[wait(12, Meet(0)), wait(14, Fixed(8)), wait(21, Landing)],
+        out: 2.0,
         glass: false,
     },
     Script {
@@ -180,6 +193,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(4, Fixed(4))],
         frame: 11,
         after: &[wait(9, Meet(-4)), wait(13, Fixed(8)), wait(23, Landing)],
+        out: 1.5,
         glass: false,
     },
     // Its clips (462, 463) catch the ball they reach.
@@ -191,6 +205,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(5, Fixed(5))],
         frame: 13,
         after: &[wait(13, Meet(0)), wait(23, Landing)],
+        out: 1.5,
         glass: false,
     },
     Script {
@@ -201,6 +216,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(5, Fixed(5))],
         frame: 15,
         after: &[wait(15, Fixed(20)), wait(25, Landing)],
+        out: 1.5,
         glass: true,
     },
     Script {
@@ -211,6 +227,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(5, Fixed(5))],
         frame: 11,
         after: &[wait(11, Fixed(20)), wait(15, Fixed(10)), wait(23, Landing)],
+        out: 1.5,
         glass: true,
     },
     Script {
@@ -221,6 +238,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(4, Fixed(4))],
         frame: 14,
         after: &[wait(12, Meet(-3)), wait(18, Fixed(9)), wait(24, Landing)],
+        out: 1.5,
         glass: false,
     },
     Script {
@@ -231,6 +249,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(5, Fixed(6))],
         frame: 13,
         after: &[wait(11, Meet(-4)), wait(15, Fixed(8)), wait(24, Landing)],
+        out: 1.5,
         glass: false,
     },
     Script {
@@ -241,6 +260,7 @@ pub const SCRIPTS: [Script; 15] = [
         before: &[wait(5, Fixed(4))],
         frame: 14,
         after: &[wait(12, Meet(-4)), wait(16, Fixed(8)), wait(24, Landing)],
+        out: 1.5,
         glass: false,
     },
 ];
@@ -316,6 +336,10 @@ pub struct Jump {
     pub flown: u16,
     /// The turbo block (actor+0x360): its clip catches the ball.
     pub turbo: bool,
+    /// Each record's last frame (its frames less one), where the play-out
+    /// after the landing stops ([`Script::out`]); 0 without the disc's
+    /// animations, which leaves none.
+    pub last: [u8; 2],
 }
 
 /// What channel 0 shows on a tick: its record and fractional frame, or the
@@ -367,7 +391,12 @@ impl Jump {
             Fixed(n) => u16::from(n),
             Meet(o) => (i32::from(self.meet) + i32::from(o)).max(1) as u16,
             Landing => {
-                let since = start.saturating_sub(self.aim_tick());
+                // The airtime (actor+0x64) less the updates aloft
+                // (+0x60, which counts the aim's own): the third attract
+                // match's rebounder's wait from his 25th update aloft runs
+                // 14 updates (38 - 24), the clip at frame 21 on the update
+                // he lands.
+                let since = start.saturating_sub(self.aim_tick()) + 1;
                 self.airtime.saturating_sub(since).max(1)
             }
         }
@@ -396,7 +425,46 @@ impl Jump {
             frame = to;
             at += n;
         }
+        // `8c out`: on from the landing's frame by `1 / out` an update to
+        // the record's last.
+        let last = f32::from(self.last[usize::from(self.branch)]);
+        if self.up && self.tick >= at && frame < last {
+            let k = f32::from(self.tick - at + 1);
+            return (frame + k * (1.0 / s.out)).min(last);
+        }
         frame
+    }
+
+    /// The updates of the play-out after the landing ([`Script::out`]):
+    /// until the clip shows its last frame.
+    fn out_updates(&self) -> u16 {
+        let s = self.script();
+        let land = s.after.last().map_or(s.frame, |w| w.frame);
+        let last = self.last[usize::from(self.branch)];
+        if last <= land {
+            return 0;
+        }
+        let step = 1.0 / s.out;
+        let mut frame = f32::from(land);
+        let mut n = 0;
+        while frame < f32::from(last) {
+            frame += step;
+            n += 1;
+        }
+        n
+    }
+
+    /// Landed and playing the clip out ([`Script::out`]).
+    pub fn playing_out(&self) -> bool {
+        if !self.up {
+            return false;
+        }
+        let s = self.script();
+        let mut at = self.blend_len();
+        for w in s.before.iter().chain(s.after.iter()) {
+            at += self.span(*w, at);
+        }
+        self.tick >= at
     }
 
     /// Channel 0 on this tick.
@@ -458,7 +526,8 @@ impl Jump {
         (aim..self.tick).all(|t| self.frame_on(t) as i32 == self.frame_on(t - 1) as i32)
     }
 
-    /// The script is over: its last wait has run out on the landing.
+    /// The script is over: its last wait has run out on the landing and
+    /// the clip has played out ([`Script::out`]).
     pub fn done(&self) -> bool {
         if !self.up {
             return false;
@@ -468,7 +537,7 @@ impl Jump {
         for w in s.before.iter().chain(s.after.iter()) {
             at += self.span(*w, at);
         }
-        self.tick + 1 >= at
+        self.tick + 1 >= at + self.out_updates()
     }
 }
 
@@ -841,6 +910,12 @@ impl World {
             airtime: 0,
             flown: 0,
             turbo: script == TURBO && turbo,
+            last: s.records.map(|r| {
+                poses
+                    .as_ref()
+                    .and_then(|p| p.frames(r))
+                    .map_or(0, |n| n.saturating_sub(1).min(255) as u8)
+            }),
         }
     }
 
@@ -891,7 +966,9 @@ impl World {
         let Action::Jumping { block: Some(j), .. } = self.players[i].action else {
             return;
         };
-        if j.tick == 0 {
+        // Nor on the play-out: the stick's wanted facing turns him then
+        // (`World::step`).
+        if j.tick == 0 || j.playing_out() {
             return;
         }
         let now = timing::facing_word(self.players[i].heading);
@@ -950,7 +1027,9 @@ impl World {
         // rebounder flies his velocity alone from the update he leaves the
         // floor (1006..1041, the clip at 5.47, 5.93, ... with its root
         // across 0.4 from its frame 5 to 6), the contacts' pushes aside.
-        if j.up {
+        // Down again, the play-out's clip moves him by its root (the
+        // rebounder from update 1043, a step every two updates at `8c 2`).
+        if j.up && !j.playing_out() {
             return;
         }
         let Some(poses) = self.poses.get() else {
@@ -1673,6 +1752,7 @@ mod tests {
             airtime: 60,
             flown: 0,
             turbo: false,
+            last: [0; 2],
         }
     }
 
@@ -1725,8 +1805,9 @@ mod tests {
         assert_eq!(Jump { tick: 28, ..j }.frame() as i32, 32);
         assert_eq!(j.shown().record, Some(9));
         assert_eq!(Jump { tick: 4, ..j }.shown().record, Some(447));
-        // Landing: the airtime from the aim, here 60.
-        assert!(!Jump { tick: 66, ..j }.done());
-        assert!(Jump { tick: 67, ..j }.done());
+        // Landing: the airtime from the aim, here 60, the aim's update
+        // the first of it.
+        assert!(!Jump { tick: 65, ..j }.done());
+        assert!(Jump { tick: 66, ..j }.done());
     }
 }

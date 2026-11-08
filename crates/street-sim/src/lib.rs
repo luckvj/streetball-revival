@@ -1977,6 +1977,13 @@ impl World {
             }
             self.caught_root(i);
             self.passout_tick(i);
+            // The face's count after his side's update (`0x157270`), before
+            // the channel's step whose callbacks set faces: the block aim's
+            // face for the airtime runs out the update after the landing
+            // (the third attract match's rebounder at update 1043).
+            if !frozen {
+                self.idle_face(i);
+            }
             // A rebound jump's callback 36 at its script's jump tick; a
             // block jump's callback 35 at its own.
             self.rebound_jump_tick(i);
@@ -1994,9 +2001,6 @@ impl World {
             } else {
                 0
             };
-            if !frozen {
-                self.idle_face(i);
-            }
             let input = walk;
             // A backdown move holds his walk until it ends (its `91`'s 0x2:
             // the locomotion is not called, `0x15b084`), as does the post
@@ -2085,6 +2089,20 @@ impl World {
                 self.gait_root(i, gait_before, facing_before);
             }
             self.contain(i);
+            // A block jumper's play-out after his landing (`91 2`,
+            // [`block::Script::out`]): the stick moves him no more, but it
+            // still sets his wanted facing and he turns to it (the third
+            // attract match's rebounder, holding the ball, faces his walk
+            // from update 1044: 388, 402, 408).
+            if let Action::Jumping { block: Some(j), .. } = self.players[i].action
+                && j.playing_out()
+            {
+                let mut ran = self.players[i].clone();
+                ran.walk(&walk, 1.0, held, stance);
+                let p = &mut self.players[i];
+                p.wanted = ran.wanted;
+                p.turn_to_wanted(held);
+            }
             if let Some(script) = rebound
                 && self.players[i].action == Action::None
             {

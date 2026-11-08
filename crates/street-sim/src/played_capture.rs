@@ -3654,6 +3654,7 @@ fn the_block_jumps_rise_as_callback_35_aims_them_in_play() {
                     airtime: 0,
                     flown: 0,
                     turbo: false,
+                    last: [0; 2],
                 };
                 let aim_at = i64::from(jump.aim_tick());
                 let (Some(pre), Some(t0), Some(t1)) = (at(aim_at - 1), at(aim_at), at(aim_at + 1))
@@ -3850,6 +3851,7 @@ fn the_block_jumps_at_a_holder_rise_as_callback_35_aims_them_in_play() {
                     airtime: 0,
                     flown: 0,
                     turbo: false,
+                    last: [0; 2],
                 };
                 let aim_at = i64::from(jump.aim_tick());
                 let (Some(pre), Some(t0), Some(t1)) = (at(aim_at - 1), at(aim_at), at(aim_at + 1))

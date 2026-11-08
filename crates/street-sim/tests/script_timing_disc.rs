@@ -5,8 +5,8 @@
 use street_assets::{
     iso::Iso,
     scripts::{
-        executable_constant, executable_words, script_callback_tick, script_catch_tail,
-        script_end_tick, script_fades, script_gate,
+        executable_bytes, executable_constant, executable_words, script_callback_tick,
+        script_catch_tail, script_end_tick, script_fades, script_gate,
     },
 };
 use street_sim::timing::{
@@ -338,6 +338,7 @@ fn the_block_jump_lists_and_aims_are_the_executables() {
             airtime: 0,
             flown: 0,
             turbo: false,
+            last: [0; 2],
         };
         let aim = script_callback_tick(&elf, s.address, 35).unwrap();
         if s.glass {
@@ -345,6 +346,22 @@ fn the_block_jump_lists_and_aims_are_the_executables() {
         } else {
             assert_eq!(aim, Some(u32::from(jump.aim_tick())), "{:#x}", s.address);
         }
+        // The play-out after the landing wait (`8d ee F fe`): `97`, then
+        // `8c` with its speed, the frames' spacing in updates.
+        let bytes = executable_bytes(&elf, s.address, 0x140).unwrap();
+        let land = bytes
+            .windows(4)
+            .position(|w| w[0] == 0x8d && w[1] == 0xee && w[3] == 0xfe)
+            .unwrap();
+        let out = bytes[land..]
+            .windows(6)
+            .position(|w| w[0] == 0x97 && w[1] == 0x8c)
+            .map(|k| land + k + 2)
+            .unwrap();
+        let speed = f32::from_le_bytes(bytes[out..out + 4].try_into().unwrap());
+        assert_eq!(speed, s.out, "{:#x}", s.address);
+        let last = s.after.last().unwrap().frame;
+        assert_eq!(bytes[land + 2], last, "{:#x}", s.address);
     }
 }
 

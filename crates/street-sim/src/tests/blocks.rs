@@ -179,6 +179,7 @@ fn shot_at_hand(seed: u32, script: u8, offset: [f32; 3]) -> World {
         airtime: 40,
         flown: 4,
         turbo: false,
+        last: [0; 2],
     };
     w.players[1].action = Action::Jumping {
         elapsed: 0.2,

@@ -4455,6 +4455,7 @@ fn the_captured_block_jumps_follow_their_scripts() {
                     airtime: 0,
                     flown: 0,
                     turbo: false,
+                    last: [0; 2],
                 };
                 let takeoff = (u.frame()..u.frame() + 40).find(|&f| {
                     get(f)
