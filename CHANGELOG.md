@@ -5,167 +5,72 @@ its version's part.
 
 ## Unreleased
 
-- Online: hosting works again. Since v0.1.6-beta the game set each
-  side's three in the PS2's order when it built the match but sent them
-  online in the order picked, so the host's own roster check refused the
-  match ("This roster breaks the online rules ... gait profile") and
-  dropped back to the menu. The match now goes online in the order it
-  was built, and a joiner loads it as sent.
-- Online is on the Main Menu's Select button; with the keyboard its
-  legend now reads "Online (P)", since the keyboard's Select is P.
-- Online: Ctrl+V pastes a join code (or an address) into Join With Code,
-  and the host's Ctrl+C copies its join code to send to friends.
-- A blocker jumping at a dunker reads the ball where the dunker holds it,
-  as on the PS2, so he swings the same arm.
-- A player knocked out of a block jump falls from the jump's pose and
-  rises as high as on the PS2, and gets up into his walk on the same
-  moment.
-- A defender who stops right beside the ball's holder in a restart shows
-  off with his flair move on the same moment as on the PS2.
-- After a basket, a player still landing from his dunk or shot waits for
-  his landing to finish before he walks to his restart spot, as on the PS2.
-- Players breaking into a run from the brief restart stand after a basket
-  start their stride on the PS2's step, so they head off on the same line.
-- Players' limbs between two animation frames now sit where the PS2 puts
-  them: the in-between turns are no longer stretched back to full length,
-  so hands and heads match the PS2 (a rebounder's hand under the
-  backboard was 0.03 too high and the board held him back).
-- A block or rebound-goaltend jump plays its landing out as on the PS2:
-  the jumper finishes the animation after touching down, moved by it and
-  turning where his stick points, before he can run again; his last frames
-  in the air are no longer one moment behind.
-- A player's idle face after a jump comes back at the same moment as on
-  the PS2.
-- The two jump-ball jumpers bump each other as on the PS2 once the ball is
-  tipped: they share the push instead of one taking all of it, so neither
-  drifts off his line through the rest of the opening play.
-- A player who turns while his feet are planted (starting a pass, a
-  shot or a dunk) now swings round his planted foot one moment later,
-  as on the PS2, instead of sliding the instant he turns.
-- A player who starts running straight out of a move (the jump ball, a
-  shot, a dunk) now settles into his stride at the same moment as on the
-  PS2, so his steps stay in time with the PS2's for the rest of the run.
-- A player knocked over falls and slides as on the PS2: he lands where
-  the PS2 puts him, held back by whoever he hits on the way.
-- Block and rebound jumps fly as on the PS2: a jumper no longer sticks to
-  the floor right after takeoff, his crouch starts on the animation frame
-  the PS2 uses (several jumps leaned too far forward and pushed nearby
-  players away), he moves with his animation until he leaves the floor
-  and only with his jump after it, and the backboard stops holding him
-  as soon as he starts to come down. A rebounder who lands near the ball
-  after a basket now picks it up as on the PS2.
-- Computer players' footwork and runs follow the PS2 more closely: a
-  run or dribble that starts out of another stride, out of a stand that
-  is still settling, or right at the end of a stride's loop starts on the
-  same step as the PS2; a receiver running to a pass keeps his exact
-  line; a defender heading back to guard the rim aims at the same point
-  the PS2 does (just short of the rim); and a computer that shoots on the
-  move picks his stride before the shot, as the PS2 does.
-- A defender who comes to a stand picks his stance as on the PS2 (by the
-  way he means to face, not the way he happens to face), a block or
-  rebound jump goes up after the jumper's stride is picked, and a dunker
-  meeting a blocker in the air is matched against him at the same moment
-  as on the PS2 (by their hips' heights), so the same man wins.
-- A dunk now plays its landing out in full as on the PS2 (the dunker
-  stays in his finish until his feet are down and his animation is over,
-  instead of being cut short), while the game stops counting him as
-  dunking at the same point the PS2 does.
-- A player knocked over in the air (by a dunker, or tumbling forward)
-  is thrown up and over as on the PS2, instead of dropping straight down.
-- The crowd's gasp when a player hits the floor is now part of the game
-  itself (as on the PS2) rather than only the sound, so the game's random
-  rolls after a hard fall stay the same as the PS2's.
-- A player who catches a pass on the run now keeps running underneath
-  the catch, as on the PS2: his legs and hips stay on his run while his
-  arms and head play the catch, and the ball sits in those hands (it had
-  been drawn up to two feet off to one side, the whole body turned
-  toward the pass).
-- When that catch finishes, his arms ease back into his run over five
-  frames as on the PS2, with the ball staying in his hands, instead of
-  snapping.
-- A pass thrown on the run carries the passer on at the speed and in the
-  direction the PS2 gives him as he lets go (his stick's speed for his
-  run, along the way he turns to pass), instead of the speed he had.
-- A pass thrown on the run plays over the run, as on the PS2: the
-  passer's legs keep running (his run, or a jog with the stick only part
-  way) while his arms throw, and the ball stays in those hands.
-- After a pass on the run his arms ease back into his run over five
-  frames, as on the PS2, instead of snapping.
-- A pass thrown just before landing (within a sixth of a second) takes
-  the animations for passing on the ground, and a passer moving in the
-  air no longer gets the standing animations, as on the PS2.
-- The advanced dunk's toss is drawn: the player's arms throw the ball up
-  off the board over his stand, as on the PS2, and the ball leaves the
-  hand those arms show (he had kept walking with his arms down).
-- Moves started in the air keep the player up as long as the PS2 does:
-  a pass or tip-in in mid-air, a dunk turned into a lay-up, and a player
-  knocked flying forward all stay up for their animation's minimum time
-  (the original's "stay up" script step had been read wrongly and left
-  out), so they land when the original's do.
-- A pass thrown in the air, and the alley-oop pass thrown on the run,
-  play the animation for the side the receiver is on, and the spinning
-  jump shot turns the way the PS2 picks from his facing toward the rim,
-  as on the PS2 (each had always used one side's).
-- Five lay-ups and dunks leap to the side of the hand the player has the
-  ball in, as on the PS2, instead of always the same side.
-- A player knocked flat gets up one of the PS2's two ways, picked at
-  random as the original picks, instead of always the same one.
-- A player who dribbles off out of a trick move (a crossover, a
-  freestyle, a spin out of the post) starts his dribbling run in step with
-  his feet, as on the PS2, instead of from a fixed point of it.
-- The tip-off's pass and a restart's pass are thrown at where the
-  receiver stands, as on the PS2, not to the spot he is heading for.
-- Defenders guarding a pass's receiver close in on him on the PS2's
-  timing: the AI counts the pass's flight from the release, not from the
-  press.
-- Computer players run in exactly the direction their AI picks, as on
-  the PS2 (the direction had been rounded through a stick and could be a
-  hair off), and their aim at a spot uses the original's own angle maths.
-- The ball sits in the holder's hands as on the PS2 while he stands, as a
-  catch plays out and as a new walk blends in, and players who turn to
-  watch the ball only do so when they are far enough off it, as the
-  original's animations ask.
-- The opening tip's jumpers land and run off as on the PS2: the landing
-  animation plays to its last frame and their run starts from it, facing
-  the way the original turns them.
-- A standing catch animation now plays out on the PS2's clock to its last
-  frame, and the stand that follows blends out of it, so a player who
-  catches and then passes keeps his feet where the original's are.
-- A player whose shot, pass or other move ends moves on at once in the
-  same update, as on the PS2 (the move's last step starts his run, turned
-  to his new direction), instead of standing for an extra frame.
-- After a running catch the receiver keeps running in a straight line
-  until his catch animation lets go, as on the PS2, instead of turning at
-  once. Shots, dunks and passes now blend out of the exact pose the
-  player was showing.
-- The match intro's dunk goes to the right player again (the side that
-  loads the script fills its first three places, as the PS2's own memory
-  shows), and a receiver who catches on the run keeps running through
-  the catch instead of stopping to a stand under it.
-- A passer now turns as on the PS2 when his pass starts: his facing snaps
-  to the pass animation, and he turns toward where the receiver will be
-  when the ball arrives. The receiver starts his run toward the ball the
-  moment the pass is pressed, so the pass is judged on that run. A
-  receiver catching on the run keeps his stride's footing, and a passer
-  no longer starts walking before his pass animation lets him.
-- Walking players sway with their walk animation as on the PS2 (the
-  clip's own sideways drift now carries them), and the players around the
-  opening tip keep the PS2's exact time on their standing animations, so
-  all six now stand where the original's do through the whole opening.
-- Players blend into a new animation from the exact pose they were
-  showing, and the new animation holds its first frame through the blend,
-  as on the PS2. Each walk, run and dribble now starts its animation at
-  the PS2's own frame (from a standstill, or in step with the stride it
-  replaces), so players stop, start and change pace in step with the
-  original. A player who catches a pass standing keeps stepping with the
-  catch animation after the catch, as on the PS2.
-- Defenders judge whether they stand in front of the ball handler with
-  the PS2's own angle rounding, so they try trick steals on the same
-  updates as the original. A computer player who catches a pass waits the
-  PS2's one extra update before he starts to dribble.
-- Computer passers stop as they wind up a pass instead of drifting toward
-  the receiver, and the passer and receiver glance at each other on the
-  press, as on the PS2.
+## v0.1.7-beta
+
+Online hosting works again, and matches play even closer to the PS2's,
+checked update by update against the original. Online, everyone in a
+match needs this version (an older copy is told so when it joins).
+
+- **Online hosting fixed.** In v0.1.6-beta a host was sent straight back
+  to the menu ("This roster breaks the online rules ... gait profile"):
+  the game set each side's three in the PS2's order when it built the
+  match, but sent them online in the order picked, so its own roster
+  check refused the match. The match now goes online in the order it was
+  built, and joiners load it as sent. Join by code, a laggy connection
+  and a three-person lobby were all played through.
+- **Finding Online.** It's on the Main Menu's Select button; with the
+  keyboard the legend now reads "Online (P)", since the keyboard's Select
+  is P.
+- **Pasting join codes.** Ctrl+V pastes a code (or an address) into Join
+  With Code, and the host's Ctrl+C copies its join code to send to
+  friends.
+- **Jumps as on the PS2.** Block and rebound jumps take off, fly and land
+  like the original's: the crouch starts on the PS2's frame, the jumper
+  moves with his animation until he leaves the floor, the backboard lets
+  go as he comes down, and he plays his landing out (turning with the
+  stick) before he can run again. A dunk plays its landing out in full,
+  and a dunker meets a blocker in the air at the PS2's moment, so the
+  same man wins.
+- **Knockdowns as on the PS2.** A player knocked over falls, slides and
+  is thrown up and over like the original's, held back by whoever he
+  hits, gets up one of the PS2's two ways and walks off on the same
+  moment. The two jump-ball jumpers share their bump instead of one
+  drifting off.
+- **Catches and passes on the run.** A receiver catching on the run keeps
+  running underneath the catch (legs on the run, arms and head on the
+  catch, the ball in those hands), and a pass thrown on the run plays
+  over the run; both ease back into the run over five frames. A running
+  pass carries the passer on at the PS2's speed and direction, and a
+  pass just before landing uses the ground animations.
+- **Footwork closer to the original's.** Players blend into each new
+  animation from the exact pose they show, start each walk, run and
+  dribble on the PS2's frame, sway with their walk, pivot on a planted
+  foot a moment later as on the PS2, and break out of a move, a restart
+  stand or a trick into a run in step with their feet. Limbs between two
+  animation frames now sit where the PS2 puts them.
+- **The ball in the hands.** The ball sits in the holder's hands as on the
+  PS2 while he stands, catches and starts a walk; the advanced dunk's toss
+  is drawn and leaves the hand it shows.
+- **Animations picked as on the PS2.** Mid-air passes and the running
+  alley-oop pass use the receiver's side, five lay-ups and dunks leap to
+  the ball hand's side, the spinning jump shot turns the PS2's way, and
+  moves started in the air stay up as long as the original's.
+- **The computer's play.** Computer players run in exactly the direction
+  their AI picks, stop as they wind up a pass, catch and wait the PS2's
+  extra update before dribbling, try trick steals on the original's
+  updates, run to passes on the PS2's lines and timing, guard the rim at
+  the PS2's point, and pick their stride before a shot on the move.
+- **Smaller fixes:**
+  - After a basket, a player still landing waits for it before walking
+    to his restart spot, and a defender stopping right beside the holder
+    shows off his flair move on the PS2's moment.
+  - A blocker jumping at a dunker reads the ball where the dunker holds
+    it, so he swings the same arm.
+  - The tip-off's and restarts' passes go to where the receiver stands.
+  - The match intro's dunk goes to the right player again.
+  - The crowd's gasp after a hard fall is part of the game, so the
+    random rolls after it stay the PS2's.
+  - A player's idle face after a jump comes back on the PS2's moment.
 
 ## v0.1.6-beta
 

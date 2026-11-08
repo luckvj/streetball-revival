@@ -42,8 +42,9 @@ pub const MAGIC: u8 = 0x53;
 /// the catch, snapshot 71; 22: the head passout's defender and release
 /// wait, snapshot 72; 23: the lobby before the match, people choosing a
 /// side, each seat's pick, the creator's final setup and its generation;
-/// 24: the match's opening intros in its setup and its state).
-pub const VERSION: u8 = 24;
+/// 24: the match's opening intros in its setup and its state; 25: the
+/// setup's roster in its world's actor order).
+pub const VERSION: u8 = 25;
 /// The largest datagram sent; longer messages are split into parts. This
 /// leaves room under a 1280-byte IPv6 MTU for a relay's sealing.
 pub const MAX_DATAGRAM: usize = 1200;
