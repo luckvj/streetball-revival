@@ -709,6 +709,7 @@ mod tests {
             seats: Vec::new(),
             users: Vec::new(),
             online: false,
+            actor_order: false,
         });
         assert!(Before::playing(Some(&demo)));
         // Start at 10 s: the front end's load 0.97 s on.

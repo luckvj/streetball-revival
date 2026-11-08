@@ -211,6 +211,7 @@ mod tests {
             seats: vec![(crate::controls::Device::Keyboard, 1)],
             users: Vec::new(),
             online: false,
+            actor_order: false,
         };
         name_seat(&mut story, &mut setup, 0, "JAY").unwrap();
         assert_eq!(
@@ -276,6 +277,7 @@ mod tests {
             ],
             users: vec![Some("A".into()), None],
             online: false,
+            actor_order: false,
         };
         cycle_user(&story, &mut setup, 1, 1);
         // "A" is taken by 1P: 2P goes from Guest to B.

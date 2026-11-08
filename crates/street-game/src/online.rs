@@ -370,6 +370,19 @@ fn key(s: &setup::MatchSetup) -> Key {
     (s.court.to_ascii_uppercase(), s.teams, s.lineups)
 }
 
+/// Whether the loaded match (`loaded`, its actor order `actors`) is
+/// `want`: the same setup, or a server's (in actor order) of the one loaded.
+fn has_loaded(
+    loaded: &Option<Key>,
+    actors: Option<[[usize; TEAM_SIZE]; 2]>,
+    want: &setup::MatchSetup,
+) -> bool {
+    let k = key(want);
+    loaded.as_ref().is_some_and(|l| {
+        *l == k || (want.actor_order && (&l.0, l.1) == (&k.0, k.1) && actors == Some(k.2))
+    })
+}
+
 /// A hosted server on a thread of its own, updated every millisecond. In
 /// the game's frame loop it ran its ticks and sent its frames at this
 /// machine's frame rate, in bursts, and every other machine's pads missed
@@ -525,8 +538,10 @@ pub struct Online {
     hosting: Option<u16>,
     /// This machine's address on its network, for others to join.
     lan: Option<std::net::IpAddr>,
-    /// The match last loaded from the disc.
+    /// The match last loaded from the disc, and its line-ups in the
+    /// world's actor order ([`setup::ActorLineups`]).
     loaded: Option<Key>,
+    actors: Option<[[usize; TEAM_SIZE]; 2]>,
     /// The loaded match took the server's world and seats.
     synced: bool,
     ready: bool,
@@ -554,6 +569,8 @@ pub struct Online {
     pub(crate) stage: crate::lobby::Stage,
     duties: crate::lobby::Duties,
     device: crate::controls::Device,
+    /// The host copied its join code (Ctrl+C) to send to friends.
+    copied: bool,
 }
 
 impl Online {
@@ -613,6 +630,7 @@ impl Online {
             hosting: args.host,
             lan,
             loaded: None,
+            actors: None,
             synced: false,
             ready: false,
             auto_ready: args.ready,
@@ -636,6 +654,7 @@ impl Online {
             stage: crate::lobby::Stage::default(),
             duties: Default::default(),
             device: crate::controls::Device::Keyboard,
+            copied: false,
         })
     }
 
@@ -718,9 +737,11 @@ pub fn is_online(online: Option<Res<Online>>) -> bool {
 /// online (and so goes to the lobby rather than straight into the match).
 pub(crate) fn mark_loaded(world: &mut World) -> bool {
     let k = key(world.resource::<setup::MatchSetup>());
+    let actors = world.get_resource::<setup::ActorLineups>().map(|a| a.0);
     match world.get_resource_mut::<Online>() {
         Some(mut online) => {
             online.loaded = Some(k);
+            online.actors = actors;
             online.synced = false;
             true
         }
@@ -731,6 +752,7 @@ pub(crate) fn mark_loaded(world: &mut World) -> bool {
 /// Our setup as the server's, for creating the match.
 fn net_setup(
     s: &setup::MatchSetup,
+    actors: &[[usize; TEAM_SIZE]; 2],
     world: &street_sim::World,
     teams: [u16; 2],
     looks: &crate::net_looks::NetLooks,
@@ -739,7 +761,9 @@ fn net_setup(
     street_net::MatchSetup {
         court: s.court.clone(),
         teams,
-        roster: s.lineups.iter().flatten().map(|&r| r as u16).collect(),
+        // World player k is roster k (the server checks each against its
+        // record).
+        roster: actors.iter().flatten().map(|&r| r as u16).collect(),
         seed: s.seed,
         seat_teams: [0, 1, 0, 1, 0, 1],
         world: world.clone(),
@@ -801,6 +825,8 @@ fn local_setup(net: &street_net::MatchSetup, disc: &Disc) -> Result<setup::Match
         seats: Vec::new(),
         users: Vec::new(),
         online: true,
+        // The server's world was built in its actors' order.
+        actor_order: true,
     })
 }
 
@@ -876,7 +902,7 @@ impl Plugin for OnlinePlugin {
                 Update,
                 (
                     pump.run_if(is_online),
-                    lobby.run_if(in_state(Screen::Lobby)),
+                    (lobby, copy_code).run_if(in_state(Screen::Lobby)),
                     watch.run_if(in_state(Screen::Playing)).run_if(is_online),
                 )
                     .chain(),
@@ -1121,6 +1147,11 @@ fn go_offline(
 
 /// Back to the menus, saying why.
 fn fail(message: &mut menu::Message, next: &mut NextState<Screen>, why: String) {
+    if why.is_empty() {
+        info!("online: left for the menus");
+    } else {
+        warn!("online: {why}");
+    }
     message.0 = why;
     next.set(Screen::Menu);
 }
@@ -1170,6 +1201,7 @@ fn closed(r: CloseReason) -> &'static str {
 #[allow(clippy::too_many_arguments)]
 fn creation(
     setup: &setup::MatchSetup,
+    actors: &[[usize; TEAM_SIZE]; 2],
     world: &street_sim::World,
     disc: &mut Disc,
     original: &crate::roster::Original,
@@ -1199,9 +1231,8 @@ fn creation(
         }
     });
     // The roster goes along as data, with the line-up's records as the
-    // world was made from them.
-    let lineup: Vec<street_assets::db::Player> = setup
-        .lineups
+    // world was made from them (its actors' slot order, `FUN_00189f70`).
+    let lineup: Vec<street_assets::db::Player> = actors
         .iter()
         .flatten()
         .map(|&r| disc.players[r].clone())
@@ -1212,7 +1243,7 @@ fn creation(
     // The match plays its creator's Replays option, as its rules (every
     // machine runs the replays: street-net's `Match`).
     world.replays = options.map_or(1, |o| o.0.replays);
-    let mut net = net_setup(setup, &world, teams, &looks, roster_data);
+    let mut net = net_setup(setup, actors, &world, teams, &looks, roster_data);
     // The intros every machine plays, drawn from the seed: how long the
     // match holds for them.
     if let Some(clips) = intros {
@@ -1273,8 +1304,10 @@ fn lobby(
     if online.client.is_none() {
         let create = match (&sim, online.create) {
             (Some(sim), true) => {
+                let actors = online.actors.unwrap_or(setup.lineups);
                 match creation(
                     &setup,
+                    &actors,
                     &sim.world,
                     &mut disc,
                     &original,
@@ -1384,7 +1417,7 @@ fn lobby(
             Ok(w) => w,
             Err(why) => return fail(&mut message, &mut next, why),
         };
-        if online.loaded.as_ref() != Some(&key(&want)) {
+        if !has_loaded(&online.loaded, online.actors, &want) {
             commands.insert_resource(want);
             next.set(Screen::Loading);
             return;
@@ -1524,10 +1557,17 @@ fn lobby(
             None => "Press Cross / A / Enter when ready.".into(),
         },
     };
-    let keys = match client.rtt() {
-        Some(rtt) => format!("Enter: ready    Esc: leave    Ping {} ms", rtt.as_millis()),
-        None => "Enter: ready    Esc: leave".to_owned(),
-    };
+    let mut keys = "Enter: ready    Esc: leave".to_owned();
+    if code.is_some() {
+        keys += if online.copied {
+            "    Code copied"
+        } else {
+            "    Ctrl+C: copy code"
+        };
+    }
+    if let Some(rtt) = client.rtt() {
+        keys += &format!("    Ping {} ms", rtt.as_millis());
+    }
     if let Some(look) = look.as_deref() {
         let view = crate::look::View {
             style: crate::look::Style::List,
@@ -1670,7 +1710,10 @@ fn decide(
         && let Some(world) = world
         && online.loaded.as_ref() == Some(&key(setup))
     {
-        let net = creation(setup, world, disc, original, save, cheats, options, intros)?;
+        let actors = online.actors.unwrap_or(setup.lineups);
+        let net = creation(
+            setup, &actors, world, disc, original, save, cheats, options, intros,
+        )?;
         online.sent = Some(net.clone());
         if let Some(client) = online.client.as_mut() {
             client.propose_setup(net);
@@ -1771,16 +1814,45 @@ fn lobby_page(
     pieces
 }
 
+/// Ctrl+C in the lobby: the host's join code onto the clipboard, to paste
+/// to friends.
+fn copy_code(
+    keys: Res<ButtonInput<KeyCode>>,
+    online: Option<ResMut<Online>>,
+    clipboard: Option<ResMut<Clipboard>>,
+) {
+    let (Some(mut online), Some(mut clipboard)) = (online, clipboard) else {
+        return;
+    };
+    if keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
+        && keys.just_pressed(KeyCode::KeyC)
+        && let Some(code) = online.code()
+    {
+        match clipboard.set_text(code) {
+            Ok(()) => online.copied = true,
+            Err(e) => warn!("online: the join code wasn't copied: {e:?}"),
+        }
+    }
+}
+
 /// The host's line on the lobby: the join code friends type, or what the
 /// router said when there is none, and this machine's address on its own
 /// network.
 fn hosting_line(online: &Online) -> Option<String> {
     use crate::reach::Outcome;
     online.hosting?;
-    let network = online
+    let mut network = online
         .lan
         .map(|ip| format!("    Network {ip}"))
         .unwrap_or_default();
+    if online.code().is_some() {
+        let copy = if online.copied {
+            "  (copied)"
+        } else {
+            "  Ctrl+C: copy"
+        };
+        network.insert_str(0, copy);
+    }
     let reach = online.reach.as_ref().map(|r| r.outcome.as_ref());
     Some(match reach {
         Some(None) => format!("Getting your join code...{network}"),
@@ -1999,6 +2071,62 @@ mod tests {
     use super::*;
 
     #[test]
+    fn a_loaded_match_goes_online_in_its_actor_order_and_loads_back_as_sent() {
+        // The away three (100, 101, 102) take their actors' slots as 101,
+        // 102, 100 (`FUN_00189f70`); the match went online in the order
+        // picked, and the host's own roster check refused it.
+        let Some(path) = std::env::var_os("STREET_ISO") else {
+            return;
+        };
+        let open = || street_assets::iso::Iso::open(&path).unwrap();
+        let mut disc = Disc::load(open()).unwrap();
+        let original = crate::roster::Original::read(&mut disc).unwrap();
+        let mut setup = setup::MatchSetup::new(&disc, 0, 1);
+        setup.online = true;
+        let mut world = World::new();
+        world.insert_resource(disc);
+        world.insert_resource(setup.clone());
+        setup::load_match(&mut world).unwrap();
+        let actors = world.resource::<setup::ActorLineups>().0;
+        assert_ne!(actors, setup.lineups, "the line-up keeps its slots");
+        let built = world.resource::<crate::game::Sim>().world.clone();
+        let save = crate::story::Save {
+            path: Default::default(),
+            story: Default::default(),
+            last_error: None,
+        };
+        let net = creation(
+            &setup,
+            &actors,
+            &built,
+            &mut world.resource_mut::<Disc>(),
+            &original,
+            &save,
+            &Default::default(),
+            None,
+            None,
+        )
+        .unwrap();
+        let roster: Vec<u16> = actors.iter().flatten().map(|&r| r as u16).collect();
+        assert_eq!(net.roster, roster);
+        // A joiner loads the server's line-ups as they come.
+        let want = local_setup(&net, world.resource::<Disc>()).unwrap();
+        assert!(want.actor_order);
+        assert!(has_loaded(&Some(key(&setup)), Some(actors), &want));
+        let mut joiner = World::new();
+        joiner.insert_resource(Disc::load(open()).unwrap());
+        joiner.insert_resource(want.clone());
+        setup::load_match(&mut joiner).unwrap();
+        assert_eq!(joiner.resource::<setup::ActorLineups>().0, want.lineups);
+        let weights =
+            |w: &street_sim::World| w.players.iter().map(|p| p.weight).collect::<Vec<_>>();
+        assert_eq!(
+            weights(&joiner.resource::<crate::game::Sim>().world),
+            weights(&net.world)
+        );
+    }
+
+    #[test]
     fn a_server_address_gets_the_default_port() {
         assert_eq!(
             resolve("127.0.0.1").unwrap(),
@@ -2091,9 +2219,19 @@ mod tests {
             seats: Vec::new(),
             users: Vec::new(),
             online: true,
+            actor_order: false,
         };
-        let there = net_setup(&mine, &net.world, [3, 9], &Default::default(), vec![1]);
-        assert_eq!(there.roster, vec![1, 2, 3, 4, 5, 6]);
+        // The roster goes in the world's actor order.
+        let actors = [[2, 1, 3], [6, 4, 5]];
+        let there = net_setup(
+            &mine,
+            &actors,
+            &net.world,
+            [3, 9],
+            &Default::default(),
+            vec![1],
+        );
+        assert_eq!(there.roster, vec![2, 1, 3, 6, 4, 5]);
         assert_eq!(there.teams, [3, 9]);
         assert_eq!(there.court, "RUCKER");
         assert_eq!(there.roster_data, vec![1]);

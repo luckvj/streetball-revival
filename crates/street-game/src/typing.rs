@@ -5,7 +5,7 @@
 //! With a pad, an on-screen keyboard ([`KEYBOARD`]) opens: the stick or
 //! D-pad picks a key, Cross/A types it, Square/X deletes, Start or
 //! Circle/B finishes. (The name rows also cycle the game's own names with
-//! left and right.)
+//! left and right.) Ctrl+V pastes (a join code sent by a friend).
 
 use bevy::{
     input::{
@@ -187,6 +187,17 @@ fn push_up_to(text: &mut String, c: char, capitals: bool, max: usize) {
     text.push(if capitals { c.to_ascii_uppercase() } else { c });
 }
 
+/// Pasted text: its first line, trimmed (an address or code loses its
+/// spaces too).
+fn paste(text: &mut String, pasted: &str, address: bool, capitals: bool, max: usize) {
+    let line = pasted.lines().map(str::trim).find(|l| !l.is_empty());
+    for c in line.unwrap_or("").chars() {
+        if !(address && c.is_whitespace()) {
+            push_up_to(text, c, capitals, max);
+        }
+    }
+}
+
 pub fn type_text(
     mut typing: ResMut<Typing>,
     mut keys: MessageReader<KeyboardInput>,
@@ -196,6 +207,7 @@ pub fn type_text(
     mut menus: ResMut<crate::menu::Menus>,
     nav: Res<crate::pads::PadNav>,
     names: Option<Res<ballers::Names>>,
+    (held, mut clipboard): (Res<ButtonInput<KeyCode>>, Option<ResMut<Clipboard>>),
 ) {
     typing.ended = false;
     let Some(field) = typing.field else {
@@ -289,8 +301,18 @@ pub fn type_text(
             }
         }
     }
+    let ctrl = held.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]);
     for key in keys.read() {
         if key.state != ButtonState::Pressed || done {
+            continue;
+        }
+        if ctrl {
+            if key.key_code == KeyCode::KeyV
+                && let Some(clipboard) = clipboard.as_deref_mut()
+                && let Some(Ok(pasted)) = clipboard.fetch_text().poll_result()
+            {
+                paste(text, &pasted, field == Field::Server, capitals, max);
+            }
             continue;
         }
         match &key.logical_key {
@@ -408,6 +430,16 @@ pub fn show_keyboard(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_pasted_code_keeps_its_first_line_without_spaces() {
+        let mut text = String::new();
+        paste(&mut text, "\n  7qk3-m2x \r\nthanks", true, false, 64);
+        assert_eq!(text, "7qk3-m2x");
+        let mut name = "AB".to_owned();
+        paste(&mut name, "cd ef", false, true, 4);
+        assert_eq!(name, "ABCD");
+    }
 
     #[test]
     fn the_keyboard_cursor_wraps_and_lands_on_short_rows() {

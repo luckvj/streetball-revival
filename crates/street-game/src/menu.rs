@@ -8737,6 +8737,7 @@ mod tests {
             seats: vec![(Device::Keyboard, 0), (pad, 1)],
             users: vec![Some("A".into()), Some("B".into())],
             online: true,
+            actor_order: false,
         };
         let mut progress = street_sim::story::Story {
             games: 17,

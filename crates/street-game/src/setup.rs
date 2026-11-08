@@ -293,7 +293,15 @@ pub struct MatchSetup {
     /// Played online ([`crate::online`]): people on both sides, so no help
     /// for the home team.
     pub online: bool,
+    /// The line-ups are already in their actors' slot order (a server's
+    /// match, whose world was built so): the load keeps them as they are.
+    pub actor_order: bool,
 }
+
+/// The loaded match's line-ups in their actors' slot order (`FUN_00189f70`):
+/// world player `3 * side + k` is `.0[side][k]`.
+#[derive(Resource, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ActorLineups(pub [[usize; TEAM_SIZE]; 2]);
 
 impl MatchSetup {
     /// Home against away with the first three of each roster, at Rucker.
@@ -313,6 +321,7 @@ impl MatchSetup {
             seats: Vec::new(),
             users: Vec::new(),
             online: false,
+            actor_order: false,
         }
     }
 }
@@ -556,7 +565,8 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
     // Each side's three take their actors' slots by role (`FUN_00189f70`,
     // the team's construction): every per-player list below runs in that
     // order, as the original's actors do; the setup keeps the order chosen.
-    {
+    // (A server's line-ups come in that order already.)
+    if !setup.actor_order {
         let disc = world.resource::<Disc>();
         let template = usize::from(street_sim::story::BALLER_RECORDS);
         for (team, lineup) in setup.lineups.iter_mut().enumerate() {
@@ -590,6 +600,7 @@ pub fn load_match(world: &mut World) -> Result<(), Box<dyn std::error::Error>> {
             *lineup = slots.map(|k| lineup[k]);
         }
     }
+    world.insert_resource(ActorLineups(setup.lineups));
     let moves = crate::clip::PlayerMoves(
         setup
             .lineups

@@ -760,6 +760,7 @@ mod tests {
                 seats: Vec::new(),
                 users: Vec::new(),
                 online: false,
+                actor_order: false,
             };
             let mut world = World::new(
                 [

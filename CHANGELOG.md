@@ -5,6 +5,14 @@ its version's part.
 
 ## Unreleased
 
+- Online: hosting works again. Since v0.1.6-beta the game set each
+  side's three in the PS2's order when it built the match but sent them
+  online in the order picked, so the host's own roster check refused the
+  match ("This roster breaks the online rules ... gait profile") and
+  dropped back to the menu. The match now goes online in the order it
+  was built, and a joiner loads it as sent.
+- Online: Ctrl+V pastes a join code (or an address) into Join With Code,
+  and the host's Ctrl+C copies its join code to send to friends.
 - A blocker jumping at a dunker reads the ball where the dunker holds it,
   as on the PS2, so he swings the same arm.
 - A player knocked out of a block jump falls from the jump's pose and

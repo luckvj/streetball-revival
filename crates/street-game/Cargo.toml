@@ -12,7 +12,8 @@ street-render = { path = "../street-render" }
 street-net = { path = "../street-net" }
 street-sim = { path = "../street-sim" }
 street-video = { path = "../street-video" }
-bevy = "0.20.0"
+# The OS clipboard: join codes pasted in and copied out.
+bevy = { version = "0.20.0", features = ["system_clipboard"] }
 igd-next = { version = "0.18.0", default-features = false, features = ["io_sync"] }
 
 # PlayStation pads read from their HID reports (`sony_hid`).

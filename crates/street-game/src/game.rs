@@ -2720,6 +2720,7 @@ mod tests {
             seats: vec![(Device::Keyboard, 0)],
             users: vec![Some("A".into())],
             online: false,
+            actor_order: false,
         };
         let mut progress = street_sim::story::Story::default();
         progress.records.add_user("A").unwrap();
