@@ -4166,23 +4166,23 @@ impl World {
     /// toward [`toss::JUMP_FRAMES`] over [`toss::JUMP_UPDATES`]; at his
     /// place and facing. `None` without the disc's animations or a jump.
     fn tip_hands(&self, i: usize) -> Option<[[f32; 3]; 2]> {
-        let posed = self.tip_pose(i)?;
+        let posed = self.tip_posed(i, 1)?;
         Some([
             posed.joints[pose::RIGHT_HAND].position,
             posed.joints[pose::LEFT_HAND].position,
         ])
     }
 
-    /// Jumper `i` on his tip script's clip, the model as the last update
-    /// posed it (his tests' bones: the tip's hands and his side's tail).
-    /// The tip jump's clip as the model last showed it. The bones the tests
-    /// read: the skeleton the last update posed, before its own channel
-    /// step (the script's step `tick` there, one behind the channel's
-    /// `tick + 1` that moves him): the tip comes in the captured update in
-    /// all three openings and in the third attract's draw log, with his
-    /// place and height the PS2's. Down, `8c 2.0` plays the clip from the
+    /// Jumper `i`'s tip script clip and frame, `lag` script steps behind
+    /// the model the last update showed. The model (lag 0) is the drawn
+    /// pose and the contacts' bones: the third attract's jumper within
+    /// 0.01 of the PS2's bones through the whole jump (one step behind,
+    /// they were up to 1.0 off). The tip's hands read one step behind
+    /// ([`World::tip_hands`]): the tip comes in the captured update in all
+    /// three openings and in the third attract's draw log, with his place
+    /// and height the PS2's. Down, `8c 2.0` plays the clip from the
     /// landing's frame half a frame an update to its last.
-    fn tip_frame(&self, i: usize) -> Option<(u16, f32)> {
+    fn tip_frame(&self, i: usize, lag: u16) -> Option<(u16, f32)> {
         let Action::TipJump {
             script,
             tick,
@@ -4202,7 +4202,7 @@ impl World {
         let (start, aim) = (toss::JUMP_START_FRAMES[k], toss::JUMP_FRAMES[k]);
         Some((
             record,
-            toss::script_frame(start, aim, f32::from(tick.saturating_sub(1))),
+            toss::script_frame(start, aim, f32::from(tick.saturating_sub(lag))),
         ))
     }
 
@@ -4237,7 +4237,7 @@ impl World {
 
     fn tip_shown(&self, i: usize) -> Option<ScriptShown> {
         let poses = self.poses.get()?;
-        let (record, time) = self.tip_frame(i)?;
+        let (record, time) = self.tip_frame(i, 0)?;
         let pose = self.tip_pose(i)?;
         let held = poses.held(
             pose::Frame {
@@ -4255,9 +4255,13 @@ impl World {
     }
 
     pub(crate) fn tip_pose(&self, i: usize) -> Option<pose::Pose> {
+        self.tip_posed(i, 0)
+    }
+
+    fn tip_posed(&self, i: usize, lag: u16) -> Option<pose::Pose> {
         let poses = self.poses.get()?;
         let p = &self.players[i];
-        let (record, time) = self.tip_frame(i)?;
+        let (record, time) = self.tip_frame(i, lag)?;
         let place = pose::Place {
             position: [p.position[0], p.height, p.position[1]],
             word: timing::facing_word(p.heading),
