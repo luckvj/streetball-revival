@@ -4095,6 +4095,19 @@ impl World {
                 1 + (self.rng.next_u32() & 1) as u8
             };
             if self.players[i].free() {
+                // `FUN_001935c8`: the script's first blend (`8e 03`) holds
+                // what the channel showed, the stand ([`World::tip_pose`]).
+                let shown = self.shown_at_start(i).or_else(|| self.shown_local(i));
+                self.players[i].channel_start = Some(crate::held::ChannelStart {
+                    script: toss::TIP_SCRIPTS[usize::from(script)],
+                    from: None,
+                    left: false,
+                    side: false,
+                    pelvis: None,
+                    turn: 0,
+                    held: shown,
+                    asked: false,
+                });
                 self.players[i].action = Action::TipJump {
                     script,
                     tick: 0,
@@ -4187,6 +4200,8 @@ impl World {
             script,
             tick,
             landed,
+            vy,
+            up,
             ..
         } = self.players[i].action
         else {
@@ -4200,10 +4215,21 @@ impl World {
             return Some((record, time));
         }
         let (start, aim) = (toss::JUMP_START_FRAMES[k], toss::JUMP_FRAMES[k]);
-        Some((
-            record,
-            toss::script_frame(start, aim, f32::from(tick.saturating_sub(lag))),
-        ))
+        let t = tick.saturating_sub(lag);
+        // Past the meet, `8d ee L fe` runs the clip on to the landing's
+        // frame over the airtime left (`FUN_0019bed8`, actor+0x64): the
+        // third attract's jumper within 0.03 of the PS2's bones down to
+        // the landing (held on the meet's frame, up to 3.8 off).
+        let meet = toss::WAIT_END + toss::JUMP_UPDATES as u16;
+        if up && t > meet {
+            let n = t - meet;
+            let left = u16::from(timing::airtime(vy, self.players[i].height));
+            let span = (n + left).max(1);
+            let land = toss::LAND_FRAMES[k];
+            let time = aim + (land - aim) * (f32::from(n) / f32::from(span)).min(1.0);
+            return Some((record, time));
+        }
+        Some((record, toss::script_frame(start, aim, f32::from(t))))
     }
 
     /// The tip jump's model as its script leaves it ([`ScriptShown`]).
@@ -4271,6 +4297,26 @@ impl World {
             time,
             looping: false,
         };
+        // The first blend (`8e 03`): the held stand mixed into the clip's
+        // first frame by a third a step (the third attract's jumper within
+        // 0.01 of the PS2's bones on its two blended updates).
+        if let Action::TipJump {
+            script,
+            tick,
+            landed: 0,
+            ..
+        } = p.action
+        {
+            let step = tick.saturating_sub(lag);
+            let held = p
+                .channel_start
+                .filter(|c| c.script == toss::TIP_SCRIPTS[usize::from(script)])
+                .and_then(|c| c.held);
+            if let Some(h) = held.filter(|_| step < toss::BLEND_TICKS) {
+                let weight = f32::from(step) / f32::from(toss::BLEND_TICKS);
+                return poses.blend_held(&h, at, weight, p.body(), place);
+            }
+        }
         poses.pose(at, p.body(), place)
     }
 
