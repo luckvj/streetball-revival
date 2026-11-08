@@ -5,6 +5,8 @@ its version's part.
 
 ## Unreleased
 
+- Online: after a game, REMATCH is the first and lit choice, as after a Pick Up game.
+
 ## v0.1.7-beta
 
 Online hosting works again, and matches play even closer to the PS2's,

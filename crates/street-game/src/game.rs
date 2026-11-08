@@ -2396,7 +2396,8 @@ fn results(
             "QUIT TO REWARDS",
         ]
     } else if setup.online && may_vote {
-        vec!["CONTINUE", "REMATCH"]
+        // As a Pick Up game's: REMATCH first and lit.
+        vec!["REMATCH", "CONTINUE"]
     } else {
         vec!["CONTINUE"]
     };
