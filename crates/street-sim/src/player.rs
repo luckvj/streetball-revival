@@ -1080,6 +1080,7 @@ impl Player {
                             &mut at,
                             [self.heading, self.course],
                             body_scale_x,
+                            false,
                         );
                     }
                     self.speed = 0.0;
@@ -1532,6 +1533,7 @@ impl Player {
             &mut self.position,
             [self.heading, self.course],
             body_scale_x,
+            self.stand.is_none() && self.action == Action::None,
         );
         self.clamp_to_court();
     }

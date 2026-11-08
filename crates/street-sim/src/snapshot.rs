@@ -128,8 +128,9 @@ use crate::{
 /// floor contact's joint height ([`crate::Player::floor_joint`]); 126: a
 /// block jump's play-out after the landing ([`crate::block::Script::out`]);
 /// 127: the restart's hold on a recovering man's stick
-/// ([`crate::World::recover_count`]).
-const VERSION: u8 = 127;
+/// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
+/// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
+const VERSION: u8 = 128;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1605,6 +1606,8 @@ fn gait_channel_out(w: &mut Writer, c: &crate::ordinary::PlayerGaitChannel) {
             w.uv(u64::from(s.frames[1]));
         }
     }
+    w.f(c.rate_store);
+    w.u8(u8::from(c.store_rate));
 }
 
 fn profiles_out(w: &mut Writer, profiles: &[crate::gait_select::GaitProfile]) {
@@ -1720,6 +1723,8 @@ fn gait_channel_in(r: &mut Reader) -> Result<crate::ordinary::PlayerGaitChannel,
         }),
         k => return Err(format!("bad share flag {k}")),
     };
+    let rate_store = r.f()?;
+    let store_rate = r.bool()?;
     Ok(crate::ordinary::PlayerGaitChannel {
         row,
         phase,
@@ -1739,6 +1744,8 @@ fn gait_channel_in(r: &mut Reader) -> Result<crate::ordinary::PlayerGaitChannel,
         blend_from,
         blend_held,
         share,
+        rate_store,
+        store_rate,
     })
 }
 
@@ -3961,8 +3968,9 @@ mod tests {
         // each player's held poses' and pending share's flags (version
         // 118: a held pose itself is 91 floats while a blend holds it); the
         // restart's recover count and each stand's base a byte or more
-        // (version 127).
-        assert!(bytes.len() < 2480, "{} bytes", bytes.len());
+        // (version 127); each gait channel's stored rate and its flag five
+        // (version 128).
+        assert!(bytes.len() < 2520, "{} bytes", bytes.len());
         assert!(World::from_snapshot(&bytes[..bytes.len() - 1]).is_err());
         let mut longer = bytes.clone();
         longer.push(0);

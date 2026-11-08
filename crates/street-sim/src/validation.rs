@@ -696,7 +696,11 @@ impl World {
             )?;
             require((0.0..=1.0).contains(turbo), "turbo range")?;
             floats(
-                &[gait_channel.phase, gait_channel.frame_step],
+                &[
+                    gait_channel.phase,
+                    gait_channel.frame_step,
+                    gait_channel.rate_store,
+                ],
                 "player gait channel",
             )?;
             require(gait_channel.phase >= 0.0, "player gait channel phase")?;

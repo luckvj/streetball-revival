@@ -579,6 +579,15 @@ pub struct PlayerGaitChannel {
     /// speed): the outgoing frame, a running blend's fixed rate, and the
     /// two clips' lengths.
     pub share: Option<Share>,
+    /// Channel+0x3c: the rate the locomotion last wrote while no blend ran
+    /// (`0x167e8c..0x167e94` writes +0x68 and +0x3c from actor+0x32c only
+    /// with flags 0x200000 and 0x10 clear). A record's `ab -1.0`
+    /// (`FUN_00197234`) steps its first frame after the blend at it.
+    pub rate_store: f32,
+    /// A record started this update: the locomotion's write comes before
+    /// the channel step sets its blend's flag, so this update's rate is
+    /// stored whatever the counter says.
+    pub store_rate: bool,
 }
 
 /// A pending `-19` start ([`PlayerGaitChannel::share`]).
@@ -623,13 +632,17 @@ impl Default for PlayerGaitChannel {
             blend_from: None,
             blend_held: None,
             share: None,
+            rate_store: 1.0 / 6.0,
+            store_rate: false,
         }
     }
 }
 
 impl PlayerGaitChannel {
     /// Update the locomotion channel for one tick of movement: `ways` is
-    /// the facing and the course (the velocity's direction), radians.
+    /// the facing and the course (the velocity's direction), radians;
+    /// `free` that no stand or script holds the channel (its flag 0x10).
+    #[allow(clippy::too_many_arguments)]
     pub fn update(
         &mut self,
         held: bool,
@@ -638,8 +651,10 @@ impl PlayerGaitChannel {
         position: &mut [f32; 2],
         ways: [f32; 2],
         body_scale_x: f32,
+        free: bool,
     ) {
         let [heading_rad, course_rad] = ways;
+        let blending = self.blend_counter > 0;
         let wanted_row = match self.record {
             Some(_) if moving => self.record_row(),
             _ => select_gait_row(held, moving),
@@ -681,7 +696,19 @@ impl PlayerGaitChannel {
         // is posed once, as the blend starts, and the frame `+0x64` stays
         // the outgoing clip's): the clock runs on from the update after
         // (the attract capture's walk starts: frame 4, then 4 plus a step).
-        if self.blend_counter == 0 {
+        // `0x167e8c`: the locomotion stores its rate (+0x3c) unless a blend
+        // ran as it did; the update a blend completes, the record's `ab
+        // -1.0` steps the first frame at that stored rate (the third
+        // attract match's runs out of one-update stands at 1005 and 1056:
+        // 1.161, 1.326 and 0.25 against 1.03, 0.46 and 1.07 now).
+        let completing = blending && self.blend_counter == 0;
+        if self.store_rate || (free && !blending) {
+            self.rate_store = self.frame_step;
+        }
+        self.store_rate = false;
+        if completing {
+            self.phase += self.rate_store;
+        } else if self.blend_counter == 0 {
             self.phase += self.frame_step;
         }
         self.integer = self.phase as i32;

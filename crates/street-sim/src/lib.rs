@@ -2712,6 +2712,17 @@ impl World {
                 walk_from = Some((from, held.turned(turn), start, share));
             }
         }
+        // The locomotion stores this update's rate (+0x3c) unless the
+        // channel was blending as it ran: a gait blend, or a stand's
+        // (the third attract match's actors 3 and 5 at update 999, a
+        // one-update stand blending in: their runs' first steps take the
+        // rates stored before it).
+        let channel_blending = {
+            let p = &self.players[i];
+            p.gait_channel.blend_counter > 0
+                || p.stand
+                    .is_some_and(|s| s.run.tick <= 0 || s.run.blend_counter().is_some())
+        };
         let p = &mut self.players[i];
         let channel = &mut p.gait_channel;
         if let Some(record) = config.records.get(index) {
@@ -2738,6 +2749,7 @@ impl World {
                 channel.blend_from = Some(from);
                 channel.blend_held = Some(held);
                 channel.blend_counter = 7;
+                channel.store_rate = !channel_blending;
                 channel.phase = start;
                 channel.integer = start as i32;
                 channel.share = share;

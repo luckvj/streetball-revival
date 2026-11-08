@@ -401,6 +401,11 @@ impl World {
         {
             let k = (self.rng.next_u32() % FLAIR_ROWS.len() as u32) as u8;
             self.start_stand(i, FLAIR_FIRST + k);
+            // `0x1710dc..0x1710f4`: the channel's stored rate (+0x3c) is one
+            // over the row's updates a frame, which the record after it
+            // steps its first frame at (`ab -1.0`; the third attract
+            // match's dunker into his run at update 1056, 0.25).
+            self.players[i].gait_channel.rate_store = 1.0 / FLAIR_ROWS[usize::from(k)].1;
         }
     }
 
