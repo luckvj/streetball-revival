@@ -126,8 +126,10 @@ use crate::{
 /// script's own test answered as it starts ([`crate::held::ChannelStart`]);
 /// 124: a reaction's root resync ([`crate::trick::Reacting`]); 125: the
 /// floor contact's joint height ([`crate::Player::floor_joint`]); 126: a
-/// block jump's play-out after the landing ([`crate::block::Script::out`]).
-const VERSION: u8 = 126;
+/// block jump's play-out after the landing ([`crate::block::Script::out`]);
+/// 127: the restart's hold on a recovering man's stick
+/// ([`crate::World::recover_count`]).
+const VERSION: u8 = 127;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -162,6 +164,7 @@ impl World {
             events,
             give_and_go,
             fresh_take,
+            recover_count,
             dribble_armed,
             rims,
             rim_rigs,
@@ -275,6 +278,7 @@ impl World {
             }
         }
         w.bool(*fresh_take);
+        w.iv(i64::from(*recover_count));
         w.bool(*dribble_armed);
         for rim in rims {
             rim_out(&mut w, rim);
@@ -700,6 +704,7 @@ impl World {
             _ => Some((r.us()?, r.us()?)),
         };
         let fresh_take = r.bool()?;
+        let recover_count = i32::try_from(r.iv()?).map_err(|_| "invalid recover count")?;
         let dribble_armed = r.bool()?;
         let rims = [rim_in(&mut r)?, rim_in(&mut r)?];
         let mut rim_rigs = [crate::rim::Rig::default(); 2];
@@ -1122,6 +1127,7 @@ impl World {
             events,
             give_and_go,
             fresh_take,
+            recover_count,
             dribble_armed,
             rims,
             rim_rigs,
@@ -1342,6 +1348,7 @@ fn player(w: &mut Writer, p: &Player) {
             w.f(s.coast[0]);
             w.f(s.coast[1]);
             held_out(w, s.held.as_ref());
+            w.uv(u64::from(s.base.unwrap_or(u16::MAX)));
         }
     }
     w.uv(u64::from(*stand_count));
@@ -1887,6 +1894,8 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
                 },
                 coast: [r.f()?, r.f()?],
                 held: held_in(r)?,
+                base: Some(u16::try_from(r.uv()?).map_err(|_| "invalid stand base")?)
+                    .filter(|&b| b != u16::MAX),
             }),
             k => return Err(format!("bad stand flag {k}")),
         },
@@ -3950,8 +3959,10 @@ mod tests {
         // rigs and each player's hold on the rim about 420 (version 91);
         // each look's aim and its picks' count two or more (version 92);
         // each player's held poses' and pending share's flags (version
-        // 118: a held pose itself is 91 floats while a blend holds it).
-        assert!(bytes.len() < 2470, "{} bytes", bytes.len());
+        // 118: a held pose itself is 91 floats while a blend holds it); the
+        // restart's recover count and each stand's base a byte or more
+        // (version 127).
+        assert!(bytes.len() < 2480, "{} bytes", bytes.len());
         assert!(World::from_snapshot(&bytes[..bytes.len() - 1]).is_err());
         let mut longer = bytes.clone();
         longer.push(0);

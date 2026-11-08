@@ -829,6 +829,9 @@ pub struct World {
     /// `0x1569c0`). While it is set a person's shot needs the button
     /// pressed; otherwise holding it is enough ([`World::shoots`]).
     pub fresh_take: bool,
+    /// `0x3d7080`: the restart's count of updates a recovering man's
+    /// stick is held, shared by all ([`World::recover_hold`]).
+    pub recover_count: i32,
     /// `DAT_003d5600`: the dribble's bounce sound is armed
     /// ([`World::dribble_bounce`]).
     pub dribble_armed: bool,
@@ -1398,6 +1401,7 @@ impl World {
             events: Vec::new(),
             give_and_go: None,
             fresh_take: false,
+            recover_count: 0,
             dribble_armed: false,
             rims: [rim::Rim::default(); 2],
             rim_rigs: [rim::Rig::default(); 2],
@@ -1860,6 +1864,13 @@ impl World {
                 None => input,
             };
             let standing = standing || self.receiver_holds(i) || self.caught_row_holds(i);
+            // `FUN_001587d8` (`0x158a64..0x158b20`): in a restart a man still
+            // in a move's landing (state bit 2) reads no stick strength,
+            // for up to fps × 4 of such updates on the one shared count
+            // (`0x3d7080`, cleared outside a restart), then the bit goes:
+            // the third attract match's dunker, his landing over at update
+            // 432, runs his stand path there and walks from 433.
+            let standing = self.recover_hold(i) || standing;
             let input = if standing {
                 Input {
                     stick: [0, 0],
@@ -2506,7 +2517,7 @@ impl World {
                 // A stand still blending in from the gait: the row it
                 // leaves (`+0x50`; the third attract match's holder at
                 // update 936 starts his dribble at the stand blend's share).
-                Some(s) if stand_blend_from_gait(&s) => s.from.map(|f| f.0),
+                Some(s) if stand_blend_from_gait(&s) => s.base.or(s.from.map(|f| f.0)),
                 Some(s) => s.run.shown().record,
                 None if p.gait_channel.moving => {
                     p.gait_channel.record.map(|_| p.gait_channel.record_row())
@@ -2548,7 +2559,7 @@ impl World {
         let channel = &p.gait_channel;
         if let Some(record) = config.records.get(index)
             && channel.record != Some(index as u16)
-            && !playing.is_some_and(|r| record.rows.contains(&r))
+            && !(playing.is_some_and(|r| record.rows.contains(&r)) && p.stand.is_none())
             && p.action == Action::None
             && let Some(how) =
                 gait_select::record_start(record.rows[0], playing, still.map(|s| s.0))
@@ -3584,6 +3595,25 @@ impl World {
     /// roll's draw, `r % 100` against odds of 100 or 0 the cue set.
     pub fn staged_release_roll(&mut self) -> u32 {
         self.rng.next_u32() % 100
+    }
+
+    /// `FUN_001587d8`'s hold on a recovering man's stick in a restart
+    /// (`0x158a64..0x158ad8`): true while it holds.
+    fn recover_hold(&mut self, i: usize) -> bool {
+        if self.game_phase.phase != game_phase::phase::RESTART {
+            self.recover_count = 0;
+            return false;
+        }
+        if !self.players[i].flight.recover {
+            return false;
+        }
+        self.recover_count += 1;
+        if self.recover_count < 4 * TICK_HZ as i32 {
+            return true;
+        }
+        self.recover_count = 0;
+        self.players[i].flight.recover = false;
+        false
     }
 
     /// `FUN_00159240` (the actor's update after his side's, `0x157270`;

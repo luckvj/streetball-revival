@@ -182,6 +182,12 @@ pub struct Standing {
     /// as far as a heading match turned the facing (`FUN_00196698`). None
     /// without the disc's animations.
     pub held: Option<Held>,
+    /// Channel+0x50 as it started: the last record whose blend ran out.
+    /// A gait record cut off mid-blend by the stand leaves the clip its
+    /// blend came from (the third attract match's restart stand at update
+    /// 998: actor 5's jog never finished blending from his stand 67).
+    /// None for the clip it left ([`Standing::from`]).
+    pub base: Option<u16>,
 }
 
 impl Standing {
@@ -617,6 +623,12 @@ impl World {
                     None => self.gait_local(i),
                 },
             });
+        let base = {
+            let c = &self.players[i].gait_channel;
+            (self.players[i].stand.is_none() && c.blend_counter > 0)
+                .then(|| c.blend_from.map(|f| f.0))
+                .flatten()
+        };
         self.players[i].stand = Some(Standing {
             script,
             run,
@@ -624,6 +636,7 @@ impl World {
             plant,
             coast: [0.0; 2],
             held,
+            base,
         });
     }
 

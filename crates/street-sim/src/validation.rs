@@ -66,6 +66,7 @@ impl World {
             events,
             give_and_go,
             fresh_take: _,
+            recover_count: _,
             dribble_armed: _,
             rims,
             rim_rigs,

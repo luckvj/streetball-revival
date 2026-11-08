@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- After a basket, a player still landing from his dunk or shot waits for
+  his landing to finish before he walks to his restart spot, as on the PS2.
+- Players breaking into a run from the brief restart stand after a basket
+  start their stride on the PS2's step, so they head off on the same line.
 - Players' limbs between two animation frames now sit where the PS2 puts
   them: the in-between turns are no longer stretched back to full length,
   so hands and heads match the PS2 (a rebounder's hand under the
