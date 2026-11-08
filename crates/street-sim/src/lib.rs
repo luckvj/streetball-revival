@@ -2025,7 +2025,12 @@ impl World {
                 input
             };
             let ended = self.trick_tick(i, &input, held);
-            self.reaction_tick(i);
+            // A reaction ending here on callback 1 runs the locomotion in
+            // this channel step (the third attract match's knocked man gets
+            // up into his walk at update 482), from the model it left.
+            let reaction_shown = self.reaction_shown(i);
+            let called_reaction = self.reaction_tick(i);
+            let reaction_shown = reaction_shown.filter(|_| called_reaction);
             if !frozen {
                 self.stand_tick_turning(i, true);
             }
@@ -2146,11 +2151,15 @@ impl World {
             let called_tip = tip_shown.is_some() && self.players[i].action == Action::None;
             let shown = if called {
                 self.script_shown(i)
+            } else if reaction_shown.is_some() {
+                reaction_shown
             } else {
                 tip_shown.filter(|_| called_tip)
             };
             self.flight_tick(i, start.get(i).copied().unwrap_or(before));
-            if (called || called_tip) && matches!(self.players[i].action, Action::None) {
+            if (called || called_tip || called_reaction)
+                && matches!(self.players[i].action, Action::None)
+            {
                 // `FUN_00163d40` picks the record and sets his velocity and
                 // wanted facing; the motion step after the channel's moves
                 // him on it.
@@ -4198,6 +4207,34 @@ impl World {
     }
 
     /// The tip jump's model as its script leaves it ([`ScriptShown`]).
+    /// A reaction's model as the last update left it ([`World::tip_shown`]'s
+    /// for the reactions).
+    fn reaction_shown(&self, i: usize) -> Option<ScriptShown> {
+        let poses = self.poses.get()?;
+        let Action::Stumbling {
+            reaction: Some(r), ..
+        } = self.players[i].action
+        else {
+            return None;
+        };
+        let shown = r.run.shown();
+        let record = shown.record?;
+        let pose = self.scripted_pose(i)?;
+        let held = poses.held(
+            pose::Frame {
+                record,
+                time: shown.frame,
+                looping: false,
+            },
+            0,
+        )?;
+        Some(ScriptShown {
+            pose,
+            held,
+            from: (record, shown.frame),
+        })
+    }
+
     fn tip_shown(&self, i: usize) -> Option<ScriptShown> {
         let poses = self.poses.get()?;
         let (record, time) = self.tip_frame(i)?;

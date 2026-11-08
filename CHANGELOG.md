@@ -5,6 +5,11 @@ its version's part.
 
 ## Unreleased
 
+- A blocker jumping at a dunker reads the ball where the dunker holds it,
+  as on the PS2, so he swings the same arm.
+- A player knocked out of a block jump falls from the jump's pose and
+  rises as high as on the PS2, and gets up into his walk on the same
+  moment.
 - A defender who stops right beside the ball's holder in a restart shows
   off with his flair move on the same moment as on the PS2.
 - After a basket, a player still landing from his dunk or shot waits for

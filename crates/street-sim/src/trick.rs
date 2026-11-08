@@ -2281,7 +2281,18 @@ impl World {
         let steps = reaction(script).steps;
         let height = self.players[b].height;
         let length = Run::length(steps, left, 0, height);
+        // The clip channel 0 shows as it starts: a block jump's (the third
+        // attract match's blocker knocked at update 971 holds his jump's
+        // record 447 at 6.57), else his gait's.
         let from = self.poses.get().map(|_| {
+            if !matches!(
+                self.players[b].action,
+                Action::None | Action::Stumbling { .. }
+            ) && let Some(c) = self.channel(b)
+                && let (Some(record), None) = (c.shown.record, c.shown.blend)
+            {
+                return (record, c.shown.frame);
+            }
             let f = self.gait_frame(b);
             (f.record, f.time)
         });
@@ -2427,14 +2438,16 @@ impl World {
     /// One update of `i`'s reaction: the channel's update, the hop and its
     /// flight (as the tip-off's jump flies), the clip's root, the end (the
     /// facing from the pelvis at callback 7).
-    pub(crate) fn reaction_tick(&mut self, i: usize) {
+    /// True when the script ended here on callback 1, whose locomotion
+    /// runs in this update's channel step ([`World::step`]).
+    pub(crate) fn reaction_tick(&mut self, i: usize) -> bool {
         let Action::Stumbling {
             elapsed,
             duration,
             reaction: Some(mut r),
         } = self.players[i].action
         else {
-            return;
+            return false;
         };
         let steps = r.steps();
         r.window = r.window.saturating_sub(1);
@@ -2604,6 +2617,7 @@ impl World {
         {
             self.players[i].heading = crate::restart::heading_radians(pelvis_word(&pose));
         }
+        let called = r.run.done && ran.locomotion;
         self.players[i].action = if r.run.done {
             self.players[i].height = 0.0;
             Action::None
@@ -2614,6 +2628,7 @@ impl World {
                 reaction: Some(r),
             }
         };
+        called
     }
 
     /// `i`'s trick or reaction pose, if he is in one.

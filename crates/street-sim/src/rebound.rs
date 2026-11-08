@@ -170,6 +170,13 @@ const JUMP_TOP: (f32, f32) = (2.0, 4.0);
 /// `n` from 1: its own update run on a copy (`FUN_001537d0`, the
 /// prediction ring `FUN_001538f8` fills with the look-ahead flag set).
 pub(crate) fn ball_path(w: &World, n: usize) -> Vec<([f32; 3], [f32; 3])> {
+    // `FUN_001537d0` / `FUN_00153860`: a ball someone holds (ball+0xf4)
+    // stays where it is (the third attract match's dunker's ball for the
+    // blocker's callback 48 at update 961).
+    if matches!(w.ball.state, crate::BallState::Held(_)) {
+        let v = w.ball.velocity.map(|v| v * crate::TICK_SECONDS);
+        return vec![(w.ball.position, v); n];
+    }
     let mut b = w.ball.clone();
     let rims = w.hoops.map(|h| h.rim);
     let how = crate::ball::Step {

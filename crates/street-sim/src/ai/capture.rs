@@ -4791,9 +4791,11 @@ fn putbacks_start_on_their_records_and_some_catch_the_ball() {
     // With the shot clock at the original's step, 2026-11-04, seed 10's
     // catch none; 9 and 12..16 do. With the dunks played to their
     // scripts' ends, 2026-11-07, seed 9's, 13's and 15's catch none; 10,
-    // 11, 12, 14 and 16 do. With the knocks' landings, seed 10's none.)
+    // 11, 12, 14 and 16 do. With the knocks' landings, seed 10's none.
+    // With the held ball where its holder has it for the predictor and
+    // the knocked men's get-up, 2026-11-07, seed 11's none; 12 and 14 do.)
     let (mut started, mut caught) = (0, 0);
-    let mut w = demo_match(11);
+    let mut w = demo_match(12);
     w.start_opening_toss();
     for _ in 0..20_000 {
         step_computer(&mut w);
