@@ -1457,7 +1457,9 @@ fn legends(
         // 0x44, `creditsintro.txt`).
         legend(out, labels, look, images, e, &|id| {
             if id == ONLINE_WORD {
-                return Some("Online".to_owned());
+                // The keyboard's Select is P: say so while it plays.
+                let keyboard = KEYBOARD_PROMPTS.load(std::sync::atomic::Ordering::Relaxed);
+                return Some(if keyboard { "Online (P)" } else { "Online" }.to_owned());
             }
             look.text_full(id).map(str::to_owned)
         });
@@ -1466,6 +1468,10 @@ fn legends(
 
 /// The Main Menu's layout class.
 const MAIN_CLASS: u32 = 3;
+/// No controller has been pressed yet: the keyboard plays
+/// ([`crate::pads::ButtonStyle::Keyboard`]), and the Online legend names its key.
+pub static KEYBOARD_PROMPTS: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(true);
 /// The rewrite's Online page's title (drawn on the Main Menu's layout).
 pub const ONLINE_TITLE: &str = "Online";
 /// A text id no file uses, standing for the rewrite's "Online".

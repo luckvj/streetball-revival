@@ -220,6 +220,10 @@ fn nav(
         None => ButtonStyle::Keyboard,
         Some(sony) => crate::prompts::pad_style(sony, prompts),
     };
+    crate::look::KEYBOARD_PROMPTS.store(
+        nav.style == ButtonStyle::Keyboard,
+        std::sync::atomic::Ordering::Relaxed,
+    );
 }
 
 /// Says which controllers come and go, and whose buttons they get.

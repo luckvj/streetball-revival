@@ -11,6 +11,8 @@ its version's part.
   match ("This roster breaks the online rules ... gait profile") and
   dropped back to the menu. The match now goes online in the order it
   was built, and a joiner loads it as sent.
+- Online is on the Main Menu's Select button; with the keyboard its
+  legend now reads "Online (P)", since the keyboard's Select is P.
 - Online: Ctrl+V pastes a join code (or an address) into Join With Code,
   and the host's Ctrl+C copies its join code to send to friends.
 - A blocker jumping at a dunker reads the ball where the dunker holds it,
