@@ -36,7 +36,7 @@
 //! Each player's weight is the record's (attribute 9,
 //! [`crate::Player::weight`], [`WEIGHT`] until a roster sets it).
 
-use crate::{Action, BallState, OpeningToss, World, distance, math};
+use crate::{Action, BallState, World, distance, math};
 
 /// `0x3d0f68`: the contacts with one defender that make a screen.
 pub const SCREEN_CONTACTS: i32 = 30;
@@ -653,7 +653,10 @@ impl World {
         if self.players[p].team.min(1) == offence && self.players[p].team != self.players[q].team {
             (a, b) = (q, p);
         }
-        let toss = self.opening_toss != OpeningToss::None;
+        // game+0xf4 == 1 (`0x13447c`, `0x134908`): the game's tip phase,
+        // which ends with the tip's pass (the third attract match's
+        // jumpers share the push from update 817), not the toss's catch.
+        let toss = self.game_phase.phase == crate::game_phase::phase::TIP;
         if toss && self.tip.winner >= 0 {
             let winner = (0..self.players.len())
                 .filter(|&j| self.players[j].team.min(1) == (self.tip.winner / 3) as usize)

@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- The two jump-ball jumpers bump each other as on the PS2 once the ball is
+  tipped: they share the push instead of one taking all of it, so neither
+  drifts off his line through the rest of the opening play.
 - A player who turns while his feet are planted (starting a pass, a
   shot or a dunk) now swings round his planted foot one moment later,
   as on the PS2, instead of sliding the instant he turns.
