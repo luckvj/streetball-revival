@@ -2644,9 +2644,24 @@ impl World {
                 stance: Some(s), ..
             } => (s.run.shown(), s.from),
             // A stand ([`crate::stand`]), blending from its held pose.
+            // Channel 2's tail (`92`, a running catch row's) blends over it
+            // as over the gait: the third attract match's catcher at update
+            // 936, a one-update stand under his catch tail.
             Action::None => {
                 let s = self.players[i].stand?;
-                return s.pose(poses, self.players[i].body(), self.place(i));
+                let mut local = s.local(poses)?;
+                if let Some((record, time, w)) = self.channel(i).and_then(|c| c.upper_from) {
+                    let row = poses.held(
+                        crate::pose::Frame {
+                            record,
+                            time,
+                            looping: false,
+                        },
+                        0,
+                    )?;
+                    local = crate::pose::mix_from(&local, &row, w, crate::touch::UPPER_BODY);
+                }
+                return Some(poses.place_held(&local, self.players[i].body(), self.place(i)));
             }
             _ => return None,
         };
