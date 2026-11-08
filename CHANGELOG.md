@@ -5,6 +5,8 @@ its version's part.
 
 ## Unreleased
 
+- A defender who stops right beside the ball's holder in a restart shows
+  off with his flair move on the same moment as on the PS2.
 - After a basket, a player still landing from his dunk or shot waits for
   his landing to finish before he walks to his restart spot, as on the PS2.
 - Players breaking into a run from the brief restart stand after a basket

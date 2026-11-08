@@ -384,14 +384,18 @@ impl World {
             };
         }
         let p = &self.players[i];
-        if p.stand_count >= POST_HOLD || !DEFENCE_ROWS.contains(&row) {
+        let started = p.stand_count >= POST_HOLD || !DEFENCE_ROWS.contains(&row);
+        if started {
             self.start_stand(i, DEFENCE_STANDS[pick]);
         }
         // The flair (`0x1684dc..0x1685f0`): the holder's nearest opponent,
         // still, in a restart, not already flaring.
+        // Still: his velocity (actor+0x40) nothing, which a stand started
+        // here has already made so by its first `97` (the third attract
+        // match's defender stopping at his restart spot, update 478).
         if let Some(h) = holder
             && self.nearest_opponent(h) == Some(i)
-            && !self.players[i].moving()
+            && (started || !self.players[i].moving())
             && self.game_phase.phase == crate::game_phase::phase::RESTART
             && !FLAIR_PLAYING.contains(&row)
         {
