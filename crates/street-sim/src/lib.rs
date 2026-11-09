@@ -2076,6 +2076,16 @@ impl World {
             } else {
                 None
             };
+            // A block jump's script ending this update hands him back the
+            // same way (`83 07; 83 01`), from its clip.
+            let block_shown = if matches!(
+                self.players[i].action,
+                Action::Jumping { block: Some(_), .. }
+            ) {
+                self.block_shown(i)
+            } else {
+                None
+            };
             let stepped = self.players[i].step(&moved, held, stance);
             if let Some((gait, mut channel, speed, course, wanted, heading)) = run_kept {
                 let frames = self
@@ -2124,8 +2134,16 @@ impl World {
             // still sets his wanted facing and he turns to it (the third
             // attract match's rebounder, holding the ball, faces his walk
             // from update 1044: 388, 402, 408).
+            // Not on the play-out's first update: its `8c` starts in the
+            // channel step after this update's locomotion (the wanted
+            // facing still the jump's at 1043, the counter 1 there).
             if let Action::Jumping { block: Some(j), .. } = self.players[i].action
                 && j.playing_out()
+                && (block::Jump {
+                    tick: j.tick.wrapping_sub(1),
+                    ..j
+                })
+                .playing_out()
             {
                 let mut ran = self.players[i].clone();
                 ran.walk(&walk, 1.0, held, stance);
@@ -2163,25 +2181,28 @@ impl World {
             // The model as the script left it, for the new record's start
             // (its row, its blend's held pose, the heading match).
             let called_tip = tip_shown.is_some() && self.players[i].action == Action::None;
+            let called_block = block_shown.is_some() && self.players[i].action == Action::None;
             let shown = if called {
                 self.script_shown(i)
             } else if reaction_shown.is_some() {
                 reaction_shown
             } else {
-                tip_shown.filter(|_| called_tip)
+                tip_shown
+                    .filter(|_| called_tip)
+                    .or(block_shown.filter(|_| called_block))
             };
             self.flight_tick(i, start.get(i).copied().unwrap_or(before));
             // Callback 7 (`0x174e80`) before callback 1: his wanted facing
             // (+0xb0) the pelvis's the script left (`FUN_00154230`), which
             // the update's turn then faces (the third attract match's
             // dunker at update 1049: 352 to 394).
-            if faced
+            if (faced || called_block)
                 && matches!(self.players[i].action, Action::None)
                 && let Some(s) = shown.as_ref()
             {
                 self.players[i].wanted = restart::heading_radians(trick::pelvis_word(&s.pose));
             }
-            if (called || called_tip || called_reaction)
+            if (called || called_tip || called_reaction || called_block)
                 && matches!(self.players[i].action, Action::None)
             {
                 // `FUN_00163d40` picks the record and sets his velocity and
@@ -2738,7 +2759,10 @@ impl World {
         // (the third attract match's actors 3 and 5 at update 999, a
         // one-update stand blending in: their runs' first steps take the
         // rates stored before it).
-        let channel_blending = {
+        // From a script's end its clip played out (the gait channel's
+        // counter is stale): no blend (the third attract match's rebounder
+        // into his run at update 1093, 0.803).
+        let channel_blending = script.is_none() && {
             let p = &self.players[i];
             p.gait_channel.blend_counter > 0
                 || p.stand
@@ -4326,6 +4350,29 @@ impl World {
             pose,
             held,
             from: (record, shown.frame),
+        })
+    }
+
+    /// What a block jumper's channel shows ([`ScriptShown`]).
+    fn block_shown(&self, i: usize) -> Option<ScriptShown> {
+        let poses = self.poses.get()?;
+        let Action::Jumping { block: Some(j), .. } = self.players[i].action else {
+            return None;
+        };
+        let (record, time) = (j.record(), j.frame());
+        let pose = self.actor_pose(i)?;
+        let held = poses.held(
+            pose::Frame {
+                record,
+                time,
+                looping: false,
+            },
+            0,
+        )?;
+        Some(ScriptShown {
+            pose,
+            held,
+            from: (record, time),
         })
     }
 

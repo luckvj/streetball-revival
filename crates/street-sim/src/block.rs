@@ -537,7 +537,7 @@ impl Jump {
         for w in s.before.iter().chain(s.after.iter()) {
             at += self.span(*w, at);
         }
-        self.tick + 1 >= at + self.out_updates()
+        self.tick >= at + self.out_updates()
     }
 }
 
@@ -1834,8 +1834,9 @@ mod tests {
         assert_eq!(j.shown().record, Some(9));
         assert_eq!(Jump { tick: 4, ..j }.shown().record, Some(447));
         // Landing: the airtime from the aim, here 60, the aim's update
-        // the first of it.
-        assert!(!Jump { tick: 65, ..j }.done());
-        assert!(Jump { tick: 66, ..j }.done());
+        // the first of it; the script ends on the update after (callbacks
+        // 7 and 1 there).
+        assert!(!Jump { tick: 66, ..j }.done());
+        assert!(Jump { tick: 67, ..j }.done());
     }
 }
