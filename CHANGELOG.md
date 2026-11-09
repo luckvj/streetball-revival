@@ -12,6 +12,7 @@ its version's part.
 - A block jump turns the jumper toward his jump as it starts, then back to the ball, as on the PS2 (his body used to swing round too slowly through the first frames).
 - At the end of a dunk, shot, move or reaction a player turns toward where his body faces at the PS2's turning speed instead of snapping round, and a stand he starts right then plays at once.
 - After landing from a block jump a player finishes the landing animation and runs off from it as on the PS2 (he used to snap back into his old stride one frame early).
+- Shot arcs use the PS2's own trigonometry (its tangent, arcsine and arctangent approximations and rounding) instead of the PC's math library.
 
 ## v0.1.7-beta
 
