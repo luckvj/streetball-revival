@@ -10,6 +10,7 @@ its version's part.
 - After a dunk the dunker's run starts in step with the PS2's, and a player who stops for an update while blending out of a catch keeps his arms as on the PS2.
 - A run that starts out of a short stop takes its first step at the PS2's pace, so legs stay in step with the original. Online play needs this build on both sides (protocol 26).
 - A block jump turns the jumper toward his jump as it starts, then back to the ball, as on the PS2 (his body used to swing round too slowly through the first frames).
+- At the end of a dunk, shot, move or reaction a player turns toward where his body faces at the PS2's turning speed instead of snapping round, and a stand he starts right then plays at once.
 
 ## v0.1.7-beta
 
