@@ -321,7 +321,7 @@ fn shot_duration_uses_the_launcher_constants() {
         let dz = rim[2] - from[2];
         let range = libm::sqrtf(dx * dx + dz * dz);
         let rise = rim[1] - from[1];
-        let vertical = range * libm::tanf(angle) - rise;
+        let vertical = range * crate::math::ee_tan(angle) - rise;
         let mut time = if vertical > 0.0 {
             libm::sqrtf(2.0 * vertical / GRAVITY)
         } else {

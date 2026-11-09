@@ -36,7 +36,7 @@ pub fn valid_radius(radius: f32) -> bool {
 /// launcher's angle for his distance. (`FUN_00334330`'s
 /// `t = max(cue frames, 15)` is a toss to a floor point, not a shot.)
 /// The original's `tan` is its own polynomial sine over `√(1 − sin²)`
-/// (`0x1505b4..0x150698`), not `libm`'s. It also takes `sqrt.s` of
+/// (`0x1505b4..0x150698`, [`crate::math::ee_tan`]), not `libm`'s. It also takes `sqrt.s` of
 /// `climb − rise` with no sign test (`0x15078c..0x150790`), which the EE
 /// answers with `√|x|`; the rewrite drops that term when it is negative,
 /// which only a target above 14 units could reach.
@@ -45,7 +45,7 @@ pub(crate) fn shot_flight_time(from: [f32; 3], to: [f32; 3], angle: f32) -> f32 
     let dz = to[2] - from[2];
     let range = libm::sqrtf(dx * dx + dz * dz);
     let rise = to[1] - from[1];
-    let vertical = range * libm::tanf(angle) - rise;
+    let vertical = range * crate::math::ee_tan(angle) - rise;
     let angle_time = if vertical > 0.0 {
         libm::sqrtf(2.0 * vertical / GRAVITY)
     } else {
@@ -367,8 +367,11 @@ pub(crate) fn bank_possible(at: [f32; 3], side: f32, radius: f32, board_z: f32) 
 /// glass keeps (`atan(tan θ · |(e·x, z)| / |(x, z)|)`). The time to arrive at
 /// that angle, `√(2(d·tan θ + dy)/g)`, gets the gameplay minimums of
 /// [`shot_flight_time`]; when the requested `angle` would arrive sooner the
-/// launch angle becomes `atan(g·T²/d − tan θ)`. The game's own polynomial
-/// asin, atan, sin and cos are replaced by `libm`'s.
+/// launch angle becomes `atan(g·T²/d − tan θ)`. The trigonometry is the
+/// game's own polynomials in the EE's chopped arithmetic
+/// ([`crate::math::ee_asin`], [`crate::math::ee_atan`],
+/// [`crate::math::ee_tan`]), in its operand order; the times are this
+/// crate's seconds where the original counts frames.
 pub(crate) fn steepen_entry(
     angle: f32,
     from: [f32; 3],
@@ -376,18 +379,25 @@ pub(crate) fn steepen_entry(
     radius: f32,
     bank: bool,
 ) -> f32 {
-    let across = libm::sqrtf(aim[0] * aim[0] + aim[2] * aim[2]);
+    use crate::math::{ee_add, ee_asin, ee_atan, ee_div, ee_mul, ee_sqrt, ee_tan};
+    let across = ee_sqrt(ee_add(ee_mul(aim[0], aim[0]), ee_mul(aim[2], aim[2])));
     if across <= 0.0001 {
         return angle;
     }
-    let mut entry =
-        libm::asinf((radius + f32::from_bits(0x3dbe_5b08)) * f32::from_bits(0x3fa1_5dd8));
+    let mut entry = ee_asin(ee_mul(
+        ee_add(radius, f32::from_bits(0x3dbe_5b08)),
+        f32::from_bits(0x3fa1_5dd8),
+    ));
     if bank {
-        let kept = aim[0] * BOARD_RESTITUTION;
-        entry =
-            libm::atanf(libm::tanf(entry) * libm::sqrtf(kept * kept + aim[2] * aim[2]) / across);
+        // `(e·e·x)·x + z·z` (`0x14ff10..0x14ff40`).
+        let e = BOARD_RESTITUTION;
+        let kept = ee_add(
+            ee_mul(ee_mul(ee_mul(e, e), aim[0]), aim[0]),
+            ee_mul(aim[2], aim[2]),
+        );
+        entry = ee_atan(ee_div(ee_mul(ee_tan(entry), ee_sqrt(kept)), across));
     }
-    let height = libm::tanf(entry) * across + aim[1];
+    let height = ee_add(ee_mul(ee_tan(entry), across), aim[1]);
     let mut time = if height > 0.0 {
         libm::sqrtf(2.0 * height / GRAVITY)
     } else {
@@ -403,7 +413,7 @@ pub(crate) fn steepen_entry(
     time = time.max(minimum);
     let to = [from[0] + aim[0], from[1] + aim[1], from[2] + aim[2]];
     if shot_flight_time(from, to, angle) < time {
-        libm::atanf(GRAVITY * time * time / across - libm::tanf(entry))
+        ee_atan(GRAVITY * time * time / across - ee_tan(entry))
     } else {
         angle
     }
