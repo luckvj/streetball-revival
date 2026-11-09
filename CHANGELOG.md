@@ -9,6 +9,7 @@ its version's part.
 - The tip-off jump animates as on the PS2: it blends in from the stance, runs on time, and keeps moving down to the landing (it used to lag a frame and freeze after the tip).
 - After a dunk the dunker's run starts in step with the PS2's, and a player who stops for an update while blending out of a catch keeps his arms as on the PS2.
 - A run that starts out of a short stop takes its first step at the PS2's pace, so legs stay in step with the original. Online play needs this build on both sides (protocol 26).
+- A block jump turns the jumper toward his jump as it starts, then back to the ball, as on the PS2 (his body used to swing round too slowly through the first frames).
 
 ## v0.1.7-beta
 
