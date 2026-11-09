@@ -2154,11 +2154,11 @@ impl World {
             // Callback 1 at the script's end this update runs his
             // locomotion in the channel's step (`FUN_001722c0`): the
             // record's selection and the stand path on this update's stick.
-            let called = {
+            let (called, faced) = {
                 let f = self.players[i].flight;
-                self.move_steps(i, f.landing).is_some_and(|m| {
-                    m.ran.locomotion && !(m.script == f.script && m.updates == f.updates)
-                })
+                self.move_steps(i, f.landing)
+                    .filter(|m| !(m.script == f.script && m.updates == f.updates))
+                    .map_or((false, false), |m| (m.ran.locomotion, m.ran.face))
             };
             // The model as the script left it, for the new record's start
             // (its row, its blend's held pose, the heading match).
@@ -2171,6 +2171,16 @@ impl World {
                 tip_shown.filter(|_| called_tip)
             };
             self.flight_tick(i, start.get(i).copied().unwrap_or(before));
+            // Callback 7 (`0x174e80`) before callback 1: his wanted facing
+            // (+0xb0) the pelvis's the script left (`FUN_00154230`), which
+            // the update's turn then faces (the third attract match's
+            // dunker at update 1049: 352 to 394).
+            if faced
+                && matches!(self.players[i].action, Action::None)
+                && let Some(s) = shown.as_ref()
+            {
+                self.players[i].wanted = restart::heading_radians(trick::pelvis_word(&s.pose));
+            }
             if (called || called_tip || called_reaction)
                 && matches!(self.players[i].action, Action::None)
             {
@@ -2193,7 +2203,18 @@ impl World {
                 let p = &mut self.players[i];
                 (p.speed, p.course, p.wanted, p.gait) =
                     (ran.speed, ran.course, ran.wanted, ran.gait);
+                let stood = self.players[i].stand.map(|s| s.script);
                 self.stand_path(i, &input, &start);
+                // A stand it starts runs on in this channel step (the third
+                // attract match's dunker into his flair at update 1049: its
+                // blend and its turn there, not an update later).
+                if !frozen
+                    && let Some(s) = self.players[i].stand
+                    && s.run.tick < 0
+                    && stood != Some(s.script)
+                {
+                    self.stand_tick_turning(i, true);
+                }
                 // `FUN_00168ea8` after the channel's step: toward the wanted
                 // facing the locomotion just set.
                 self.players[i].turn_to_wanted(held);

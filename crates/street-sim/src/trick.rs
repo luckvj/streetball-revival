@@ -18,7 +18,7 @@
 //! left hand's alternate, the `f8` selector), `97` (the velocity zeroed),
 //! `a6 3 3 n` (the fake window: contact kind 3 for `n` updates, counted
 //! down by `FUN_00156f48`), one wait (`8d ee F T`), the bit cleared, the
-//! facing taken from the pelvis (callback 7, `FUN_00154230`) and the gait
+//! wanted facing taken from the pelvis (callback 7, `FUN_00154230`) and the gait
 //! back (callback 1). Through the blend the handler coasts on the velocity
 //! he pressed with; after it the clip's root carries him (`FUN_0019a658`:
 //! the change of the root translation, times the model's height scale,
@@ -1788,7 +1788,7 @@ impl World {
     /// coasts on that through the blend; after it (`97`) the clip's root
     /// carries him; his facing turns 46 an update toward the trick's. At
     /// callback 53 the self-toss leaves; at the script's end (bit 10 drops,
-    /// `0x157dd0`) the trick scores and he faces as his pelvis does
+    /// `0x157dd0`) the trick scores and he wants to face as his pelvis does
     /// (callback 7). Returns the clip's frame when the trick ends here, for
     /// the live hand.
     pub(crate) fn trick_tick(&mut self, i: usize, input: &Input, held: bool) -> Option<f32> {
@@ -1853,7 +1853,7 @@ impl World {
                 self.place(i),
             )
         {
-            self.players[i].heading = crate::restart::heading_radians(pelvis_word(&pose));
+            self.players[i].wanted = crate::restart::heading_radians(pelvis_word(&pose));
         }
         self.players[i].action = if play.run.done {
             Action::None
@@ -2437,7 +2437,7 @@ impl World {
 
     /// One update of `i`'s reaction: the channel's update, the hop and its
     /// flight (as the tip-off's jump flies), the clip's root, the end (the
-    /// facing from the pelvis at callback 7).
+    /// wanted facing from the pelvis at callback 7).
     /// True when the script ended here on callback 1, whose locomotion
     /// runs in this update's channel step ([`World::step`]).
     pub(crate) fn reaction_tick(&mut self, i: usize) -> bool {
@@ -2615,7 +2615,7 @@ impl World {
             && let Some(poses) = self.poses.get()
             && let Some(pose) = pose(poses, after, r.from, self.players[i].body(), self.place(i))
         {
-            self.players[i].heading = crate::restart::heading_radians(pelvis_word(&pose));
+            self.players[i].wanted = crate::restart::heading_radians(pelvis_word(&pose));
         }
         let called = r.run.done && ran.locomotion;
         self.players[i].action = if r.run.done {

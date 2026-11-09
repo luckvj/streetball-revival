@@ -727,7 +727,7 @@ impl World {
     /// One update of `i`'s stand script (the channel's step): its rolls
     /// draw from the C library's generator (callback 3); callbacks 4 and 5
     /// turn the wanted facing to his rim and to the ball, callback 7 sets
-    /// the facing from the pelvis; its first update's state word (`9b`)
+    /// the wanted facing from the pelvis; its first update's state word (`9b`)
     /// sets or clears the box-out (bit 17). Its `95` plants a foot (the
     /// bones `jump::Plant` picks, on the model as the update before left
     /// it) and its `96` lets go; while planted, the model posed, he moves
@@ -959,7 +959,7 @@ impl World {
             && let Some(poses) = self.poses.get()
             && let Some(pose) = s.pose(poses, self.players[i].body(), self.place(i))
         {
-            self.players[i].heading =
+            self.players[i].wanted =
                 crate::restart::heading_radians(crate::trick::pelvis_word(&pose));
         }
         self.players[i].stand = (!s.run.done).then_some(s);

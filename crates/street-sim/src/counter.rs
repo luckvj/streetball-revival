@@ -42,7 +42,7 @@
 //! the stance's bits and the swipe's (0x10040), a blend of five to
 //! `STEALCOUNTER_4_4_L` (405, a left-hander's 404) from frame 17 and the
 //! rest at 2 a frame (41 updates; he runs about 8 on with the ball), the
-//! facing from the pelvis (callback 7) and the gait back. Either way the
+//! wanted facing from the pelvis (callback 7) and the gait back. Either way the
 //! handler's fake window closes (+0x198).
 
 use crate::trick::{
@@ -236,7 +236,7 @@ impl World {
 
     /// One update of `i`'s stance or take (as [`World::reaction_tick`]):
     /// the channel's update, the velocity zeroed, the clip's root, the
-    /// turn to the stance's facing, the facing from the pelvis at the
+    /// turn to the stance's facing, the wanted facing from the pelvis at the
     /// take's callback 7; at the end the gait back.
     pub(crate) fn counter_tick(&mut self, i: usize) {
         let Action::Stealing {
@@ -278,7 +278,7 @@ impl World {
             && let Some(poses) = self.poses.get()
             && let Some(pose) = pose(poses, after, s.from, self.players[i].body(), self.place(i))
         {
-            self.players[i].heading = crate::restart::heading_radians(trick::pelvis_word(&pose));
+            self.players[i].wanted = crate::restart::heading_radians(trick::pelvis_word(&pose));
         }
         self.players[i].action = if s.run.done {
             Action::None
