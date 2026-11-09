@@ -5,6 +5,8 @@ its version's part.
 
 ## Unreleased
 
+- Animations with knee (hinge) tracks now keep the original's stored rotation values instead of rescaling them, so limbs have the original's exact lengths: the tip-off jumpers now aim for the ball with the PS2's hand to within 0.0001 and match its jump exactly.
+- Two players bump only when they stand within reach where they are after the update's moves, as on the PS2 (the knocked player after a dunk no longer gets pushed).
 - Online: after a game, REMATCH is the first and lit choice, as after a Pick Up game.
 - The tip-off jump animates as on the PS2: it blends in from the stance, runs on time, and keeps moving down to the landing (it used to lag a frame and freeze after the tip).
 - After a dunk the dunker's run starts in step with the PS2's, and a player who stops for an update while blending out of a catch keeps his arms as on the PS2.

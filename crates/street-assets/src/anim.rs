@@ -206,8 +206,12 @@ impl Bank {
     }
 
     /// Original QFast, DeltaQuat and quaternion RawPose integer-frame values for authoritative
-    /// rig sampling. Unsupported channel formats return None instead of
-    /// substituting normalized renderer data.
+    /// rig sampling, their words as stored (not normalised: the hierarchy's
+    /// plain products stretch the bones of a quaternion longer than 1, as
+    /// the tip-off aim's posed hands show to 0.00003), and a hinge
+    /// (`FnDeltaSingleQ`) as the game builds it, its pair normalised.
+    /// Unsupported channel formats return None instead of substituting
+    /// normalized renderer data.
     pub fn native_rotations(&self, animation: &str) -> Result<Option<NativeRotations>> {
         let interpolation = match self.channel(animation, "_r")? {
             Some((_, RAW_POSE)) => NativeInterpolation::RawPose,
@@ -240,7 +244,7 @@ impl Bank {
             }
             let (part, end) = match self.d().u16(at)? {
                 DELTA_Q_FAST => delta_q_fast(self.d(), &self.pointers, at, normalize)?,
-                DELTA_SINGLE_Q if normalize => delta_single_q(self.d(), &self.pointers, at)?,
+                DELTA_SINGLE_Q => delta_single_q(self.d(), &self.pointers, at)?,
                 DELTA_QUAT => delta_quat(self.d(), &self.pointers, at, normalize)?,
                 RAW_POSE => {
                     let Some(part) = raw_pose(self.d(), at, normalize)? else {

@@ -289,12 +289,17 @@ impl World {
         let mut poses: Vec<Option<Option<crate::pose::Pose>>> = vec![None; n];
         for a in 0..n {
             for b in a + 1..n {
-                let d = apart(&places, a, b);
-                if d > LIMB_MAX + LIMB_MAX {
+                // The pair's gate (`0x13401c..0x134040`): where they stand
+                // now (`FUN_0018cdb0`, +0x30 after the update's moves)
+                // within the two radii; the radii and the push read the
+                // table's distance.
+                let now = distance(self.players[a].position, self.players[b].position);
+                if now > LIMB_MAX + LIMB_MAX {
                     continue;
                 }
+                let d = apart(&places, a, b);
                 let reach = self.reach(a, b, d, &mut poses);
-                if d < reach && self.may_touch(a, b) {
+                if now <= reach && self.may_touch(a, b) {
                     self.bump(a, b, reach, d);
                 }
             }
