@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A computer player who passes while walking now stops into a stand for that update and blends his pass from it, and turns around his planted foot as he turns, as on the PS2 (his feet used to slide a step through the start of the pass).
 - Animations with knee (hinge) tracks now keep the original's stored rotation values instead of rescaling them, so limbs have the original's exact lengths: the tip-off jumpers now aim for the ball with the PS2's hand to within 0.0001 and match its jump exactly.
 - Two players bump only when they stand within reach where they are after the update's moves, as on the PS2 (the knocked player after a dunk no longer gets pushed).
 - Online: after a game, REMATCH is the first and lit choice, as after a Pick Up game.

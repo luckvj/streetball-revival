@@ -848,7 +848,6 @@ impl World {
         ];
         p.rise = f.velocity[1];
         // `FUN_00168ea8`: the facing toward the wanted one.
-        let facing_before = p.heading;
         let rate = turn_rate(&action, f.flags);
         let now = timing::facing_word(p.heading);
         let want = timing::facing_word(p.wanted);
@@ -868,7 +867,8 @@ impl World {
         p.flight = f;
         // The model posed, the planted points held (`0x157800..0x157954`).
         if f.flags & (PLANTED | NO_GRAVITY) != 0 {
-            self.hold_planted(i, &m, facing_before);
+            let facing = self.players[i].heading;
+            self.hold_planted(i, &m, facing);
         }
         // A hang's move, and a dive, are over with their script once he is
         // down; a pass on the floor once its `91` gives the locomotion back
@@ -973,6 +973,13 @@ impl World {
                 p.body(),
                 place,
             ),
+            // The model's matrices as his update began: a stand begun and
+            // stepped this update (its first output the blend holds) has
+            // not been posed onto them (the third attract match's passer
+            // plants bone 3 where the update before showed it, 874).
+            None if self.shown_at_start(i).is_some() => self
+                .shown_at_start(i)
+                .map(|h| poses.place_held(&h, p.body(), place)),
             None if m.held.is_some() => m
                 .held
                 .as_ref()
@@ -1002,11 +1009,10 @@ impl World {
         };
         let p = &self.players[i];
         let f = p.flight;
-        // The model's matrices as the channel's step posed them, before
-        // this update's turn (`FUN_00168ea8` at `0x1575e0`, the bones read
-        // at `0x157870`): a turn on planted feet pivots him an update later
-        // (the third attract match's passer at update 874 holds his free
-        // foot through the press's turn, then swings round at 875).
+        // The model at his facing after this update's turn (`FUN_00168ea8`
+        // at `0x1575e0`, the bones read at `0x157870`): a turn on planted
+        // feet pivots him in the same update (the third attract match's
+        // passer swings round his planted foot at 875 as he turns).
         let mut place = self.place(i);
         place.word = timing::facing_word(facing);
         let Some(pose) = crate::trick::pose_from(

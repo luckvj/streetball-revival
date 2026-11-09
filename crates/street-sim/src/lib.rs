@@ -638,6 +638,10 @@ pub enum Event {
 pub(crate) struct ShownStart(
     pub Vec<Option<(u64, pose::Held)>>,
     pub Vec<Option<(u64, u16, f32)>>,
+    /// The first output of a stand begun this update (tick, actor, pose):
+    /// its script ran at once (`FUN_0019c2f8`), its blend's first step
+    /// posed; a script started over it holds that.
+    pub Option<(u64, usize, pose::Held)>,
 );
 
 impl PartialEq for ShownStart {
@@ -1928,6 +1932,21 @@ impl World {
             self.post_call(i, &input);
             self.pick_stance(i, &input);
             self.players[i].restart_walk = self.game_phase.phase == game_phase::phase::RESTART;
+            // A computer's pad points its stick at the receiver on a pass
+            // press only so the sim's pick finds him ([`crate::ai`]); its
+            // locomotion reads the pad's own stick, which the original's
+            // pass node lets go (strength 0, actor+0x90): the stand path
+            // stops a walking passer in the press's update and the pass
+            // row then blends from that stand's first pose (the third
+            // attract match's passer at update 874, records 673/672).
+            let input = match self.ai.pad_stick(i) {
+                Some(stick) if input.is_computer() && pressed & button::PASS != 0 => Input {
+                    stick,
+                    word: None,
+                    ..input
+                },
+                _ => input,
+            };
             // `FUN_00163d40`: a guard's mode and the gait record, before
             // the walk sets the speed from it.
             let stance = self.guard_stance(i, &input, &start);
@@ -1978,6 +1997,18 @@ impl World {
                     && (self.players[i].height > 0.0 || before.strength() >= 16);
                 if moving && !self.caught_row_holds(i) {
                     self.select_gait_with(i, &walk, held, stance, true, None);
+                }
+                // A stand the stand path just started ran its script at
+                // once (`FUN_0019c2f8`), its blend's first step posed, and
+                // the pass row's blend holds that (the third attract
+                // match's passer at update 874: 1/6 of the way to record
+                // 673 from what he showed).
+                if !frozen
+                    && let Some(s) = self.players[i].stand
+                    && s.run.tick < 0
+                    && let Some(h) = self.stand_first_output(i)
+                {
+                    self.shown_start.2 = Some((self.tick, i, h));
                 }
                 self.pass_button(i, &press_input, aimed, &start);
             }
@@ -2461,6 +2492,15 @@ impl World {
             .flatten()
             .filter(|&(tick, ..)| tick == self.tick)
             .map(|(_, r, f)| (r, f))
+    }
+
+    /// The first output of `i`'s stand begun this update, if a pass is
+    /// starting over it ([`ShownStart`]).
+    pub(crate) fn stand_begun_now(&self, i: usize) -> Option<pose::Held> {
+        match self.shown_start.2 {
+            Some((tick, k, h)) if tick == self.tick && k == i => Some(h),
+            _ => None,
+        }
     }
 
     /// `i`'s shown pose as his update began ([`World::shown_start`]).

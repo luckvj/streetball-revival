@@ -808,6 +808,29 @@ impl World {
         p.position[1] += at[1] - (a[2] + b[2]) * 0.5;
     }
 
+    /// What `i`'s stand, begun this update, shows after its first step,
+    /// in local terms (its script runs at once as it starts, its first
+    /// blend's step posed from what the channel showed), without the step's
+    /// other effects: a pass started over it in the same update takes the
+    /// channel before the motion step holds any of its points or turns. The
+    /// step's rolls of the libc generator are drawn.
+    pub(crate) fn stand_first_output(&mut self, i: usize) -> Option<Held> {
+        let mut s = self.players[i].stand?;
+        let poses = self.poses.arc()?;
+        let shown_local = s.local(&poses);
+        let steps = s.steps();
+        let height = self.players[i].height;
+        let libc = &mut self.libc;
+        let ran = s.run.step_rolling(steps, height, &mut || {
+            *libc = libc.wrapping_mul(1_103_515_245).wrapping_add(12_345);
+            *libc & 0x7fff_ffff
+        });
+        if ran.blended && shown_local.is_some() {
+            s.held = shown_local;
+        }
+        s.local(&poses)
+    }
+
     /// [`World::stand_tick`] in a live update (`live`): a blend there
     /// matches his facing to its clip (`91`'s 0x800000, `FUN_00196698`),
     /// before the update's turn; the opening's frozen stands keep the

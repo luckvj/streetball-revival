@@ -380,6 +380,9 @@ impl World {
             .poses
             .get()
             .and_then(|poses| match self.players[i].stand {
+                // A stand begun this update whose first step has run
+                // (its script runs at once): its output so far.
+                _ if self.stand_begun_now(i).is_some() => self.stand_begun_now(i),
                 _ if self.shown_at_start(i).is_some() => self.shown_at_start(i),
                 Some(s) if s.run.tick <= 0 => s.held,
                 Some(s) => s.local(poses),
