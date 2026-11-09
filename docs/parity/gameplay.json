@@ -305,11 +305,11 @@
           "path": "crates/street-assets/src/anim.rs",
           "locator": "Q_FAST_DELTA_SCALE; Q_FAST_KEY_SCALE; native_q_fast_key; delta_q_fast; q_fast_scales_are_the_executable_instructions",
           "note": "Production constants are tested against the lui/ori pairs at 0x38e4a0 and 0x38e560; the big-endian refactor left the PS2 path unchanged.",
-          "sha256": "a6792fc20d45da73e01e9f57c5976f643180558d90f486504d5c99a2983895c8"
+          "sha256": "43bd4d4658309d892596e043a6d5fe69430e6ae67124d061ce945ecba6eccf8c"
         }
       ],
       "tolerance": "Recovered f32 constant words and native-versus-display API separation; no full-channel bit-exact EE decoding claim.",
-      "limitations": "Only supported QFast paths. Other raw formats return None for the native API; full-track and every-pose runtime equivalence are untested. The script-69 callback reconstruction in tests/anim_disc.rs is a separate check not pinned here. Last re-pinned 2026-10-24 after the public-beta rename, names moved to LEGAL.md and neutral save tags, no behaviour change (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Only supported QFast paths. Other raw formats return None for the native API; full-track and every-pose runtime equivalence are untested. The script-69 callback reconstruction in tests/anim_disc.rs is a separate check not pinned here. Last re-pinned 2026-11-08 after hinge clips keep stored rotations (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Compare decoder outputs with native raw keys and evaluated local quaternion packets across supported rows/key boundaries.",
       "match_type": "structural"
     },
