@@ -883,7 +883,35 @@ impl World {
         // pose the script's blend holds: mid-way through a gait blend, its
         // mix (the third attract match's rebounder at update 996, one
         // update into a turbo blend, blends from the run's frame 15.28).
-        let shown = self.shown_at_start(i).or_else(|| self.shown_local(i));
+        let mut shown = self.shown_at_start(i).or_else(|| self.shown_local(i));
+        // Every block script opens `91 0x820002`: its blend matches his
+        // facing to the incoming clip's root (`FUN_00196698(channel, 1)`)
+        // and turns the held pose back as far, so the world pose holds;
+        // the facing then turns back toward the wanted one (the third
+        // attract match's rebounder at update 998: 346 matched to 242 and
+        // turned to 288, then 334, 345).
+        if let (Some(p), Some(h)) = (poses.as_deref(), shown.as_ref()) {
+            let body = self.players[i].body();
+            let placed = p.place_held(h, body, self.place(i));
+            let record = s.records[usize::from(branch)];
+            if let Some(new) =
+                crate::trick::matched_word(p, &placed, record, f32::from(s.start), body)
+            {
+                let p = &mut self.players[i];
+                let word = timing::facing_word(p.heading);
+                // The model turns by the facing word halved
+                // (`FUN_00154560`): an odd word shows a unit short.
+                let matched = crate::trick::heading_match(word, new - (word & 1));
+                if matched != word {
+                    p.heading = crate::restart::heading_radians(matched);
+                    shown = shown.map(|h| h.turned(word - matched));
+                    // The match runs in the channel step, before the
+                    // update's turn (`FUN_00168ea8`), which ours ran
+                    // before the press: turn again from the matched word.
+                    p.turn_to_wanted(false);
+                }
+            }
+        }
         let p = &mut self.players[i];
         p.channel_start = Some(crate::held::ChannelStart {
             script: s.address,
