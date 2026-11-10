@@ -2140,9 +2140,9 @@ impl World {
                 p.position = placed;
                 if self.catch_row_playing(i).is_none() {
                     let p = &mut self.players[i];
-                    let v = p.velocity();
-                    p.position[0] += v[0] * TICK_SECONDS;
-                    p.position[1] += v[1] * TICK_SECONDS;
+                    let v = p.velocity_step();
+                    p.position[0] = math::ee_add(p.position[0], v[0]);
+                    p.position[1] = math::ee_add(p.position[1], v[1]);
                     p.clamp_to_court();
                 }
             }
@@ -2271,9 +2271,10 @@ impl World {
                 // facing the locomotion just set.
                 self.players[i].turn_to_wanted(held);
                 let p = &mut self.players[i];
-                let v = p.velocity();
-                p.position[0] += v[0] * TICK_SECONDS;
-                p.position[1] += v[1] * TICK_SECONDS;
+                // `FUN_00156f48`'s position += velocity, chopped.
+                let v = p.velocity_step();
+                p.position[0] = math::ee_add(p.position[0], v[0]);
+                p.position[1] = math::ee_add(p.position[1], v[1]);
                 p.clamp_to_court();
             }
             self.contain(i);

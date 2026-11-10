@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 128;
+const VERSION: u8 = 129;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1193,6 +1193,7 @@ fn player(w: &mut Writer, p: &Player) {
         position,
         heading,
         speed,
+        step,
         course,
         wanted,
         guard,
@@ -1268,6 +1269,7 @@ fn player(w: &mut Writer, p: &Player) {
     w.f2(position);
     w.f(*heading);
     w.f(*speed);
+    w.f(*step);
     w.u8(match gait {
         Gait::Stand => 0,
         Gait::Walk => 1,
@@ -1835,6 +1837,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
         position: r.f2()?,
         heading: r.f()?,
         speed: r.f()?,
+        step: r.f()?,
         gait: match r.u8()? {
             0 => Gait::Stand,
             1 => Gait::Walk,
@@ -3969,8 +3972,8 @@ mod tests {
         // 118: a held pose itself is 91 floats while a blend holds it); the
         // restart's recover count and each stand's base a byte or more
         // (version 127); each gait channel's stored rate and its flag five
-        // (version 128).
-        assert!(bytes.len() < 2520, "{} bytes", bytes.len());
+        // (version 128); each player's native step four (version 129).
+        assert!(bytes.len() < 2560, "{} bytes", bytes.len());
         assert!(World::from_snapshot(&bytes[..bytes.len() - 1]).is_err());
         let mut longer = bytes.clone();
         longer.push(0);

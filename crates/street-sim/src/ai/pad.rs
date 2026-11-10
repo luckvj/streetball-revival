@@ -418,10 +418,13 @@ fn edges(ctx: &Ctx, i: usize, angle: i32) -> i32 {
 }
 
 /// The steering grid (`0x4b9da0`): rows by distance ahead in eighths of
-/// the range, columns by distance across.
+/// the range, columns by distance across. `0x1841a0` fills it from float
+/// registers truncated; row 1's middle pair reuses `$f0` after it was
+/// loaded with 68.77 (`0x4289886f`), so it is 68, not row 0's 80 (the third
+/// attract match's fast break at update 987: 404 bent to 472).
 const AVOID: [[i32; 8]; 8] = [
     [-16, -33, -67, -79, 80, 68, 34, 17],
-    [-16, -33, -67, -67, 80, 80, 34, 17],
+    [-16, -33, -67, -67, 68, 68, 34, 17],
     [-13, -27, -56, -56, 57, 57, 28, 14],
     [-13, -25, -50, -50, 51, 51, 26, 14],
     [-10, -22, -45, -45, 46, 46, 23, 11],

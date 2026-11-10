@@ -1542,10 +1542,10 @@ fn a_teammate_sets_a_pick_for_a_person_on_the_move() {
     // `FUN_0012abe0`: on a side a person plays, a teammate within 15 of the
     // moving holder, ahead of where he faces, out of the paint, with the
     // holder's defender on him, sets a pick on his own.
-    // (Seed 7: the AI's draws decide when the teammate's wait ends; 7 of
-    // the first twelve sets it in time since the side with the ball stops
-    // at once, 0, 1, 6 and 7 before.)
-    let mut w = front_court(7);
+    // (Seed 4: the AI's draws decide when the teammate's wait ends; 4 is
+    // the first that sets it in time since the steering grid's row 1 took
+    // the game's 68s, 7 before, 0, 1, 6 and 7 earlier.)
+    let mut w = front_court(4);
     // The wings the other way round (z negated): with front_court's, the
     // teammates' fast break (its lanes read z times the side) keeps them
     // running past the pick's moment.

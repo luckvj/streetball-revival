@@ -495,6 +495,11 @@ pub struct Player {
     pub heading: f32,
     /// Current speed along [`Player::course`], units per second.
     pub speed: f32,
+    /// The locomotion's speed a native update (actor+0x190) as its moving
+    /// path computed it, in the EE's arithmetic: the velocity it moves him
+    /// by ([`Player::velocity_step`]) while [`Player::speed`] is still this
+    /// times 60 (anything else that sets the speed leaves it stale).
+    pub step: f32,
     /// The way he moves, radians as the heading: the original's velocity
     /// (actor+0x40) points along the stick, not the facing
     /// ([`crate::guard`]).
@@ -635,6 +640,7 @@ impl Player {
             position,
             heading,
             speed: 0.0,
+            step: 0.0,
             course: heading,
             wanted: heading,
             guard: crate::guard::Guard::default(),
@@ -722,6 +728,22 @@ impl Player {
     pub fn dunk_bit(&self) -> bool {
         matches!(self.action, Action::Dunking { layup: false, .. })
             && !(crate::jump::scripted(&self.action) && self.flight.recover)
+    }
+
+    /// The velocity an update moves him by (actor+0x40): his locomotion's
+    /// own `-step * (sin, cos)` of the course word on the cosine table
+    /// (`0x167d88..0x167db4`, EE products) while its speed holds, else the
+    /// velocity over an update.
+    pub fn velocity_step(&self) -> [f32; 2] {
+        if self.step != 0.0 && self.speed == self.step * crate::TICK_HZ as f32 {
+            let word = crate::timing::facing_word(self.course);
+            return [
+                crate::math::ee_mul(-self.step, crate::input::native_sin_1024(word)),
+                crate::math::ee_mul(-self.step, crate::input::native_cos_1024(word)),
+            ];
+        }
+        let v = self.velocity();
+        [v[0] * TICK_SECONDS, v[1] * TICK_SECONDS]
     }
 
     pub fn velocity(&self) -> [f32; 2] {
@@ -1492,6 +1514,30 @@ impl Player {
                 )
             };
             self.speed = phys * limit;
+            // The same in native units, as `0x167bb4..0x167cb0` computes
+            // it: the record's per-update range by the speed rating over 99
+            // (a run outside a restart) or the stick over 64, and turbo's
+            // `1.25 - 0.1 * rating / 99`.
+            self.step = 0.0;
+            if native && limit == 1.0 {
+                use crate::math::{ee_add, ee_div, ee_mul};
+                let [lo, hi] = self.gait_channel.motion;
+                let rated = ee_div(speed_rating as f32, 99.0).min(1.0);
+                let f = if stance.is_none() && motion_family == GaitFamily::Run {
+                    rated
+                } else {
+                    ee_mul(capped_intensity as f32, 1.0 / 64.0).min(1.0)
+                };
+                let mut step = ee_add(lo, ee_mul(ee_add(hi, -lo), f));
+                if turbo && stance.is_none() {
+                    step = ee_mul(
+                        step,
+                        ee_add(1.25, -ee_mul(rated, f32::from_bits(0x3dcc_cccd))),
+                    );
+                }
+                self.step = step;
+                self.speed = step * crate::TICK_HZ as f32;
+            }
             self.course = input.heading();
             // The wanted facing: the stick's, or a guard's holder (steadied
             // by `FUN_00168a10` after the mode's first update).
@@ -1526,15 +1572,22 @@ impl Player {
         // by the motion and multiplies by it (a 6'6" player's 1.2; a
         // stand-in of height / 6.5 had cycled the legs a fifth too fast).
         let body_scale_x = self.body().height;
+        let mut clock_only = self.position;
         self.gait_channel.update(
             held,
             moving,
             self.speed,
-            &mut self.position,
+            &mut clock_only,
             [self.heading, self.course],
             body_scale_x,
             self.stand.is_none() && self.action == Action::None,
         );
+        // `FUN_00156f48`'s position += velocity (actor+0x40), chopped.
+        if moving {
+            let v = self.velocity_step();
+            self.position[0] = math::ee_add(self.position[0], v[0]);
+            self.position[1] = math::ee_add(self.position[1], v[1]);
+        }
         self.clamp_to_court();
     }
 

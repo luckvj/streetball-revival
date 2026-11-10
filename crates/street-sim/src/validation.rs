@@ -541,6 +541,7 @@ impl World {
                 position,
                 heading,
                 speed,
+                step,
                 course,
                 wanted,
                 guard: _,
@@ -691,7 +692,7 @@ impl World {
             require(*reach > 0.0, "positive reach")?;
             floats(position, "player position")?;
             floats(
-                &[*heading, *speed, *height, *turbo],
+                &[*heading, *speed, *step, *height, *turbo],
                 "player movement/turbo",
             )?;
             require((0.0..=1.0).contains(turbo), "turbo range")?;
