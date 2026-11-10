@@ -5,7 +5,7 @@ its version's part.
 
 ## Unreleased
 
-- Knee (hinge) animations decode with the PS2's own arithmetic and are interpolated, normalised and turned as the PS2 does, so knees match the original to within a hundred-millionth (they were off by about a hundredth of a degree).
+- Knee (hinge) animations decode with the PS2's own arithmetic and are interpolated, normalised and turned as the PS2 does (on a whole frame the PS2 leaves them unnormalised, slightly shortening the leg), so knees and planted feet match the original: a passer's pivot no longer drifts through his windup.
 - Animation blends now use the PS2's own slerp (with its own sine and arcsine series) instead of a normalised mix, so a player's limbs and his planted foot follow the original through every blend (a turnaround's hips used to differ by up to 0.2 degrees mid-blend).
 - A player's model turns as on the PS2, by his facing rounded down to an even step, and his feet swing with it; the game's sine/cosine table now holds the original's exact values (it used computed ones), which also nudges the computer's court spots and steering onto the PS2's.
 - Players face the centre at tip-off with the PS2's own facing angle, animation clocks advance with the PS2's float rounding, and each player's first step after the match intro takes the pace the intro left him (as on the PS2).

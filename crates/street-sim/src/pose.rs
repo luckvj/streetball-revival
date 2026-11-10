@@ -76,11 +76,18 @@ impl Hinge {
     /// products chopped).
     fn rotation(&self, a: [f32; 4], b: [f32; 4], u: f32) -> [f32; 4] {
         use crate::math::{ee_add, ee_mul, vu_add, vu_mul};
-        let v: [f32; 4] = std::array::from_fn(|k| vu_add(a[k], vu_mul(vu_add(b[k], -a[k]), u)));
-        let sq: [f32; 4] = std::array::from_fn(|k| vu_mul(v[k], v[k]));
-        let sum = vu_add(vu_add(vu_add(sq[0], sq[1]), sq[2]), sq[3]);
-        let q = crate::math::vu_rsqrt(sum);
-        let n: [f32; 4] = std::array::from_fn(|k| vu_mul(v[k], q));
+        // On a whole frame (and at the clip's end) the state is turned as it
+        // stands, not normalised (`0x38c830`: the third attract match's
+        // catch row landing on its frame 25, knees 0.997 long).
+        let n: [f32; 4] = if u == 0.0 {
+            a
+        } else {
+            let v: [f32; 4] = std::array::from_fn(|k| vu_add(a[k], vu_mul(vu_add(b[k], -a[k]), u)));
+            let sq: [f32; 4] = std::array::from_fn(|k| vu_mul(v[k], v[k]));
+            let sum = vu_add(vu_add(vu_add(sq[0], sq[1]), sq[2]), sq[3]);
+            let q = crate::math::vu_rsqrt(sum);
+            std::array::from_fn(|k| vu_mul(v[k], q))
+        };
         let w = n[3];
         let (p, o) = (self.pre, self.post);
         let dot = |x: f32, y: f32, z: f32, t: f32| ee_add(ee_mul(x, y), ee_mul(z, t));
