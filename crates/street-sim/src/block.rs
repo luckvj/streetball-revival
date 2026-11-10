@@ -1127,15 +1127,14 @@ impl World {
         let body = self.players[i].body();
         let mut place = self.place(i);
         place.word = word;
-        let pose = poses.pose(
-            Frame {
-                record,
-                time: frame,
-                looping: false,
-            },
-            body,
-            place,
-        )?;
+        // `FUN_0019bda8` samples the frame's rotations onto the model
+        // (`0x176278..0x176384`); its root stays where the channel's step
+        // left it (actor+0xe4), as for `9e` ([`crate::jump::aim_pose`]).
+        let root = match self.players[i].action {
+            Action::Jumping { block: Some(j), .. } => self.root_height(Some(j.record()), j.frame()),
+            _ => None,
+        };
+        let pose = crate::jump::aim_pose(poses, record, frame as u8, body, place, root)?;
         let f = frame as i32;
         let state = poses.state(record, f);
         let r = self.ball.radius;

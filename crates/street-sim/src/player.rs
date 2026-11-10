@@ -1354,7 +1354,13 @@ impl Player {
         };
         if !matches!(
             self.action,
-            Action::None | Action::Passing { .. } | Action::Stealing { .. }
+            Action::None
+                | Action::Passing { .. }
+                | Action::Stealing { .. }
+                | Action::Stumbling {
+                    reaction: Some(_),
+                    ..
+                }
         ) && !crate::jump::scripted(&self.action)
         {
             // A move sets the facing itself; the walk takes it up from

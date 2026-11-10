@@ -2073,11 +2073,11 @@ impl World {
     /// heave shot's and a gamebreaker shot's, [`SHOVE_BODY`]) as the
     /// clearout's ([`World::clearout_contact`]), each closing once it
     /// knocks a man.
-    pub(crate) fn knock_contacts(&mut self) {
+    pub(crate) fn knock_contacts(&mut self, table: &[[f32; 2]]) {
         for i in 0..self.players.len() {
             for j in 0..self.players.len() {
                 if i != j && self.players[i].flight.knock > 0 && self.knock_meets(i, j) {
-                    self.knock_contact(i, j);
+                    self.knock_contact(i, j, table);
                 }
                 if i != j
                     && self.players[i].flight.shove > 0
@@ -2148,7 +2148,7 @@ impl World {
     /// knocked `a` with the ball lets it go (`FUN_0014c408`): along his
     /// facing turned by `r % 200 − 100`, back 0.35 an update across and
     /// 0.125 up, spinning about the vertical at `0.075 + u × 0.075`.
-    fn knock_contact(&mut self, a: usize, b: usize) {
+    fn knock_contact(&mut self, a: usize, b: usize, table: &[[f32; 2]]) {
         let mark = |w: &mut World, beat: bool| {
             let f = &mut w.players[a].flight;
             f.met |= 1 << b;
@@ -2215,14 +2215,19 @@ impl World {
             ours = false;
         }
         mark(self, theirs);
+        // The knocked man's wanted facing (+0xb0, `0x136eec..0x136f40`):
+        // the pair table's angle from him toward the other (game+0x2cc, on
+        // the update's starting places), turned half round from behind; he
+        // turns to it as the reaction runs (the third attract match's
+        // blocker at update 354: 986, turning from 44).
         let knock = |w: &mut World, x: usize, y: usize| {
-            let toward = crate::contact::angle(w.players[x].position, w.players[y].position);
+            let toward = w.pair_word(x, y, table);
             let (script, word) = if w.quarter(x, y) == 0 {
                 (KNOCK_BEHIND, (toward + 0x200) & 0x3ff)
             } else {
                 (KNOCK_FRONT, toward)
             };
-            w.players[x].heading = crate::restart::heading_radians(word);
+            w.players[x].wanted = crate::restart::heading_radians(word);
             w.react(x, script);
             if let Some(brain) = w.ai.brains.get_mut(x) {
                 brain.screened_by = y as i32;
@@ -2519,12 +2524,13 @@ impl World {
             r.vy = 0.0;
         }
         if let Some((turn_units, speed, rise)) = ran.hop {
-            // `a1 81`: along the facing (+0xb0) turned by `turn`.
-            let a = (timing::facing_word(p.heading) + i32::from(turn_units)) & 0x3ff;
-            let theta = a as f32 * std::f32::consts::TAU / 1024.0;
+            // `a1 81`: along the wanted facing (+0xb0) turned by `turn`, on
+            // the cosine table (the third attract match's knocked jumper at
+            // update 354: 986 turned half round).
+            let a = (timing::facing_word(p.wanted) + i32::from(turn_units)) & 0x3ff;
             r.drift = [
-                -speed * crate::math::sin(theta),
-                -speed * crate::math::cos(theta),
+                -speed * crate::input::native_sin_1024(a),
+                -speed * crate::input::native_cos_1024(a),
             ];
             r.vy = rise;
             r.up = true;
@@ -2597,11 +2603,12 @@ impl World {
         p.position[0] = crate::math::ee_add(p.position[0], m[0]);
         p.position[1] = crate::math::ee_add(p.position[1], m[1]);
         self.players[i].clamp_to_court();
-        // `FUN_00168ea8` on a celebration or the win's reaction, the
-        // screener's and the call for the ball ([`CALL_FIRST`] on): the
-        // facing turns toward the wanted one their start (or callbacks 16
-        // and 4) set, at most 46 units an update.
-        if CELEBRATE_FIRST <= r.script || SCREENER.contains(&r.script) {
+        // `FUN_00168ea8` (the actor's vtable, every update): the facing
+        // turns toward the wanted one the reaction's start (or callbacks 16
+        // and 4) set, at most 46 units an update (the third attract match's
+        // knocked blocker from update 355: 44, 1022, 986). Not in the
+        // first step a contact runs at once: the turn is his own update's.
+        if !self.contact_phase {
             let p = &mut self.players[i];
             let (now, to) = (
                 timing::facing_word(p.heading),

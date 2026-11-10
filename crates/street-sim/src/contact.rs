@@ -281,7 +281,7 @@ impl World {
         // ([`crate::trick`]).
         self.pin_box_outs();
         self.trick_contacts();
-        self.knock_contacts();
+        self.knock_contacts(table);
         let n = self.players.len();
         let places: Vec<[f32; 2]> = (0..n)
             .map(|i| table.get(i).copied().unwrap_or(self.players[i].position))

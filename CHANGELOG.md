@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A blocker jumping at a dunker aims his hand from where his body really is at take-off, as on the PS2 (he jumped a little off line), and a player knocked down by a dunk now turns toward the way the PS2 sends him and hops that way, instead of snapping round at once.
 - Players move with the PS2's own float rounding and in its order: an animation's own step (its root) comes first, rounded as the PS2's main processor rounds, then the update's velocity, rounded as its vector unit rounds, and a bump between two players is worked out with the PS2's arithmetic too. Players who run or stand side by side no longer drift apart from the original by a few millionths an update.
 - The way toward the rim (a dunker's aim, the rim-facing turns, the post-up's tests) is the PS2's own angle, worked out from the rim with its arc tangent and rounding, so a dunk takes off along the original's line (one was a step off and drifted the dunker, and everyone he bumped, away from the PS2).
 - Running players move by the PS2's own per-update speed and direction values and its float rounding, and a computer player bends round someone just ahead of him by the PS2's amount (one row of the steering table held wrong values), so fast breaks follow the original's paths.

@@ -1324,7 +1324,7 @@ impl World {
 
     /// The clip's root height at `frame` of `record` (court units at scale
     /// 1): the model's root as the channel's step leaves it (actor+0xe4).
-    fn root_height(&self, record: Option<u16>, frame: f32) -> Option<f32> {
+    pub(crate) fn root_height(&self, record: Option<u16>, frame: f32) -> Option<f32> {
         let poses = self.poses.get()?;
         let root = poses.root(crate::pose::Frame {
             record: record?,
