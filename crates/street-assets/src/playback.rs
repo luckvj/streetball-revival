@@ -368,13 +368,14 @@ impl<'a> Channel<'a> {
             return After::Run;
         };
         if span.kind == SpanKind::Free {
-            // `ab`: the clip runs on at its rate, wrapping, for good.
-            self.frame += span.rate;
+            // `ab`: the clip runs on at its rate (the EE's chopping
+            // `add.s`), wrapping, for good.
+            self.frame = crate::ee::add(self.frame, span.rate);
             if let Some(n) = self.record.and_then(|r| clock.frames(r))
                 && n > 0
                 && self.frame >= n as f32
             {
-                self.frame -= n as f32;
+                self.frame = crate::ee::add(self.frame, -(n as f32));
             }
             self.int_frame = self.frame as i32;
             self.count = 1;
@@ -395,7 +396,9 @@ impl<'a> Channel<'a> {
             return After::Run;
         }
         if span.kind != SpanKind::Blend {
-            self.frame += span.rate;
+            // On the EE's chopping `add.s` (the third attract match's
+            // channel frames).
+            self.frame = crate::ee::add(self.frame, span.rate);
             if span.counter == span.length {
                 self.frame = span.to_frame as f32;
             }

@@ -899,9 +899,9 @@ impl World {
             {
                 let p = &mut self.players[i];
                 let word = timing::facing_word(p.heading);
-                // The model turns by the facing word halved
-                // (`FUN_00154560`): an odd word shows a unit short.
-                let matched = crate::trick::heading_match(word, new - (word & 1));
+                // The shown pose already turns by the word halved
+                // ([`crate::pose::actor_turn`]): an odd word shows a unit short.
+                let matched = crate::trick::heading_match(word, new);
                 if matched != word {
                     p.heading = crate::restart::heading_radians(matched);
                     shown = shown.map(|h| h.turned(word - matched));

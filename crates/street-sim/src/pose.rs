@@ -318,6 +318,22 @@ pub(crate) fn qmul(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {
 }
 
 /// `v` turned by `q` (`q v q*`).
+/// The actor's turn (`+0x50`) from his facing word, as `FUN_00168ea8`
+/// builds it at `0x16909c`: `(0, sin(w / 2), 0, cos(w / 2))` from the
+/// cosine table (`FUN_0018cd58`, `FUN_0018ccc0`) with the word halved as an
+/// integer, so an odd word turns the model a unit short (the third attract
+/// match's capture: the quaternion's yaw is the word with its low bit
+/// clear on every update).
+pub fn actor_turn(word: i32) -> [f32; 4] {
+    let half = (word & 0x3ff) / 2;
+    [
+        0.0,
+        crate::input::native_sin_1024(half),
+        0.0,
+        crate::input::native_cos_1024(half),
+    ]
+}
+
 pub(crate) fn rotate(q: [f32; 4], v: [f32; 3]) -> [f32; 3] {
     let p = qmul(
         qmul(q, [v[0], v[1], v[2], 0.0]),
@@ -336,6 +352,96 @@ fn normalized(q: [f32; 4]) -> [f32; 4] {
 
 /// `b` and `a` mixed by `t`, the nearer of `±a` taken (the raw-pose reader,
 /// `0x379b20`), normalised.
+/// The channel step's blend of a bone (`FUN_0019a658`,
+/// `0x19af00..0x19b3a4`): a slerp of the held rotation `a` toward `b` by
+/// `w`, on the PS2's own series: under 1e-4 `a`, over 0.99999 `b`; the
+/// dot product summed on VU0, `b` taken negated when it is negative; the
+/// angle `pi/2 - asin(d)` (the series at `0x4b3170`, through
+/// `sqrt(1 - d^2)` past 0.7071); the three sines on the quarter-turn
+/// polynomial; `a sin((1-w)t) / sin t + b sin(wt) / sin t`, not
+/// normalised. The third attract match's turnaround blends: the PS2's mix
+/// follows it to 1e-4 degrees where a normalised lerp misses by 0.2.
+pub(crate) fn channel_slerp(a: [f32; 4], b: [f32; 4], w: f32) -> [f32; 4] {
+    use crate::math::{ee_add, ee_div, ee_mul, ee_sqrt, vu_add, vu_mul};
+    if w < f32::from_bits(0x38d1_b717) {
+        return a;
+    }
+    if w > f32::from_bits(0x3f7f_f972) {
+        return b;
+    }
+    let p: [f32; 4] = std::array::from_fn(|k| vu_mul(a[k], b[k]));
+    let mut d = vu_add(vu_add(vu_add(p[0], p[1]), p[2]), p[3]);
+    let sign = if d < 0.0 {
+        d = -d;
+        -1.0
+    } else {
+        1.0
+    };
+    if d > 1.0 {
+        d = 1.0;
+    }
+    let half_pi = f32::from_bits(0x3fc9_0fdb);
+    let c = [0x3e2b_ba25_u32, 0x3d8a_908b, 0x3d55_033a, 0x3d61_37ab].map(f32::from_bits);
+    let series = |x2: f32| {
+        let mut t = ee_mul(x2, c[3]);
+        t = ee_add(c[2], t);
+        t = ee_mul(x2, t);
+        t = ee_add(c[1], t);
+        t = ee_mul(x2, t);
+        t = ee_add(c[0], t);
+        ee_add(ee_mul(x2, t), 1.0)
+    };
+    let asin = if d > f32::from_bits(0x3f35_04f3) {
+        let x2 = ee_add(1.0, -ee_mul(d, d));
+        let root = ee_sqrt(x2);
+        ee_add(half_pi, -ee_mul(root, series(x2)))
+    } else {
+        ee_mul(d, series(ee_mul(d, d)))
+    };
+    let theta = ee_add(half_pi, -asin);
+    let (wa, wb) = if theta.abs() > f32::from_bits(0x38d1_b717) {
+        let s = channel_sin(theta);
+        let inverse = ee_div(1.0, s);
+        let wa = ee_mul(channel_sin(ee_mul(ee_add(1.0, -w), theta)), inverse);
+        let wb = ee_mul(channel_sin(ee_mul(w, theta)), inverse);
+        (wa, wb)
+    } else {
+        (ee_add(1.0, -w), w)
+    };
+    let wb = ee_mul(sign, wb);
+    std::array::from_fn(|k| vu_add(vu_mul(a[k], wa), vu_mul(b[k], wb)))
+}
+
+/// The blend's sine (`0x19b13c..0x19b1e4`): the nearest quarter turn
+/// (`x * 2/pi` +- 0.5, truncated), the cosine or sine polynomial of what
+/// is left by its parity, negated in the third and fourth quarters.
+fn channel_sin(x: f32) -> f32 {
+    use crate::math::{ee_add, ee_mul};
+    let k = ee_mul(x, f32::from_bits(0x3f22_f983));
+    let k = if x < 0.0 {
+        ee_add(k, -0.5)
+    } else {
+        ee_add(k, 0.5)
+    };
+    let quarter = k as i32;
+    let r = ee_add(x, -ee_mul(quarter as f32, f32::from_bits(0x3fc9_0fdb)));
+    let r2 = ee_mul(r, r);
+    let v = if quarter & 1 != 0 {
+        let mut t = ee_mul(r2, f32::from_bits(0x37d0_0d01));
+        for c in [0xbab6_0b61_u32, 0x3d2a_aaab, 0xbf00_0000] {
+            t = ee_mul(ee_add(t, f32::from_bits(c)), r2);
+        }
+        ee_add(t, 1.0)
+    } else {
+        let mut t = ee_mul(r2, f32::from_bits(0x3638_ef1d));
+        for c in [0xb950_0d01_u32, 0x3c08_8889, 0xbe2a_aaab] {
+            t = ee_mul(ee_add(t, f32::from_bits(c)), r2);
+        }
+        ee_mul(ee_add(t, 1.0), r)
+    };
+    if quarter & 2 != 0 { -v } else { v }
+}
+
 fn nearer_mix(a: [f32; 4], b: [f32; 4], t: f32) -> [f32; 4] {
     let d: f32 = (0..4).map(|k| (b[k] - a[k]) * (b[k] - a[k])).sum();
     let s: f32 = (0..4).map(|k| (b[k] + a[k]) * (b[k] + a[k])).sum();
@@ -586,7 +692,7 @@ impl Poses {
         let b = self.local(to)?;
         let w = weight.clamp(0.0, 1.0);
         Some(Held {
-            rotations: std::array::from_fn(|i| nearer_mix(from.rotations[i], b.rotations[i], w)),
+            rotations: std::array::from_fn(|i| channel_slerp(from.rotations[i], b.rotations[i], w)),
             root: std::array::from_fn(|k| from.root[k] + (b.root[k] - from.root[k]) * w),
         })
     }
@@ -644,7 +750,7 @@ impl Poses {
         };
         let w = weight.clamp(0.0, 1.0);
         Some(Local {
-            rotations: std::array::from_fn(|i| nearer_mix(a.rotations[i], b.rotations[i], w)),
+            rotations: std::array::from_fn(|i| channel_slerp(a.rotations[i], b.rotations[i], w)),
             root: std::array::from_fn(|k| a.root[k] + (b.root[k] - a.root[k]) * w),
         })
     }
@@ -684,7 +790,7 @@ impl Poses {
         {
             let w = weight.clamp(0.0, 1.0);
             top.rotations =
-                std::array::from_fn(|i| nearer_mix(a.rotations[i], top.rotations[i], w));
+                std::array::from_fn(|i| channel_slerp(a.rotations[i], top.rotations[i], w));
         }
         let local = Local {
             rotations: std::array::from_fn(|i| {
@@ -738,11 +844,11 @@ impl Poses {
         longest + 1.0
     }
 
-    /// `FUN_0019d4c8` over the 22 bones, then turned and moved to `place`.
+    /// `FUN_0019d4c8` over the 22 bones, then turned ([`actor_turn`]) and
+    /// moved to `place`.
     fn place(&self, local: &Local, body: Body, place: Place) -> Pose {
         let h = body.height;
-        let theta = place.word as f32 * std::f32::consts::TAU / 1024.0;
-        let yaw = [0.0, math::sin(theta * 0.5), 0.0, math::cos(theta * 0.5)];
+        let yaw = actor_turn(place.word);
         let mut joints = [Joint::default(); BONES];
         for i in 0..BONES {
             let bone = &self.skeleton[i];
@@ -1100,6 +1206,32 @@ pub fn sweep(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_model_turns_by_the_word_halved_on_the_cosine_table() {
+        // The table's own words (`0x440ea0`): cosines to six decimals.
+        assert_eq!(crate::input::native_cos_1024(1).to_bits(), 0x3f7f_fec1);
+        assert_eq!(crate::input::native_cos_1024(128).to_bits(), 0x3f35_04f7);
+        assert_eq!(crate::input::native_cos_1024(256), 0.0);
+        assert_eq!(crate::input::native_cos_1024(512), -1.0);
+        // An odd word turns a unit short: the attract capture's tip stands
+        // (word 71, yaw 70; 769, 768) and an even one exactly (954).
+        let yaw = |w: i32| {
+            let q = actor_turn(w);
+            let units = 2.0 * q[1].atan2(q[3]) * 1024.0 / std::f32::consts::TAU;
+            (units.round() as i32) & 0x3ff
+        };
+        assert_eq!(yaw(71), 70);
+        assert_eq!(yaw(769), 768);
+        assert_eq!(yaw(954), 954);
+        // Every word survives the simulation's radians.
+        for w in 0..1024 {
+            assert_eq!(
+                crate::timing::facing_word(crate::restart::heading_radians(w)),
+                w
+            );
+        }
+    }
 
     fn bank() -> Poses {
         // A two-bone arm: the root, then a hand one along x, still.

@@ -60,6 +60,17 @@ fn chop(exact: f64) -> f32 {
     }
 }
 
+/// VU0's `vadd` lane as PCSX2 runs it: the exact sum chopped, no guard
+/// bit.
+pub fn vu_add(a: f32, b: f32) -> f32 {
+    chop(a as f64 + b as f64)
+}
+
+/// VU0's `vmul` lane: the exact product chopped.
+pub fn vu_mul(a: f32, b: f32) -> f32 {
+    chop(a as f64 * b as f64)
+}
+
 /// The EE's `mul.s`: the exact product chopped.
 pub fn ee_mul(a: f32, b: f32) -> f32 {
     chop(a as f64 * b as f64)

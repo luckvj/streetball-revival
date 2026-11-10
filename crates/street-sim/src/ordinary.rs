@@ -706,10 +706,11 @@ impl PlayerGaitChannel {
             self.rate_store = self.frame_step;
         }
         self.store_rate = false;
+        // The clock steps on the EE's chopping `add.s` (`0x19a8ec`).
         if completing {
-            self.phase += self.rate_store;
+            self.phase = crate::math::ee_add(self.phase, self.rate_store);
         } else if self.blend_counter == 0 {
-            self.phase += self.frame_step;
+            self.phase = crate::math::ee_add(self.phase, self.frame_step);
         }
         self.integer = self.phase as i32;
         if moving {

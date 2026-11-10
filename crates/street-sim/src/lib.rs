@@ -2780,11 +2780,11 @@ impl World {
                     .or_else(|| self.actor_pose(i))
                 && let Some(new) = trick::matched_word(&poses, &shown, row, start, body)
             {
-                // The model turns by the facing word halved
-                // (`FUN_00154560`): an odd word shows a unit short.
+                // The shown pose already turns by the word halved
+                // ([`crate::pose::actor_turn`]): an odd word shows a unit short.
                 let p = &mut self.players[i];
                 let word = timing::facing_word(p.heading);
-                let matched = trick::heading_match(word, new - (word & 1));
+                let matched = trick::heading_match(word, new);
                 if matched != word {
                     p.heading = restart::heading_radians(matched);
                     turn = word - matched;
@@ -3732,6 +3732,20 @@ impl World {
         self.face(i, updates);
     }
 
+    /// What a match intro's staged loop clocks leave on its cast's
+    /// channels: each actor's last rate (`0x32c0a0`'s step, channel
+    /// `+0x68`), which the channel keeps as its stored rate (`+0x3c`) until
+    /// the locomotion writes one (the third attract match: actor 2's first
+    /// walk out of a stand at update 824 steps 0.531915, the rate his intro
+    /// record left).
+    pub fn take_intro_rates(&mut self, rates: &[(usize, f32)]) {
+        for &(i, rate) in rates {
+            if let Some(p) = self.players.get_mut(i) {
+                p.gait_channel.rate_store = rate;
+            }
+        }
+    }
+
     /// The body's callback 21 (`FUN_001729f8`, `0x1731a8`): the make
     /// roll's draw, `r % 100` against odds of 100 or 0 the cue set.
     pub fn staged_release_roll(&mut self) -> u32 {
@@ -4107,8 +4121,13 @@ impl World {
             slots[team] += 1;
             if let Some(&[x, z]) = toss::SPOTS.get(slot) {
                 p.position = [x * restart::side(team), z];
-                // FUN_00170608 turns him to face `0x4b9880`, the origin.
-                p.set_heading(math::atan2(-p.position[0], -p.position[1]));
+                // FUN_00170608 turns him to face `0x4b9880`, the origin
+                // (`FUN_0018ce78`'s word: the side spots' negative angle
+                // truncates toward zero, 954 where a rounded atan2 gives
+                // 953).
+                let word =
+                    ordinary::native_heading([p.position[0], 0.0, p.position[1]], [0.0, 0.0, 0.0]);
+                p.set_heading(restart::heading_radians(word));
             }
             p.speed = 0.0;
             p.height = 0.0;

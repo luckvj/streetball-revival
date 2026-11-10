@@ -536,11 +536,12 @@ impl Run {
             return true;
         };
         if span.frames > 0 {
-            // `ab`: on at its rate, wrapping at the clip's end.
-            self.frame += span.rate;
+            // `ab`: on at its rate (the EE's chopping `add.s`), wrapping
+            // at the clip's end.
+            self.frame = crate::math::ee_add(self.frame, span.rate);
             let n = f32::from(span.frames);
             if self.frame >= n {
-                self.frame -= n;
+                self.frame = crate::math::ee_add(self.frame, -n);
             }
             self.int_frame = self.frame as i16;
             self.count = 1;
@@ -558,7 +559,9 @@ impl Run {
             return true;
         }
         if !span.blend {
-            self.frame += span.rate;
+            // The EE's chopping `add.s` (the third attract match's channel
+            // frames: every step but the span's last, which lands on `to`).
+            self.frame = crate::math::ee_add(self.frame, span.rate);
             if span.counter == span.length {
                 self.frame = f32::from(span.to);
             }
@@ -1147,13 +1150,13 @@ pub fn root_step(poses: &Poses, before: Shown, after: Shown) -> [f32; 3] {
     }
 }
 
-/// A root change in the world: times the height scale, turned by the facing
-/// word (the pose's yaw, `pose::place`), on the floor.
+/// A root change in the world: times the height scale, turned by the
+/// model's turn (`actor+0x50`, [`crate::pose::actor_turn`] of the facing
+/// word, as the pose is), on the floor.
 pub fn root_motion(step: [f32; 3], body: Body, word: i32) -> [f32; 2] {
-    let theta = word as f32 * std::f32::consts::TAU / 1024.0;
-    let (s, c) = (crate::math::sin(theta), crate::math::cos(theta));
     let (x, z) = (step[0] * body.height, step[2] * body.height);
-    [x * c + z * s, -x * s + z * c]
+    let [x, _, z] = crate::pose::rotate(crate::pose::actor_turn(word), [x, 0.0, z]);
+    [x, z]
 }
 
 /// `FUN_00196698`'s tolerance: `0x41ba0b3f` (23.255491) truncated.

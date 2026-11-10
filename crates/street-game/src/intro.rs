@@ -309,6 +309,9 @@ pub struct MatchIntro {
     /// to take ([`take_draws`]); online none (the match holds its world).
     drawn: usize,
     pub pending: Vec<Draw>,
+    /// Parts that stopped, at the frame they stopped on, whose cast's
+    /// channel rates the world is still to take ([`take_draws`]).
+    closed: Vec<(Part, u32)>,
     live: bool,
 }
 
@@ -374,6 +377,11 @@ impl MatchIntro {
     }
 
     fn next(&mut self) {
+        if let Some(part) = self.current.take()
+            && self.live
+        {
+            self.closed.push((part, self.frame as u32));
+        }
         self.drawn = 0;
         self.current = self.queue.pop_front();
         self.frame = 0.0;
@@ -400,6 +408,7 @@ impl MatchIntro {
                     self.phase = Phase::Replay(r.from as f32);
                 } else if next >= last {
                     self.draw_to(last);
+                    self.frame = last;
                     self.next();
                 } else {
                     self.frame = next;
@@ -599,6 +608,11 @@ pub fn take_draws(intro: Option<ResMut<MatchIntro>>, mut sim: ResMut<Sim>) {
     let Some(mut intro) = intro else {
         return;
     };
+    for (part, frame) in std::mem::take(&mut intro.closed) {
+        let scales: Vec<f32> = sim.world.players.iter().map(|p| p.body().height).collect();
+        let rates = closing_rates(&part, frame, &scales);
+        sim.world.take_intro_rates(&rates);
+    }
     if intro.pending.is_empty() {
         return;
     }
@@ -613,6 +627,42 @@ pub fn take_draws(intro: Option<ResMut<MatchIntro>>, mut sim: ResMut<Sim>) {
             Draw::Cheer => sim.world.crowd_call(true),
         }
     }
+}
+
+/// Each bound actor's channel rate as `part` stops at `frame`: the
+/// staged actors' loop clocks (`street_sim::gamebreaker::Sequence`'s native
+/// clocks, the manager's rate check `0x32c0a0` each frame) run from its
+/// first frame, a freeze resuming them at its frame. The third attract
+/// match's intros leave actors 0, 2 and 3 their capture's rates exactly
+/// (0.523077, 0.531915, 0.5) and 4 and 5 within 2e-5; actor 1's capture
+/// ends on record 804 at 0.217391, still to explain.
+pub fn closing_rates(part: &Part, frame: u32, scales: &[f32]) -> Vec<(usize, f32)> {
+    let mut sequence = street_sim::gamebreaker::Sequence {
+        script: part.script,
+        shooter: 0,
+        team: usize::from(!part.mirrored),
+        level: 0,
+        frame: 0,
+        held: 0,
+        actors: part.actors,
+        native_clocks: [None; 7],
+        resume_pending: false,
+        finishing: 0,
+    };
+    let last = frame.min(part.plan.length().saturating_sub(1));
+    for tick in 0..=last {
+        sequence.frame = tick;
+        if part.plan.controls.hold.is_some_and(|h| h.frame == tick) {
+            sequence.resume_native_actors(&part.plan);
+        }
+        sequence.update_native_clocks(&part.plan, scales);
+    }
+    (0..7)
+        .filter_map(|role| {
+            let clock = sequence.native_clocks[role]?;
+            Some((part.actors[role]?, f32::from_bits(clock.step_bits)))
+        })
+        .collect()
 }
 
 /// The match's gate: play waits for the intro played alone. Online the
