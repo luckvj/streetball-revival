@@ -42,6 +42,7 @@ fn bank_dropping(drop: f32) -> Bank {
     }
     let still = |states: Vec<u32>| ClipData {
         raw_pose: false,
+        hinges: Vec::new(),
         bones: Vec::new(),
         rotations: vec![Vec::new(); states.len()],
         root: vec![[0.0, 2.5, 0.0]; states.len()],
@@ -362,6 +363,7 @@ fn the_dribble_falls_from_the_release_hand_to_the_floor_and_rises_to_the_catch()
     let states = vec![8, 8, 8, 8 | 0x10, 0, 0, 0, 8 | 0x20, 8, 8];
     let clip = ClipData {
         raw_pose: false,
+        hinges: Vec::new(),
         bones: Vec::new(),
         rotations: vec![Vec::new(); states.len()],
         root: vec![[0.0, 2.5, 0.0]; states.len()],
@@ -416,6 +418,7 @@ fn the_dribble_sounds_once_a_bounce_as_the_ball_rises_off_the_floor() {
     let states = vec![8, 8, 8, 8 | 0x10, 0, 0, 0, 8 | 0x20, 8, 8];
     let clip = ClipData {
         raw_pose: false,
+        hinges: Vec::new(),
         bones: Vec::new(),
         rotations: vec![Vec::new(); states.len()],
         root: vec![[0.0, 2.5, 0.0]; states.len()],

@@ -41,6 +41,7 @@ fn bank(state: u32) -> Bank {
     }
     let clip = ClipData {
         raw_pose: false,
+        hinges: Vec::new(),
         bones: Vec::new(),
         rotations: vec![Vec::new(); 40],
         root: vec![[0.0, 2.5, 0.0]; 40],

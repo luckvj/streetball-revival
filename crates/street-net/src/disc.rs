@@ -217,6 +217,17 @@ pub fn poses<R: Read + Seek>(iso: &mut Iso<R>) -> Result<Poses, String> {
             raw_pose: c.raw_pose,
             bones: c.bones,
             rotations: c.rotations,
+            hinges: c
+                .hinges
+                .into_iter()
+                .map(|h| {
+                    h.map(|h| street_sim::pose::Hinge {
+                        axis: h.axis,
+                        pre: h.pre,
+                        post: h.post,
+                    })
+                })
+                .collect(),
             root: c.root,
             states: c.states,
         })

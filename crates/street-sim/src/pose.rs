@@ -59,6 +59,69 @@ pub struct SkeletonBone {
     pub rotation: [f32; 4],
 }
 
+/// A hinge channel (`FnDeltaSingleQ`) as the game evaluates it
+/// (`0x38aa80`): its raw state vector (the axis component in lane `axis`, w
+/// last) interpolated between frames, normalised on VU0 (`vrsqrt`), then put
+/// between `pre` and `post`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Hinge {
+    pub axis: u8,
+    pub pre: [f32; 4],
+    pub post: [f32; 4],
+}
+
+impl Hinge {
+    /// The bone's rotation from the raw states of the two frames around the
+    /// sample, `u` of the way (`0x38b88c..0x38bb20`, VU0 lanes and EE
+    /// products chopped).
+    fn rotation(&self, a: [f32; 4], b: [f32; 4], u: f32) -> [f32; 4] {
+        use crate::math::{ee_add, ee_mul, vu_add, vu_mul};
+        let v: [f32; 4] = std::array::from_fn(|k| vu_add(a[k], vu_mul(vu_add(b[k], -a[k]), u)));
+        let sq: [f32; 4] = std::array::from_fn(|k| vu_mul(v[k], v[k]));
+        let sum = vu_add(vu_add(vu_add(sq[0], sq[1]), sq[2]), sq[3]);
+        let q = crate::math::vu_rsqrt(sum);
+        let n: [f32; 4] = std::array::from_fn(|k| vu_mul(v[k], q));
+        let w = n[3];
+        let (p, o) = (self.pre, self.post);
+        let dot = |x: f32, y: f32, z: f32, t: f32| ee_add(ee_mul(x, y), ee_mul(z, t));
+        match self.axis {
+            0 => {
+                let x = n[0];
+                [
+                    dot(x, o[3], w, o[0]),
+                    dot(x, o[2], w, o[1]),
+                    dot(-x, o[1], w, o[2]),
+                    dot(-x, o[0], w, o[3]),
+                ]
+            }
+            1 => {
+                let y = n[1];
+                let m = [
+                    ee_mul(p[0], w),
+                    ee_mul(p[3], y),
+                    ee_mul(-p[0], y),
+                    ee_mul(p[3], w),
+                ];
+                [
+                    ee_add(ee_mul(m[0], o[3]), -ee_mul(m[1], o[2])),
+                    dot(m[0], o[2], m[1], o[3]),
+                    dot(m[2], o[3], m[3], o[2]),
+                    dot(-m[2], o[2], m[3], o[3]),
+                ]
+            }
+            _ => {
+                let z = n[2];
+                [
+                    ee_add(ee_mul(p[0], w), -ee_mul(p[1], z)),
+                    dot(p[0], z, p[1], w),
+                    dot(p[2], w, p[3], z),
+                    dot(-p[2], z, p[3], w),
+                ]
+            }
+        }
+    }
+}
+
 /// One animation as the disc stores it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ClipData {
@@ -68,8 +131,11 @@ pub struct ClipData {
     pub raw_pose: bool,
     /// The skeleton bone of each rotation channel.
     pub bones: Vec<u8>,
-    /// `rotations[frame][channel]`, quaternions (x, y, z, w).
+    /// `rotations[frame][channel]`, quaternions (x, y, z, w), or a
+    /// [`Hinge`] channel's raw state.
     pub rotations: Vec<Vec<[f32; 4]>>,
+    /// Each channel's hinge, None for a quaternion (empty: none).
+    pub hinges: Vec<Option<Hinge>>,
     /// The root's translation per frame, in court units at scale 1.
     pub root: Vec<[f32; 3]>,
     /// The `_X` state word per frame.
@@ -82,6 +148,7 @@ struct Clip {
     /// Each bone's channel, if the clip animates it.
     channel: [Option<u8>; BONES],
     rotations: Vec<Vec<[f32; 4]>>,
+    hinges: Vec<Option<Hinge>>,
     root: Vec<[f32; 3]>,
     states: Vec<u32>,
 }
@@ -210,6 +277,17 @@ impl Poses {
                 raw_pose: c.raw_pose,
                 bones: c.bones,
                 rotations: c.rotations,
+                hinges: c
+                    .hinges
+                    .into_iter()
+                    .map(|h| {
+                        h.map(|h| Hinge {
+                            axis: h.axis,
+                            pre: h.pre,
+                            post: h.post,
+                        })
+                    })
+                    .collect(),
                 root: c.root,
                 states: c.states,
             })
@@ -500,6 +578,7 @@ impl Poses {
                     raw_pose: c.raw_pose,
                     channel,
                     rotations: c.rotations,
+                    hinges: c.hinges,
                     root: c.root,
                     states: c.states,
                 }
@@ -545,6 +624,17 @@ impl Poses {
                 out(&(frame.len() as u32).to_le_bytes());
                 for q in frame {
                     floats(out, q);
+                }
+            }
+            out(&(c.hinges.len() as u32).to_le_bytes());
+            for h in &c.hinges {
+                match h {
+                    Some(h) => {
+                        out(&[h.axis]);
+                        floats(out, &h.pre);
+                        floats(out, &h.post);
+                    }
+                    None => out(&[u8::MAX]),
                 }
             }
             out(&(c.root.len() as u32).to_le_bytes());
@@ -618,7 +708,10 @@ impl Poses {
                 Some(c) => {
                     let a = clip.rotations[f0][usize::from(c)];
                     let b = clip.rotations[f1][usize::from(c)];
-                    if clip.raw_pose {
+                    if let Some(Some(h)) = clip.hinges.get(usize::from(c)) {
+                        // A hinge interpolates its raw state, then turns.
+                        h.rotation(a, b, u)
+                    } else if clip.raw_pose {
                         nearer_mix(a, b, u)
                     } else {
                         // Left at its length (`0x38d834..0x38d84c`); the
@@ -1249,6 +1342,7 @@ mod tests {
         }
         let clip = ClipData {
             raw_pose: false,
+            hinges: Vec::new(),
             bones: vec![],
             rotations: vec![vec![]; 2],
             root: vec![[0.0, 3.0, 0.0]; 2],

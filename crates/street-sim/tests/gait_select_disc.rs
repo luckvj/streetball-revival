@@ -51,6 +51,17 @@ fn poses() -> street_sim::pose::Bank {
             raw_pose: c.raw_pose,
             bones: c.bones,
             rotations: c.rotations,
+            hinges: c
+                .hinges
+                .into_iter()
+                .map(|h| {
+                    h.map(|h| street_sim::pose::Hinge {
+                        axis: h.axis,
+                        pre: h.pre,
+                        post: h.post,
+                    })
+                })
+                .collect(),
             root: c.root,
             states: c.states,
         })

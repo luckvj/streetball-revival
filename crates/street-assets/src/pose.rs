@@ -18,8 +18,11 @@ pub struct PoseClip {
     pub raw_pose: bool,
     /// The skeleton bone of each rotation channel.
     pub bones: Vec<u8>,
-    /// `rotations[frame][channel]`, quaternions (x, y, z, w).
+    /// `rotations[frame][channel]`, quaternions (x, y, z, w), or a hinge
+    /// channel's raw state ([`anim::NativeRotations::frames`]).
     pub rotations: Vec<Vec<[f32; 4]>>,
+    /// Each channel's hinge, None for a quaternion (or all None).
+    pub hinges: Vec<Option<anim::Hinge>>,
     /// The root's translation per frame, in court units at scale 1
     /// ([`anim::TRANSLATION_SCALE`]); empty when the clip has none.
     pub root: Vec<[f32; 3]>,
@@ -52,14 +55,15 @@ impl PoseData {
                 if index.contains_key(&name) || !wanted.contains(name.as_str()) {
                     continue;
                 }
-                let (bones, rotations, raw_pose) = match bank.native_rotations(&name)? {
+                let (bones, rotations, raw_pose, hinges) = match bank.native_rotations(&name)? {
                     Some(n) => (
                         n.bones,
                         n.frames,
                         n.interpolation == anim::NativeInterpolation::RawPose,
+                        n.hinges,
                     ),
                     None => match bank.rotations(&name)? {
-                        Some(r) => (r.bones, r.frames, false),
+                        Some(r) => (r.bones, r.frames, false, Vec::new()),
                         None => continue,
                     },
                 };
@@ -79,6 +83,7 @@ impl PoseData {
                     raw_pose,
                     bones,
                     rotations,
+                    hinges,
                     root,
                     states,
                 });

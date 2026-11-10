@@ -55,8 +55,23 @@ pub struct Rotations {
 #[derive(Clone, Debug)]
 pub struct NativeRotations {
     pub bones: Vec<u8>,
+    /// `frames[f][c]`: a quaternion, or for a [`Hinge`] channel its raw
+    /// state vector (the axis component in its lane, w last), which the
+    /// game interpolates and normalises before turning it.
     pub frames: Vec<Vec<[f32; 4]>>,
     pub interpolation: NativeInterpolation,
+    /// Each channel's hinge (`FnDeltaSingleQ`), None for a quaternion.
+    pub hinges: Vec<Option<Hinge>>,
+}
+
+/// A `FnDeltaSingleQ` channel as the game evaluates it (`0x38aa80`): its
+/// raw (axis, w) state is interpolated between frames, normalised on VU0
+/// (`vrsqrt`), then put between `pre` and `post` (axis 0 x, 1 y, 2 z).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Hinge {
+    pub axis: u8,
+    pub pre: [f32; 4],
+    pub post: [f32; 4],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -209,7 +224,9 @@ impl Bank {
     /// rig sampling, their words as stored (not normalised: the hierarchy's
     /// plain products stretch the bones of a quaternion longer than 1, as
     /// the tip-off aim's posed hands show to 0.00003), and a hinge
-    /// (`FnDeltaSingleQ`) as the game builds it, its pair normalised.
+    /// (`FnDeltaSingleQ`) as its raw state with its [`Hinge`], which the
+    /// game interpolates, normalises and turns per sample (the third
+    /// attract match's knees to 1e-8).
     /// Unsupported channel formats return None instead of substituting
     /// normalized renderer data.
     pub fn native_rotations(&self, animation: &str) -> Result<Option<NativeRotations>> {
@@ -218,11 +235,12 @@ impl Bank {
             _ => NativeInterpolation::Components,
         };
         Ok(self
-            .rotations_with_normalization(animation, false)?
-            .map(|r| NativeRotations {
+            .rotations_and_hinges(animation, false)?
+            .map(|(r, hinges)| NativeRotations {
                 bones: r.bones,
                 frames: r.frames,
                 interpolation,
+                hinges,
             }))
     }
 
@@ -231,6 +249,16 @@ impl Bank {
         animation: &str,
         normalize: bool,
     ) -> Result<Option<Rotations>> {
+        Ok(self
+            .rotations_and_hinges(animation, normalize)?
+            .map(|(r, _)| r))
+    }
+
+    fn rotations_and_hinges(
+        &self,
+        animation: &str,
+        normalize: bool,
+    ) -> Result<Option<(Rotations, Vec<Option<Hinge>>)>> {
         let Some((mut at, _)) = self.channel(animation, "_r")? else {
             return Ok(None);
         };
@@ -238,13 +266,19 @@ impl Bank {
         let count = self.d().u16(record + 8)?;
         let flags = self.d().u16(at + 2)?;
         let mut merged: Option<Rotations> = None;
+        let mut hinges: Vec<Option<Hinge>> = Vec::new();
         for k in 0..count {
             if k > 0 {
                 at = self.next_channel(at, flags)?;
             }
+            let mut part_hinges = None;
             let (part, end) = match self.d().u16(at)? {
                 DELTA_Q_FAST => delta_q_fast(self.d(), &self.pointers, at, normalize)?,
-                DELTA_SINGLE_Q => delta_single_q(self.d(), &self.pointers, at)?,
+                DELTA_SINGLE_Q => {
+                    let (part, end, h) = delta_single_q(self.d(), &self.pointers, at, normalize)?;
+                    part_hinges = Some(h);
+                    (part, end)
+                }
                 DELTA_QUAT => delta_quat(self.d(), &self.pointers, at, normalize)?,
                 RAW_POSE => {
                     let Some(part) = raw_pose(self.d(), at, normalize)? else {
@@ -254,6 +288,10 @@ impl Bank {
                 }
                 _ => return Ok(None),
             };
+            match part_hinges {
+                Some(h) if !normalize => hinges.extend(h.into_iter().map(Some)),
+                _ => hinges.extend(std::iter::repeat_n(None, part.bones.len())),
+            }
             merged = Some(match merged {
                 None => part,
                 Some(mut m) => {
@@ -271,7 +309,7 @@ impl Bank {
             });
             at = end;
         }
-        Ok(merged)
+        Ok(merged.map(|m| (m, hinges)))
     }
 
     /// The channel following one that ends at `end`: the first 2-aligned
@@ -589,7 +627,7 @@ fn raw_pose<'a>(
                 *v = data.f32(p + 4 * k)?;
             }
             if kind == 1 {
-                q = euler(
+                q = display_euler(
                     q[0].to_radians() / 2.0,
                     q[1].to_radians() / 2.0,
                     q[2].to_radians() / 2.0,
@@ -868,9 +906,9 @@ fn native_q_fast_key(value: u32) -> f32 {
     value as f32 * f32::from_bits(Q_FAST_KEY_SCALE) - 1.0
 }
 
-/// Quaternion built from three half angles by the formula in the
-/// `FnDeltaSingleQ` setup (0x38aa80), transcribed as written.
-fn euler(a: f32, b: f32, c: f32) -> [f32; 4] {
+/// A raw pose's Euler triple for display (the game's own reader,
+/// `0x392ab8`, is not ported: the native path refuses such tracks).
+fn display_euler(a: f32, b: f32, c: f32) -> [f32; 4] {
     let (sa, ca) = a.sin_cos();
     let (sb, cb) = b.sin_cos();
     let (sc, cc) = c.sin_cos();
@@ -879,6 +917,28 @@ fn euler(a: f32, b: f32, c: f32) -> [f32; 4] {
         sb * ca * cc + cb * sa * sc,
         sb * sa * cc - cb * ca * sc,
         sb * sa * sc + cb * ca * cc,
+    ]
+}
+
+/// Quaternion built from three half angles by the formula in the
+/// `FnDeltaSingleQ` setup (`0x38ae1c..0x38ae6c`, shared by its three axes):
+/// the cosines and sines of `x`, `y`, `z`, then
+/// `(cy sx cz - sy cx sz, cy sx sz + sy cx cz, cy cx sz - sy sx cz,
+/// cy cx cz + sy sx sz)`, in the EE's chopped products and order.
+fn euler(x: f32, y: f32, z: f32) -> [f32; 4] {
+    use crate::ee::{add, mul, sub};
+    let (sx, cx) = (x.sin(), x.cos());
+    let (sy, cy) = (y.sin(), y.cos());
+    let (sz, cz) = (z.sin(), z.cos());
+    let sx_cz = mul(sx, cz);
+    let sx_sz = mul(sx, sz);
+    let cx_sz = mul(cx, sz);
+    let cx_cz = mul(cx, cz);
+    [
+        sub(mul(cy, sx_cz), mul(sy, cx_sz)),
+        add(mul(cy, sx_sz), mul(sy, cx_cz)),
+        sub(mul(cy, cx_sz), mul(sy, sx_cz)),
+        add(mul(cy, cx_cz), mul(sy, sx_sz)),
     ]
 }
 
@@ -904,7 +964,8 @@ fn delta_single_q<'a>(
     data: impl Into<Data<'a>>,
     pointers: &std::collections::HashMap<u32, u32>,
     at: usize,
-) -> Result<(Rotations, usize)> {
+    normalize: bool,
+) -> Result<(Rotations, usize, Vec<Hinge>)> {
     let data: Data = data.into();
     let frames = data.u16(at + 4)? as usize;
     let header = bytes::range(&data, at + 6, 2)?;
@@ -931,10 +992,21 @@ fn delta_single_q<'a>(
     let mut table = Vec::with_capacity(channels);
     for c in 0..channels {
         let u = |k: usize| data.u16(at + 0x10 + 14 * c + 2 * k).map(f32::from);
+        // The setup's constants (`0x38abcc..0x38ac68`): `u * 0x38c910a4 -
+        // pi`, halved; the deltas' `u * 0x38000080` (less 1 for a minimum),
+        // in the EE's chopped arithmetic.
         let angle = |k: usize| -> Result<f32> {
-            Ok(u(k)? * std::f32::consts::TAU / 65536.0 - std::f32::consts::PI)
+            Ok(crate::ee::add(
+                crate::ee::mul(u(k)?, f32::from_bits(0x38c9_10a4)),
+                -std::f32::consts::PI,
+            ))
         };
-        let (t1, t2) = (angle(0)? / 2.0, angle(1)? / 2.0);
+        let (t1, t2) = (
+            crate::ee::mul(angle(0)?, 0.5),
+            crate::ee::mul(angle(1)?, 0.5),
+        );
+        let unit =
+            |k: usize| -> Result<f32> { Ok(crate::ee::mul(u(k)?, f32::from_bits(0x3800_0080))) };
         let axis = data.u16(at + 0x10 + 14 * c + 12)?;
         let (pre, post) = match axis {
             0 => (IDENTITY, euler(0.0, t1, t2)),
@@ -944,8 +1016,11 @@ fn delta_single_q<'a>(
         };
         table.push(Channel {
             axis,
-            min: [u(2)? / 32768.0 - 1.0, u(3)? / 32768.0 - 1.0],
-            range: [u(4)? / 32768.0, u(5)? / 32768.0],
+            min: [
+                crate::ee::add(unit(2)?, -1.0),
+                crate::ee::add(unit(3)?, -1.0),
+            ],
+            range: [unit(4)?, unit(5)?],
             pre,
             post,
         });
@@ -960,10 +1035,18 @@ fn delta_single_q<'a>(
     for f in 0..frames {
         let (block, within) = (f / per_block, f % per_block);
         let base = start + block * block_len;
+        // The evaluator's state (`0x38b0f8..0x38b4a8`): a key byte is
+        // `b * 0x3c008081 - 1`; a delta row adds `min + range * (n / 15)`
+        // (`n * 0x3d888889`) to it on VU0.
         if within == 0 {
             let keys = bytes::range(&data, base, 2 * channels)?;
             for (cur, key) in current.iter_mut().zip(keys.as_chunks::<2>().0) {
-                *cur = [key[0], key[1]].map(|b| f32::from(b) * 2.0 / 255.0 - 1.0);
+                *cur = [key[0], key[1]].map(|b| {
+                    crate::ee::add(
+                        crate::ee::mul(f32::from(b), f32::from_bits(0x3c00_8081)),
+                        -1.0,
+                    )
+                });
             }
         } else {
             let row = bytes::range(
@@ -971,10 +1054,29 @@ fn delta_single_q<'a>(
                 base + 2 * channels + (within - 1) * channels,
                 channels,
             )?;
+            let fifteenth = f32::from_bits(0x3d88_8889);
             for ((cur, t), &b) in current.iter_mut().zip(&table).zip(row) {
-                cur[0] += t.min[0] + t.range[0] * f32::from(b >> 4) / 15.0;
-                cur[1] += t.min[1] + t.range[1] * f32::from(b & 0xf) / 15.0;
+                for (k, n) in [(0, b >> 4), (1, b & 0xf)] {
+                    let step = crate::ee::mul(t.range[k], crate::ee::mul(f32::from(n), fifteenth));
+                    let delta = crate::ee::add(step, t.min[k]);
+                    cur[k] = crate::ee::chop(f64::from(cur[k]) + f64::from(delta));
+                }
             }
+        }
+        if !normalize {
+            // The raw state vector: the axis component in its lane.
+            out.push(
+                current
+                    .iter()
+                    .zip(&table)
+                    .map(|(cur, t)| {
+                        let mut v = [0.0, 0.0, 0.0, cur[1]];
+                        v[usize::from(t.axis).min(2)] = cur[0];
+                        v
+                    })
+                    .collect(),
+            );
+            continue;
         }
         let pose = current
             .iter()
@@ -1014,7 +1116,15 @@ fn delta_single_q<'a>(
     if !frames.is_multiple_of(per_block) {
         end += channels * (frames % per_block + 1);
     }
-    Ok((Rotations { bones, frames: out }, end))
+    let hinges = table
+        .iter()
+        .map(|t| Hinge {
+            axis: t.axis as u8,
+            pre: t.pre,
+            post: t.post,
+        })
+        .collect();
+    Ok((Rotations { bones, frames: out }, end, hinges))
 }
 
 /// Bank files on the disc: in-game, gamebreakers, intros, outros, front end, faces.

@@ -36,6 +36,7 @@ fn bank() -> Bank {
     }
     let still = |states: Vec<u32>| ClipData {
         raw_pose: false,
+        hinges: Vec::new(),
         bones: Vec::new(),
         rotations: vec![Vec::new(); states.len()],
         root: vec![[0.0, 2.5, 0.0]; states.len()],

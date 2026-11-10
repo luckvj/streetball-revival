@@ -66,6 +66,11 @@ pub fn vu_add(a: f32, b: f32) -> f32 {
     chop(a as f64 + b as f64)
 }
 
+/// VU0's `vrsqrt` of a lane (`1 / sqrt(x)`), chopped.
+pub fn vu_rsqrt(x: f32) -> f32 {
+    chop(1.0 / (x as f64).sqrt())
+}
+
 /// VU0's `vmul` lane: the exact product chopped.
 pub fn vu_mul(a: f32, b: f32) -> f32 {
     chop(a as f64 * b as f64)
