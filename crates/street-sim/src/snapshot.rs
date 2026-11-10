@@ -1194,6 +1194,8 @@ fn player(w: &mut Writer, p: &Player) {
         heading,
         speed,
         step,
+        // Cleared at the end of every update ([`Player::moved`]).
+        moved: _,
         course,
         wanted,
         guard,
@@ -1838,6 +1840,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
         heading: r.f()?,
         speed: r.f()?,
         step: r.f()?,
+        moved: None,
         gait: match r.u8()? {
             0 => Gait::Stand,
             1 => Gait::Walk,

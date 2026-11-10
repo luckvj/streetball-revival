@@ -271,8 +271,8 @@ impl World {
         };
         let p = &mut self.players[i];
         let m = root_motion(step, p.body(), timing::facing_word(p.heading));
-        p.position[0] += m[0];
-        p.position[1] += m[1];
+        p.position[0] = crate::math::ee_add(p.position[0], m[0]);
+        p.position[1] = crate::math::ee_add(p.position[1], m[1]);
         self.players[i].clamp_to_court();
         if ran.face
             && let Some(poses) = self.poses.get()

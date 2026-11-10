@@ -749,6 +749,7 @@ impl World {
     /// them). The defender after the tip steps 0.0025 to 0.0088 aside an
     /// update this way from the end of his walk's blend.
     pub(crate) fn gait_root(&mut self, i: usize, before: (u16, f32, i32, bool), facing: f32) {
+        let moved = self.players[i].moved.take();
         let p = &self.players[i];
         let c = &p.gait_channel;
         let (row, time, counter, moving) = before;
@@ -779,8 +780,19 @@ impl World {
         let step = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
         let m = crate::trick::root_motion(step, p.body(), timing::facing_word(facing));
         let p = &mut self.players[i];
-        p.position[0] += m[0];
-        p.position[1] += m[1];
+        // The channel step's root (`0x19b668`, `add.s`) comes before the
+        // update's velocity (`FUN_00156f48`'s `vadd`), so redo the walk's
+        // add after it while nothing else has moved him since.
+        let (from, v) = match moved {
+            Some([from, v, to]) if p.position == to => (from, Some(v)),
+            _ => (p.position, None),
+        };
+        p.position[0] = crate::math::ee_add(from[0], m[0]);
+        p.position[1] = crate::math::ee_add(from[1], m[1]);
+        if let Some(v) = v {
+            p.position[0] = crate::math::vu_add(p.position[0], v[0]);
+            p.position[1] = crate::math::vu_add(p.position[1], v[1]);
+        }
         p.clamp_to_court();
     }
 
@@ -965,8 +977,8 @@ impl World {
             let step = crate::trick::root_step(poses, before, s.run.shown());
             let p = &mut self.players[i];
             let m = crate::trick::root_motion(step, p.body(), timing::facing_word(p.heading));
-            p.position[0] += m[0];
-            p.position[1] += m[1];
+            p.position[0] = crate::math::ee_add(p.position[0], m[0]);
+            p.position[1] = crate::math::ee_add(p.position[1], m[1]);
             p.clamp_to_court();
         }
         if let Some((bones, at)) = s.plant

@@ -500,6 +500,13 @@ pub struct Player {
     /// by ([`Player::velocity_step`]) while [`Player::speed`] is still this
     /// times 60 (anything else that sets the speed leaves it stale).
     pub step: f32,
+    /// This update's velocity add as [`Player::walk`], a kept run or a
+    /// catch row's coast made it (where he stood, the velocity, where it
+    /// put him), for [`crate::World::gait_root`]
+    /// to redo in the original's order: the channel step's root first
+    /// (`add.s`), then `FUN_00156f48`'s `vadd` of the velocity
+    /// (`0x1573e0`). Cleared at the end of his update, never saved.
+    pub moved: Option<[[f32; 2]; 3]>,
     /// The way he moves, radians as the heading: the original's velocity
     /// (actor+0x40) points along the stick, not the facing
     /// ([`crate::guard`]).
@@ -641,6 +648,7 @@ impl Player {
             heading,
             speed: 0.0,
             step: 0.0,
+            moved: None,
             course: heading,
             wanted: heading,
             guard: crate::guard::Guard::default(),
@@ -1582,11 +1590,15 @@ impl Player {
             body_scale_x,
             self.stand.is_none() && self.action == Action::None,
         );
-        // `FUN_00156f48`'s position += velocity (actor+0x40), chopped.
+        // `FUN_00156f48`'s position += velocity (actor+0x40): VU0's `vadd`
+        // (`0x1573e0`), chopped without a guard bit.
         if moving {
             let v = self.velocity_step();
-            self.position[0] = math::ee_add(self.position[0], v[0]);
-            self.position[1] = math::ee_add(self.position[1], v[1]);
+            let from = self.position;
+            self.position[0] = math::vu_add(self.position[0], v[0]);
+            self.position[1] = math::vu_add(self.position[1], v[1]);
+            self.clamp_to_court();
+            self.moved = Some([from, v, self.position]);
         }
         self.clamp_to_court();
     }

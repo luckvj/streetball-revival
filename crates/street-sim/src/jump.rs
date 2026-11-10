@@ -823,10 +823,11 @@ impl World {
         if f.flags & UNPLANT != 0 && f.flags & (NO_GRAVITY | PLANTED) != 0 {
             f.flags &= !(UNPLANT | NO_GRAVITY | PLANTED);
         }
+        // `0x1573e0`'s `vadd` of the velocity, chopped without a guard bit.
         let p = &mut self.players[i];
-        p.position[0] += f.velocity[0];
-        p.position[1] += f.velocity[2];
-        p.height += f.velocity[1];
+        p.position[0] = crate::math::vu_add(p.position[0], f.velocity[0]);
+        p.position[1] = crate::math::vu_add(p.position[1], f.velocity[2]);
+        p.height = crate::math::vu_add(p.height, f.velocity[1]);
         f.point[0] += f.velocity[0];
         f.point[2] += f.velocity[2];
         if f.flags & NO_GRAVITY == 0 {
@@ -1386,8 +1387,8 @@ impl World {
         {
             let step = crate::trick::root_step(&poses, before, after);
             let m = crate::trick::root_motion(step, body, timing::facing_word(p.heading));
-            p.position[0] += m[0];
-            p.position[1] += m[1];
+            p.position[0] = crate::math::ee_add(p.position[0], m[0]);
+            p.position[1] = crate::math::ee_add(p.position[1], m[1]);
         }
         // A script's first update may show no clip yet (its pick is
         // still to come): the channel holds the clip it had, so there is

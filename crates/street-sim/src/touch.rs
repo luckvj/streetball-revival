@@ -511,8 +511,8 @@ impl World {
             let step = trick::root_step(poses, before, after);
             let p = &mut self.players[i];
             let m = trick::root_motion(step, p.body(), timing::facing_word(p.heading));
-            p.position[0] += m[0];
-            p.position[1] += m[1];
+            p.position[0] = crate::math::ee_add(p.position[0], m[0]);
+            p.position[1] = crate::math::ee_add(p.position[1], m[1]);
             p.clamp_to_court();
         }
         self.catching = if c.run.done { None } else { Some(c) };
@@ -528,9 +528,13 @@ impl World {
         };
         let p = &mut self.players[i];
         p.speed = 0.0;
-        p.position[0] += c.drift[0];
-        p.position[1] += c.drift[1];
+        // The velocity's `vadd` (`0x1573e0`), which the original makes
+        // after the channel's root step ([`World::gait_root`] redoes it).
+        let from = p.position;
+        p.position[0] = crate::math::vu_add(p.position[0], c.drift[0]);
+        p.position[1] = crate::math::vu_add(p.position[1], c.drift[1]);
         p.clamp_to_court();
+        p.moved = Some([from, c.drift, p.position]);
     }
 
     /// Receiver `i`'s facing while his catch row holds him (`FUN_00168ea8`

@@ -2141,9 +2141,11 @@ impl World {
                 if self.catch_row_playing(i).is_none() {
                     let p = &mut self.players[i];
                     let v = p.velocity_step();
-                    p.position[0] = math::ee_add(p.position[0], v[0]);
-                    p.position[1] = math::ee_add(p.position[1], v[1]);
+                    let from = p.position;
+                    p.position[0] = math::vu_add(p.position[0], v[0]);
+                    p.position[1] = math::vu_add(p.position[1], v[1]);
                     p.clamp_to_court();
+                    p.moved = Some([from, v, p.position]);
                 }
             }
             match stepped {
@@ -2271,10 +2273,10 @@ impl World {
                 // facing the locomotion just set.
                 self.players[i].turn_to_wanted(held);
                 let p = &mut self.players[i];
-                // `FUN_00156f48`'s position += velocity, chopped.
+                // `FUN_00156f48`'s position += velocity, VU0's `vadd`.
                 let v = p.velocity_step();
-                p.position[0] = math::ee_add(p.position[0], v[0]);
-                p.position[1] = math::ee_add(p.position[1], v[1]);
+                p.position[0] = math::vu_add(p.position[0], v[0]);
+                p.position[1] = math::vu_add(p.position[1], v[1]);
                 p.clamp_to_court();
             }
             self.contain(i);
@@ -2282,6 +2284,7 @@ impl World {
             self.head_look(i);
             self.floor_contact(i);
             self.previous_inputs[i] = input;
+            self.players[i].moved = None;
             self.count_down_bars(i);
         }
         // The passer stays in his pass animation (bit 4) for the whole
@@ -4539,8 +4542,8 @@ impl World {
                 let step = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
                 let m = trick::root_motion(step, p.body(), timing::facing_word(p.heading));
                 let p = &mut self.players[i];
-                p.position[0] += m[0];
-                p.position[1] += m[1];
+                p.position[0] = crate::math::ee_add(p.position[0], m[0]);
+                p.position[1] = crate::math::ee_add(p.position[1], m[1]);
             }
             return;
         }
@@ -4560,8 +4563,8 @@ impl World {
         if s <= toss::ROOT_TICKS {
             let m = trick::root_motion(step, p.body(), timing::facing_word(p.heading));
             let p = &mut self.players[i];
-            p.position[0] += m[0];
-            p.position[1] += m[1];
+            p.position[0] = crate::math::ee_add(p.position[0], m[0]);
+            p.position[1] = crate::math::ee_add(p.position[1], m[1]);
             return;
         }
         // From the jump on the root moves him only on y, and the take-off's

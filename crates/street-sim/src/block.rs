@@ -1076,8 +1076,8 @@ impl World {
         let p = &mut self.players[i];
         let step = [now[0] - then[0], 0.0, now[2] - then[2]];
         let m = crate::trick::root_motion(step, p.body(), timing::facing_word(p.heading));
-        p.position[0] += m[0];
-        p.position[1] += m[1];
+        p.position[0] = crate::math::ee_add(p.position[0], m[0]);
+        p.position[1] = crate::math::ee_add(p.position[1], m[1]);
     }
 
     /// The takeoff's root (`FUN_0019a658`, raw `0x19b684..0x19b704`): every

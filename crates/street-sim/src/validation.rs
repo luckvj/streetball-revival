@@ -542,6 +542,7 @@ impl World {
                 heading,
                 speed,
                 step,
+                moved: _,
                 course,
                 wanted,
                 guard: _,

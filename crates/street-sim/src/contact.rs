@@ -710,14 +710,18 @@ impl World {
         if self.box_out_contact(a, b) {
             return;
         }
-        // The line from a to b (raw 0x134760..0x1347d0): +x when they
-        // stand on one spot.
-        let (dx, dz) = (pb[0] - pa[0], pb[1] - pa[1]);
-        let n = if dx * dx + dz * dz < f32::from_bits(0x3a83_126f) {
+        // The line from a to b (raw 0x134760..0x1347d0, the EE's `sub.s`,
+        // `mul.s`, `add.s`, `sqrt.s` and `div.s`): +x when they stand on
+        // one spot.
+        let (dx, dz) = (math::ee_add(pb[0], -pa[0]), math::ee_add(pb[1], -pa[1]));
+        let n = if math::ee_add(math::ee_mul(dx, dx), math::ee_mul(dz, dz))
+            < f32::from_bits(0x3a83_126f)
+        {
             [1.0, 0.0]
         } else {
-            let k = 1.0 / math::len(dx, dz);
-            [dx * k, dz * k]
+            let length = math::ee_sqrt(math::ee_add(math::ee_mul(dx, dx), math::ee_mul(dz, dz)));
+            let k = math::ee_div(1.0, length);
+            [math::ee_mul(dx, k), math::ee_mul(dz, k)]
         };
         // Shares by weight; two rebound jumpers in the air add their
         // Rebounds and the higher one 50 (the original compares the
@@ -813,9 +817,11 @@ impl World {
         // moves away; else `a`, if moving, only as far as he came toward
         // `b`. The comparisons are the original's, on the scaled shares.
         if sa != 0.0 && sb != 0.0 && sa != 1.0 && sb != 1.0 && a_floor && b_floor {
+            // The velocity (actor+0x40) on the line, VU0's dot
+            // (`0x135ce4..0x135cf0`).
             let along = |i: usize| {
-                let v = self.players[i].velocity();
-                (v[0] * n[0] + v[1] * n[1]) * crate::TICK_SECONDS
+                let v = self.players[i].velocity_step();
+                math::vu_add(math::vu_mul(v[0], n[0]), math::vu_mul(v[1], n[1]))
             };
             if wa <= wb || opponents {
                 if b_moving {
@@ -823,7 +829,7 @@ impl World {
                     if toward <= 0.0 {
                         (sa, sb) = (overlap, 0.0);
                     } else if toward < sb {
-                        (sa, sb) = (overlap - toward, toward);
+                        (sa, sb) = (math::ee_add(overlap, -toward), toward);
                     }
                 }
             } else if a_moving {
@@ -831,7 +837,7 @@ impl World {
                 if toward <= 0.0 {
                     (sa, sb) = (0.0, overlap);
                 } else if toward < sa {
-                    (sa, sb) = (toward, overlap - toward);
+                    (sa, sb) = (toward, math::ee_add(overlap, -toward));
                 }
             }
         }
@@ -858,11 +864,25 @@ impl World {
             if s == 0.0 {
                 continue;
             }
-            let step = s.min(MAX_PUSH) * sign;
+            // The push along the line on VU0 (`vmulx`, `0x135db8`), held
+            // to 0.4 by its length (`vrsqrt`, `0x135e04..0x135e34`), then
+            // the EE's `sub.s` for `a` and `add.s` for `b`.
+            let mut push = [math::vu_mul(n[0], s), math::vu_mul(n[1], s)];
+            let squared = math::vu_add(
+                math::vu_mul(push[0], push[0]),
+                math::vu_mul(push[1], push[1]),
+            );
+            if squared.sqrt() > MAX_PUSH {
+                let q = math::vu_rsqrt(squared);
+                push = push.map(|c| math::vu_mul(math::vu_mul(c, q), MAX_PUSH));
+            }
             let jumper = self.rebound_jump(i) || self.block_jump(i) || self.players[i].height > 0.0;
             let p = &mut self.players[i];
             let before = p.position;
-            let mut at = [before[0] + n[0] * step, before[1] + n[1] * step];
+            let mut at = [
+                math::ee_add(before[0], push[0] * sign),
+                math::ee_add(before[1], push[1] * sign),
+            ];
             // Under a basket a jumper is not pushed out past |x| 38.
             if jumper && 38.0 < at[0].abs() && before[0].abs() < 38.0 && at[1].abs() < 4.4 {
                 at[0] = f32::from_bits(0x4217_999a).copysign(at[0]);
