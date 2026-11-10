@@ -533,6 +533,12 @@ pub fn reach(
     v
 }
 
+/// `FUN_0016f260`'s word for a player at `at` and a `rim`: game+0x35c's
+/// angle from the rim toward him (`FUN_0013fed0`) turned half round.
+pub(crate) fn rim_word(rim: [f32; 2], at: [f32; 2]) -> i32 {
+    (crate::ordinary::native_heading([rim[0], 0.0, rim[1]], [at[0], 0.0, at[1]]) + 0x200) & 0x3ff
+}
+
 impl World {
     /// The rim `i`'s team attacks, x (`FUN_001404e0`: side × 36.75).
     fn attack_x(&self, i: usize) -> f32 {
@@ -541,10 +547,14 @@ impl World {
 
     /// `FUN_0016f260`: the angle from `i` toward the rim his team attacks
     /// (the game's table at +0x35c, built before the actors update, turned
-    /// half round), from where he stood.
+    /// half round), from where he stood: `FUN_0013fed0` fills it from the
+    /// rim toward him on the native arc tangent, truncated toward zero
+    /// (`0x140224..0x140470`), and the half turn comes after (the third
+    /// attract match's dunker at update 330: 353, where a rounded angle
+    /// from him gave 352 and his `9e` aimed a unit round).
     pub(crate) fn to_rim(&self, i: usize, at: [f32; 2]) -> i32 {
         let rim = self.rim_spot(crate::target_hoop(self.players[i].team));
-        timing::angle_units(crate::math::atan2(at[0] - rim[0], at[1] - rim[1]))
+        rim_word(rim, at)
     }
 
     /// Callback 28 (`FUN_00172400`, raw `0x172400..0x1725f8`): whether

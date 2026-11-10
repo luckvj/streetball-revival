@@ -380,7 +380,7 @@ impl World {
     /// `FUN_0016f260`: the way from `i` to the rim the offence attacks.
     pub(crate) fn toward_rim(&self, i: usize) -> i32 {
         let rim = self.rim_spot(crate::target_hoop(self.possession));
-        crate::contact::angle(self.players[i].position, rim)
+        crate::jump::rim_word(rim, self.players[i].position)
     }
 
     /// `FUN_0016ec80`: `i`'s channel on the post-up's clips (records

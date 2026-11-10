@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- The way toward the rim (a dunker's aim, the rim-facing turns, the post-up's tests) is the PS2's own angle, worked out from the rim with its arc tangent and rounding, so a dunk takes off along the original's line (one was a step off and drifted the dunker, and everyone he bumped, away from the PS2).
 - Running players move by the PS2's own per-update speed and direction values and its float rounding, and a computer player bends round someone just ahead of him by the PS2's amount (one row of the steering table held wrong values), so fast breaks follow the original's paths.
 - Knee (hinge) animations decode with the PS2's own arithmetic and are interpolated, normalised and turned as the PS2 does (on a whole frame the PS2 leaves them unnormalised, slightly shortening the leg), so knees and planted feet match the original: a passer's pivot no longer drifts through his windup.
 - Animation blends now use the PS2's own slerp (with its own sine and arcsine series) instead of a normalised mix, so a player's limbs and his planted foot follow the original through every blend (a turnaround's hips used to differ by up to 0.2 degrees mid-blend).
