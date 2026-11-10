@@ -188,6 +188,9 @@ pub struct Windup {
     pub row: u8,
     /// The press's aim ([`World::pass_aim`]).
     pub aim: PassAim,
+    /// The press's flight estimate (`DAT_003d65a0`, stored truncated at
+    /// `0x160010`), which callback 39 leads a moving receiver by.
+    pub estimate: f32,
 }
 
 /// What a pass press comes to (`FUN_00146278`, the pass target the pad
@@ -416,8 +419,53 @@ impl World {
             left: pick.release,
             row,
             aim,
+            estimate: estimate as i32 as f32,
         });
         self.after_throw(i, to, style);
+    }
+
+    /// `FUN_0015a060`'s first call (`0x15a124..0x15a148`): callback 39 at
+    /// the start of every update of the offence while channel 0 holds flag
+    /// 0x800 (a pass row's `91`), toward the pass's target (the third
+    /// attract match's inbounder keeps facing his drifting receiver through
+    /// the windup, 858 to 870 and back to 868). The turn to it is the
+    /// update's own, after his channel steps ([`World::passer_turn`]).
+    pub(crate) fn passer_faces_receiver(&mut self, i: usize, start: &[[f32; 2]]) {
+        if !self.passer_flagged(i) {
+            return;
+        }
+        let (to, estimate) = match (self.windup, self.ball.pass) {
+            (Some(w), _) if w.from == i => (w.to, w.estimate),
+            (_, Some(p)) if p.from == i && self.ball.state == BallState::Pass => (p.to, 0.0),
+            _ => return,
+        };
+        if to == i {
+            return;
+        }
+        let word = self.toward_receiver(i, to, estimate, start);
+        self.players[i].wanted = crate::restart::heading_radians(word);
+    }
+
+    /// `FUN_00168ea8` for a passer on a row with channel flag 0x800, after
+    /// the motion step (his root turned on the facing the update began
+    /// with).
+    pub(crate) fn passer_turn(&mut self, i: usize) {
+        if self.passer_flagged(i) {
+            self.players[i].turn_to_wanted(false);
+        }
+    }
+
+    fn passer_flagged(&self, i: usize) -> bool {
+        let Action::Passing { row, .. } = self.players[i].action else {
+            return false;
+        };
+        crate::held::PASS_STEPS
+            .get(usize::from(row))
+            .is_some_and(|steps| {
+                steps
+                    .iter()
+                    .any(|s| matches!(s, crate::trick::Step::Flags(w) if w & 0x800 != 0))
+            })
     }
 
     /// Callback 39 (`FUN_001753a0`, raw `0x1753a0..0x175700`) in live play
@@ -526,7 +574,16 @@ impl World {
             }
         }
         let fps = crate::TICK_HZ as f32;
-        let reach = ee_divide(distance(spot, r.position), r.speed / fps);
+        // `0x15fd34..0x15fd60`: over +0x190, the locomotion's speed an
+        // update, which a stop on the stand path leaves as it was (the
+        // third attract match's inbound receiver at update 533, standing
+        // on his spot: 0 updates, so the spot run starts).
+        let per_update = if r.speed == 0.0 {
+            r.step
+        } else {
+            r.speed / fps
+        };
+        let reach = ee_divide(distance(spot, r.position), per_update);
         let margin = (fps * f32::from_bits(0x3df5_c28f)) as i32 as f32;
         let window = (fps * 0.5) as i32 as f32;
         let lead = if reach + margin <= window {

@@ -1740,6 +1740,7 @@ impl World {
                 self.pad_before(i)
             };
             let pressed = input.pressed_since(&before);
+            self.passer_faces_receiver(i, &start);
             if self.windup.is_some_and(|w| w.from == i) {
                 // The passer's animation: the ball leaves his hands at
                 // the pass script's callback 38.
@@ -1828,6 +1829,9 @@ impl World {
             // spot run's stop ([`receiver`]); then his parked catch row
             // starts before his tests ([`touch::Catching`]); its channel
             // steps after them.
+            // Waiting in `breathe_1` since an earlier update (the update it
+            // starts still runs his stand path).
+            let waiting = self.spot_run.waiting == Some(i);
             self.receiver_run(i);
             // A running catch (its row on channel 2) leaves channel 0 on his
             // run, cycling at its rate, and his velocity as it was
@@ -1974,7 +1978,13 @@ impl World {
             if steered.is_none() && run_kept.is_none() {
                 self.select_gait(i, &walk, held, stance);
             }
-            if run_kept.is_none() {
+            // The receiver waiting in `breathe_1` draws no stand: the pass's
+            // receiver keeps the stick the pass start gave him (the pad
+            // builder `FUN_001587d8` leaves it, `0x158adc..0x158af8`), so the
+            // stand path's picks pass him by (the third attract match's
+            // inbound receiver from update 534: one offence draw an update,
+            // not two).
+            if run_kept.is_none() && !waiting {
                 self.stand_path(i, &input, &start);
             }
             // A free holder's pass goes in after his locomotion
@@ -2117,7 +2127,15 @@ impl World {
             } else {
                 None
             };
-            let stepped = self.players[i].step(&moved, held, stance);
+            // A reaction ending on callback 1 this update runs his
+            // locomotion in the channel step (below): the actor's own
+            // locomotion has already passed him by in the reaction (the
+            // third attract match's knocked blocker running out at 482).
+            let stepped = if called_reaction {
+                None
+            } else {
+                self.players[i].step(&moved, held, stance)
+            };
             if let Some((gait, mut channel, speed, course, wanted, heading)) = run_kept {
                 let frames = self
                     .poses
@@ -2225,6 +2243,7 @@ impl World {
                     .or(block_shown.filter(|_| called_block))
             };
             self.flight_tick(i, start.get(i).copied().unwrap_or(before));
+            self.passer_turn(i);
             // Callback 7 (`0x174e80`) before callback 1: his wanted facing
             // (+0xb0) the pelvis's the script left (`FUN_00154230`), which
             // the update's turn then faces (the third attract match's

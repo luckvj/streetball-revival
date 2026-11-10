@@ -383,8 +383,12 @@ impl World {
         let word = self.word_to_ball(i);
         self.halt(i, word);
         self.spot_run.count = 0;
+        // `0x15a6d0..0x15a6fc`: `breathe_1` on his channel unless it shows
+        // already (the third attract match's inbound receiver at update
+        // 533: its blend matches his facing, 360 to 257, and he turns back).
         if self.shown_record(i) != Some(BREATHE_RECORD) {
             self.spot_run.waiting = Some(i);
+            self.start_stand(i, crate::stand::BREATHE);
         }
         false
     }

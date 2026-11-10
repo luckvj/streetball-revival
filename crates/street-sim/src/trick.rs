@@ -1137,11 +1137,14 @@ pub fn root_step(poses: &Poses, before: Shown, after: Shown) -> [f32; 3] {
     if after.blend.is_some() || a != b {
         return [0.0; 3];
     }
+    // Past the clip's last key a looping clip's frame runs on toward its
+    // first (the third attract match's stand at 513: frames 31.30, 31.74
+    // of clip 67's 32 lerp toward key 0, then 0.17).
     let at = |time: f32| {
         poses.root(Frame {
             record: b,
             time,
-            looping: false,
+            looping: true,
         })
     };
     match (at(before.frame), at(after.frame)) {

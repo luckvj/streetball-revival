@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 129;
+const VERSION: u8 = 130;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -298,6 +298,7 @@ impl World {
                 left,
                 row,
                 aim: crate::passing::PassAim { spot, lead, reach },
+                estimate,
             }) => {
                 w.u8(1);
                 w.us(*from);
@@ -308,6 +309,7 @@ impl World {
                 w.f2(spot);
                 w.u8(u8::from(*lead));
                 w.f(*reach);
+                w.f(*estimate);
             }
         }
         match pass_tail {
@@ -734,6 +736,7 @@ impl World {
                     },
                     reach: r.f()?,
                 },
+                estimate: r.f()?,
             }),
             k => return Err(format!("bad pass windup flag {k}")),
         };

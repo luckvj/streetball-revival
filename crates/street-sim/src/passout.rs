@@ -266,6 +266,7 @@ impl World {
             left: left.max(1),
             row: row as u8,
             aim,
+            estimate: 0.0,
         });
         self.fresh_take = false;
         self.after_throw(i, to, style);

@@ -1101,8 +1101,12 @@ impl World {
                     lead: _,
                     reach: _,
                 },
+            estimate,
         }) = windup
         {
+            if !estimate.is_finite() {
+                return Err("pass windup estimate is not finite".into());
+            }
             player(*from)?;
             player(*to)?;
             floats(spot, "pass aim spot")?;
@@ -1377,6 +1381,7 @@ mod tests {
                         lead: true,
                         reach: f32::MAX,
                     },
+                    estimate: 0.0,
                 })
             },
             |w| {

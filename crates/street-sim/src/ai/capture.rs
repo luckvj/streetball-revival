@@ -4797,9 +4797,11 @@ fn putbacks_start_on_their_records_and_some_catch_the_ball() {
     // With the first steps at the stored rate, 2026-11-08, seeds 12, 14
     // and 15 catch none; 13 and 16..20 do. With the knocked men turning
     // to their wanted facings and the PS2's position adds, 2026-11-10,
-    // seeds 13, 15 and 19 catch none; 14, 16..18 and 20..22 do.)
+    // seeds 13, 15 and 19 catch none; 14, 16..18 and 20..22 do. With the
+    // passer facing his receiver through the windup and the receiver's
+    // breathe_1, 2026-11-10, seed 14's none; 16..18 and 20..23 do.)
     let (mut started, mut caught) = (0, 0);
-    let mut w = demo_match(14);
+    let mut w = demo_match(16);
     w.start_opening_toss();
     for _ in 0..20_000 {
         step_computer(&mut w);
