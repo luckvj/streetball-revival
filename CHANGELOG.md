@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A player still sliding into a trick move takes his share of a bump as on the PS2 (the defender used to be pushed away instead), and a computer defender coming to a stand keeps his last step when he already wants to face his man, as the PS2 checks it (he turned in place a step early).
 - A ball handler's trick move is chosen as on the PS2: the press is read after his footwork for that update (so the move gets the PS2's random roll), the side of the defender it goes round is worked out with the PS2's angles (one case was the wrong way round), and as the move starts he snaps to face the way its first frame does before turning, as on the PS2.
 - The computer's defence and fast break follow the PS2 after an inbound: defenders press an inbound pass from deep the way the PS2 does (a second, closer reach for the ball while the shot clock is fresh), the fast-break outlet pass waits as long as on the PS2 (its wait used 15 where the PS2 uses 14), and the break and pull-up plays hold off while a shot is asked for, as on the PS2.
 - A passer still on his pass animation keeps turning toward whoever the next pass is going to, as on the PS2, and a player coming out of a pass row starts his run from that animation (it used to start from the walk underneath, so his first strides and turn were off).

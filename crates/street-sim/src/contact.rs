@@ -256,10 +256,15 @@ impl World {
         matches!(self.players[i].action, Action::Jumping { .. })
     }
 
-    /// Moving (actor+0x40, the velocity, not the zero vector).
+    /// Moving (actor+0x40, the velocity, not the zero vector). A trick
+    /// coasts on the press's velocity until its `97` (the third attract
+    /// match's holder at update 672 takes the bump's push, not the
+    /// defender).
     fn moving(&self, i: usize) -> bool {
         let p = &self.players[i];
-        p.moving() || (p.height > 0.0 && !matches!(p.action, Action::None))
+        p.moving()
+            || (p.height > 0.0 && !matches!(p.action, Action::None))
+            || matches!(p.action, Action::Trick { play, .. } if play.drift != [0.0; 2])
     }
 
     /// `FUN_00133bb0`'s plain contacts: every pair, the lower index first,

@@ -195,10 +195,13 @@ impl Brain {
     }
 
     /// `FUN_0013b210`: turn to `angle` (when it is at least `min_turn` off
-    /// the facing) at a speed level, without steering.
+    /// the wanted facing, `FUN_0013aaf8`'s actor+0xb0) at a speed level,
+    /// without steering. Within it the pad keeps what it had: the third
+    /// attract match's defender coming to a stand at update 654 runs on
+    /// along his last stick (230), already wanting the man (224).
     pub fn face(&mut self, ctx: &Ctx, i: usize, angle: i32, level: usize, min_turn: i32) -> bool {
         let angle = angle & 0x3ff;
-        if turn(angle, ctx.facing(i)).abs() < min_turn {
+        if turn(angle, ctx.wanted_facing(i)).abs() < min_turn {
             return false;
         }
         self.motion.history = [angle; HISTORY];

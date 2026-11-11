@@ -132,6 +132,11 @@ impl Ctx<'_> {
         units(self.w.players[i].heading + std::f32::consts::PI)
     }
 
+    /// The wanted facing as a stick angle (actor+0xb0, `FUN_0013aaf8`).
+    pub fn wanted_facing(&self, i: usize) -> i32 {
+        units(self.w.players[i].wanted + std::f32::consts::PI)
+    }
+
     /// The other players by distance, nearest first (game+0x23c: the five
     /// others in actor order sorted by [`native_sort`], `0x13fd00..0x13fd60`).
     pub fn by_distance(&self, i: usize) -> Vec<usize> {
