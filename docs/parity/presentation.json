@@ -789,11 +789,11 @@
           "path": "crates/street-game/src/setup.rs",
           "locator": "load_match (the staged players' scales and width ratios; World::set_match_values)",
           "note": "Each player's scale and width ratio, the match's own values.",
-          "sha256": "bb0381a333e97c279ff743d0e69507e49c57006fd3b73fbdc3629d7815354b86"
+          "sha256": "b8f62dad32bf609c5764a22f6e2281ffc92e8ae703e99ecfa29af470aa5d4065"
         }
       ],
       "tolerance": "Per-axis morphed hand tracking matching rendered joints within 1e-5 court units across all database players.",
-      "limitations": "Staged hand tracking matches morphed player joint geometry for all league database players. Continuous interactive live-gameplay ball handoffs remain separate. Re-pinned 2026-10-16 after the court's frame pass: staged.rs's disc tests and fixture mirror team 0's scripts; the cited tests `authoritative_staged_hands_use_each_database_players_native_body_geometry` pass on their scenes mirrored into the original's frame. 2026-10-20 (online on the disc): attach_hands moved to street-net's disc and builds the disc's hand tracks alone (bit for bit the same); each player's model scale and width ratio, which it used to set, are the match's own values setup.rs's load_match sets (World::set_match_values). Last re-pinned 2026-11-08 after the online actor order (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Staged hand tracking matches morphed player joint geometry for all league database players. Continuous interactive live-gameplay ball handoffs remain separate. Re-pinned 2026-10-16 after the court's frame pass: staged.rs's disc tests and fixture mirror team 0's scripts; the cited tests `authoritative_staged_hands_use_each_database_players_native_body_geometry` pass on their scenes mirrored into the original's frame. 2026-10-20 (online on the disc): attach_hands moved to street-net's disc and builds the disc's hand tracks alone (bit for bit the same); each player's model scale and width ratio, which it used to set, are the match's own values setup.rs's load_match sets (World::set_match_values). Last re-pinned 2026-11-10 after the trick press (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture native live-rendered player joint positions and compare against hand_position in staged gamebreaker sequences."
     },
     {
