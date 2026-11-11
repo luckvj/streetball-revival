@@ -2003,6 +2003,9 @@ impl World {
             if let Some(LatePress::Jump(turbos)) = late_pass {
                 self.jump_press(i, turbos);
             }
+            if let Some(LatePress::Trick(turbos)) = late_pass {
+                self.juke_press(i, &press_input, turbos);
+            }
             if let Some(LatePress::Pass(aimed)) = late_pass {
                 // `FUN_0015f930` (`0x15faf0..0x15fbe4`): a passer still
                 // moving (actor+0x40; zeroed first on the floor with the
@@ -2969,7 +2972,10 @@ impl World {
             } else if pass_press {
                 return Some(LatePress::Pass(aimed));
             } else if pressed & button::TRICK != 0 {
-                self.juke_press(i, input, turbos);
+                // After his locomotion too (the third attract match's
+                // holder at update 666 draws his gait record's pick before
+                // the trick's face and draw).
+                return Some(LatePress::Trick(turbos));
             } else if pressed & button::SELECT != 0 {
                 self.pocket(i, turbos);
             }
@@ -5242,4 +5248,6 @@ enum LatePress {
     Shoot,
     /// The block or rebound jump, with the turbos held.
     Jump(u32),
+    /// The juke or trick press, with the turbos held.
+    Trick(u32),
 }

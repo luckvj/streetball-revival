@@ -971,6 +971,9 @@ pub struct Play {
     /// The clip he played at the press (record and frame), held through
     /// the blend.
     pub from: Option<(u16, f32)>,
+    /// How far the first blend's heading match turned him (the held clip
+    /// turned back as far, so the model holds).
+    pub turn: i16,
 }
 
 impl Play {
@@ -985,6 +988,7 @@ impl Play {
             window: 0,
             faked: None,
             from: None,
+            turn: 0,
         }
     }
 
@@ -1384,7 +1388,8 @@ fn capsules_touch(capsules: &[(usize, usize, f32, f32)], handler: &Pose, other: 
 
 /// `FUN_0018d768`'s sector and half of `to` about `from` facing `word`.
 fn sector_half(word: i32, from: [f32; 2], to: [f32; 2]) -> (i32, i32) {
-    let a = crate::contact::angle(from, to);
+    // `FUN_0018d768`: the EE's own arc tangent, rounded.
+    let a = crate::ordinary::native_heading([from[0], 0.0, from[1]], [to[0], 0.0, to[1]]);
     let u = (word - a + 0x200) & 0x3ff;
     (((u + 0x40) & 0x3ff) >> 7, ((u + 0x80) & 0x3ff) >> 8)
 }
@@ -1512,9 +1517,34 @@ impl World {
         let dive = self.lesson == Some(16);
         self.players[i].fumble = dive;
         self.players[i].fumble_timer = if dive { FUMBLE_WAIT } else { 0 };
-        let defender = self.nearest_opponent(i);
+        // The nearest defender on the game's distance table (built as the
+        // update began), his sector from the holder's place before this
+        // update's motion step (the press comes after the locomotion, before
+        // `FUN_00156f48` moves him) to the defender's as it stands (his
+        // update, earlier in the order, has moved him): the third attract
+        // match's holder at update 666.
+        let places = self
+            .control
+            .tables
+            .as_ref()
+            .map_or_else(|| self.floor_positions(), |t| t.places.clone());
+        let at = |k: usize| places.get(k).copied().unwrap_or(self.players[k].position);
+        let defender = {
+            let p = &self.players[i];
+            let mut best = (1000.0f32, None);
+            for (j, q) in self.players.iter().enumerate() {
+                if j == i || q.team == p.team {
+                    continue;
+                }
+                let d = crate::distance(at(i), at(j));
+                if d < best.0 {
+                    best = (d, Some(j));
+                }
+            }
+            best.1
+        };
         let wanted = self.wanted_facing(i, input);
-        let (position, heading) = (self.players[i].position, self.players[i].heading);
+        let (position, heading) = (at(i), self.players[i].heading);
         let (sector, half) = defender.map_or((0, 0), |d| {
             sector_half(wanted, position, self.players[d].position)
         });
@@ -1540,7 +1570,16 @@ impl World {
         };
         // `0x15f598`: he faces the defender ahead of where he wants to go.
         let word = match defender {
-            Some(d) if half == 2 => crate::contact::angle(position, self.players[d].position),
+            // The pair table's word (`FUN_0016f508`, on the places the
+            // update began with).
+            Some(d) if half == 2 => {
+                let places = self
+                    .control
+                    .tables
+                    .as_ref()
+                    .map_or_else(|| self.floor_positions(), |t| t.places.clone());
+                self.pair_word(i, d, &places)
+            }
             _ => timing::facing_word(heading),
         };
         if id.level >= 2 {
@@ -1556,6 +1595,9 @@ impl World {
         });
         let p = &mut self.players[i];
         let left = p.gait_channel.hand == 2;
+        // The script takes channel 0 from a stand his locomotion began
+        // this update (the press comes after it).
+        p.stand = None;
         p.action = Action::Trick {
             id,
             play: Play {
@@ -1748,8 +1790,16 @@ impl World {
         if let Some(d) = defender
             && s == 4
         {
-            let a = crate::contact::angle(p.position, self.players[d].position);
-            s = if (wanted - a) & 0x3ff < 0x200 { 3 } else { 5 };
+            // `FUN_0015f860`: the pair table's word (`FUN_0016f508`).
+            let places = self
+                .control
+                .tables
+                .as_ref()
+                .map_or_else(|| self.floor_positions(), |t| t.places.clone());
+            let a = self.pair_word(i, d, &places);
+            // 1 (sector 5) when the wanted facing is within half a turn
+            // ahead of the word (`0x15f87c..0x15f888`).
+            s = if (wanted - a) & 0x3ff < 0x200 { 5 } else { 3 };
         }
         let hand = p.gait_channel.hand;
         let mut side = 0u8;
@@ -1804,8 +1854,41 @@ impl World {
         let steps = SCRIPTS[usize::from(id.script).min(SCRIPTS.len() - 1)].steps;
         play.window = play.window.saturating_sub(1);
         let before = play.run.shown();
+        let pressed = play.run.tick < 0;
+        let shown_pose = if pressed { self.actor_pose(i) } else { None };
         let ran = play.run.step(steps, self.players[i].height);
         let after = play.run.shown();
+        // Every trick script sets `91`'s 0x800000 just before its first
+        // `8e` (`91 0x82xxxx`; the tables leave the `91` out): that blend's
+        // start matches his facing to the incoming clip on the pelvis the
+        // model showed (`FUN_00196698(channel, 1)`), before the update's
+        // turn. The third attract match's holder at update 667: 782 to
+        // 854, then 46 an update down to his wanted 667.
+        if pressed
+            && ran.blended
+            && let (Some(poses), Some(shown)) = (self.poses.get(), shown_pose.as_ref())
+            && let Some((record, start)) = steps.iter().find_map(|s| match *s {
+                Step::Blend { start, records, .. } => {
+                    Some((records[usize::from(play.run.left)], start))
+                }
+                _ => None,
+            })
+            && let Some(new) = matched_word(
+                poses,
+                shown,
+                record,
+                f32::from(start),
+                self.players[i].body(),
+            )
+        {
+            let p = &mut self.players[i];
+            let word = timing::facing_word(p.heading);
+            let matched = heading_match(word, new);
+            if matched != word {
+                p.heading = crate::restart::heading_radians(matched);
+                play.turn = (word - matched) as i16;
+            }
+        }
         // The fake's window, or the clearout's (kind 2).
         if let Some((row, n)) = ran.window.or(ran.shove) {
             play.row = row;
@@ -1851,10 +1934,11 @@ impl World {
         let frame = after.frame;
         if ran.face
             && let Some(poses) = self.poses.get()
-            && let Some(pose) = pose(
+            && let Some(pose) = pose_turned(
                 poses,
                 after,
                 play.from,
+                i32::from(play.turn),
                 self.players[i].body(),
                 self.place(i),
             )
@@ -2647,15 +2731,15 @@ impl World {
     /// `i`'s trick or reaction pose, if he is in one.
     pub(crate) fn scripted_pose(&self, i: usize) -> Option<Pose> {
         let poses = self.poses.get()?;
-        let (shown, from) = match self.players[i].action {
-            Action::Trick { play, .. } => (play.run.shown(), play.from),
+        let (shown, from, turn) = match self.players[i].action {
+            Action::Trick { play, .. } => (play.run.shown(), play.from, i32::from(play.turn)),
             Action::Stumbling {
                 reaction: Some(r), ..
-            } => (r.run.shown(), r.from),
+            } => (r.run.shown(), r.from, 0),
             // The counter stance and its take ([`crate::counter`]).
             Action::Stealing {
                 stance: Some(s), ..
-            } => (s.run.shown(), s.from),
+            } => (s.run.shown(), s.from, 0),
             // A stand ([`crate::stand`]), blending from its held pose.
             // Channel 2's tail (`92`, a running catch row's) blends over it
             // as over the gait: the third attract match's catcher at update
@@ -2678,7 +2762,14 @@ impl World {
             }
             _ => return None,
         };
-        pose(poses, shown, from, self.players[i].body(), self.place(i))
+        pose_turned(
+            poses,
+            shown,
+            from,
+            turn,
+            self.players[i].body(),
+            self.place(i),
+        )
     }
 }
 

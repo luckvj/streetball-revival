@@ -1120,6 +1120,8 @@ mod tests {
         w.players[0].gait_channel.hand = 1;
         // Dribbling (a fresh take standing still clears out instead).
         w.players[0].dribble = 1;
+        // Sure hands: a level-4 move's fumble roll would end it early.
+        w.players[0].ratings.handles = 1.0;
         use street_sim::button::{L1, L2, R1, R2, TRICK};
         w.step(&[street_sim::Input::default().with(TRICK | L1 | R1 | L2 | R2)]);
         assert!(matches!(

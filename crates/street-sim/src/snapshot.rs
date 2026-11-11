@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 132;
+const VERSION: u8 = 133;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -2406,6 +2406,7 @@ fn action_out(w: &mut Writer, a: &Action) {
             w.u8(play.window);
             w.u8(play.faked.map_or(0, |d| d + 1));
             clip_out(w, play.from);
+            w.iv(i64::from(play.turn));
         }
         Action::Stumbling {
             elapsed,
@@ -2622,6 +2623,7 @@ fn action_in(r: &mut Reader) -> Result<Action, String> {
                 window: r.u8()?,
                 faked: r.u8()?.checked_sub(1),
                 from: clip_in(r)?,
+                turn: i16::try_from(r.iv()?).map_err(|e| e.to_string())?,
             },
         },
         9 => Action::Stumbling {
@@ -4053,8 +4055,9 @@ mod tests {
         // The direct slot draws no candidate: the face's draw and the
         // fumble's (value class 2) only, after the five others' stand
         // draws (the defence's `r & 1`, the offence's `r % 15`; the
-        // actors update from the highest index).
-        for _ in 0..7 {
+        // actors update from the highest index) and his own (the press
+        // comes after his locomotion's stand path).
+        for _ in 0..8 {
             expected_rng.next_u32();
         }
         assert_eq!(w.rng.state(), expected_rng.state());
@@ -4227,8 +4230,8 @@ mod tests {
             );
             // The face's draw and the fumble's (every slot is class 2 or
             // more); no candidate draw; the five others' stand draws
-            // before them.
-            for _ in 0..7 {
+            // and his own (after his locomotion) before them.
+            for _ in 0..8 {
                 expected_rng.next_u32();
             }
             assert_eq!(w.rng, expected_rng, "slot {slot}");
