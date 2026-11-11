@@ -285,13 +285,26 @@ impl World {
         // (each pair's before its push): the trick moves' fake windows
         // ([`crate::trick`]).
         self.pin_box_outs();
-        self.trick_contacts();
-        self.knock_contacts(table);
+        // The bones the pairs read are the ones each channel step posed: a
+        // reaction the scripted contacts start below is not posed until its
+        // man's next update (the third attract match's defender faked out
+        // at update 672 still reaches the holder with his stand's arms).
         let n = self.players.len();
+        let before: Vec<Option<crate::pose::Pose>> = (0..n).map(|i| self.actor_pose(i)).collect();
+        let was: Vec<bool> = (0..n)
+            .map(|i| matches!(self.players[i].action, Action::Stumbling { .. }))
+            .collect();
+        self.trick_contacts();
+        let mut poses: Vec<Option<Option<crate::pose::Pose>>> = (0..n)
+            .map(|i| {
+                let faked = !was[i] && matches!(self.players[i].action, Action::Stumbling { .. });
+                faked.then(|| before[i])
+            })
+            .collect();
+        self.knock_contacts(table);
         let places: Vec<[f32; 2]> = (0..n)
             .map(|i| table.get(i).copied().unwrap_or(self.players[i].position))
             .collect();
-        let mut poses: Vec<Option<Option<crate::pose::Pose>>> = vec![None; n];
         for a in 0..n {
             for b in a + 1..n {
                 // The pair's gate (`0x13401c..0x134040`): where they stand

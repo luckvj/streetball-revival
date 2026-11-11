@@ -1598,6 +1598,9 @@ impl World {
         // The script takes channel 0 from a stand his locomotion began
         // this update (the press comes after it).
         p.stand = None;
+        // His wanted facing is the trick's (`0x15f5c4`), held through it
+        // (the third attract match's holder: 667 from the press on).
+        p.wanted = crate::restart::heading_radians(word);
         p.action = Action::Trick {
             id,
             play: Play {
@@ -1901,11 +1904,11 @@ impl World {
         if play.run.tick == 0 {
             // The press update: the gait still runs (it points his
             // velocity), and the blend coasts on what it left.
-            let heading = p.heading;
+            let (heading, wanted) = (p.heading, p.wanted);
             p.walk(input, 1.0, held, None);
             let v = p.velocity();
             play.drift = [v[0] * crate::TICK_SECONDS, v[1] * crate::TICK_SECONDS];
-            p.heading = heading;
+            (p.heading, p.wanted) = (heading, wanted);
         } else {
             p.position[0] += play.drift[0];
             p.position[1] += play.drift[1];

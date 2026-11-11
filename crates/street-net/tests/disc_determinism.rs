@@ -453,8 +453,10 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // 2028: 2027's blocked no shot once a free holder's pass went in
         // after his locomotion; 2029: 2028's blocked no shot once callback 1
         // ran the locomotion at a script's end; 2030: 2029's blocked no
-        // shot once the block jumps flew to their landings.)
-        2030,
+        // shot once the block jumps flew to their landings; 2031: 2030's
+        // played no replay once a faked defender bumped with the pose he
+        // held.)
+        2031,
         15_000,
         Conditions {
             loss: 0.04,

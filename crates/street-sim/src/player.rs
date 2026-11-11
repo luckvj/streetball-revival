@@ -1357,6 +1357,7 @@ impl Player {
             Action::None
                 | Action::Passing { .. }
                 | Action::Stealing { .. }
+                | Action::Trick { .. }
                 | Action::Stumbling {
                     reaction: Some(_),
                     ..
