@@ -95,6 +95,11 @@ words! {
         press: bool,
         /// `[0x12]`: frames to the next pass jump check.
         pass_timer: i32,
+        /// `[0x23]`: an inbound to press (`0x1064c0..0x106534`): a pass in
+        /// the air from more than 40 out while the shot clock is on and
+        /// still shows its length less one; the steal check's second reach
+        /// ([`Defense::steal`]) goes on it until it lets him go.
+        inbound: bool,
     }
 }
 
@@ -119,6 +124,17 @@ impl Defense {
 
     pub fn update(&mut self, ctx: &mut Ctx, b: &mut Brain, i: usize) {
         let team = ctx.team(i);
+        // `0x1064c0..0x106534`: the ball (node+0x10) in a pass (+0x180 4),
+        // the setup's shot clock on (`FUN_001e0bc0()+0xec`), the clock
+        // (game vt+0x5c) at its length (game+0x194) less one or more, and
+        // the ball more than 40 out (|+0x30|).
+        if ctx.game.ball == 4
+            && ctx.w.rules.shot_clock.is_some()
+            && ctx.shot_clock() >= clock_length(ctx) - 1
+            && ctx.w.ball.position[0].abs() > 40.0
+        {
+            self.inbound = true;
+        }
         if self.gamble_timer == 0 {
             // `0x106544..0x1065e0`: two draws every three seconds, the
             // spot's sags (`[0x1f]`, `[0x20]`).
@@ -229,10 +245,11 @@ impl Defense {
         self.press = ((ctx.rand() % 100) as i32) < p;
     }
 
-    /// `FUN_00107ae0`: how far a reach goes this frame, `skill(8.5, 6,
-    /// 6, 6) − (r % 150) / 100 + 0.5`, two more from in front.
-    fn reach(&self, ctx: &mut Ctx, i: usize) -> f32 {
-        let base = skill::value(ctx, ctx.team(i), 8.5, 6.0, 6.0, 6.0);
+    /// `FUN_00107ae0(node, a, b)`: how far a reach goes this frame,
+    /// `skill(a, b, b, b) − (r % 150) / 100 + 0.5`, two more from in
+    /// front.
+    fn reach(&self, ctx: &mut Ctx, i: usize, a: f32, b: f32) -> f32 {
+        let base = skill::value(ctx, ctx.team(i), a, b, b, b);
         let r = ctx.rand();
         let mut v = base - (r % 150) as f32 / 100.0 + 0.5;
         if in_front(ctx, i) {
@@ -253,7 +270,26 @@ impl Defense {
         if ctx.w.lesson.is_some() {
             return false;
         }
-        let reach = self.reach(ctx, i);
+        let mut reach = self.reach(ctx, i, 8.5, 6.0);
+        // `0x1073e8..0x107484`: an inbound to press ([`Defense::inbound`])
+        // with a holder (`FUN_0013bf60`) lets go once the clock is under
+        // its length less two or the press is off; else a second reach,
+        // `(7, 7)`, and with the ball inside it the check runs now, on
+        // that reach, with `skill(0, 0, 40, 60)` more.
+        let mut forced = false;
+        if self.inbound && ctx.w.handler().is_some() {
+            if ctx.shot_clock() < clock_length(ctx) - 2 || !self.press {
+                self.inbound = false;
+            } else {
+                let close = self.reach(ctx, i, 7.0, 7.0);
+                if ctx.ball_dist(i) < close {
+                    self.inbound = false;
+                    reach = close;
+                    self.steal_timer = 0;
+                    forced = true;
+                }
+            }
+        }
         if self.steal_timer >= 1 {
             self.steal_timer -= 1;
             return false;
@@ -282,6 +318,9 @@ impl Defense {
         }
         if self.standing(ctx, i) {
             p += skill::percent(ctx, team, 0, 0, 30, 50);
+        }
+        if forced {
+            p += skill::percent(ctx, team, 0, 0, 40, 60);
         }
         if !ctx.human[team] && (ctx.meter_full(0) || ctx.meter_full(1)) {
             p += skill::percent(ctx, team, 0, 0, 6, 16);
@@ -350,7 +389,7 @@ impl Defense {
         if ctx.squad(team).into_iter().any(|j| countering(ctx, j)) {
             return false;
         }
-        let reach = self.reach(ctx, i);
+        let reach = self.reach(ctx, i, 8.5, 6.0);
         let Some(h) = ball_holder(ctx).filter(|&h| ctx.team(h) != team) else {
             return false;
         };
@@ -1353,6 +1392,12 @@ fn interpolate(d: f32, column: usize) -> f32 {
     }
     let (a, b) = (GAPS[k - 1], GAPS[k]);
     (a[column] - b[column]) * (d - b[0]) / (a[0] - b[0]) + b[column]
+}
+
+/// game+0x194, the shot clock's length (`0x13c8a4..0x13c8e8`, by the
+/// setup's row `+0xec`): 12, 24 or 48 seconds, 48 with the clock off.
+fn clock_length(ctx: &Ctx) -> i32 {
+    ctx.w.rules.shot_clock.map_or(48, |t| t as i32)
 }
 
 #[cfg(test)]

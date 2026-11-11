@@ -850,6 +850,11 @@ pub struct World {
     /// A pass pressed and still in the passer's hands until its animation
     /// lets go ([`passing::Windup`]).
     pub windup: Option<passing::Windup>,
+    /// `DAT_003d65a0`: the last pass's flight in updates, the press's
+    /// estimate (stored truncated at `0x160010`) until the release puts
+    /// the receiver's count there (`0x162330`); callback 39 leads a moving
+    /// target by it.
+    pub pass_flight: i32,
     /// A caught pass still holding its receiver in the catch animation
     /// (actor+0xa4 bit 9) until `until` ([`timing::catch_hold`]).
     pub catch: Option<Catch>,
@@ -1413,6 +1418,7 @@ impl World {
             rims: [rim::Rim::default(); 2],
             rim_rigs: [rim::Rig::default(); 2],
             windup: None,
+            pass_flight: 0,
             catch: None,
             pass_tail: None,
             contact_phase: false,
@@ -2595,6 +2601,29 @@ impl World {
         if !walks || !(forced || input.moves()) || self.locomotion_held(i, input) {
             return;
         }
+        // A pass row given back to the locomotion (its `91` without 0x2)
+        // with the ball gone: the record the stick asks for takes channel 0
+        // from the row's clip, which callback 52 reads (the third attract
+        // match's passer at update 619 starts his run from clip 495 at its
+        // still frame, not the gait row under it). He coasts on into the
+        // walk at the velocity the row gave him.
+        // A passout's row holds him through its toss's flight and its last
+        // wait ([`World::passout_tick`]).
+        let script = if matches!(p.action, Action::Passing { .. })
+            && p.height <= 0.0
+            && self.windup.is_none_or(|w| w.from != i)
+            && self.passout.is_none_or(|po| po.passer != i)
+        {
+            let shown = self.script_shown(i);
+            let p = &mut self.players[i];
+            let v = p.flight.velocity;
+            p.speed = math::len(v[0], v[2]) * TICK_HZ as f32;
+            p.action = Action::None;
+            script.or(shown)
+        } else {
+            script
+        };
+        let p = &self.players[i];
         let channel = &p.gait_channel;
         let intensity = input.strength().clamp(0, 64) as u32;
         let family = input::evaluate_gait_family_hysteresis(channel.family, intensity) as u32;

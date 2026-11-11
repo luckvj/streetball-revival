@@ -479,14 +479,15 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
     // blend's heading match turned the players to their clips, seed 21's
     // none once callback 1 ran the locomotion at a script's end, seed
     // 22's none once callback 7 set the wanted facing, seed 23's none once
-    // a passer stopped into a stand at the press).
+    // a passer stopped into a stand at the press, seed 24's none once a
+    // pass row ran on until the locomotion took it).
     let tables = disc().unwrap();
     let teams: Vec<usize> = (0..tables.tables().teams.len())
         .filter(|&t| tables.tables().teams[t].roster.len() >= 3)
         .collect();
     disc_match(
         [teams[12], teams[20]],
-        24,
+        25,
         15_000,
         Conditions {
             loss: 0.10,

@@ -241,7 +241,7 @@ fn refresh_star(ctx: &Ctx, pb: &mut Playbook, team: usize) {
 
 /// `FUN_00181508(ai, 1)`: busy in a shot, or (a computer player)
 /// holding the ball with a shot asked for this frame or queued.
-fn busy_shot(ctx: &Ctx, brains: &[Brain], h: usize) -> bool {
+pub(super) fn busy_shot(ctx: &Ctx, brains: &[Brain], h: usize) -> bool {
     busy(ctx, h)
         || (!ctx.human_player(h)
             && ctx.has_ball(h)

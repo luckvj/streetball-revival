@@ -190,7 +190,10 @@ impl crate::World {
             self.players[i].guard.other = now;
             return None;
         };
-        let toward = angle(start[i], start[h]);
+        // The pair table's word toward him (`FUN_0016f508`, game+0x2cc),
+        // truncated as `native_heading` is: 224, not the float's 223, for
+        // the third attract match's guard at update 654.
+        let toward = self.pair_word(i, h, start);
         let stick = crate::timing::facing_word(crate::math::atan2(sx, sz));
         let still = self.holder_velocity(h) == [0.0; 2];
         let g = &mut self.players[i].guard;

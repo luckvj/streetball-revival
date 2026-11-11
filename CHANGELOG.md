@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- The computer's defence and fast break follow the PS2 after an inbound: defenders press an inbound pass from deep the way the PS2 does (a second, closer reach for the ball while the shot clock is fresh), the fast-break outlet pass waits as long as on the PS2 (its wait used 15 where the PS2 uses 14), and the break and pull-up plays hold off while a shot is asked for, as on the PS2.
+- A passer still on his pass animation keeps turning toward whoever the next pass is going to, as on the PS2, and a player coming out of a pass row starts his run from that animation (it used to start from the walk underneath, so his first strides and turn were off).
+- A guard faces the ball handler on the PS2's own angle table (he was one step off before).
 - Inbound passes play out as on the PS2: the receiver waiting on his spot settles into his ready stance and stops fidgeting, the passer keeps turning to face him through the windup, and the catch the receiver goes for is drawn as the PS2 draws it; a player getting up from a knock-down runs off at the right speed (he used to lurch a step), and a standing player's sway no longer stalls for a moment at the end of each loop.
 - A blocker jumping at a dunker aims his hand from where his body really is at take-off, as on the PS2 (he jumped a little off line), and a player knocked down by a dunk now turns toward the way the PS2 sends him and hops that way, instead of snapping round at once.
 - Players move with the PS2's own float rounding and in its order: an animation's own step (its root) comes first, rounded as the PS2's main processor rounds, then the update's velocity, rounded as its vector unit rounds, and a bump between two players is worked out with the PS2's arithmetic too. Players who run or stand side by side no longer drift apart from the original by a few millionths an update.

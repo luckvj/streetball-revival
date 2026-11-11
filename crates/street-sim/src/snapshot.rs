@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 130;
+const VERSION: u8 = 132;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -170,6 +170,7 @@ impl World {
             rims,
             rim_rigs,
             windup,
+            pass_flight,
             catch,
             pass_tail,
             contact_phase: _,
@@ -312,6 +313,7 @@ impl World {
                 w.f(*estimate);
             }
         }
+        w.iv(i64::from(*pass_flight));
         match pass_tail {
             None => w.u8(0),
             Some(t) => {
@@ -740,6 +742,7 @@ impl World {
             }),
             k => return Err(format!("bad pass windup flag {k}")),
         };
+        let pass_flight = i32::try_from(r.iv()?).map_err(|e| e.to_string())?;
         let pass_tail = match r.u8()? {
             0 => None,
             1 => Some(crate::PassTail {
@@ -1136,6 +1139,7 @@ impl World {
             rims,
             rim_rigs,
             windup,
+            pass_flight,
             catch,
             pass_tail,
             contact_phase: false,

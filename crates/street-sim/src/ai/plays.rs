@@ -20,7 +20,7 @@
 
 use super::moves::{CarrierMove, Leaper};
 use super::offence::{
-    CarrierPause, Drive, Iso, Pass, Shoot, busy, can_act, openness, outside, path_open, quality,
+    CarrierPause, Drive, Iso, Pass, Shoot, can_act, openness, outside, path_open, quality,
 };
 use super::picks::{PickOffBall, RunPick, SetPick};
 use super::spots::{CutKind, CutMove, PerimPlayer, PostCut};
@@ -1387,7 +1387,8 @@ impl Play {
             self.post = id(ctx.with_role(team, 2, &roles));
             self.perim = id(ctx.with_role(team, 3, &roles));
         }
-        if busy(ctx, o) || ctx.passing_now(o, &brains[o]) {
+        // `0x1219c0`: `FUN_00181508(ai, 1)`, a shot asked for counts.
+        if super::playbook::busy_shot(ctx, brains, o) || ctx.passing_now(o, &brains[o]) {
             return;
         }
         if self.get(V2C) != 0 {

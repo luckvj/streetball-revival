@@ -71,6 +71,7 @@ impl World {
             rims,
             rim_rigs,
             windup,
+            pass_flight: _,
             catch,
             pass_tail: _,
             contact_phase: _,

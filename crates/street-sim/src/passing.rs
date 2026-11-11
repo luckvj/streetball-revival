@@ -421,6 +421,7 @@ impl World {
             aim,
             estimate: estimate as i32 as f32,
         });
+        self.pass_flight = estimate as i32;
         self.after_throw(i, to, style);
     }
 
@@ -434,15 +435,21 @@ impl World {
         if !self.passer_flagged(i) {
             return;
         }
-        let (to, estimate) = match (self.windup, self.ball.pass) {
-            (Some(w), _) if w.from == i => (w.to, w.estimate),
-            (_, Some(p)) if p.from == i && self.ball.state == BallState::Pass => (p.to, 0.0),
-            _ => return,
+        // The ball's target (ball+0x100, set at the press and kept until
+        // the next take): whoever's pass it is. The third attract match's
+        // inbounder, still on his row's 0x800 after the catch, leads the
+        // receiver's own pass on (850, 849, 848 from update 589).
+        let Some(to) = self
+            .windup
+            .map(|w| w.to)
+            .or(self.ball.target.map(usize::from))
+        else {
+            return;
         };
         if to == i {
             return;
         }
-        let word = self.toward_receiver(i, to, estimate, start);
+        let word = self.toward_receiver(i, to, self.pass_flight as f32, start);
         self.players[i].wanted = crate::restart::heading_radians(word);
     }
 
@@ -1333,6 +1340,7 @@ impl World {
         );
         let (mut target, t, flight) = if leaper {
             let (n, point) = self.lob_to_leaper(i, to, start);
+            self.pass_flight = n;
             (point, n as f32 / crate::TICK_HZ as f32, None)
         } else {
             let n = self.release_flight(i, to, &mut aim, start) as i32;
@@ -1374,6 +1382,8 @@ impl World {
         // row's script.
         let mut catch = crate::ball::NO_CATCH;
         if let Some((spot, n)) = flight {
+            // `0x162330`: the flight kept for callback 39.
+            self.pass_flight = n;
             let passer_flight = self.players[i].received_flight;
             let first = self.tip.first_pass;
             // A spot run's row list is `catch_stand_1` alone, still drawn

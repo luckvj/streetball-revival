@@ -881,13 +881,12 @@ impl World {
             let facing = self.players[i].heading;
             self.hold_planted(i, &m, facing);
         }
-        // A hang's move, and a dive, are over with their script once he is
-        // down; a pass on the floor once its `91` gives the locomotion back
-        // with the ball gone (the walk takes up the velocity he coasts on).
-        let thrown = self.windup.is_none_or(|w| w.from != i);
+        // A hang's move, a dive and a pass are over with their script once
+        // he is down. A pass row whose `91` has given the locomotion back
+        // runs on until the locomotion takes the channel
+        // ([`World::select_gait`]) or its own callback 1.
         let p = &mut self.players[i];
-        let walks = matches!(p.action, Action::Passing { .. }) && thrown && walks(f.flags);
-        if (m.done || walks)
+        if m.done
             && p.height <= 0.0
             && matches!(
                 p.action,

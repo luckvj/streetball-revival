@@ -407,7 +407,8 @@ const LANE_TABLE: [i32; 81] = [
 
 impl FastBreakCoach {
     /// `FUN_00125b60`: one draw thrown away, the first pass look after
-    /// `r % (fps × 0.25) + fps × 0.2` frames, and everyone on the break.
+    /// `r % (int)(fps × 0x3e7fffff) + fps × 0.2` frames (the constant just
+    /// under a quarter: `r % 14 + 12`), and everyone on the break.
     fn start(&mut self, ctx: &mut Ctx, brains: &mut [Brain], team: usize) {
         self.lanes = false;
         self.roles = false;
@@ -417,7 +418,7 @@ impl FastBreakCoach {
         let r = ctx.rand();
         self.shot = false;
         self.first = true;
-        self.wait = (r % 15) as i32 + 12;
+        self.wait = (r % 14) as i32 + 12;
         for j in ctx.squad(team) {
             if !ctx.human_player(j) {
                 brains[j].replace(ctx, j, Act::FastBreak(FastBreak::new()));
@@ -557,7 +558,7 @@ impl FastBreakCoach {
         };
         if super::offence::juking(ctx, &brains[h], h)
             || ctx.passing_now(h, &brains[h])
-            || super::offence::busy(ctx, h)
+            || super::playbook::busy_shot(ctx, brains, h)
         {
             return;
         }
