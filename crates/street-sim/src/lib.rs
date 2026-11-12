@@ -2705,9 +2705,10 @@ impl World {
     }
 
     /// What `i`'s scripted channel showed ([`ScriptShown`]).
-    /// A swipe in its play-out past the `9c`'s update with the stick
-    /// pushed: over, with channel 0 as the last update left it for the
-    /// locomotion's record.
+    /// A swipe in its play-out past the `9c`'s update: over, the
+    /// locomotion taking the channel (a pushed stick's record from channel
+    /// 0 as the last update left it, a still one's stand: the third attract
+    /// match's swiper at update 1053 stands at once, his clip at 23.5).
     fn swipe_hand_over(&mut self, i: usize, input: &Input) -> Option<Option<ScriptShown>> {
         let Action::Stealing {
             counter: false,
@@ -2717,7 +2718,7 @@ impl World {
         else {
             return None;
         };
-        if s.tick <= s.span() || !input.moves() || self.locomotion_held(i, input) {
+        if s.tick <= s.span() || self.locomotion_held(i, input) {
             return None;
         }
         let shown = self.swipe_shown(i, s);
