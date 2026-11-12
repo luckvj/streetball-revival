@@ -1031,6 +1031,9 @@ pub struct Reacting {
     /// until its first whole frame outside a blend
     /// ([`crate::jump::RESYNC`]).
     pub resync: bool,
+    /// The facing's change at its first blend (`FUN_00196698`, its first
+    /// `91`'s 0x800000), which the held pose turns back by.
+    pub turn: i16,
 }
 
 /// The reactions whose first `91` sets 0x830042 (the root resync, the
@@ -2389,9 +2392,67 @@ impl World {
         // (`FUN_001935c8`): a stand or a gait blend as well as a clip (the
         // third attract match's defender faked out at update 672, his walk
         // blending in from his stand).
-        let shown = self.contact_phase.then(|| self.shown_local(b)).flatten();
+        let elsewhere = !self.contact_phase && self.shown_start.6.is_some_and(|k| k != b);
+        let shown = (self.contact_phase || elsewhere)
+            .then(|| self.shown_local(b))
+            .flatten();
+        // Another actor's update starting it (a callback of his): the
+        // script runs at once (`FUN_0019c2f8`) and its first blend matches
+        // the facing to the incoming clip on the pelvis the model showed
+        // (its first `91`'s 0x800000, `FUN_00196698`); the third attract
+        // match's defender turned to look behind at update 750, 5 to 994.
+        let shown_pose = elsewhere.then(|| self.actor_pose(b)).flatten();
         self.begin_reaction(b, script);
         self.reaction_tick(b);
+        // Its channel steps it in his own update: the blend's counter is
+        // 0 until then (the defender's look behind moves at update 755).
+        if elsewhere
+            && let Action::Stumbling {
+                reaction: Some(r), ..
+            } = &mut self.players[b].action
+        {
+            r.run.count = r.run.count.saturating_add(1);
+            self.players[b].reaction_held = shown;
+        }
+        if let Some(shown_pose) = shown_pose
+            && !(57..=59).contains(&script)
+            && let Some(poses) = self.poses.get()
+            && let Action::Stumbling {
+                reaction: Some(r), ..
+            } = self.players[b].action
+            && let Some((k, record, start)) =
+                reaction(script)
+                    .steps
+                    .iter()
+                    .enumerate()
+                    .find_map(|(k, s)| match *s {
+                        Step::Blend { start, records, .. } => {
+                            Some((k, records[usize::from(r.run.left)], start))
+                        }
+                        _ => None,
+                    })
+            && usize::from(r.run.pc) > k
+            && let Some(new) = matched_word(
+                poses,
+                &shown_pose,
+                record,
+                f32::from(start),
+                self.players[b].body(),
+            )
+        {
+            let p = &mut self.players[b];
+            let word = timing::facing_word(p.heading);
+            let matched = heading_match(word, new);
+            if matched != word {
+                p.heading = crate::restart::heading_radians(matched);
+                if let Action::Stumbling {
+                    reaction: Some(r), ..
+                } = &mut p.action
+                {
+                    r.turn = (word - matched) as i16;
+                }
+            }
+        }
         if self.contact_phase
             && let Action::Stumbling {
                 reaction: Some(r), ..
@@ -2443,6 +2504,7 @@ impl World {
                 up: false,
                 window: 0,
                 resync: RESYNC_REACTIONS.contains(&script),
+                turn: 0,
             }),
         };
     }
@@ -2734,8 +2796,9 @@ impl World {
         // turns toward the wanted one the reaction's start (or callbacks 16
         // and 4) set, at most 46 units an update (the third attract match's
         // knocked blocker from update 355: 44, 1022, 986). Not in the
-        // first step a contact runs at once: the turn is his own update's.
-        if !self.contact_phase {
+        // first step a contact or another actor's update runs at once: the
+        // turn is his own update's.
+        if !self.contact_phase && self.shown_start.6.is_none_or(|k| k == i) {
             let p = &mut self.players[i];
             let (now, to) = (
                 timing::facing_word(p.heading),
@@ -2781,7 +2844,8 @@ impl World {
             } if r.run.tick == 0
                 && let Some(h) = self.players[i].reaction_held.as_ref() =>
             {
-                return Some(poses.place_held(h, self.players[i].body(), self.place(i)));
+                let h = h.turned(i32::from(r.turn));
+                return Some(poses.place_held(&h, self.players[i].body(), self.place(i)));
             }
             Action::Stumbling {
                 reaction: Some(r), ..
@@ -2791,14 +2855,14 @@ impl World {
                     r.run.shown(),
                     r.from,
                     self.players[i].reaction_held.as_ref(),
-                    0,
+                    i32::from(r.turn),
                     self.players[i].body(),
                     self.place(i),
                 );
             }
             Action::Stumbling {
                 reaction: Some(r), ..
-            } => (r.run.shown(), r.from, 0),
+            } => (r.run.shown(), r.from, i32::from(r.turn)),
             // The counter stance and its take ([`crate::counter`]).
             Action::Stealing {
                 stance: Some(s), ..

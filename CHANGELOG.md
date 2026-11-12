@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- More turns and footwork as on the PS2: a Back 2 Papa's thrower turns toward the backboard as he throws; a defender who turns to look behind him at a pass off the board turns in the PS2's steps and starts moving on the PS2's update (he used to swing round twice as fast and set off a step early); and a runner changing from one run into a walk while his first change is still blending starts the walk's stride where the PS2 does.
 - A Back 2 Papa off the backboard plays as on the PS2: the ball handler's spin carries him across the floor as its animation does (he used to stand rooted while it played), he catches it back on the animation's own timing, his face and the pass's random draws come in the PS2's order, and the receiver of an ordinary pass picks his run's footwork when the pass starts, as on the PS2.
 - A computer ball handler crosses the ball over to his other hand when a defender closes in on his dribbling side as he runs, as on the PS2 (it never did); the third attract match's ball handler now crosses over just after his fakeout, as the original does.
 - The crowd's gasp at a fakeout and a trick move's points come after the move's last footwork, as on the PS2 (they came first, so the move's next random draws were off).

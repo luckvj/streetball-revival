@@ -653,6 +653,8 @@ pub(crate) struct ShownStart(
     /// the head's defender, the board's point): it starts with the pass
     /// press after his locomotion ([`World::computer_trick_pass`]).
     pub Option<PendingTrickPass>,
+    /// The actor whose update is running (none between them).
+    pub Option<usize>,
 );
 
 /// [`ShownStart`]'s computer trick pass: tick, passer, receiver, the
@@ -1736,6 +1738,7 @@ impl World {
         // earlier in it and the last update's for one later.
         let order = self.actor_order();
         for (k, &i) in order.iter().enumerate() {
+            self.shown_start.6 = Some(i);
             let shown = self.shown_local(i).map(|h| (self.tick, h));
             if self.shown_start.0.len() < self.players.len() {
                 self.shown_start.0.resize(self.players.len(), None);
@@ -2390,6 +2393,7 @@ impl World {
             self.players[i].moved = None;
             self.count_down_bars(i);
         }
+        self.shown_start.6 = None;
         // The passer stays in his pass animation (bit 4) for the whole
         // windup, however long the row's script holds the ball.
         if let Some(w) = self.windup
@@ -2783,6 +2787,16 @@ impl World {
                 // update 936 starts his dribble at the stand blend's share).
                 Some(s) if stand_blend_from_gait(&s) => s.base.or(s.from.map(|f| f.0)),
                 Some(s) => s.run.shown().record,
+                // A gait blend under way: the row it leaves (`+0x50`; the
+                // third attract match's runner at update 752, blending from
+                // his shuffle into a run, starts his walk at its still
+                // frame, not the run's share).
+                None if p.gait_channel.moving
+                    && p.gait_channel.blend_counter > 0
+                    && let Some((row, _)) = p.gait_channel.blend_from =>
+                {
+                    Some(row)
+                }
                 None if p.gait_channel.moving => {
                     p.gait_channel.record.map(|_| p.gait_channel.record_row())
                 }

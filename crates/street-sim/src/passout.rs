@@ -273,6 +273,19 @@ impl World {
             p.flight = crate::jump::Flight::new([v[0] * dt, 0.0, v[1] * dt]);
             p.flight.script = PASS_ROWS[row].script;
         }
+        // The row's callback 39 (`FUN_001753a0`) before its first blend:
+        // a passout's wanted facing is toward its waypoint (game+0x150 by
+        // `FUN_001636c0`; the third attract match's Back 2 Papa at update
+        // 735 turns to the board, 743 to 746).
+        if crate::held::PASS_STEPS.get(row).is_some_and(|steps| {
+            steps
+                .iter()
+                .any(|s| matches!(s, crate::trick::Step::Call(39)))
+        }) {
+            let p = self.players[i].position;
+            let word = crate::ordinary::native_heading([p[0], 0.0, p[1]], point);
+            self.players[i].wanted = crate::restart::heading_radians(word);
+        }
         let left = toss(row as u8).map_or(PASS_ROWS[row].release, |t| t.tick);
         if i != to {
             self.spot_at_press(i, to, &aim);
