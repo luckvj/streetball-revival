@@ -471,10 +471,14 @@ impl Act {
     fn done(&mut self, ctx: &mut Ctx, b: &mut Brain, i: usize, age: u16) -> bool {
         let ours = ctx.offence() == ctx.team(i);
         match self {
-            // `0x1009d8` is never done; the rewrite ends it when the
-            // handler no longer has the ball (the original's playbook
-            // replaces it, not ported).
-            Act::CarrierPause(_) => !ctx.has_ball(i),
+            // `0x1009d8` is never done: the strategies replace it. A pass
+            // in flight to him keeps it (the third attract match's catch
+            // from update 970: its spot where he stood as it began).
+            Act::CarrierPause(_) => {
+                !ctx.has_ball(i)
+                    && !(ctx.w.ball.state == crate::BallState::Pass
+                        && ctx.w.ball.pass.is_some_and(|p| p.to == i))
+            }
             Act::PerimPlayer(a) => a.done(),
             Act::PostPlayer(a) => a.done(),
             Act::PostCut(a) => a.done(ctx, i),
