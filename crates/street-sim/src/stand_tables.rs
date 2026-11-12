@@ -3,7 +3,7 @@
 
 /// The stand scripts: [`STAND_ADDRESSES`] in order, then the flair's
 /// rows ([`FLAIR_ROWS`]) on `0x457271` from [`FLAIR_FIRST`].
-pub const STAND_SCRIPTS: [StandScript; 65] = [
+pub const STAND_SCRIPTS: [StandScript; 66] = [
     // breathe_1
     StandScript {
         address: 0x4570f5,
@@ -1074,6 +1074,20 @@ pub const STAND_SCRIPTS: [StandScript; 65] = [
             Bits(0x0),
             Blend { n: 0, start: 0, records: [65, 65] },
             Loop { per_frame: f32::from_bits(0x40c00000), frames: 56 },
+            End,
+        ],
+    },
+    // jogdribxover02_fin_r_switch
+    StandScript {
+        address: 0x443a67,
+        steps: &[
+            Unplant,
+            Flags(0x820010),
+            Bits(0x0),
+            Blend { n: 6, start: 0, records: [198, 199] },
+            Wait { to: 22, n: 22 },
+            Flags(0x0),
+            Call(1),
             End,
         ],
     },

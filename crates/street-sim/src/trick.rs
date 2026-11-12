@@ -1989,13 +1989,10 @@ impl World {
             self.self_toss_launch(i, id.script);
         }
         if play.run.done {
-            // `0x157dd0`: in live play, with the ball still his (the
-            // clearout never sets bit 10).
-            if id.script != CLEAROUT
-                && self.game_phase.live()
-                && self.ball.state == BallState::Held(i)
-            {
-                self.score_trick(i, id, play.faked);
+            // `0x157dd0` after the head's look (the clearout never sets
+            // bit 10).
+            if id.script != CLEAROUT {
+                self.shown_start.4 = Some((self.tick, i, id, play.faked));
             }
             return Some(frame);
         }

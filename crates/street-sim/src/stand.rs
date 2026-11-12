@@ -10,14 +10,14 @@
 //! he moves again or a move takes the channel.
 
 /// The stand scripts, as [`STAND_SCRIPTS`] holds them.
-pub const STAND_ADDRESSES: [u32; 58] = [
+pub const STAND_ADDRESSES: [u32; 59] = [
     0x4570f5, 0x457139, 0x4571a8, 0x457202, 0x4570bb, 0x4570d8, 0x4572ae, 0x45731b, 0x456f41,
     0x457412, 0x45742f, 0x4573ce, 0x4573f0, 0x457450, 0x45746d, 0x443bad, 0x443bcf, 0x443bf6,
     0x443c1d, 0x443c44, 0x443c6b, 0x443c92, 0x443cb9, 0x443ce0, 0x443d74, 0x443d07, 0x443d2e,
     0x456f6f, 0x456f9d, 0x456fcb, 0x456ff9, 0x45702c, 0x45705f, 0x45708d, 0x44392a, 0x443980,
     0x4439cd, 0x443a1a, 0x4438d7, 0x4438a7, 0x457377, 0x456d38, 0x456f0e, 0x456de8, 0x456e39,
     0x456e8a, 0x456ed6, 0x456d96, 0x44c31c, 0x44c741, 0x44c6f8, 0x44ba7b, 0x4579d7, 0x4579f5,
-    0x443ad4, 0x443b1e, 0x443b68, 0x4574e2,
+    0x443ad4, 0x443b1e, 0x443b68, 0x4574e2, 0x443a67,
 ];
 
 /// The defence's flair (`FUN_00170fc8`'s `r % 7` of `0x3d9100`, which the
@@ -117,7 +117,12 @@ pub const TIP_OTHERS: [u8; 6] = [WARMUP, READY, WARMUP, STRETCH, RELAX, PLACEMEN
 /// player before his stand): `89 41`, clip 65 at once (`FUN_00196318`),
 /// looped at a frame each 6 updates, its root swaying him.
 pub const PLACEMENT: u8 = 57;
-pub const FLAIR_FIRST: u8 = 58;
+/// The holder's hand switch (`0x443a67`, which `FUN_00163d40` starts at
+/// `0x168080`): `jogdribxover02_fin_r_switch` over his run, its `91`'s
+/// 0x10 keeping the locomotion's records off the channel until its end
+/// ([`World::hand_switch`]).
+pub const SWITCH: u8 = 58;
+pub const FLAIR_FIRST: u8 = 59;
 
 /// The offence's stands off the ball (`0x3d7938`, `r % 15`) and the rows
 /// that count as one already (`0x3d78f0`).
@@ -254,6 +259,58 @@ impl World {
         }
     }
 
+    /// Whether `i`'s channel plays the hand switch ([`SWITCH`]): its `91`
+    /// sets 0x10, so the locomotion runs (and draws its record) but starts
+    /// no record on the channel (`0x167ed4`).
+    pub(crate) fn switching(&self, i: usize) -> bool {
+        self.players[i].stand.is_some_and(|s| s.script == SWITCH)
+    }
+
+    /// `FUN_00163d40`'s hand switch (`0x167f58..0x168090`), with the record
+    /// his channel plays kept and the locomotion not forced: a holder of
+    /// Handles 55 or more, 17 or more from the rim he attacks, outside the
+    /// guarding mode, asking for a dribble record (0x1000), whose nearest
+    /// opponent (`FUN_00170dc0`) stands 5 to 10 off on the distance table
+    /// (`FUN_0018d0c0`) and to the side of the ball's hand: the pair
+    /// table's word to him (`FUN_0016f508`) less the stick's (`+0xb0`)
+    /// within 0x81..0x180 with the ball in the left hand, 0x281..0x380 in
+    /// the right. The third attract match's faker at update 726, out of
+    /// his trick into a left-hand run with his defender on that side.
+    pub(crate) fn hand_switch(
+        &self,
+        i: usize,
+        input: &Input,
+        request: u32,
+        handles: i32,
+        stance: Option<crate::guard::Stance>,
+    ) -> bool {
+        if handles < 55
+            || self.ball.state != BallState::Held(i)
+            || stance.is_some()
+            || request & 0x1000 == 0
+            || self.offence_rim_distance(i) < 17.0
+        {
+            return false;
+        }
+        let Some(o) = self.nearest_opponent(i) else {
+            return false;
+        };
+        let places = self
+            .control
+            .tables
+            .as_ref()
+            .map(|t| t.places.clone())
+            .filter(|p| p.len() == self.players.len())
+            .unwrap_or_else(|| self.floor_positions());
+        let d = crate::distance(places[i], places[o]);
+        if !(5.0 < d && d < 10.0) {
+            return false;
+        }
+        let a = (self.pair_word(i, o, &places) - crate::backdown::stick_word(input)) & 0x3ff;
+        let hand = self.players[i].gait_channel.hand;
+        ((0x81..0x180).contains(&a) && hand == 2) || ((0x281..0x380).contains(&a) && hand == 1)
+    }
+
     /// Whether `i` holds the ball and may not move (`0x167020..0x167050`:
     /// a dribble picked up, actor+0x1a0 −1): the stand path runs whatever
     /// his stick asks, which only turns him.
@@ -276,6 +333,10 @@ impl World {
         // the script).
         let catching = self.catch_row_playing(i).is_some();
         if !catching && self.locomotion_held(i, input) {
+            return;
+        }
+        // The hand switch plays over his run (its `91` has 0x10).
+        if free && input.moves() && self.switching(i) {
             return;
         }
         if !free || (input.moves() && !self.held_still(i)) {

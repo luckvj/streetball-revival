@@ -645,7 +645,19 @@ pub(crate) struct ShownStart(
     /// A trick that ended this update (tick, actor, the clip and model it
     /// left): its callback 1 runs the locomotion in this channel step.
     pub Option<(u64, usize, ScriptShown)>,
+    /// A trick move whose script ended this update (tick, actor, move,
+    /// faked): `0x157dd0` posts its points after the head's look, past
+    /// the locomotion its callback 1 ran.
+    pub Option<(u64, usize, crate::player::TrickIdentity, Option<u8>)>,
+    /// A computer's trick pass pressed this update (tick, passer, receiver,
+    /// the head's defender, the board's point): it starts with the pass
+    /// press after his locomotion ([`World::computer_trick_pass`]).
+    pub Option<PendingTrickPass>,
 );
+
+/// [`ShownStart`]'s computer trick pass: tick, passer, receiver, the
+/// head's defender, the board's point.
+pub(crate) type PendingTrickPass = (u64, usize, usize, Option<usize>, [f32; 3]);
 
 impl PartialEq for ShownStart {
     fn eq(&self, _: &Self) -> bool {
@@ -1647,6 +1659,14 @@ impl World {
         // runs on his AI's frame while he is one ([`World::pad_off`]).
         self.freeze_receiver();
         let off: Vec<bool> = (0..n).map(|i| self.pad_off(i)).collect();
+        // The game's distance table (`FUN_0013fbc8`) is the AI's too: its
+        // frame reads this update's places (the third attract match's
+        // playbook at update 731 finds the holder's defender within 8 as
+        // he stood then, `FUN_0017fd90`).
+        self.control.tables = Some(control::Tables {
+            places: self.floor_positions(),
+            ball: self.ball.position,
+        });
         // The AI's frame up to the players' ([`ai`]); each computer
         // player's own runs at the start of his actor's update below.
         let frame = self.ai_begin(&inputs, &off);
@@ -2032,13 +2052,24 @@ impl World {
                 {
                     self.shown_start.2 = Some((self.tick, i, h));
                 }
-                self.pass_button(i, &press_input, aimed, &start);
+                let trick = self
+                    .shown_start
+                    .5
+                    .take()
+                    .filter(|&(tick, t, ..)| tick == self.tick && t == i);
+                if !trick.is_some_and(|(_, t, to, defender, point)| {
+                    self.computer_trick_pass(t, to, defender, point)
+                }) {
+                    self.pass_button(i, &press_input, aimed, &start);
+                }
             }
             let p = &mut self.players[i];
             if let Some(s) = p.stand.as_mut()
                 && s.run.tick < 0
+                && s.script != stand::SWITCH
             {
-                // A stand starting takes the velocity over from the walk.
+                // A stand starting takes the velocity over from the walk
+                // (the hand switch's locomotion runs on: its `91` has 0x10).
                 s.coast = carried;
                 p.speed = 0.0;
             }
@@ -2329,6 +2360,19 @@ impl World {
             self.contain(i);
             // The head's look ([`look`], `0x157d9c`).
             self.head_look(i);
+            // `0x157dd0`: bit 10 dropped this update, in live play, with
+            // the ball still his (the third attract match's faker at update
+            // 725: the crowd's gasp draws after his new record's).
+            if let Some((_, _, id, faked)) = self
+                .shown_start
+                .4
+                .take()
+                .filter(|&(tick, k, ..)| tick == self.tick && k == i)
+                && self.game_phase.live()
+                && self.ball.state == BallState::Held(i)
+            {
+                self.score_trick(i, id, faked);
+            }
             self.floor_contact(i);
             self.previous_inputs[i] = input;
             self.players[i].moved = None;
@@ -2673,15 +2717,32 @@ impl World {
         if held && stance.is_none() && self.game_phase.phase == game_phase::phase::RESTART {
             request = 0x201;
         }
-        let p = &mut self.players[i];
-        let channel = &mut p.gait_channel;
+        let switching = self.switching(i);
         let profile = config.profiles.get(i).copied().unwrap_or_default();
-        let current = channel.record.map(|_| channel.record_row());
+        let current = if switching {
+            Some(self.channel_row(i))
+        } else {
+            let channel = &self.players[i].gait_channel;
+            channel.record.map(|_| channel.record_row())
+        };
         let rng = &mut self.rng;
         let index = gait_select::select_drawing(&config.records, current, request, profile, || {
             rng.next_u32()
         });
+        // The hand switch's 0x10: no record takes the channel from it.
+        if switching {
+            return;
+        }
+        let kept = current.is_some_and(|row| {
+            config
+                .records
+                .get(index)
+                .is_some_and(|r| r.rows.contains(&row))
+        });
         self.start_gait_record(i, index, request, script.as_ref());
+        if kept && !forced && self.hand_switch(i, input, request, profile.handles, stance) {
+            self.start_stand(i, stand::SWITCH);
+        }
     }
 
     /// The gait record `index` (of [`GaitConfig::records`], table

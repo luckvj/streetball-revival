@@ -1367,7 +1367,10 @@ impl World {
                 .ok()
                 .filter(|&to| to < n)
                 .unwrap_or(t);
-            self.computer_trick_pass(t, receiver, defender, point);
+            // `FUN_00183318`'s press goes in with the pad, after his
+            // locomotion (`FUN_0015f930` at `0x15b9c0`): the third attract
+            // match's faker at update 735 draws his dribble stand first.
+            self.shown_start.5 = Some((self.tick, t, receiver, defender, point));
         }
         Some(out)
     }

@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A computer ball handler crosses the ball over to his other hand when a defender closes in on his dribbling side as he runs, as on the PS2 (it never did); the third attract match's ball handler now crosses over just after his fakeout, as the original does.
+- The crowd's gasp at a fakeout and a trick move's points come after the move's last footwork, as on the PS2 (they came first, so the move's next random draws were off).
+- The computer reads how open a player is from where everyone stood as the update began, as the PS2's distance table holds it, and its team plans see this update's places rather than the last one's; a computer ball handler throws his Back 2 Papa trick pass on the update the PS2 does, and after his stand for that update, as on the PS2.
 - A player coming out of a trick move picks his run afresh on the move's last update, as on the PS2 (he carried on with the run he had before the move, and his footwork's random draws came an update late).
 - The computer ranks the players around each man by where they stood as the update began, as the PS2's distance table does (it used where the earlier players had already moved to), so a runner weighs the defenders in his path in the PS2's order and bends round them the same way.
 - A player knocked or faked into a stumble now blends into it from the pose he was actually showing (a walk still blending in from a stand, say) rather than from the clip under it, and shows that pose on the update the stumble begins, as on the PS2; the third attract match's faked-out defender now moves limb for limb with the original.

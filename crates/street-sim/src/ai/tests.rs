@@ -135,7 +135,12 @@ fn the_shots_quality_is_the_originals_from_the_world() {
     // one; one 8 out takes one (within 10), contests (dx 4.4: 171 units,
     // 2) and one more within 14; a defender down (`FUN_0017fd08`) is not
     // counted.
-    let q = |w: &World| with_ctx(w, |ctx| offence::quality(ctx, 0)).0;
+    // The distances are the update's table's: moved by hand, none.
+    let q = |w: &World| {
+        let mut w = w.clone();
+        w.control.tables = None;
+        with_ctx(&w, |ctx| offence::quality(ctx, 0)).0
+    };
     let mut w = half_court(15.0, 20.0);
     step_all(&mut w);
     w.ball.hold(0);

@@ -86,9 +86,19 @@ impl Ctx<'_> {
         angle_toward(self.pos(i), self.goal(self.offence()))
     }
 
-    /// game+0x1ac (`FUN_0018cde0`): the distance between two players.
+    /// game+0x1ac (`FUN_0018cde0`): the distance between two players, as
+    /// the table built before the actors update holds it (`FUN_0013fbc8`,
+    /// on the places the update began with): the third attract match's
+    /// holder at update 730 reads his defenders where they stood before
+    /// they moved.
     pub fn between(&self, a: usize, b: usize) -> f32 {
-        dist(self.pos(a), self.pos(b))
+        let places = self.w.control.tables.as_ref().map(|t| &t.places);
+        let at = |k: usize| {
+            places
+                .and_then(|p| p.get(k).copied())
+                .unwrap_or_else(|| self.pos(k))
+        };
+        dist(at(a), at(b))
     }
 
     /// game+0x2cc (`FUN_0017de28`): the angle from `a` toward `b`, as the
