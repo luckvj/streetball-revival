@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 135;
+const VERSION: u8 = 136;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -538,6 +538,7 @@ impl World {
                 }
                 w.bool(po.tossed);
                 w.iv(po.tail.map_or(-1, i64::from));
+                w.u8(po.flight);
             }
         }
         match advanced {
@@ -989,6 +990,7 @@ impl World {
                     -1 => None,
                     t => Some(u8::try_from(t).map_err(|_| "bad passout tail")?),
                 },
+                flight: r.u8()?,
             }),
             k => return Err(format!("bad passout flag {k}")),
         };

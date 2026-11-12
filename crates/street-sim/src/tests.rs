@@ -4568,6 +4568,7 @@ fn a_head_passout_meets_the_head_within_the_passers_reach() {
             back: Some(([0.0, 4.0, 0.0], 40)),
             tossed: true,
             tail: None,
+            flight: 40,
         });
         let pass = crate::Pass {
             from: 0,

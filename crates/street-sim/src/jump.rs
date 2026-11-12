@@ -193,8 +193,8 @@ impl Flight {
 }
 
 /// The moves whose scripts move him: a shot, a dunk, a leap, a lay-up, a
-/// dive or a pass on its row's script (the putback keeps its own clock, as
-/// does a passout to himself, [`crate::passout`]).
+/// dive or a pass on its row's script, a passout to himself's too (the
+/// putback keeps its own clock).
 pub fn scripted(action: &Action) -> bool {
     match *action {
         Action::Shooting { .. } | Action::Layup { .. } | Action::Dive { .. } => true,
@@ -203,9 +203,7 @@ pub fn scripted(action: &Action) -> bool {
         // shot, a dunk or a leap): the row's `91` turns his locomotion off
         // (0x2), its `97` stops him or he coasts, the clip's root carries
         // him.
-        Action::Passing { row, .. } => {
-            usize::from(row) < timing::PASS_ROWS.len() && crate::passout::toss(row).is_none()
-        }
+        Action::Passing { row, .. } => usize::from(row) < timing::PASS_ROWS.len(),
         _ => false,
     }
 }

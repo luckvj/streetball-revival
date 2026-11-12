@@ -237,6 +237,7 @@ impl World {
             back,
             tossed,
             tail,
+            flight: _,
         }) = passout
         {
             require(*passer < players.len(), "passout passer")?;
@@ -1343,6 +1344,7 @@ mod tests {
             back: None,
             tossed: true,
             tail: None,
+            flight: 0,
         });
         assert_eq!(w.validate(), Ok(()));
         let restored = World::from_snapshot(&w.to_snapshot()).unwrap();

@@ -57,6 +57,10 @@ pub struct Passout {
     /// The updates of his script left after the flight (its last wait),
     /// counting once the ball is no longer a pass to him.
     pub tail: Option<u8>,
+    /// The whole flight in updates once the ball is away, 0 before: a
+    /// passout to himself's `8d ee F ef` runs his clip to the catch's
+    /// frame over it ([`crate::trick::Step::Flight`]).
+    pub flight: u8,
 }
 
 /// A passout row's toss (`83 35`, callback 53): the row of
@@ -227,6 +231,7 @@ impl World {
             back: None,
             tossed: false,
             tail: None,
+            flight: 0,
         });
         let aim = if i == to {
             PassAim {
@@ -243,6 +248,10 @@ impl World {
         } else {
             rows[(self.rng.next_u32() % rows.len() as u32) as usize]
         };
+        // The passer's face, as any pass start's (`0x1610ec..0x161110`;
+        // the third attract match's Back 2 Papa at update 735).
+        self.rng.next_u32();
+        self.face(i, 2 * crate::TICK_HZ as i32);
         let style = if defender.is_some() {
             PassStyle::Heezay
         } else {
@@ -255,6 +264,15 @@ impl World {
             row: row as u8,
             tick: 0,
         };
+        // The row's script moves him (its clip's root: the third attract
+        // match's spin at update 742), from the velocity the stop left.
+        if PASS_ROWS[row].flags & 0x400 == 0 {
+            let v = self.players[i].velocity();
+            let dt = crate::TICK_SECONDS;
+            let p = &mut self.players[i];
+            p.flight = crate::jump::Flight::new([v[0] * dt, 0.0, v[1] * dt]);
+            p.flight.script = PASS_ROWS[row].script;
+        }
         let left = toss(row as u8).map_or(PASS_ROWS[row].release, |t| t.tick);
         if i != to {
             self.spot_at_press(i, to, &aim);
@@ -324,6 +342,7 @@ impl World {
         let first = (total as f32 * (d1 / PASS_SPEED * ratio).max(2.0) / (whole * ratio)) as i32;
         po.point = point;
         po.back = Some((target, total));
+        po.flight = total.clamp(1, 255) as u8;
         po.tossed = true;
         pass.via = match po.defender {
             Some(defender) if po.kind == Kind::Head => Via::Head { defender },
@@ -402,6 +421,7 @@ impl World {
             back: Some((hand, total)),
             tossed: true,
             tail: None,
+            flight: total.clamp(1, 255) as u8,
         });
         let hoop = crate::target_hoop(self.players[i].team);
         self.ball.throw(

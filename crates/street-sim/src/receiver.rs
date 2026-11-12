@@ -164,6 +164,11 @@ impl World {
                 word: self.steer_word(to),
                 ..self.previous_inputs[to]
             };
+            // Its record's selection (`0x168b84`): the third attract
+            // match's receiver at update 873 draws it after the passer's
+            // stand, before the pass start's own draws.
+            let held = self.ball.state == crate::BallState::Held(to);
+            self.select_gait_with(to, &input, held, None, false, None);
             let mut ran = self.players[to].clone();
             ran.walk(&input, 1.0, false, None);
             let r = &mut self.players[to];

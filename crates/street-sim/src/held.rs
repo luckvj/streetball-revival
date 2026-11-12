@@ -448,6 +448,16 @@ impl World {
             .map_or(0, |to| foot_sync(poses, (record, frame as i32), to))
     }
 
+    /// A passout to himself's flight in updates once the ball is away
+    /// (its `8d ee F ef`, [`trick::Step::Flight`]: the clip runs to the
+    /// catch's frame over it; the third attract match's Back 2 Papa from
+    /// update 750), else none.
+    fn toss_flight(&self, i: usize) -> u8 {
+        self.passout
+            .filter(|po| po.passer == i)
+            .map_or(0, |po| po.flight)
+    }
+
     /// `i`'s scripted move's channel as the last update left it: its run
     /// replayed to now (the leaper's span the lob reads, [`crate::leap`]).
     pub(crate) fn move_run(&self, i: usize) -> Option<Run> {
@@ -466,7 +476,7 @@ impl World {
             side,
             p.flight.landing,
             s.hang,
-            |_| 0,
+            |_| self.toss_flight(i),
             (foot, first.is_some_and(|x| x.asked)),
         );
         Some(run)
@@ -491,7 +501,7 @@ impl World {
             side,
             p.flight.landing,
             s.hang,
-            |_| 0,
+            |_| self.toss_flight(i),
             (foot, first.is_some_and(|x| x.asked)),
         );
         Some(run.shown())
@@ -822,6 +832,7 @@ impl World {
             tick.saturating_add(i16::from(timing::airtime(p.flight.velocity[1], p.height)))
         };
         let foot = self.foot_of(s.steps, first.and_then(|x| x.from), left);
+        let flight = self.toss_flight(i);
         let (after, ran) = replay_footed(
             s.steps,
             s.updates,
@@ -830,7 +841,7 @@ impl World {
             side,
             land_at,
             s.hang,
-            |_| 0,
+            |_| flight,
             (foot, first.is_some_and(|x| x.asked)),
         );
         let before = (s.updates > 1).then(|| {
@@ -842,7 +853,7 @@ impl World {
                 side,
                 land_at,
                 s.hang,
-                |_| 0,
+                |_| flight,
                 (foot, first.is_some_and(|x| x.asked)),
             )
             .0

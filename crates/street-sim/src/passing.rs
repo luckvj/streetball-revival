@@ -1517,6 +1517,7 @@ impl World {
             back: Some((target, total)),
             tossed: true,
             tail: None,
+            flight: total.clamp(1, 255) as u8,
         });
         self.ball.throw(
             from,

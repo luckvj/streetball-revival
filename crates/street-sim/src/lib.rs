@@ -2035,8 +2035,20 @@ impl World {
                 // stick's last strength, +0x90, under 16) and his channel
                 // free runs the locomotion with its first argument 1, the
                 // gait record's selection alone.
+                // `+0x90` is this update's stick strength (the computer's
+                // pad: zero once his pass behaviour stopped him, all 25 of
+                // the third attract match's passes).
+                let pad = if press_input.is_computer() {
+                    Input {
+                        stick: self.ai.pad_stick(i).unwrap_or(press_input.stick),
+                        ..press_input
+                    }
+                } else {
+                    press_input
+                };
+                let strength = crate::timing::stick_strength(self, i, &pad);
                 let moving = carried != [0.0; 2]
-                    && (self.players[i].height > 0.0 || before.strength() >= 16);
+                    && (self.players[i].height > 0.0 || strength >= crate::input::MOVES);
                 if moving && !self.caught_row_holds(i) {
                     self.select_gait_with(i, &walk, held, stance, true, None);
                 }
@@ -2645,7 +2657,7 @@ impl World {
     /// [`World::select_gait`]; `forced` is the locomotion called with its
     /// first argument 1 (`FUN_00163d40(actor, 1, 1)`, `0x167570`): the
     /// record's selection whatever the stick, no stand path.
-    fn select_gait_with(
+    pub(crate) fn select_gait_with(
         &mut self,
         i: usize,
         input: &Input,
