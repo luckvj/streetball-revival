@@ -2035,6 +2035,9 @@ impl World {
             if let Some(LatePress::Trick(turbos)) = late_pass {
                 self.juke_press(i, &press_input, turbos);
             }
+            if let Some(LatePress::Swipe) = late_pass {
+                self.swipe_press(i);
+            }
             if let Some(LatePress::Pass(aimed)) = late_pass {
                 // `FUN_0015f930` (`0x15faf0..0x15fbe4`): a passer still
                 // moving (actor+0x40; zeroed first on the floor with the
@@ -2719,6 +2722,13 @@ impl World {
     ) {
         let p = &self.players[i];
         let walks = match p.action {
+            // A swipe's script holds the channel: no record's selection
+            // while it plays (the third attract match's swiper at 890).
+            Action::Stealing {
+                counter: false,
+                swipe: Some(_),
+                ..
+            } => false,
             Action::None | Action::Stealing { .. } => true,
             // A pass row's `91` turns the locomotion off (flag 0x2 without
             // 0x10, `0x15b084`) from its first update to its `91 0`.
@@ -3059,6 +3069,34 @@ impl World {
         }
     }
 
+    /// The swipe's press (`FUN_0015da28`, raw `0x15e0e4..0x15e378`): its
+    /// script, the face, the wanted facing at the holder.
+    fn swipe_press(&mut self, i: usize) {
+        let swipe = self.start_swipe(i);
+        // The swiper's face (`FUN_00159190(swiper, 2, fps Ã— 2)`,
+        // `0x15e364..0x15e378`).
+        self.face(i, 2 * TICK_HZ as i32);
+        // The press faces him at the holder (actor+0xb0 and the stick,
+        // in every played capture's swipe); he turns to it 46 an
+        // update ([`World::swipe_tick`]).
+        if swipe.is_some()
+            && let BallState::Held(h) = self.ball.state
+        {
+            let word = contact::angle(self.players[i].position, self.players[h].position);
+            self.players[i].wanted = restart::heading_radians(word);
+        }
+        self.players[i].action = Action::Stealing {
+            elapsed: 0.0,
+            counter: false,
+            swipe,
+            stance: None,
+        };
+        self.events.push(Event::Reach {
+            player: i,
+            counter: false,
+        });
+    }
+
     /// Start whatever the newly `pressed` buttons ask for.
     ///
     /// With the ball: shoot (two turbos: gamebreaker; turbo near the basket:
@@ -3185,29 +3223,9 @@ impl World {
                 }
                 return None;
             }
-            let swipe = self.start_swipe(i);
-            // The swiper's face (`FUN_00159190(swiper, 2, fps Ã— 2)`,
-            // `0x15e364..0x15e378`).
-            self.face(i, 2 * TICK_HZ as i32);
-            // The press faces him at the holder (actor+0xb0 and the stick,
-            // in every played capture's swipe); he turns to it 46 an
-            // update ([`World::swipe_tick`]).
-            if swipe.is_some()
-                && let BallState::Held(h) = self.ball.state
-            {
-                let word = contact::angle(self.players[i].position, self.players[h].position);
-                self.players[i].wanted = restart::heading_radians(word);
-            }
-            self.players[i].action = Action::Stealing {
-                elapsed: 0.0,
-                counter: false,
-                swipe,
-                stance: None,
-            };
-            self.events.push(Event::Reach {
-                player: i,
-                counter: false,
-            });
+            // After his locomotion, as the pass and the shot (the third
+            // attract match's swiper at update 889 picks his record first).
+            return Some(LatePress::Swipe);
         } else if pressed & button::JUMP != 0
             && self.players[i].team == self.possession
             && self.players[i].height == 0.0
@@ -5412,4 +5430,6 @@ enum LatePress {
     Jump(u32),
     /// The juke or trick press, with the turbos held.
     Trick(u32),
+    /// The swipe (`FUN_0015da28`'s steal press without two turbos).
+    Swipe,
 }

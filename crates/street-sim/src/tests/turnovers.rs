@@ -128,19 +128,15 @@ fn a_scripted_swipe_tries_its_hand_every_update_until_it_reaches() {
     }
     assert_eq!(w.players[1].action, Action::None);
     assert_eq!(w.ball.state, BallState::Held(0));
-    // In reach: the first test, the update after the press, uses the swipe
-    // up, and with 99 Steals (84 in 100 land) it mostly knocks the ball
-    // loose or takes it.
+    // In reach: the first test, on the press's own update after its
+    // script and face (the third attract match's swiper at update 889),
+    // uses the swipe up, and with 99 Steals (84 in 100 land) it mostly
+    // knocks the ball loose or takes it.
     let mut landed = 0;
     for seed in 0..40 {
         let mut w = swipe_world(seed, 3.6);
         w.players[1].ratings.steals = 1.0;
         press_steal(&mut w, 1);
-        assert_eq!(w.ball.state, BallState::Held(0), "not on the press");
-        if let Action::Stealing { swipe: Some(s), .. } = w.players[1].action {
-            assert!(!s.tested);
-        }
-        w.step(&[Input::default(); 2]);
         if let Action::Stealing { swipe: Some(s), .. } = w.players[1].action {
             assert!(s.tested);
         }

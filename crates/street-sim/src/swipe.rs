@@ -342,7 +342,7 @@ impl crate::World {
         else {
             return;
         };
-        if s.tick == 0 || s.tested {
+        if s.tested {
             return;
         }
         // `0x15e4f8..0x15e564`: no test while actor+0x1a8 is set: a bar
@@ -358,8 +358,10 @@ impl crate::World {
         {
             return;
         }
+        // The press's own update tests the clip he was playing (the third
+        // attract match's swiper at update 889: the roll after the press).
         let last = Swipe {
-            tick: s.tick - 1,
+            tick: s.tick.saturating_sub(1),
             ..s
         };
         if self.swipe_test(i, last)
