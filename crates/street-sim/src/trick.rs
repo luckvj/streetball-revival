@@ -1948,6 +1948,38 @@ impl World {
         {
             self.players[i].wanted = crate::restart::heading_radians(pelvis_word(&pose));
         }
+        // The clip and model the script leaves, for the record its
+        // callback 1 starts (`World::select_gait_with`).
+        if play.run.done
+            && let Some(poses) = self.poses.get()
+            && let Some(record) = after.record
+            && let Some(pose) = pose_turned(
+                poses,
+                after,
+                play.from,
+                i32::from(play.turn),
+                self.players[i].body(),
+                self.place(i),
+            )
+            && let Some(held) = poses.held(
+                Frame {
+                    record,
+                    time: after.frame,
+                    looping: false,
+                },
+                0,
+            )
+        {
+            self.shown_start.3 = Some((
+                self.tick,
+                i,
+                crate::ScriptShown {
+                    pose,
+                    held,
+                    from: (record, after.frame),
+                },
+            ));
+        }
         self.players[i].action = if play.run.done {
             Action::None
         } else {

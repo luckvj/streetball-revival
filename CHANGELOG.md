@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A player coming out of a trick move picks his run afresh on the move's last update, as on the PS2 (he carried on with the run he had before the move, and his footwork's random draws came an update late).
 - The computer ranks the players around each man by where they stood as the update began, as the PS2's distance table does (it used where the earlier players had already moved to), so a runner weighs the defenders in his path in the PS2's order and bends round them the same way.
 - A player knocked or faked into a stumble now blends into it from the pose he was actually showing (a walk still blending in from a stand, say) rather than from the clip under it, and shows that pose on the update the stumble begins, as on the PS2; the third attract match's faked-out defender now moves limb for limb with the original.
 - A defender faked out by a trick move is bumped with the pose he held when the fake landed, as on the PS2 (his new stumble's pose was used a frame early, so the ball handler slid off him a step short), and a ball handler keeps wanting to face the way his move points through the whole move.

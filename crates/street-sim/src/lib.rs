@@ -642,6 +642,9 @@ pub(crate) struct ShownStart(
     /// its script ran at once (`FUN_0019c2f8`), its blend's first step
     /// posed; a script started over it holds that.
     pub Option<(u64, usize, pose::Held)>,
+    /// A trick that ended this update (tick, actor, the clip and model it
+    /// left): its callback 1 runs the locomotion in this channel step.
+    pub Option<(u64, usize, ScriptShown)>,
 );
 
 impl PartialEq for ShownStart {
@@ -2089,6 +2092,12 @@ impl World {
                 input
             };
             let ended = self.trick_tick(i, &input, held);
+            let trick_shown = self
+                .shown_start
+                .3
+                .take()
+                .filter(|(tick, k, _)| *tick == self.tick && *k == i)
+                .map(|(_, _, s)| s);
             // A reaction ending here on callback 1 runs the locomotion in
             // this channel step (the third attract match's knocked man gets
             // up into his walk at update 482), from the model it left.
@@ -2140,7 +2149,8 @@ impl World {
             // locomotion in the channel step (below): the actor's own
             // locomotion has already passed him by in the reaction (the
             // third attract match's knocked blocker running out at 482).
-            let stepped = if called_reaction {
+            // So does a trick's (its `83 01`).
+            let stepped = if called_reaction || trick_shown.is_some() {
                 None
             } else {
                 self.players[i].step(&moved, held, stance)
@@ -2242,8 +2252,17 @@ impl World {
             // (its row, its blend's held pose, the heading match).
             let called_tip = tip_shown.is_some() && self.players[i].action == Action::None;
             let called_block = block_shown.is_some() && self.players[i].action == Action::None;
+            // A trick's script ends on callback 1 too (`83 01`): channel 0
+            // shows its clip, so no gait record still plays (the third
+            // attract match's holder at update 725 draws his record anew).
+            let called_trick = trick_shown.is_some() && self.players[i].action == Action::None;
+            if called_trick {
+                self.players[i].gait_channel.record = None;
+            }
             let shown = if called {
                 self.script_shown(i)
+            } else if called_trick {
+                trick_shown
             } else if reaction_shown.is_some() {
                 reaction_shown
             } else {
@@ -2263,7 +2282,7 @@ impl World {
             {
                 self.players[i].wanted = restart::heading_radians(trick::pelvis_word(&s.pose));
             }
-            if (called || called_tip || called_reaction || called_block)
+            if (called || called_tip || called_reaction || called_block || called_trick)
                 && matches!(self.players[i].action, Action::None)
             {
                 // `FUN_00163d40` picks the record and sets his velocity and
