@@ -740,7 +740,7 @@ impl World {
                 side,
                 landing,
                 s.hang,
-                |_| 0,
+                |_| self.toss_flight(i),
                 (foot, first.is_some_and(|x| x.asked)),
             );
             if run.done {
