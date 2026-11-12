@@ -2610,6 +2610,9 @@ impl World {
                 let shown = play.run.shown();
                 config.trick_hand_at(id.script, channel.trick_side, shown.frame as usize)
             }
+            // Through a gait blend channel 0 still shows the outgoing
+            // clip (`0x14cc90..0x14cd54` read `+0x50`).
+            (_, Action::None) if channel.moving && channel.blend_counter > 0 => None,
             (_, Action::None) if channel.moving && channel.record.is_some() => {
                 config.row_hand(channel.record_row(), channel.phase.max(0.0) as usize)
             }

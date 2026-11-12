@@ -1003,7 +1003,21 @@ impl World {
                 // The target at its start frame, on the model posed in the
                 // blend (`0x14e23c..0x14e318`, `0x14f13c..0x14f17c`).
                 let start = c.shown.frame;
-                let hand = crate::dribble::live_hand(&poses, record, start, p.gait_channel.hand);
+                // `0x14cc90..0x14cd54`: through the locomotion's blend
+                // (flag 0x200000) channel 0's `+0x50` is still the outgoing
+                // clip, held (the third attract match's holder at update
+                // 934, out of his stand into a walk, keeps his right hand);
+                // a script's blend shows its new clip.
+                let gait_blend = p.gait_channel.blend_counter > 0
+                    && c.shown.record == Some(p.gait_channel.row)
+                    && p.stand.is_none()
+                    && p.action == crate::Action::None;
+                let hand = match c.from {
+                    Some((r, f)) if gait_blend => {
+                        crate::dribble::live_hand(&poses, r, f, p.gait_channel.hand)
+                    }
+                    _ => crate::dribble::live_hand(&poses, record, start, p.gait_channel.hand),
+                };
                 let state = poses.state(record, start as i32);
                 let at = if crate::dribble::dribbles(&poses, record) && state & 0xc == 0 {
                     crate::dribble::ball_point(&poses, record, start, body, place, radius)
