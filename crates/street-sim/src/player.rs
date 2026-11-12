@@ -507,6 +507,9 @@ pub struct Player {
     /// (`add.s`), then `FUN_00156f48`'s `vadd` of the velocity
     /// (`0x1573e0`). Cleared at the end of his update, never saved.
     pub moved: Option<[[f32; 2]; 3]>,
+    /// The pose a reaction the contacts started blends from (what his
+    /// channel showed then, [`crate::World::react`]); None for any other.
+    pub reaction_held: Option<crate::pose::Held>,
     /// The way he moves, radians as the heading: the original's velocity
     /// (actor+0x40) points along the stick, not the facing
     /// ([`crate::guard`]).
@@ -649,6 +652,7 @@ impl Player {
             speed: 0.0,
             step: 0.0,
             moved: None,
+            reaction_held: None,
             course: heading,
             wanted: heading,
             guard: crate::guard::Guard::default(),

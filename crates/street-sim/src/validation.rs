@@ -544,6 +544,7 @@ impl World {
                 speed,
                 step,
                 moved: _,
+                reaction_held: _,
                 course,
                 wanted,
                 guard: _,

@@ -2355,6 +2355,12 @@ impl World {
     /// `b` starts reaction `script` (`FUN_0019c2f8` runs its first update
     /// at once).
     pub(crate) fn react(&mut self, b: usize, script: u8) {
+        // A reaction the contacts start takes channel 0 at its man's next
+        // channel step, its blend holding what the channel shows
+        // (`FUN_001935c8`): a stand or a gait blend as well as a clip (the
+        // third attract match's defender faked out at update 672, his walk
+        // blending in from his stand).
+        let shown = self.contact_phase.then(|| self.shown_local(b)).flatten();
         self.begin_reaction(b, script);
         self.reaction_tick(b);
         if self.contact_phase
@@ -2363,6 +2369,7 @@ impl World {
             } = &mut self.players[b].action
         {
             r.run.count = r.run.count.saturating_add(1);
+            self.players[b].reaction_held = shown;
         }
     }
 
@@ -2394,6 +2401,7 @@ impl World {
             let f = self.gait_frame(b);
             (f.record, f.time)
         });
+        self.players[b].reaction_held = None;
         self.players[b].action = Action::Stumbling {
             elapsed: 0.0,
             duration: f32::from(length.max(0) as u16) * crate::TICK_SECONDS,
@@ -2736,6 +2744,29 @@ impl World {
         let poses = self.poses.get()?;
         let (shown, from, turn) = match self.players[i].action {
             Action::Trick { play, .. } => (play.run.shown(), play.from, i32::from(play.turn)),
+            // Until its man's channel steps it, a reaction the contacts
+            // started shows the pose its blend holds (the blend's counter
+            // at 0 on the original).
+            Action::Stumbling {
+                reaction: Some(r), ..
+            } if r.run.tick == 0
+                && let Some(h) = self.players[i].reaction_held.as_ref() =>
+            {
+                return Some(poses.place_held(h, self.players[i].body(), self.place(i)));
+            }
+            Action::Stumbling {
+                reaction: Some(r), ..
+            } if self.players[i].reaction_held.is_some() => {
+                return pose_from(
+                    poses,
+                    r.run.shown(),
+                    r.from,
+                    self.players[i].reaction_held.as_ref(),
+                    0,
+                    self.players[i].body(),
+                    self.place(i),
+                );
+            }
             Action::Stumbling {
                 reaction: Some(r), ..
             } => (r.run.shown(), r.from, 0),

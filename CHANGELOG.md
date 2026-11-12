@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A player knocked or faked into a stumble now blends into it from the pose he was actually showing (a walk still blending in from a stand, say) rather than from the clip under it, and shows that pose on the update the stumble begins, as on the PS2; the third attract match's faked-out defender now moves limb for limb with the original.
 - A defender faked out by a trick move is bumped with the pose he held when the fake landed, as on the PS2 (his new stumble's pose was used a frame early, so the ball handler slid off him a step short), and a ball handler keeps wanting to face the way his move points through the whole move.
 - A player still sliding into a trick move takes his share of a bump as on the PS2 (the defender used to be pushed away instead), and a computer defender coming to a stand keeps his last step when he already wants to face his man, as the PS2 checks it (he turned in place a step early).
 - A ball handler's trick move is chosen as on the PS2: the press is read after his footwork for that update (so the move gets the PS2's random roll), the side of the defender it goes round is worked out with the PS2's angles (one case was the wrong way round), and as the move starts he snaps to face the way its first frame does before turning, as on the PS2.

@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 133;
+const VERSION: u8 = 134;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1203,6 +1203,7 @@ fn player(w: &mut Writer, p: &Player) {
         step,
         // Cleared at the end of every update ([`Player::moved`]).
         moved: _,
+        reaction_held,
         course,
         wanted,
         guard,
@@ -1410,6 +1411,7 @@ fn player(w: &mut Writer, p: &Player) {
     for v in aim_point {
         w.f(*v);
     }
+    held_out(w, reaction_held.as_ref());
 }
 
 /// A look's aim ([`crate::look::Aim`]).
@@ -1848,6 +1850,7 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
         speed: r.f()?,
         step: r.f()?,
         moved: None,
+        reaction_held: None,
         gait: match r.u8()? {
             0 => Gait::Stand,
             1 => Gait::Walk,
@@ -1985,6 +1988,10 @@ fn player_in(r: &mut Reader) -> Result<Player, String> {
         flight: flight_in(r)?,
         on_rim: r.bool()?,
         aim_point: [r.f()?, r.f()?, r.f()?],
+    })
+    .and_then(|mut p| {
+        p.reaction_held = held_in(r)?;
+        Ok(p)
     })
 }
 
