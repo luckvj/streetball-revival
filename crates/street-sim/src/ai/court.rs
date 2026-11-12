@@ -308,8 +308,19 @@ impl Ctx<'_> {
 
     /// Bit 4 (`FUN_00154680`): throwing a pass (the pass animation, from
     /// the press through the follow-through).
+    /// A passout's row sets its bits again at its toss (`9b 0x200` after
+    /// callback 53): from there he is catching ([`Ctx::catching`]), not
+    /// throwing (the third attract match's Back 2 Papa caught at update
+    /// 809, whose side's alley-oop check rolls the update after).
     pub fn throwing(&self, i: usize) -> bool {
+        matches!(self.w.players[i].action, Action::Passing { .. }) && !self.passout_tossed(i)
+    }
+
+    /// `i`'s passout row past its toss (its bit 9 until its `9b 0x20`
+    /// after the flight's last wait).
+    fn passout_tossed(&self, i: usize) -> bool {
         matches!(self.w.players[i].action, Action::Passing { .. })
+            && self.w.passout.is_some_and(|po| po.passer == i && po.tossed)
     }
 
     /// Bit 9 (`FUN_0016ea00`, the AI's `FUN_001816d0`): catching a pass.
@@ -319,6 +330,9 @@ impl Ctx<'_> {
     /// updates after the catch ([`crate::World::catch`]) unless a move of
     /// his replaces the row.
     pub fn catching(&self, i: usize) -> bool {
+        if self.passout_tossed(i) {
+            return true;
+        }
         match self.w.ball.state {
             // A row parked for its own count sets it when its script starts.
             BallState::Pass => {

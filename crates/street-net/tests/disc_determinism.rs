@@ -417,7 +417,11 @@ fn disc_match(teams: [usize; 2], seed: u32, ticks: u64, conditions: Conditions, 
         }
         assert!(
             m.passes > 20 && m.baskets > 5 && m.swipes > 10 && m.blocks > 0,
-            "{name}"
+            "{name}: passes {} baskets {} swipes {} blocks {}",
+            m.passes,
+            m.baskets,
+            m.swipes,
+            m.blocks
         );
     }
     // Replays held the world's clock while the match's ran on.
@@ -455,8 +459,9 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // ran the locomotion at a script's end; 2030: 2029's blocked no
         // shot once the block jumps flew to their landings; 2031: 2030's
         // played no replay once a faked defender bumped with the pose he
-        // held.)
-        2031,
+        // held; 2032: 2031's fell short once a passout's flight was timed
+        // whole.)
+        2032,
         15_000,
         Conditions {
             loss: 0.04,
@@ -482,14 +487,15 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
     // none once callback 1 ran the locomotion at a script's end, seed
     // 22's none once callback 7 set the wanted facing, seed 23's none once
     // a passer stopped into a stand at the press, seed 24's none once a
-    // pass row ran on until the locomotion took it).
+    // pass row ran on until the locomotion took it, seed 25's none once a
+    // passout's flight was timed whole).
     let tables = disc().unwrap();
     let teams: Vec<usize> = (0..tables.tables().teams.len())
         .filter(|&t| tables.tables().teams[t].roster.len() >= 3)
         .collect();
     disc_match(
         [teams[12], teams[20]],
-        25,
+        26,
         15_000,
         Conditions {
             loss: 0.10,

@@ -747,6 +747,13 @@ impl World {
                 {
                     return;
                 }
+                // A passout to himself flown: he takes it in his update at
+                // its end (the third attract match's Back 2 Papa at update
+                // 809, after the defenders' rolls on it).
+                if self.passout_catching(i) {
+                    self.near_take(i, bits);
+                    return;
+                }
             }
         }
         if dunking {
@@ -792,8 +799,23 @@ impl World {
                 if !offence {
                     // `0x15e7d0..0x15e898`: more than three quarters flown,
                     // then the Steals roll.
-                    let flown =
-                        self.ball.flown_ticks() as f32 / self.ball.flight_ticks().max(1) as f32;
+                    // A passout's ball times its whole flight (`ball+0x60`
+                    // over `+0x64`, `FUN_0014c3a8`): the third attract
+                    // match's Back 2 Papa off the board at update 771 is not
+                    // three quarters flown, only its first leg is.
+                    let (done, whole) = match self.passout {
+                        Some(po) if po.tossed && po.passer == pass.from && po.flight > 0 => {
+                            let total = i32::from(po.flight);
+                            let done = if po.back.is_some() {
+                                self.ball.flown_ticks()
+                            } else {
+                                total - (self.ball.flight_ticks() - self.ball.flown_ticks())
+                            };
+                            (done, total)
+                        }
+                        _ => (self.ball.flown_ticks(), self.ball.flight_ticks()),
+                    };
+                    let flown = done as f32 / whole.max(1) as f32;
                     if flown <= 0.75 {
                         return;
                     }
@@ -1170,5 +1192,6 @@ impl World {
 pub(crate) fn bone_catch(w: &World, pass: &Pass) -> bool {
     w.poses.get().is_some()
         && (usize::from(pass.catch) < CATCH_ROWS.len()
-            || w.players.get(pass.to).is_some_and(|p| p.leaping()))
+            || w.players.get(pass.to).is_some_and(|p| p.leaping())
+            || w.passout_catching(pass.to))
 }
