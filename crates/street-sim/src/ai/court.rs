@@ -499,7 +499,7 @@ impl Ctx<'_> {
 
     /// The player's front behaviour is "set pick" (type 1).
     pub fn setting_pick(&self, j: usize) -> bool {
-        self.fronts.get(j) == Some(&1)
+        self.fronts.borrow().get(j) == Some(&1)
     }
 
     /// `FUN_00180c20`: team+0x94 for the player's slot.
@@ -538,6 +538,7 @@ impl Ctx<'_> {
     /// front behaviour's target, else where he stands.
     pub fn heading_for(&self, j: usize) -> [f32; 2] {
         self.targets
+            .borrow()
             .get(j)
             .copied()
             .flatten()

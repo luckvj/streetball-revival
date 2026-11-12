@@ -186,7 +186,7 @@ impl Follower {
         let Ok(p) = usize::try_from(self.leaper) else {
             return true;
         };
-        if self.started || p >= ctx.w.players.len() || ctx.fronts.get(p) != Some(&4) {
+        if self.started || p >= ctx.w.players.len() || ctx.fronts.borrow().get(p) != Some(&4) {
             return true;
         }
         let (height, falling) = Self::first(ctx, p);

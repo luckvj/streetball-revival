@@ -666,6 +666,12 @@ impl Brain {
     pub fn replace(&mut self, ctx: &Ctx, i: usize, act: Act) {
         self.clear(ctx, i);
         self.push(act);
+        if let Some(t) = ctx.targets.borrow_mut().get_mut(i) {
+            *t = self.front_target();
+        }
+        if let Some(f) = ctx.fronts.borrow_mut().get_mut(i) {
+            *f = self.front_kind();
+        }
     }
 
     /// `FUN_001332e0`: the front behaviour's type, 0 with none.
@@ -916,9 +922,13 @@ pub(crate) struct Ctx<'a> {
     /// last frame's) and front behaviour type, as the original's AIs
     /// read each other's.
     pub pads: Vec<u32>,
-    pub fronts: Vec<i32>,
+    /// Live: a behaviour a play hands a player shows at once to the AIs
+    /// that read it after (`FUN_0013ab38` reads the queue: the third
+    /// attract match's isolation at update 822 gives the handler his feed
+    /// before the partner's cut keeps clear of where it takes him).
+    pub fronts: std::cell::RefCell<Vec<i32>>,
     /// Every player's front behaviour's target (vt+0x1c), if it has one.
-    pub targets: Vec<Option<[f32; 2]>>,
+    pub targets: std::cell::RefCell<Vec<Option<[f32; 2]>>>,
     /// Every player's AI+0x60 (the side a pick is set for) and AI+0xb0
     /// (who screened him).
     pub pick_sides: Vec<i32>,
@@ -1108,8 +1118,10 @@ impl Frame {
             open: [state.coaches[0].open, state.coaches[1].open],
             holder_of: [state.coaches[0].holder, state.coaches[1].holder],
             pads: state.brains.iter().map(|b| b.pad.buttons).collect(),
-            fronts: state.brains.iter().map(Brain::front_kind).collect(),
-            targets: state.brains.iter().map(Brain::front_target).collect(),
+            fronts: std::cell::RefCell::new(state.brains.iter().map(Brain::front_kind).collect()),
+            targets: std::cell::RefCell::new(
+                state.brains.iter().map(Brain::front_target).collect(),
+            ),
             pick_sides: state.brains.iter().map(|b| b.pick_side).collect(),
             screened: state.brains.iter().map(|b| b.screened_by).collect(),
         }
@@ -1458,8 +1470,12 @@ impl World {
                 open: [state.coaches[0].open, state.coaches[1].open],
                 holder_of: [state.coaches[0].holder, state.coaches[1].holder],
                 pads: state.brains.iter().map(|b| b.pad.buttons).collect(),
-                fronts: state.brains.iter().map(Brain::front_kind).collect(),
-                targets: state.brains.iter().map(Brain::front_target).collect(),
+                fronts: std::cell::RefCell::new(
+                    state.brains.iter().map(Brain::front_kind).collect(),
+                ),
+                targets: std::cell::RefCell::new(
+                    state.brains.iter().map(Brain::front_target).collect(),
+                ),
                 pick_sides: state.brains.iter().map(|b| b.pick_side).collect(),
                 screened: state.brains.iter().map(|b| b.screened_by).collect(),
             };
@@ -1505,8 +1521,8 @@ pub(crate) fn lane_open(w: &World, i: usize) -> bool {
         open: [[0; 3]; 2],
         holder_of: [0, 3],
         pads: vec![0; n],
-        fronts: vec![0; n],
-        targets: vec![None; n],
+        fronts: std::cell::RefCell::new(vec![0; n]),
+        targets: std::cell::RefCell::new(vec![None; n]),
         pick_sides: vec![0; n],
         screened: vec![-1; n],
     };
@@ -1537,8 +1553,8 @@ pub(crate) fn with_ctx<R>(w: &World, f: impl FnOnce(&mut Ctx) -> R) -> (R, Rng) 
             open: [[0; 3]; 2],
             holder_of: [0, 3],
             pads: vec![0; n],
-            fronts: vec![0; n],
-            targets: vec![None; n],
+            fronts: std::cell::RefCell::new(vec![0; n]),
+            targets: std::cell::RefCell::new(vec![None; n]),
             pick_sides: vec![0; n],
             screened: vec![-1; n],
         };

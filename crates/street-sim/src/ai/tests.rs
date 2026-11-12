@@ -186,7 +186,7 @@ fn the_defenders_spot_follows_fun_00108148() {
     let gap = |w: &World, setting_pick: bool, f: &dyn Fn(&mut defence::Defense)| {
         with_ctx(w, |ctx| {
             if setting_pick {
-                ctx.fronts[2] = 1;
+                ctx.fronts.borrow_mut()[2] = 1;
             }
             let mut d = defence::Defense::new(ctx, 1);
             f(&mut d);
@@ -2081,8 +2081,8 @@ fn with_tracked_ctx<R>(w: &World, f: impl FnOnce(&mut Ctx) -> R) -> (R, Rng) {
             open: [[0; 3]; 2],
             holder_of: [0, 3],
             pads: vec![0; n],
-            fronts: vec![0; n],
-            targets: vec![None; n],
+            fronts: std::cell::RefCell::new(vec![0; n]),
+            targets: std::cell::RefCell::new(vec![None; n]),
             pick_sides: vec![0; n],
             screened: vec![-1; n],
         };

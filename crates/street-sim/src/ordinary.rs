@@ -702,7 +702,10 @@ impl PlayerGaitChannel {
         // attract match's runs out of one-update stands at 1005 and 1056:
         // 1.161, 1.326 and 0.25 against 1.03, 0.46 and 1.07 now).
         let completing = blending && self.blend_counter == 0;
-        if self.store_rate || (free && !blending) {
+        // Only the moving path stores it, on its record (`0x167e8c`): a
+        // stand leaves it (the third attract match's Back 2 Papa keeps his
+        // run's 1.5564 from before his toss through to update 829).
+        if self.store_rate || (free && !blending && moving && self.record.is_some()) {
             self.rate_store = self.frame_step;
         }
         self.store_rate = false;

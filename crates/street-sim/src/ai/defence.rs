@@ -1202,8 +1202,8 @@ impl Defense {
         let press = has && self.standing(ctx, i) && 33.75 < ctx.hoop_dist(man);
         // `FUN_0013abb8`: a pass in flight to him (ball state 4, no holder).
         let receiving = ctx.receiving(man);
-        let posting =
-            ctx.posting(man) || (!ctx.human_player(man) && ctx.fronts.get(man) == Some(&7));
+        let posting = ctx.posting(man)
+            || (!ctx.human_player(man) && ctx.fronts.borrow().get(man) == Some(&7));
         // The two nearest the rim (game+0x3ec, +0x3f0).
         let by_rim = ctx.by_rim();
         let nearest_two =
