@@ -338,6 +338,12 @@ impl Court for World {
         set(
             bits::SWIPE,
             match p.action {
+                // Clear from the swipe's `9c 40` through its play-out.
+                Action::Stealing {
+                    counter: false,
+                    swipe: Some(s),
+                    ..
+                } => s.tick <= s.span(),
                 Action::Stealing { counter: false, .. } => true,
                 Action::Stealing {
                     stance: Some(s), ..

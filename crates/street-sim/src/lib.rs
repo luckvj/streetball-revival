@@ -1312,6 +1312,11 @@ impl World {
         set(
             6,
             match p.action {
+                Action::Stealing {
+                    counter: false,
+                    swipe: Some(s),
+                    ..
+                } => s.tick <= s.span(),
                 Action::Stealing { counter: false, .. } => true,
                 Action::Stealing {
                     stance: Some(s), ..
@@ -2187,6 +2192,13 @@ impl World {
             // 6 is set): in his side's update, before his channel steps and
             // he moves, on the clock, place and speed the last update left;
             // then the channel's step.
+            // A swipe's play-out past its `9c`'s update: `91 0` has given
+            // the locomotion back, so a pushed stick runs it in this
+            // channel step from the swipe's clip (the third attract match's
+            // swiper at update 917, from frame 23.5, at a run's speed).
+            let swipe_handed = self.swipe_hand_over(i, &walk);
+            let called_swipe = swipe_handed.is_some();
+            let swipe_shown = swipe_handed.flatten();
             self.swipe_due(i);
             self.swipe_tick(i);
             let rebound = match self.players[i].action {
@@ -2221,8 +2233,9 @@ impl World {
             // locomotion in the channel step (below): the actor's own
             // locomotion has already passed him by in the reaction (the
             // third attract match's knocked blocker running out at 482).
-            // So does a trick's (its `83 01`).
-            let stepped = if called_reaction || trick_shown.is_some() {
+            // So does a trick's (its `83 01`), and a swipe's play-out
+            // handing the channel over.
+            let stepped = if called_reaction || trick_shown.is_some() || called_swipe {
                 None
             } else {
                 self.players[i].step(&moved, held, stance)
@@ -2337,6 +2350,8 @@ impl World {
                 self.script_shown(i)
             } else if called_passout {
                 toss_shown
+            } else if called_swipe {
+                swipe_shown
             } else if called_stand {
                 stand_shown
             } else if called_trick {
@@ -2366,6 +2381,7 @@ impl World {
                 || called_block
                 || called_trick
                 || called_passout
+                || called_swipe
                 || called_stand)
                 && matches!(self.players[i].action, Action::None)
             {
@@ -2676,6 +2692,51 @@ impl World {
     }
 
     /// What `i`'s scripted channel showed ([`ScriptShown`]).
+    /// A swipe in its play-out past the `9c`'s update with the stick
+    /// pushed: over, with channel 0 as the last update left it for the
+    /// locomotion's record.
+    fn swipe_hand_over(&mut self, i: usize, input: &Input) -> Option<Option<ScriptShown>> {
+        let Action::Stealing {
+            counter: false,
+            swipe: Some(s),
+            ..
+        } = self.players[i].action
+        else {
+            return None;
+        };
+        if s.tick <= s.span() || !input.moves() || self.locomotion_held(i, input) {
+            return None;
+        }
+        let shown = self.swipe_shown(i, s);
+        self.players[i].action = Action::None;
+        Some(shown)
+    }
+
+    /// A swipe's channel 0 as the last update left it.
+    fn swipe_shown(&self, i: usize, s: swipe::Swipe) -> Option<ScriptShown> {
+        let poses = self.poses.get()?;
+        let last = swipe::Swipe {
+            tick: s.tick.saturating_sub(1),
+            ..s
+        };
+        let p = &self.players[i];
+        let pose = last.pose(poses, p.body(), self.place(i))?;
+        let frame = last.frame();
+        let held = poses.held(
+            pose::Frame {
+                record: s.record,
+                time: frame,
+                looping: false,
+            },
+            0,
+        )?;
+        Some(ScriptShown {
+            pose,
+            held,
+            from: (s.record, frame),
+        })
+    }
+
     fn script_shown(&self, i: usize) -> Option<ScriptShown> {
         // The channel as the last update left it (this update's steps end
         // the script): the model the matrices hold, its clip.
@@ -2723,7 +2784,9 @@ impl World {
         let p = &self.players[i];
         let walks = match p.action {
             // A swipe's script holds the channel: no record's selection
-            // while it plays (the third attract match's swiper at 890).
+            // while it plays (the third attract match's swiper at 890);
+            // its play-out hands the channel over in the channel's step
+            // ([`World::swipe_hand_over`]).
             Action::Stealing {
                 counter: false,
                 swipe: Some(_),

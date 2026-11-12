@@ -95,7 +95,8 @@ fn a_scripted_swipe_tries_its_hand_every_update_until_it_reaches() {
     // update after the press, the script's first step having set bit 6,
     // to the update after its last, whose step clears it: every test in
     // the side's update, on the clock the last update left. It never
-    // reaches; the swipe ends with its script.
+    // reaches; the clip then plays out (`8c`) with nobody on the stick,
+    // and the swipe ends the update after its last frame.
     let mut w = swipe_world(3, 9.0);
     let draws = |w: &World| w.rng.clone();
     press_steal(&mut w, 1);
@@ -114,8 +115,11 @@ fn a_scripted_swipe_tries_its_hand_every_update_until_it_reaches() {
         let mut rolled = draws(&w);
         rolled.next_u32();
         w.step(&[Input::default(); 2]);
-        if w.players[1].action == Action::None {
-            // The swipe's end (bit 6 falls) turns the swiper's look
+        if matches!(
+            w.players[1].action,
+            Action::Stealing { swipe: Some(s), .. } if s.tick > s.span()
+        ) {
+            // The script's `9c 40` (bit 6 falls) turns the swiper's look
             // (event 6: the target's draw and its time's).
             rolled.next_u32();
             rolled.next_u32();
@@ -126,6 +130,26 @@ fn a_scripted_swipe_tries_its_hand_every_update_until_it_reaches() {
         w.validate().unwrap();
         World::from_snapshot(&w.to_snapshot()).unwrap();
     }
+    // The play-out: no more tests, the clip to its last frame.
+    let Action::Stealing { swipe: Some(s), .. } = w.players[1].action else {
+        panic!("{:?}", w.players[1].action);
+    };
+    assert_eq!(s.playout(), 6);
+    // Its first step was the span's own update.
+    for _ in 1..s.playout() {
+        assert!(matches!(
+            w.players[1].action,
+            Action::Stealing { swipe: Some(_), .. }
+        ));
+        w.step(&[Input::default(); 2]);
+        w.validate().unwrap();
+        World::from_snapshot(&w.to_snapshot()).unwrap();
+    }
+    let Action::Stealing { swipe: Some(s), .. } = w.players[1].action else {
+        panic!("{:?}", w.players[1].action);
+    };
+    assert_eq!(s.frame(), crate::swipe::SCRIPTS[usize::from(s.script)].last);
+    w.step(&[Input::default(); 2]);
     assert_eq!(w.players[1].action, Action::None);
     assert_eq!(w.ball.state, BallState::Held(0));
     // In reach: the first test, on the press's own update after its

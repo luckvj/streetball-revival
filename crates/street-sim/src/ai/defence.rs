@@ -199,9 +199,19 @@ impl Defense {
         }
         // `0x1069f4..0x106a20`: nothing more while in the counter stance
         // (`FUN_00181828`), a block jump (`FUN_001818b0`) or a swipe
-        // (`FUN_00181650`): the pad keeps the stick it was given. Off
-        // balance or in a rebound jump he goes on as usual.
-        if ctx.blocking(i) || matches!(ctx.w.players[i].action, crate::Action::Stealing { .. }) {
+        // (`FUN_00181650`, actor+0xa4 bit 6, clear through a swipe's
+        // play-out): the pad keeps the stick it was given. Off balance or
+        // in a rebound jump he goes on as usual.
+        let stealing = match ctx.w.players[i].action {
+            crate::Action::Stealing {
+                counter: false,
+                swipe: Some(s),
+                ..
+            } => s.tick <= s.span(),
+            crate::Action::Stealing { .. } => true,
+            _ => false,
+        };
+        if ctx.blocking(i) || stealing {
             return;
         }
         if self.counter(ctx, b, i) || self.block(ctx, b, i) || self.steal(ctx, b, i) {

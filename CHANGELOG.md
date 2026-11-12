@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A swipe now finishes as on the PS2: after the reach the swiper plays the rest of his swipe at half speed, and from the next update a push on the stick breaks straight into a run at full pace from the swipe's pose (the swipe used to stop dead a frame early and lose its last half step); a computer defender starts steering again as his reach ends, and his head turns at the same moment.
 - Computer players off the ball read where a teammate is headed as on the PS2: from his whole queue of moves, so a man pausing before a cut counts as already going where the cut takes him (only a move under way counted); and a computer player's pause on the wing lasts the PS2's length (its random length was drawn from one frame too wide a range).
 - A swipe at the ball now comes as on the PS2: the swiper's hand tries for the ball on the very update he presses, once his run has moved him (it tried on the next update), and he keeps his stride through the swipe instead of picking a new one.
 - A ball handler's crossover hands back to his run as on the PS2: the end of the move picks his run afresh and blends into it (he used to carry straight on in his old stride, and took an extra step on that update); and defenders judge who is nearest the basket from where everyone stood as the update began, as on the PS2.

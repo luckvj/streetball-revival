@@ -731,11 +731,11 @@ impl World {
                 require(counter == stance.is_some(), "counter stance")?;
             }
             match *action {
-                // A swipe's last update past its script's leaves the clock
-                // at its span; the next step ends it ([`crate::swipe`]).
+                // A swipe's play-out's last update leaves the clock at its
+                // end; the next step ends it ([`crate::swipe`]).
                 Action::Stealing { swipe: Some(s), .. } => {
                     require(
-                        usize::from(s.script) < crate::swipe::SCRIPTS.len() && s.tick <= s.span(),
+                        usize::from(s.script) < crate::swipe::SCRIPTS.len() && s.tick <= s.end(),
                         "swipe script and tick",
                     )?;
                     floats(&[s.from.map_or(0.0, |(_, t)| t)], "swipe clip frame")?;

@@ -18,7 +18,11 @@
 //! the swipe bit from its first update (`9b 40`), waits to frame 23 (30 for
 //! the post-up steal) over its updates (`8d`) and clears the bit (`9c 40`):
 //! 27, 32, 30, 32 and 40 updates, as the first attract capture's swipes
-//! have them.
+//! have them. Then `91 0` gives the locomotion back and `8c 2.0` plays the
+//! rest of the clip half a frame an update, its first step in the `9c`'s
+//! update; from the next a pushed stick takes the channel (every swipe of
+//! the third attract match leaves its clip at 23.5), else `83 01` runs the
+//! locomotion the update after the clip's last frame.
 //!
 //! The test (`FUN_0016cf30`): the hand is `FUN_0014da20`'s point for
 //! channel 0's clip and frame (during the blend the clip the swiper was
@@ -48,6 +52,8 @@ pub struct Script {
     /// The frame the wait reaches and over how many updates.
     pub frame: f32,
     pub updates: u16,
+    /// The clip's last frame, where `8c` stops.
+    pub last: f32,
 }
 
 /// The five scripts: low out, low in, high out, middle in, post-up.
@@ -57,30 +63,35 @@ pub const SCRIPTS: [Script; 5] = [
         records: [389, 388],
         frame: 23.0,
         updates: 22,
+        last: 26.0,
     },
     Script {
         address: 0x457577,
         records: [393, 392],
         frame: 23.0,
         updates: 27,
+        last: 26.0,
     },
     Script {
         address: 0x4575c9,
         records: [387, 386],
         frame: 23.0,
         updates: 25,
+        last: 26.0,
     },
     Script {
         address: 0x45761b,
         records: [391, 390],
         frame: 23.0,
         updates: 27,
+        last: 26.0,
     },
     Script {
         address: 0x45766d,
         records: [399, 398],
         frame: 30.0,
         updates: 35,
+        last: 30.0,
     },
 ];
 
@@ -91,6 +102,8 @@ pub const POST_UP: u8 = 4;
 pub const BLEND: u16 = 5;
 /// The post defence's stance on the ball (`0x43f070`).
 pub const POST_STANCE: [u16; 2] = [719, 718];
+/// `8c 2.0`'s step: half a frame an update.
+pub const PLAYOUT_STEP: f32 = 0.5;
 /// The swipe's reach (`0x16d1a4..0x16d1bc`): standing, moving.
 pub const REACH: [f32; 2] = [1.5, 0.75];
 
@@ -125,6 +138,18 @@ impl Swipe {
         BLEND + SCRIPTS[usize::from(self.script)].updates
     }
 
+    /// The `8c` play-out's steps to the clip's last frame, the first on
+    /// the span's own update.
+    pub fn playout(&self) -> u16 {
+        let s = SCRIPTS[usize::from(self.script)];
+        ((s.last - s.frame) / PLAYOUT_STEP).ceil() as u16
+    }
+
+    /// The last tick before `83 01` runs the locomotion.
+    pub fn end(&self) -> u16 {
+        self.span() + self.playout()
+    }
+
     /// The incoming clip's weight through the blend (the counter over the
     /// length, the opcode's own update first), then None.
     pub fn blend(&self) -> Option<f32> {
@@ -138,8 +163,11 @@ impl Swipe {
         if self.tick < BLEND {
             return 0.0;
         }
-        let k = f32::from(self.tick - BLEND + 1).min(f32::from(s.updates));
-        k * s.frame / f32::from(s.updates)
+        let k = self.tick - BLEND + 1;
+        if k > s.updates {
+            return (s.frame + f32::from(k - s.updates) * PLAYOUT_STEP).min(s.last);
+        }
+        f32::from(k) * s.frame / f32::from(s.updates)
     }
 
     /// Channel 0 on this tick.
@@ -342,7 +370,8 @@ impl crate::World {
         else {
             return;
         };
-        if s.tested {
+        // Bit 6 is clear from the span's `9c 40` on.
+        if s.tested || s.tick > s.span() {
             return;
         }
         // `0x15e4f8..0x15e564`: no test while actor+0x1a8 is set: a bar

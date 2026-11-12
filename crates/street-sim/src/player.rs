@@ -1153,10 +1153,11 @@ impl Player {
                 } else if let Some(s) = swipe {
                     // The swipe's script holds him: no velocity (actor+0x40
                     // stays 0 through every captured swipe), the clip's
-                    // root moves him ([`crate::World::swipe_tick`]). Its
-                    // last update past the script's ([`Swipe::span`]) is
-                    // the step that clears bit 6.
-                    let over = s.tick > s.span();
+                    // root moves him ([`crate::World::swipe_tick`]). The
+                    // update after the play-out's last step runs `83 01`
+                    // ([`Swipe::end`]); a pushed stick takes the channel
+                    // sooner ([`crate::World::select_gait`]).
+                    let over = s.tick > s.end();
                     self.speed = 0.0;
                     self.gait = Gait::Stand;
                     if over {
