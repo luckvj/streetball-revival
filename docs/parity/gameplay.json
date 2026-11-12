@@ -4614,7 +4614,7 @@
           "path": "crates/street-sim/src/ai/mod.rs",
           "locator": "Ctx::frozen; World::ai_begin; World::ai_player",
           "note": "Forced computer control includes the six-player restart as well as the opening toss.",
-          "sha256": "aeb3ecc81e7b1bea87511405a2d7cf4bd80b3d57aebcc394c7d7a7b03eb493f9"
+          "sha256": "0010e886ff222a9e717e4aa43c0070201cfc9f04697404e4ec13291c1339851b"
         },
         {
           "path": "crates/street-sim/src/ai/team.rs",
@@ -4630,7 +4630,7 @@
         }
       ],
       "tolerance": "Same static takeover guard; production regression must leave every tested restart before the 20-second fallback.",
-      "limitations": "Bounded static control-latch port and rewrite regression, not a paired original runtime replay or proof that every possible inbound hang is fixed. Last re-pinned 2026-11-12 after the swipe play-out (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Bounded static control-latch port and rewrite regression, not a paired original runtime replay or proof that every possible inbound hang is fixed. Last re-pinned 2026-11-12 after the carrier pause (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Retain a paired original/rewrite School replay capture with controller handoffs and all six ready flags.",
       "match_type": "structural"
     },
