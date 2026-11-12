@@ -663,9 +663,7 @@ impl Defense {
             d = 0.0;
         }
         // `0x107da8..0x107e94`.
-        let receiving = |j: usize| {
-            ctx.w.ball.state == crate::BallState::Pass && ctx.w.ball.pass.is_some_and(|p| p.to == j)
-        };
+        let receiving = |j: usize| ctx.receiving(j);
         let third = |d: f32| {
             if !ctx.has_ball(man) && !receiving(man) && ctx.zone(man) < 5 {
                 d * 0.333_33
@@ -1203,8 +1201,7 @@ impl Defense {
         let has = ctx.has_ball(man);
         let press = has && self.standing(ctx, i) && 33.75 < ctx.hoop_dist(man);
         // `FUN_0013abb8`: a pass in flight to him (ball state 4, no holder).
-        let receiving = ctx.w.ball.state == crate::BallState::Pass
-            && ctx.w.ball.pass.is_some_and(|p| p.to == man);
+        let receiving = ctx.receiving(man);
         let posting =
             ctx.posting(man) || (!ctx.human_player(man) && ctx.fronts.get(man) == Some(&7));
         // The two nearest the rim (game+0x3ec, +0x3f0).

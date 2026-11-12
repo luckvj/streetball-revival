@@ -1985,6 +1985,9 @@ impl World {
             };
             // `FUN_00163d40`: a guard's mode and the gait record, before
             // the walk sets the speed from it.
+            // A move still running finds no mode here; the locomotion its
+            // callback 1 runs at its end works the mode out then.
+            let stance_busy = self.players[i].action != Action::None;
             let stance = self.guard_stance(i, &input, &start);
             // A holder who picked up his dribble does not move: his stick
             // only turns him on the stand path.
@@ -2100,7 +2103,17 @@ impl World {
                 self.catching_tick(i);
             }
             self.caught_root(i);
+            // A passout row's last wait out: its `83 01` runs the
+            // locomotion in this channel step (the third attract match's
+            // Back 2 Papa at update 821 draws its holder's stand), from the
+            // clip it left.
+            let tossing = self
+                .passout
+                .is_some_and(|po| po.passer == i && po.tossed && po.tail == Some(0))
+                && matches!(self.players[i].action, Action::Passing { .. });
+            let toss_shown = tossing.then(|| self.script_shown(i)).flatten();
             self.passout_tick(i);
+            let called_passout = tossing && self.players[i].action == Action::None;
             // The face's count after his side's update (`0x157270`), before
             // the channel's step whose callbacks set faces: the block aim's
             // face for the airtime runs out the update after the landing
@@ -2307,6 +2320,8 @@ impl World {
             }
             let shown = if called {
                 self.script_shown(i)
+            } else if called_passout {
+                toss_shown
             } else if called_trick {
                 trick_shown
             } else if reaction_shown.is_some() {
@@ -2328,13 +2343,26 @@ impl World {
             {
                 self.players[i].wanted = restart::heading_radians(trick::pelvis_word(&s.pose));
             }
-            if (called || called_tip || called_reaction || called_block || called_trick)
+            if (called
+                || called_tip
+                || called_reaction
+                || called_block
+                || called_trick
+                || called_passout)
                 && matches!(self.players[i].action, Action::None)
             {
                 // `FUN_00163d40` picks the record and sets his velocity and
                 // wanted facing; the motion step after the channel's moves
                 // him on it.
                 // The record first, its motion range then sets the speed.
+                // The guard's mode as that locomotion finds it (the third
+                // attract match's defender out of his look behind at
+                // update 812: a shuffle, not a run).
+                let stance = if stance_busy {
+                    self.guard_stance(i, &walk, &start)
+                } else {
+                    stance
+                };
                 self.select_gait_with(i, &walk, held, stance, false, shown);
                 // The record's blend (counted from 7 for the update's step
                 // to take to 6) begins in this channel step, after the

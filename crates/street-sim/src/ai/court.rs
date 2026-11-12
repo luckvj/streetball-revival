@@ -329,6 +329,16 @@ impl Ctx<'_> {
     /// release, through the flight, and for [`crate::timing::catch_hold`]
     /// updates after the catch ([`crate::World::catch`]) unless a move of
     /// his replaces the row.
+    /// `FUN_0013abb8`: a pass in flight to `j` (no holder, ball state 4,
+    /// ball+0x100 him). A passout's toss to himself is not his (the third
+    /// attract match's defenders hold their speed off the Back 2 Papa's
+    /// thrower from update 751).
+    pub fn receiving(&self, j: usize) -> bool {
+        self.w.ball.state == crate::BallState::Pass
+            && self.w.ball.pass.is_some_and(|p| p.to == j)
+            && !self.passout_tossed(j)
+    }
+
     pub fn catching(&self, i: usize) -> bool {
         if self.passout_tossed(i) {
             return true;

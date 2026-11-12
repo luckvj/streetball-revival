@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- After a Back 2 Papa the game plays on as on the PS2: the defenders guarding the thrower keep their pace while the ball is in the air (they used to treat it as a pass to him and sprint), a defender getting up from a reaction drops straight into his guarding shuffle, and the thrower settles into his dribble the moment his move ends.
 - A Back 2 Papa's thrower now shows his spin's animation all the way to his catch, as on the PS2 (from the toss his arms and legs jumped to the catch's pose straight away), so the players around him meet his body where the PS2 has it.
 - A Back 2 Papa's flight is timed as on the PS2: defenders try to pick it off only near the end of its whole flight (they used to try near the end of its first leg off the board), the thrower takes it back on his own update at the flight's end as on the PS2, and while it flies and as he lands with it his team's plays treat him as catching rather than passing, so the computer's alley-oop call comes on the PS2's update.
 - More turns and footwork as on the PS2: a Back 2 Papa's thrower turns toward the backboard as he throws; a defender who turns to look behind him at a pass off the board turns in the PS2's steps and starts moving on the PS2's update (he used to swing round twice as fast and set off a step early); and a runner changing from one run into a walk while his first change is still blending starts the walk's stride where the PS2 does.

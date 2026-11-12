@@ -3330,7 +3330,10 @@ struct Bounds {
 /// 0.88) against 60, 10.5; block jumps after a release 8.6 (se 0.34)
 /// against 12, 4.5; knocks off a body 0.19 (se 0.14) against 1, 1.5;
 /// passes knocked loose 2.75 (se 0.41) against 1, 3.0; passes loose at
-/// their timer 2.6 (se 0.43) against 0, 4.0.
+/// their timer 2.6 (se 0.43) against 0, 4.0. Shots knocked loose set again
+/// by the rule on 2026-11-12 with the Back 2 Papa's flight, the guard's
+/// mode out of a move and the passout's end ported: 2.56 (2.19, se 0.55)
+/// against 1, 3.5 (+777 inside).
 const FIRST_BOUNDS: Bounds = Bounds {
     standing: 0.055,
     away: 0.025,
@@ -3342,7 +3345,7 @@ const FIRST_BOUNDS: Bounds = Bounds {
     counters: 8.5,
     shots: 10.5,
     jumps: [8.0, 4.5, 13.5],
-    loose: [1.5, 3.0, 4.0, 1.5, 0.095, 600.0],
+    loose: [1.5, 3.0, 4.0, 3.5, 0.095, 600.0],
 };
 
 /// The third capture's, on its rosters (and any recorded capture's). The
