@@ -139,9 +139,21 @@ impl Ctx<'_> {
 
     /// The other players by distance, nearest first (game+0x23c: the five
     /// others in actor order sorted by [`native_sort`], `0x13fd00..0x13fd60`).
+    ///
+    /// The table is built before the actors update (`FUN_0013fbc8`), on
+    /// the places they began the update at: an actor who updates later
+    /// sorts on those, not on where the earlier ones have moved (the third
+    /// attract match's runner at update 689 takes his two defenders the
+    /// other way round once they stand within a unit).
     pub fn by_distance(&self, i: usize) -> Vec<usize> {
         let mut others: Vec<usize> = (0..self.w.players.len()).filter(|&j| j != i).collect();
-        native_sort(&mut others, |j| self.between(i, j));
+        let places = self.w.control.tables.as_ref().map(|t| &t.places);
+        let at = |k: usize| {
+            places
+                .and_then(|p| p.get(k).copied())
+                .unwrap_or_else(|| self.pos(k))
+        };
+        native_sort(&mut others, |j| dist(at(i), at(j)));
         others
     }
 
