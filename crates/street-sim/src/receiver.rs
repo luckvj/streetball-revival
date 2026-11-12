@@ -139,7 +139,13 @@ impl World {
     /// floor who is not leaping, posting or the passer) also points his
     /// run at the spot ([`SpotRun::steer`]); its gait step then
     /// (`FUN_00163d40(actor, 0, 1)`) is his next walk here.
-    pub(crate) fn spot_at_press(&mut self, i: usize, to: usize, aim: &PassAim) {
+    pub(crate) fn spot_at_press(
+        &mut self,
+        i: usize,
+        to: usize,
+        aim: &PassAim,
+        start: Option<&[[f32; 2]]>,
+    ) {
         self.spot_run.spot = aim.spot;
         if aim.runs() {
             self.spot_run.count = 1;
@@ -175,6 +181,14 @@ impl World {
             r.speed = ran.speed;
             r.course = ran.course;
             r.wanted = ran.wanted;
+            // Within 1.5 of the spot the run's stick is still: the
+            // locomotion's stand path (the third attract match's receiver
+            // at update 949 draws his stand inside the passer's update,
+            // after the passer's own).
+            if !input.moves() {
+                let start = start.map_or_else(|| self.floor_positions(), <[_]>::to_vec);
+                self.stand_path(to, &input, &start);
+            }
         }
     }
 

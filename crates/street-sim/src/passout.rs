@@ -288,7 +288,7 @@ impl World {
         }
         let left = toss(row as u8).map_or(PASS_ROWS[row].release, |t| t.tick);
         if i != to {
-            self.spot_at_press(i, to, &aim);
+            self.spot_at_press(i, to, &aim, None);
         }
         self.windup = Some(Windup {
             from: i,

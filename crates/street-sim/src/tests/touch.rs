@@ -892,7 +892,7 @@ fn a_spot_pass_stops_its_receiver_at_the_spot_on_catch_stand_1() {
         reach: 0.0,
     };
     // The press keeps the spot (`0x15fd3c`), the release the run.
-    w.spot_at_press(0, 1, &aim);
+    w.spot_at_press(0, 1, &aim, None);
     let start = w.floor_positions();
     w.throw_aimed(0, 1, crate::passing::PassStyle::Normal, aim, &start);
     assert_eq!(w.spot_run.count, 1);

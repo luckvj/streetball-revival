@@ -2023,8 +2023,11 @@ impl World {
             // builder `FUN_001587d8` leaves it, `0x158adc..0x158af8`), so the
             // stand path's picks pass him by (the third attract match's
             // inbound receiver from update 534: one offence draw an update,
-            // not two).
-            if run_kept.is_none() && !waiting {
+            // not two). Nor does one the pass's run steers: his
+            // locomotion ran in the passer's update
+            // ([`World::spot_at_press`]; the third attract match's receiver
+            // at update 950 runs none of his own).
+            if run_kept.is_none() && !waiting && steered.is_none() {
                 self.stand_path(i, &input, &start);
             }
             // A free holder's pass goes in after his locomotion

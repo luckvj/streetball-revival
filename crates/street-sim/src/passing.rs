@@ -292,7 +292,7 @@ impl World {
         // lets go at its callback 38. A handoff to a teammate within 5
         // calls the release at once (`0x160ea0`).
         let aim = self.pass_aim(i, to);
-        self.spot_at_press(i, to, &aim);
+        self.spot_at_press(i, to, &aim, Some(start));
         let estimate = crate::timing::pass_estimate(self, i, to, &aim, input);
         let pick = crate::timing::pass_row(self, i, to, &aim, input);
         // A lob to a leaper is an Oop from its press (its row's kind).

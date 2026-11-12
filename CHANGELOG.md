@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A pass to a teammate already standing on his spot works out his stance in the passer's move, as on the PS2, and he waits on it without picking another (he picked his stance a moment later, on his own, which shifted the game's random rolls).
 - A ball handler setting off from a standstill keeps the ball in the hand he stood with until his stride has blended in, as on the PS2, so his run starts on the right hand's or left hand's version as the PS2's does (he could start on the other one).
 - A dribbler whose own move passes the ball to his other hand keeps walking in the same stride, as on the PS2 (he used to blend into the other hand's version of his walk on the spot, losing his step's sideways sway); and after a swipe the defender's guarding stance reads his recent facings as on the PS2.
 - A swipe now finishes as on the PS2: after the reach the swiper plays the rest of his swipe at half speed, and from the next update a push on the stick breaks straight into a run at full pace from the swipe's pose (the swipe used to stop dead a frame early and lose its last half step); a computer defender starts steering again as his reach ends, and his head turns at the same moment.
