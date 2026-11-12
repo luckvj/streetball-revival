@@ -864,8 +864,8 @@ impl World {
             if (hands & 8 != 0 && hand == pose::RIGHT_HAND)
                 || (hands & 4 != 0 && hand == pose::LEFT_HAND)
             {
-                self.catching = None;
                 self.receive(pass);
+                self.catching = None;
                 return;
             }
             if hand == 21 && pass.from == i {
@@ -1041,8 +1041,8 @@ impl World {
             && let Some(pass) = self.ball.pass
             && pass.to == i
         {
-            self.catching = None;
             self.receive(pass);
+            self.catching = None;
             return;
         }
         if self.catching.is_some_and(|c| c.player == i) {

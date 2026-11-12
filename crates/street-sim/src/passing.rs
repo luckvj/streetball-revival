@@ -1738,6 +1738,21 @@ impl World {
             && crate::timing::CATCH_ROWS
                 .get(usize::from(pass.catch))
                 .is_some_and(|row| row.flags & 0x4000 == 0);
+        // The row's script as it started: the update after the last step
+        // its run took (this update's runs after the catch). A receiver
+        // updated before his passer starts it the update after the release
+        // (the third attract match's catch at update 988: its flight wait
+        // 13 updates, not 15), and the replays after the catch count its
+        // flight from there.
+        let begun = self
+            .catching
+            .filter(|c| c.player == pass.to && !c.parked && c.run.tick >= 0)
+            .map_or(pass.since, |c| {
+                self.tick
+                    .saturating_sub(1 + c.run.tick as u64)
+                    .max(pass.since)
+            });
+        let flight = flight - (begun - pass.since) as i32;
         self.take_ball(pass.to);
         if usize::from(pass.catch) < crate::timing::CATCH_ROWS.len() {
             let hold = crate::timing::catch_hold(usize::from(pass.catch), left);
@@ -1746,7 +1761,7 @@ impl World {
                 until: self.tick + hold as u64,
                 row: pass.catch,
                 flight: flight.clamp(0, i32::from(u8::MAX)) as u8,
-                since: pass.since,
+                since: begun,
                 running,
             });
         }
