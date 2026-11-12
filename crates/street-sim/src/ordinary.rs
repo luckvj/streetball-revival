@@ -655,7 +655,12 @@ impl PlayerGaitChannel {
     ) {
         let [heading_rad, course_rad] = ways;
         let blending = self.blend_counter > 0;
+        // A record's script picks its row by the live hand as it starts
+        // (`8e f8`); a hand its own clip changes keeps the row (the third
+        // attract match's holder at update 924 walks on in 117 with the
+        // ball gone to his left hand).
         let wanted_row = match self.record {
+            Some(_) if moving && self.rows.contains(&self.row) => self.row,
             Some(_) if moving => self.record_row(),
             _ => select_gait_row(held, moving),
         };

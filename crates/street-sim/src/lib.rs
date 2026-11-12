@@ -2427,6 +2427,13 @@ impl World {
                 // `FUN_00168ea8` after the channel's step: toward the wanted
                 // facing the locomotion just set.
                 self.players[i].turn_to_wanted(held);
+                // The swipe's hand-over skipped his own step: the turn
+                // keeps this update's facing (+0x2e8) itself.
+                if called_swipe {
+                    let p = &mut self.players[i];
+                    p.guard.history.rotate_right(1);
+                    p.guard.history[0] = timing::facing_word(p.heading);
+                }
                 let p = &mut self.players[i];
                 // `FUN_00156f48`'s position += velocity, VU0's `vadd`: a
                 // stand's update has already moved him (the hand switch
