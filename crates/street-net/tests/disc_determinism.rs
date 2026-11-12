@@ -460,8 +460,9 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // shot once the block jumps flew to their landings; 2031: 2030's
         // played no replay once a faked defender bumped with the pose he
         // held; 2032: 2031's fell short once a passout's flight was timed
-        // whole.)
-        2032,
+        // whole; 2033: 2032's blocked no shot once a driver was read as
+        // headed for his drive's point.)
+        2033,
         15_000,
         Conditions {
             loss: 0.04,

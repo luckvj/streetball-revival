@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- Computer teammates read a driving ball handler as headed where his drive is taking him, as on the PS2 (they read where he stood), so a cutter heading for the post keeps clear of the drive's path and takes the deep post spot when the PS2's does.
 - A computer player waiting for a pass keeps the plan he made as the pass left (where to step once he has the ball), as on the PS2; he used to remake it every other moment of the flight, so he set off from where he caught it rather than from where he stood.
 - A catch by a player who moves before the passer in the game's order carries on as on the PS2 after the ball reaches his hands: the rest of his catch animation and the steps it takes him keep the timing they started with (they ran as if the catch had begun a moment earlier).
 - A passer who plants his feet to pass out of a walk turns toward his receiver at the PS2's pace (he turned at nearly twice that pace, his turn applied twice an update).

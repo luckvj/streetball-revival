@@ -309,6 +309,9 @@ impl Act {
             Act::InboundPos(p) => Some(p.spot()),
             Act::RunPick(r) => r.target(),
             Act::Feeder(f) => f.target(),
+            // The drive's point (the third attract match's post cut at
+            // update 1041 keeps 12 clear of where the driver is headed).
+            Act::Drive(d) => Some(d.target()),
             _ => None,
         }
     }

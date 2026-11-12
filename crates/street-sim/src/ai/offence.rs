@@ -1149,6 +1149,11 @@ words! {
 }
 
 impl Drive {
+    /// Where the drive takes him (`FUN_0013ab38`'s vt+0x1c).
+    pub fn target(&self) -> [f32; 2] {
+        self.target
+    }
+
     /// `FUN_001095d8(ai, 0)`: one draw for `[0xf]`.
     pub fn new(ctx: &mut Ctx, i: usize) -> Self {
         let careful = ctx.rand() % 100 < 0x19;
