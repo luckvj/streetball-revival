@@ -456,8 +456,11 @@ impl World {
     /// `FUN_00168ea8` for a passer on a row with channel flag 0x800, after
     /// the motion step (his root turned on the facing the update began
     /// with).
+    /// Not while his feet are planted (flag 0x80000): the flight's own
+    /// turn at 34 is the update's (the third attract match's passer from a
+    /// walk at update 950).
     pub(crate) fn passer_turn(&mut self, i: usize) {
-        if self.passer_flagged(i) {
+        if self.passer_flagged(i) && self.players[i].flight.flags & crate::jump::PLANTED == 0 {
             self.players[i].turn_to_wanted(false);
         }
     }

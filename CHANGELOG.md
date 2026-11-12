@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A passer who plants his feet to pass out of a walk turns toward his receiver at the PS2's pace (he turned at nearly twice that pace, his turn applied twice an update).
 - A pass to a teammate already standing on his spot works out his stance in the passer's move, as on the PS2, and he waits on it without picking another (he picked his stance a moment later, on his own, which shifted the game's random rolls).
 - A ball handler setting off from a standstill keeps the ball in the hand he stood with until his stride has blended in, as on the PS2, so his run starts on the right hand's or left hand's version as the PS2's does (he could start on the other one).
 - A dribbler whose own move passes the ball to his other hand keeps walking in the same stride, as on the PS2 (he used to blend into the other hand's version of his walk on the spot, losing his step's sideways sway); and after a swipe the defender's guarding stance reads his recent facings as on the PS2.
