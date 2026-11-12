@@ -2871,7 +2871,8 @@ impl World {
                 gait_select::record_start(record.rows[0], playing, still.map(|s| s.0))
             && let Some(poses) = self.poses.arc()
         {
-            let row = channel.record_row_of(record.rows);
+            let row =
+                channel.record_row_of(gait_select::script_rows(index, record.rows, p.left_handed));
             let body = p.body();
             // From a moving row: the step's share (`-19`), the gait's clip
             // (or its running blend's start) looked ahead at the rate the
@@ -3012,7 +3013,7 @@ impl World {
                 }
             }
             channel.record = Some(index as u16);
-            channel.rows = record.rows;
+            channel.rows = gait_select::script_rows(index, record.rows, p.left_handed);
             channel.root_distance = record.root_distance;
             channel.motion = record.motion;
             // The record's blend (the channel's own row change would start

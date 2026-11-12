@@ -2820,6 +2820,10 @@ impl World {
         let called = r.run.done && ran.locomotion;
         self.players[i].action = if r.run.done {
             self.players[i].height = 0.0;
+            // Channel 0 was the reaction's: no gait blend runs on it now
+            // (the third attract match's defender out of his look behind
+            // at update 811 stores his new record's rate at 812).
+            self.players[i].gait_channel.blend_counter = 0;
             Action::None
         } else {
             Action::Stumbling {

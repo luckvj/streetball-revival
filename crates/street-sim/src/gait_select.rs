@@ -406,6 +406,24 @@ pub fn select_drawing(
     }
 }
 
+/// The rows record `index`'s script blends to, for the live hand to pick
+/// from (`rows[hand == 2]`): most records' scripts take their rows as the
+/// table holds them by the live hand (`8e f8`); the shuffles front and
+/// back (records 2 and 3, `8e f2`) take their second row for a left-hander
+/// whatever the hand (the third attract match's defender at update 812
+/// shuffles on 42, not 43); record 72's script names its two rows the
+/// other way round from the table.
+pub fn script_rows(index: usize, rows: [u16; 2], left_handed: bool) -> [u16; 2] {
+    match index {
+        2 | 3 => {
+            let r = if left_handed { rows[0] } else { rows[1] };
+            [r, r]
+        }
+        72 => [rows[1], rows[0]],
+        _ => rows,
+    }
+}
+
 /// The flags a moving player asks for: its family (`GaitFamily` bits)
 /// and whether it holds the ball (2) or not (1).
 pub fn locomotion_flags(family: u32, held: bool) -> u32 {
