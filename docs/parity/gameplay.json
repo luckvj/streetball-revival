@@ -2397,7 +2397,7 @@
           "path": "crates/street-sim/src/ordinary.rs",
           "locator": "module doc; place; update_primary; apply_effects; PlayerGaitChannel::update",
           "note": "The channel VM's projection is test-staged with no production caller (its module doc: row handles, pose/root evaluation, action callbacks and facial scheduling need production owners); the live gait is PlayerGaitChannel::update's formulas.",
-          "sha256": "97ff1aff6db5c6d5244a861788ff948714d8f8e79bc6baa4bb695cb3a4f8a053"
+          "sha256": "b0eae8d82d2e923740e89ee41bdc9fb7eea5a8d713f1cfa41dcda4cce39d9832"
         },
         {
           "path": "crates/street-sim/src/player.rs",
@@ -2407,7 +2407,7 @@
         }
       ],
       "tolerance": "Exact native discrete state, event order and tick boundary; output tolerance must be declared before paired measurement.",
-      "limitations": "New audit coverage gap (F03). No complete paired original/current-production output comparison is asserted. Re-pinned 2026-10-15 (player.rs): the gait family and record motion now live in PlayerGaitChannel and the turbo bar is per update. ordinary.rs is left unpinned: its pinned hash matches no committed revision, so the reviewed state cannot be reconstructed and its claim is unverifiable until re-reviewed. Re-pinned 2026-10-15 after the shot-leads pass: player.rs's `Action::Shooting` doc and `Player::step`'s shot branch now ask `timing::gate_waits`; `Player::step` changed in its shot branch only. Re-pinned 2026-10-16 after the pass flight pass: player.rs gained `Action::TipJump` (an arm in `Player::step`) and `Player::received_flight`; player.rs's live paths are unchanged apart from the tip jump's arm. Re-pinned 2026-10-16 after the defenders' gait pass: player.rs's `Player` carries the course, the wanted facing and the guarding state, `Player::walk` moves along the stick at the record's speed at once and turns the facing 46 an update, and `velocity`/`advance` follow the course; `PlayerGaitChannel::update` takes the facing and the course, and `Player::walk` moves along the stick; the rest is unchanged. 2026-10-18 (the scorecard's review): ordinary.rs re-read and pinned at its committed state (994bef7; the old pin matched no committed revision). Nothing outside the module calls the channel VM (place, update_primary, apply_effects); the live actor runs PlayerGaitChannel::update for the gait and the moves' own scripts on street_sim::trick's Run, so the original's primary channel is still not the live driver; the known difference stands and counts again. Last re-pinned 2026-11-11 after the reaction's held pose (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "New audit coverage gap (F03). No complete paired original/current-production output comparison is asserted. Re-pinned 2026-10-15 (player.rs): the gait family and record motion now live in PlayerGaitChannel and the turbo bar is per update. ordinary.rs is left unpinned: its pinned hash matches no committed revision, so the reviewed state cannot be reconstructed and its claim is unverifiable until re-reviewed. Re-pinned 2026-10-15 after the shot-leads pass: player.rs's `Action::Shooting` doc and `Player::step`'s shot branch now ask `timing::gate_waits`; `Player::step` changed in its shot branch only. Re-pinned 2026-10-16 after the pass flight pass: player.rs gained `Action::TipJump` (an arm in `Player::step`) and `Player::received_flight`; player.rs's live paths are unchanged apart from the tip jump's arm. Re-pinned 2026-10-16 after the defenders' gait pass: player.rs's `Player` carries the course, the wanted facing and the guarding state, `Player::walk` moves along the stick at the record's speed at once and turns the facing 46 an update, and `velocity`/`advance` follow the course; `PlayerGaitChannel::update` takes the facing and the course, and `Player::walk` moves along the stick; the rest is unchanged. 2026-10-18 (the scorecard's review): ordinary.rs re-read and pinned at its committed state (994bef7; the old pin matched no committed revision). Nothing outside the module calls the channel VM (place, update_primary, apply_effects); the live actor runs PlayerGaitChannel::update for the gait and the moves' own scripts on street_sim::trick's Run, so the original's primary channel is still not the live driver; the known difference stands and counts again. Last re-pinned 2026-11-12 after live AI fronts (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the original and current production at the same initial state/input/tick boundary and retain all failures/exclusions.",
       "audit_review": {
         "date": "2026-10-14",
@@ -4614,7 +4614,7 @@
           "path": "crates/street-sim/src/ai/mod.rs",
           "locator": "Ctx::frozen; World::ai_begin; World::ai_player",
           "note": "Forced computer control includes the six-player restart as well as the opening toss.",
-          "sha256": "a4855c1251de14625546496a6bdee09997c16dcad3db5542e87afc8fd1c7da04"
+          "sha256": "1e684500286c88757e9b52de10c5a97b63d873562762cea8d0734d617ff222ea"
         },
         {
           "path": "crates/street-sim/src/ai/team.rs",
@@ -4630,7 +4630,7 @@
         }
       ],
       "tolerance": "Same static takeover guard; production regression must leave every tested restart before the 20-second fallback.",
-      "limitations": "Bounded static control-latch port and rewrite regression, not a paired original runtime replay or proof that every possible inbound hang is fixed. Last re-pinned 2026-11-11 after hand switch and table openness (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Bounded static control-latch port and rewrite regression, not a paired original runtime replay or proof that every possible inbound hang is fixed. Last re-pinned 2026-11-12 after live AI fronts (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Retain a paired original/rewrite School replay capture with controller handoffs and all six ready flags.",
       "match_type": "structural"
     },
