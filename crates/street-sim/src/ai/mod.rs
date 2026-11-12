@@ -679,9 +679,11 @@ impl Brain {
         self.queue.first().map_or(0, |n| n.act.kind())
     }
 
-    /// `FUN_00133148`: the front behaviour's target, if it has one.
+    /// `FUN_00133148`: the target of the last queued behaviour that has
+    /// one, asking from the back of the queue to the front (a pause ahead
+    /// of a cut is headed where the cut goes).
     pub fn front_target(&self) -> Option<[f32; 2]> {
-        self.queue.first().and_then(|n| n.act.target())
+        self.queue.iter().rev().find_map(|n| n.act.target())
     }
 
     /// The front behaviour's point for a pass to him (vt+0x24,

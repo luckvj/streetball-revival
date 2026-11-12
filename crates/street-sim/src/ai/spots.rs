@@ -110,12 +110,17 @@ impl PerimPlayer {
                     let c = CutMove::new(ctx, i, CutKind::To, z, false, false);
                     b.push(Act::CutMove(c));
                 } else {
+                    // `trunc(fps × 0.4)` with 0.4 one bit short
+                    // (0x3ecccccc) is 23, and `fps × 0.3` (0x3e999999)
+                    // 17; the plain 0.4 (0x3ecccccd) is 24.
                     let r = ctx.rand();
+                    let fps = crate::TICK_HZ as f32;
                     let frames = if self.play {
-                        (r % 24) as i32 + 60
+                        r % ((fps * f32::from_bits(0x3ecc_cccc)) as u32) + fps as u32
                     } else {
-                        (r % 18) as i32 + 24
-                    };
+                        r % ((fps * f32::from_bits(0x3e99_9999)) as u32)
+                            + (fps * f32::from_bits(0x3ecc_cccd)) as u32
+                    } as i32;
                     b.push(Act::PerimPause(PerimPause::new(frames)));
                 }
             }

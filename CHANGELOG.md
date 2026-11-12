@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- Computer players off the ball read where a teammate is headed as on the PS2: from his whole queue of moves, so a man pausing before a cut counts as already going where the cut takes him (only a move under way counted); and a computer player's pause on the wing lasts the PS2's length (its random length was drawn from one frame too wide a range).
 - A swipe at the ball now comes as on the PS2: the swiper's hand tries for the ball on the very update he presses, once his run has moved him (it tried on the next update), and he keeps his stride through the swipe instead of picking a new one.
 - A ball handler's crossover hands back to his run as on the PS2: the end of the move picks his run afresh and blends into it (he used to carry straight on in his old stride, and took an extra step on that update); and defenders judge who is nearest the basket from where everyone stood as the update began, as on the PS2.
 - When the computer starts a play that sends the ball handler somewhere and a teammate on a cut, the cutter now keeps clear of where the handler is going, as on the PS2 (he kept clear of where the handler stood); and a player's running stride after a stand or a move picks up at the PS2's pace (a stand used to reset it).
