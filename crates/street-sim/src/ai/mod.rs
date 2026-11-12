@@ -963,9 +963,20 @@ impl Ctx<'_> {
 
     /// game+0x3ec: every player in actor order sorted by his distance to
     /// the offence's rim ([`court::native_sort`], `0x13f7c8..0x13f838`).
+    ///
+    /// Built with the distance tables before the actors update, on the
+    /// places they began the update at (the third attract match's guard at
+    /// update 849, not 848, finds himself and his man the two nearest).
     pub fn by_rim(&self) -> Vec<usize> {
         let mut all: Vec<usize> = (0..self.w.players.len()).collect();
-        court::native_sort(&mut all, |j| self.hoop_dist(j));
+        let places = self.w.control.tables.as_ref().map(|t| &t.places);
+        let goal = self.goal(self.offence());
+        let at = |k: usize| {
+            places
+                .and_then(|p| p.get(k).copied())
+                .unwrap_or_else(|| self.pos(k))
+        };
+        court::native_sort(&mut all, |j| court::dist(at(j), goal));
         all
     }
 

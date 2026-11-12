@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A ball handler's crossover hands back to his run as on the PS2: the end of the move picks his run afresh and blends into it (he used to carry straight on in his old stride, and took an extra step on that update); and defenders judge who is nearest the basket from where everyone stood as the update began, as on the PS2.
 - When the computer starts a play that sends the ball handler somewhere and a teammate on a cut, the cutter now keeps clear of where the handler is going, as on the PS2 (he kept clear of where the handler stood); and a player's running stride after a stand or a move picks up at the PS2's pace (a stand used to reset it).
 - A defender shuffling forward or back leads with the PS2's foot (he shuffled on the other side's animation), and out of a reaction straight into a new shuffle or run his first stride is the PS2's length (it was the last one's from before the reaction).
 - After a Back 2 Papa the game plays on as on the PS2: the defenders guarding the thrower keep their pace while the ball is in the air (they used to treat it as a pass to him and sprint), a defender getting up from a reaction drops straight into his guarding shuffle, and the thrower settles into his dribble the moment his move ends.

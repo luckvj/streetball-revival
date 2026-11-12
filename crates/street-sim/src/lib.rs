@@ -2163,9 +2163,19 @@ impl World {
             let reaction_shown = self.reaction_shown(i);
             let called_reaction = self.reaction_tick(i);
             let reaction_shown = reaction_shown.filter(|_| called_reaction);
-            if !frozen {
-                self.stand_tick_turning(i, true);
-            }
+            // The stand's channel as the last update left it, for a record
+            // its callback 1 starts.
+            let stand_shown = self.players[i].stand.and_then(|s| {
+                let poses = self.poses.get()?;
+                let shown = s.run.shown();
+                let record = shown.record?;
+                Some(ScriptShown {
+                    pose: self.actor_pose(i)?,
+                    held: s.local(poses)?,
+                    from: (record, shown.frame),
+                })
+            });
+            let called_stand = !frozen && self.stand_tick_turning(i, true);
             self.counter_tick(i);
             self.scoop_tick(i);
             let facing = self.players[i].heading;
@@ -2254,7 +2264,9 @@ impl World {
             if !frozen && self.players[i].heading != facing_before {
                 self.stand_replant(i);
             }
-            if !frozen {
+            // A stand handing the channel to a record on callback 1: the
+            // record's blend starts in this channel step, no clip root.
+            if !frozen && !called_stand {
                 self.gait_root(i, gait_before, facing_before);
             }
             self.contain(i);
@@ -2322,6 +2334,8 @@ impl World {
                 self.script_shown(i)
             } else if called_passout {
                 toss_shown
+            } else if called_stand {
+                stand_shown
             } else if called_trick {
                 trick_shown
             } else if reaction_shown.is_some() {
@@ -2348,7 +2362,8 @@ impl World {
                 || called_reaction
                 || called_block
                 || called_trick
-                || called_passout)
+                || called_passout
+                || called_stand)
                 && matches!(self.players[i].action, Action::None)
             {
                 // `FUN_00163d40` picks the record and sets his velocity and
@@ -2388,17 +2403,21 @@ impl World {
                     && s.run.tick < 0
                     && stood != Some(s.script)
                 {
-                    self.stand_tick_turning(i, true);
+                    let _ = self.stand_tick_turning(i, true);
                 }
                 // `FUN_00168ea8` after the channel's step: toward the wanted
                 // facing the locomotion just set.
                 self.players[i].turn_to_wanted(held);
                 let p = &mut self.players[i];
-                // `FUN_00156f48`'s position += velocity, VU0's `vadd`.
-                let v = p.velocity_step();
-                p.position[0] = math::vu_add(p.position[0], v[0]);
-                p.position[1] = math::vu_add(p.position[1], v[1]);
-                p.clamp_to_court();
+                // `FUN_00156f48`'s position += velocity, VU0's `vadd`: a
+                // stand's update has already moved him (the hand switch
+                // runs over his walk).
+                if !called_stand {
+                    let v = p.velocity_step();
+                    p.position[0] = math::vu_add(p.position[0], v[0]);
+                    p.position[1] = math::vu_add(p.position[1], v[1]);
+                    p.clamp_to_court();
+                }
             }
             self.contain(i);
             // The head's look ([`look`], `0x157d9c`).
@@ -2763,7 +2782,12 @@ impl World {
         }
         let switching = self.switching(i);
         let profile = config.profiles.get(i).copied().unwrap_or_default();
-        let current = if switching {
+        // A script's clip the channel shows as callback 1 calls (`s3`, its
+        // `+0x50`): none of the gait records' rows (the third attract
+        // match's faker at update 866, out of his hand switch on 198).
+        let current = if let Some(s) = script.as_ref() {
+            Some(s.from.0)
+        } else if switching {
             Some(self.channel_row(i))
         } else {
             let channel = &self.players[i].gait_channel;
@@ -2864,7 +2888,10 @@ impl World {
         let p = &self.players[i];
         let channel = &p.gait_channel;
         if let Some(record) = config.records.get(index)
-            && channel.record != Some(index as u16)
+            // A script's clip on the channel: the record's script runs anew
+            // even when it was the gait's before (the third attract match's
+            // faker out of his hand switch at 866 blends back into 103).
+            && (channel.record != Some(index as u16) || script.is_some())
             && !(playing.is_some_and(|r| record.rows.contains(&r)) && p.stand.is_none())
             && p.action == Action::None
             && let Some(how) =

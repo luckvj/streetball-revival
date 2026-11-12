@@ -799,7 +799,7 @@ impl World {
     /// blend from the gait's frame, where the off-ball offence's stands
     /// plant nothing and he stops.
     pub(crate) fn stand_tick(&mut self, i: usize) {
-        self.stand_tick_turning(i, false);
+        let _ = self.stand_tick_turning(i, false);
     }
 
     /// `FUN_0019a658` on the gait's scripts: their `91 0x20000` frees the
@@ -908,9 +908,9 @@ impl World {
     /// matches his facing to its clip (`91`'s 0x800000, `FUN_00196698`),
     /// before the update's turn; the opening's frozen stands keep the
     /// facing their placement gave.
-    pub(crate) fn stand_tick_turning(&mut self, i: usize, live: bool) {
+    pub(crate) fn stand_tick_turning(&mut self, i: usize, live: bool) -> bool {
         let Some(mut s) = self.players[i].stand else {
-            return;
+            return false;
         };
         let poses = self.poses.arc();
         // The model as the channel shows it: before the first blend, the
@@ -1034,7 +1034,11 @@ impl World {
         // change carries him (times the height scale, turned by his
         // facing): the idle clips sway him on the spot (clip 68, `READY`,
         // about 0.5 across in the attract captures' restarts).
-        if let Some(poses) = poses.as_deref() {
+        // A stand ending on callback 1 hands the channel to the record its
+        // locomotion starts at once, in a blend: no root this update (the
+        // third attract match's faker out of his hand switch at 866).
+        let handed = s.run.done && ran.locomotion;
+        if !handed && let Some(poses) = poses.as_deref() {
             let step = crate::trick::root_step(poses, before, s.run.shown());
             let p = &mut self.players[i];
             let m = crate::trick::root_motion(step, p.body(), timing::facing_word(p.heading));
@@ -1059,5 +1063,9 @@ impl World {
                 crate::restart::heading_radians(crate::trick::pelvis_word(&pose));
         }
         self.players[i].stand = (!s.run.done).then_some(s);
+        // Its last steps' callback 1 runs the locomotion in this channel
+        // step (the hand switch's `83 01`: the third attract match's faker
+        // at update 866 picks his run again).
+        s.run.done && ran.locomotion
     }
 }
