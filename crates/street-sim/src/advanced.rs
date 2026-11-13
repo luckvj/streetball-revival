@@ -232,7 +232,7 @@ impl World {
         }
         Some(match a.anchor.filter(|_| a.tick < 3) {
             Some(local) => {
-                let q = crate::held::yaw(place.word);
+                let q = crate::pose::actor_turn(place.word);
                 let o = crate::pose::rotate(q, local);
                 let f = tick / 3.0;
                 std::array::from_fn(|k| (place.position[k] + o[k]) * (1.0 - f) + point[k] * f)

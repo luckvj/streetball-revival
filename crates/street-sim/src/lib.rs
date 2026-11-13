@@ -640,11 +640,9 @@ pub(crate) struct ShownStart(
     pub Vec<Option<(u64, u16, f32)>>,
     /// The first output of a stand begun this update (tick, actor, pose,
     /// the model as it was last posed: its pelvis's word and the facing it
-    /// was posed at; the units its heading match turned the facing): its
-    /// script ran at once (`FUN_0019c2f8`), its blend's first step posed;
-    /// a script started over it holds that. Only the holder's free pass
-    /// starts one, so it is the holder's.
-    pub Option<(u64, usize, pose::Held, Option<i16>, i32, i32)>,
+    /// was posed at): its script ran at once (`FUN_0019c2f8`), its blend's
+    /// first step posed; a script started over it holds that.
+    pub Option<(u64, usize, pose::Held, Option<i16>, i32)>,
     /// A trick that ended this update (tick, actor, the clip and model it
     /// left): its callback 1 runs the locomotion in this channel step.
     pub Option<(u64, usize, ScriptShown)>,
@@ -658,6 +656,10 @@ pub(crate) struct ShownStart(
     pub Option<PendingTrickPass>,
     /// The actor whose update is running (none between them).
     pub Option<usize>,
+    /// A heading match that turned the holder this update before his
+    /// blend stored the ball's offset (tick, holder, the facing before and
+    /// after): `FUN_00193300` stores it in the frame he faces then.
+    pub Option<(u64, usize, i32, i32)>,
 );
 
 /// [`ShownStart`]'s computer trick pass: tick, passer, receiver, the
@@ -2087,8 +2089,11 @@ impl World {
                         .map(|pose| trick::pelvis_word(&pose) as i16);
                     let posed = timing::facing_word(self.players[i].heading);
                     if let Some(h) = self.stand_first_output(i) {
-                        let turned = timing::facing_word(self.players[i].heading) - posed;
-                        self.shown_start.2 = Some((self.tick, i, h, pelvis, posed, turned));
+                        self.shown_start.2 = Some((self.tick, i, h, pelvis, posed));
+                        let now = timing::facing_word(self.players[i].heading);
+                        if now != posed {
+                            self.shown_start.7 = Some((self.tick, i, posed, now));
+                        }
                     }
                 }
                 let trick = self
@@ -2716,17 +2721,17 @@ impl World {
     /// this update that a pass starts over ([`ShownStart`]).
     pub(crate) fn stand_begun_facing(&self, i: usize) -> Option<i32> {
         match self.shown_start.2 {
-            Some((tick, k, _, _, w, _)) if tick == self.tick && k == i => Some(w),
+            Some((tick, k, .., w)) if tick == self.tick && k == i => Some(w),
             _ => None,
         }
     }
 
-    /// The units the heading match of a stand begun this update turned
-    /// `i`'s facing ([`ShownStart`]); 0 without one.
-    pub(crate) fn stand_begun_turn(&self, i: usize) -> i32 {
-        match self.shown_start.2 {
-            Some((tick, k, .., t)) if tick == self.tick && k == i => t,
-            _ => 0,
+    /// The facings before and after a heading match that turned holder
+    /// `h` this update ahead of his blend's store ([`ShownStart`]).
+    pub(crate) fn matched_before_store(&self, h: usize) -> Option<(i32, i32)> {
+        match self.shown_start.7 {
+            Some((tick, k, from, to)) if tick == self.tick && k == h => Some((from, to)),
+            _ => None,
         }
     }
 
@@ -3129,6 +3134,9 @@ impl World {
                 if matched != word {
                     p.heading = restart::heading_radians(matched);
                     turn = word - matched;
+                    if self.ball.state == BallState::Held(i) {
+                        self.shown_start.7 = Some((self.tick, i, word, matched));
+                    }
                 }
             }
             if let Some((Some(from), held)) = held {

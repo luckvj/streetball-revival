@@ -182,6 +182,34 @@ pub fn ball_place(
     place: Place,
     radius: f32,
 ) -> Option<([f32; 3], Option<Dribbled>)> {
+    ball_place_on(poses, record, time, body, place, radius, None)
+}
+
+/// [`ball_point`] on a model whose root bone is posed at height `root`
+/// (through a blend, the blended model's), which the flight's stored ends
+/// are laid from (`0x19cce8`, `model+0x20`); none, the clip's own at
+/// `time`.
+pub fn ball_point_on(
+    poses: &Poses,
+    record: u16,
+    time: f32,
+    body: Body,
+    place: Place,
+    radius: f32,
+    root: Option<f32>,
+) -> Option<[f32; 3]> {
+    ball_place_on(poses, record, time, body, place, radius, root).map(|(at, _)| at)
+}
+
+fn ball_place_on(
+    poses: &Poses,
+    record: u16,
+    time: f32,
+    body: Body,
+    place: Place,
+    radius: f32,
+    root: Option<f32>,
+) -> Option<([f32; 3], Option<Dribbled>)> {
     let n = poses.frames(record)? as i32;
     if n == 0 {
         return None;
@@ -225,6 +253,10 @@ pub fn ball_place(
     // root's way across from that frame to now, at the height scale, turned
     // by the facing. The played captures' dribbles in flight come within
     // 0.012 (median) of the original's ball with it, 0.034 without.
+    // Each end's offset from its frame's root (+0xc0, +0xe0) rides on the
+    // model's root as posed now, its height too (the third attract
+    // match's catcher into his dribble at update 1012: through the blend
+    // the model's pelvis, 4.97, is not the clip's).
     let shift = |frame: i32| -> Option<[f32; 3]> {
         let at = |time: f32| {
             poses.root(Frame {
@@ -234,6 +266,7 @@ pub fn ball_place(
             })
         };
         let (then, now) = (at(frame as f32)?, at(cur)?);
+        let lift = root.unwrap_or(now[1] * body.height) - then[1] * body.height;
         let theta = place.word as f32 * std::f32::consts::TAU / 1024.0;
         let yaw = [
             0.0,
@@ -246,7 +279,8 @@ pub fn ball_place(
             0.0,
             (then[2] - now[2]) * body.height,
         ];
-        Some(pose::rotate(yaw, d))
+        let d = pose::rotate(yaw, d);
+        Some([d[0], lift, d[2]])
     };
     let (sa, sb) = (shift(release)?, shift(catch)?);
     let a = hand_at(release)?;

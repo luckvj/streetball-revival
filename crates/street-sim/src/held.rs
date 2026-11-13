@@ -141,17 +141,6 @@ pub fn other_side(p: &Player) -> bool {
     (side > 0.0 && z < 0.0) || (side < 0.0 && z > 0.0)
 }
 
-/// The yaw of facing word `word` (the pose's, `pose::place`).
-pub(crate) fn yaw(word: i32) -> [f32; 4] {
-    let theta = word as f32 * std::f32::consts::TAU / 1024.0;
-    [
-        0.0,
-        crate::math::sin(theta * 0.5),
-        0.0,
-        crate::math::cos(theta * 0.5),
-    ]
-}
-
 /// The script, its steps and the updates it has run for a scripted move;
 /// a fadeaway's the check it jumped at from its shot.
 struct Scripted {
@@ -949,7 +938,7 @@ impl World {
         let place = self.place(h);
         let b = self.ball.position;
         let d = std::array::from_fn(|k| b[k] - place.position[k]);
-        let q = yaw(place.word);
+        let q = pose::actor_turn(place.word);
         Some((h, pose::rotate([-q[0], -q[1], -q[2], q[3]], d)))
     }
 
@@ -1021,7 +1010,17 @@ impl World {
                 };
                 let state = poses.state(record, start as i32);
                 let at = if crate::dribble::dribbles(&poses, record) && state & 0xc == 0 {
-                    crate::dribble::ball_point(&poses, record, start, body, place, radius)
+                    let root = trick::pose_from(
+                        &poses,
+                        c.shown,
+                        c.from,
+                        c.held.as_ref(),
+                        c.turn,
+                        body,
+                        place,
+                    )
+                    .map(|pose| pose.joints[0].position[1]);
+                    crate::dribble::ball_point_on(&poses, record, start, body, place, radius, root)
                 } else {
                     trick::pose_from(
                         &poses,
@@ -1054,23 +1053,20 @@ impl World {
                 let out = c.from.map_or(0, |(r, f)| poses.state(r, f as i32) & 0xc);
                 let target = poses.state(record, c.shown.frame as i32) & 0xc;
                 let meet = out & target != 0 && (out == target || target == 4 || target == 8);
-                // `FUN_00193300` stores it in his model's frame as the blend
-                // starts (his facing rounded down to an even step,
-                // [`pose::actor_turn`]): past a stand's heading match in the
-                // same update, that frame has turned (the third attract
-                // match's passer at update 949: 249 -> 275, the model at 274,
-                // 25 from the offset taken at 249).
-                let turned = match (self.stand_begun_turn(h), self.stand_begun_facing(h)) {
-                    (0, _) | (_, None) => 0,
-                    (t, Some(posed)) => ((posed + t) & !1) - posed,
-                };
+                // `FUN_00193300` stores it in the frame he faces as the
+                // blend starts (actor+0x50, [`pose::actor_turn`]): past a
+                // heading match earlier in the update, that frame has turned
+                // (the third attract match's passer at update 949, 249 ->
+                // 275; its catcher into his dribble at 1012).
                 match before {
                     Some((b, local)) if b == h && (anchor.is_some() || !meet) => {
-                        let local = if turned == 0 {
-                            local
-                        } else {
-                            let q = yaw(turned);
-                            pose::rotate([-q[0], -q[1], -q[2], q[3]], local)
+                        let local = match self.matched_before_store(h) {
+                            Some((from, to)) => {
+                                let d = pose::rotate(pose::actor_turn(from), local);
+                                let q = pose::actor_turn(to);
+                                pose::rotate([-q[0], -q[1], -q[2], q[3]], d)
+                            }
+                            None => local,
                         };
                         Some(Anchor { player: h, local })
                     }
@@ -1080,7 +1076,7 @@ impl World {
                 anchor
             };
             if let Some(a) = anchor {
-                let q = yaw(place.word);
+                let q = pose::actor_turn(place.word);
                 let o = pose::rotate(q, a.local);
                 let f = f32::from(counter) / f32::from(length);
                 at = std::array::from_fn(|k| (place.position[k] + o[k]) * (1.0 - f) + point[k] * f);

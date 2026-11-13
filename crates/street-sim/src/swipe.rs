@@ -300,7 +300,14 @@ impl crate::World {
         let poses = self.poses.arc()?;
         let from = self.gait_frame(i);
         let body = self.players[i].body();
-        let pose = poses.pose(from, body, self.place(i));
+        // The model as the last update posed it (its pelvis and hands: the
+        // third attract match's swiper at update 1019 out of a stand's
+        // blend, his pelvis lower than his gait's), else his gait's frame.
+        let place = self.place(i);
+        let pose = self
+            .shown_at_start(i)
+            .map(|h| poses.place_held(&h, body, place))
+            .or_else(|| poses.pose(from, body, place));
         let stance = POST_STANCE.contains(&from.record);
         let holder = match self.ball.state {
             crate::BallState::Held(h) => Some(h),
