@@ -489,14 +489,15 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
     // 22's none once callback 7 set the wanted facing, seed 23's none once
     // a passer stopped into a stand at the press, seed 24's none once a
     // pass row ran on until the locomotion took it, seed 25's none once a
-    // passout's flight was timed whole).
+    // passout's flight was timed whole, seed 26's none once a stand
+    // begun under a late pass matched its facing).
     let tables = disc().unwrap();
     let teams: Vec<usize> = (0..tables.tables().teams.len())
         .filter(|&t| tables.tables().teams[t].roster.len() >= 3)
         .collect();
     disc_match(
         [teams[12], teams[20]],
-        26,
+        27,
         15_000,
         Conditions {
             loss: 0.10,
