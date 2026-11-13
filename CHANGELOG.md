@@ -5,6 +5,52 @@ its version's part.
 
 ## Unreleased
 
+(Nothing yet.)
+
+## v0.1.8-beta
+
+Matches play even closer to the PS2's: the original's third demo match
+now runs move for move with this build for over a thousand updates,
+checked against the PS2 limb by limb. Online, everyone in a match needs
+this version (an older copy is told so when it joins).
+
+- **Players move with the PS2's own arithmetic.** Steps, turns, bumps,
+  shot arcs and animation blends use the original's float rounding, its
+  sine/cosine table, its slerp and its arc tangent, so players no longer
+  drift from the original by tiny amounts that grew over a match.
+  Knees, planted feet and limb lengths match the original's exactly.
+- **Swipes as on the PS2.** A swipe tries for the ball on the update it
+  is pressed, plays its last half step out, and breaks into a run or a
+  stance from the swipe's pose the moment the stick says so.
+- **Passes and catches.** A passer turns to his receiver at the PS2's
+  pace, a receiver on his spot waits in the right stance, and a catch
+  keeps the timing it started with. The Back 2 Papa off the board spins,
+  flies and is caught back as on the PS2, and defenders try to pick it
+  off at the PS2's moment.
+- **Dribbling.** A ball handler keeps the ball in the hand he stood with
+  as his run starts, keeps his stride when his own move switches hands,
+  and crosses over when a defender closes in on his dribbling side.
+- **Trick moves and fakes.** Moves are chosen with the PS2's random
+  rolls, go round the defender on the PS2's side, and a faked-out
+  defender stumbles from the pose he really showed. The crowd's gasp and
+  the move's points come after its last footwork.
+- **The computer's play.** Computer players read where a teammate is
+  headed (his drive's point, his queue of moves), keep clear of a drive's
+  path, pause on the wing for the PS2's time, keep their plan while a
+  pass flies to them, press inbounds and run fast breaks as on the PS2.
+- **Jumps and landings.** The tip-off jump animates and aims as on the
+  PS2 (the jumpers face the centre at the original's angle), block jumps
+  turn toward their jump and back, and a landing plays out before the
+  next run.
+- **Smaller fixes:**
+  - Online, after a game REMATCH is the first and lit choice.
+  - Defenders shuffle on the PS2's foot, guard on its angle table, and
+    get up from a reaction straight into their guarding shuffle.
+  - A player's turn at the end of a dunk, shot or move eases round at the
+    PS2's speed instead of snapping.
+
+<details><summary>Every change in detail</summary>
+
 - A swiper who leaves the stick alone after his reach settles into his stance on the next update, as on the PS2 (he played the rest of the swipe out first).
 - Computer teammates read a driving ball handler as headed where his drive is taking him, as on the PS2 (they read where he stood), so a cutter heading for the post keeps clear of the drive's path and takes the deep post spot when the PS2's does.
 - A computer player waiting for a pass keeps the plan he made as the pass left (where to step once he has the ball), as on the PS2; he used to remake it every other moment of the flight, so he set off from where he caught it rather than from where he stood.
@@ -56,6 +102,8 @@ its version's part.
 - At the end of a dunk, shot, move or reaction a player turns toward where his body faces at the PS2's turning speed instead of snapping round, and a stand he starts right then plays at once.
 - After landing from a block jump a player finishes the landing animation and runs off from it as on the PS2 (he used to snap back into his old stride one frame early).
 - Shot arcs use the PS2's own trigonometry (its tangent, arcsine and arctangent approximations and rounding) instead of the PC's math library.
+
+</details>
 
 ## v0.1.7-beta
 
