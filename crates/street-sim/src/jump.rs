@@ -985,9 +985,17 @@ impl World {
             // stepped this update (its first output the blend holds) has
             // not been posed onto them (the third attract match's passer
             // plants bone 3 where the update before showed it, 874).
-            None if self.shown_at_start(i).is_some() => self
-                .shown_at_start(i)
-                .map(|h| poses.place_held(&h, p.body(), place)),
+            // At the facing they were posed at: a heading match in that
+            // stand's start has turned it since (the third attract match's
+            // passer at update 949, 249 -> 275).
+            None if self.shown_at_start(i).is_some() => {
+                let mut place = place;
+                if let Some(w) = self.stand_begun_facing(i) {
+                    place.word = w;
+                }
+                self.shown_at_start(i)
+                    .map(|h| poses.place_held(&h, p.body(), place))
+            }
             None if m.held.is_some() => m
                 .held
                 .as_ref()

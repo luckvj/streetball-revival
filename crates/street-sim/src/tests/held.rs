@@ -300,7 +300,8 @@ fn a_change_of_gait_row_shows_as_the_channels_blend() {
     let c = w.channel(0).unwrap();
     assert!(c.gait);
     assert_eq!(c.from, Some(from));
-    assert_eq!(c.counter, Some((2, 6)));
+    // +0x70 counts up (5 of 6) as the locomotion's counter counts down.
+    assert_eq!(c.counter, Some((5, 6)));
     assert_eq!(c.shown.blend, Some(5.0 / 6.0));
     w.players[0].gait_channel.blend_counter = 0;
     let c = w.channel(0).unwrap();

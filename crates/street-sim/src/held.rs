@@ -373,9 +373,10 @@ impl World {
                 None => c.shown.record.map(|r| (r, c.shown.frame)),
             }),
         };
-        let pelvis = self
-            .actor_pose(i)
-            .map(|pose| trick::pelvis_word(&pose) as i16);
+        let pelvis = self.stand_begun_pelvis(i).or_else(|| {
+            self.actor_pose(i)
+                .map(|pose| trick::pelvis_word(&pose) as i16)
+        });
         let held = self
             .poses
             .get()
@@ -919,7 +920,7 @@ impl World {
                 blend: blending.then(|| (n + 1 - g.blend_counter) as f32 / n as f32),
             },
             from: if blending { g.blend_from } else { None },
-            counter: blending.then_some((g.blend_counter as u16, n as u16)),
+            counter: blending.then_some(((n + 1 - g.blend_counter) as u16, n as u16)),
             gait: true,
             turn: 0,
             held: if blending { g.blend_held } else { None },
@@ -1053,8 +1054,24 @@ impl World {
                 let out = c.from.map_or(0, |(r, f)| poses.state(r, f as i32) & 0xc);
                 let target = poses.state(record, c.shown.frame as i32) & 0xc;
                 let meet = out & target != 0 && (out == target || target == 4 || target == 8);
+                // `FUN_00193300` stores it in his model's frame as the blend
+                // starts (his facing rounded down to an even step,
+                // [`pose::actor_turn`]): past a stand's heading match in the
+                // same update, that frame has turned (the third attract
+                // match's passer at update 949: 249 -> 275, the model at 274,
+                // 25 from the offset taken at 249).
+                let turned = match (self.stand_begun_turn(h), self.stand_begun_facing(h)) {
+                    (0, _) | (_, None) => 0,
+                    (t, Some(posed)) => ((posed + t) & !1) - posed,
+                };
                 match before {
                     Some((b, local)) if b == h && (anchor.is_some() || !meet) => {
+                        let local = if turned == 0 {
+                            local
+                        } else {
+                            let q = yaw(turned);
+                            pose::rotate([-q[0], -q[1], -q[2], q[3]], local)
+                        };
                         Some(Anchor { player: h, local })
                     }
                     _ => None,

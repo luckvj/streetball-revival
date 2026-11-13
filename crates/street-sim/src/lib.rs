@@ -638,10 +638,13 @@ pub enum Event {
 pub(crate) struct ShownStart(
     pub Vec<Option<(u64, pose::Held)>>,
     pub Vec<Option<(u64, u16, f32)>>,
-    /// The first output of a stand begun this update (tick, actor, pose):
-    /// its script ran at once (`FUN_0019c2f8`), its blend's first step
-    /// posed; a script started over it holds that.
-    pub Option<(u64, usize, pose::Held)>,
+    /// The first output of a stand begun this update (tick, actor, pose,
+    /// the model as it was last posed: its pelvis's word and the facing it
+    /// was posed at; the units its heading match turned the facing): its
+    /// script ran at once (`FUN_0019c2f8`), its blend's first step posed;
+    /// a script started over it holds that. Only the holder's free pass
+    /// starts one, so it is the holder's.
+    pub Option<(u64, usize, pose::Held, Option<i16>, i32, i32)>,
     /// A trick that ended this update (tick, actor, the clip and model it
     /// left): its callback 1 runs the locomotion in this channel step.
     pub Option<(u64, usize, ScriptShown)>,
@@ -2074,12 +2077,19 @@ impl World {
                 // the pass row's blend holds that (the third attract
                 // match's passer at update 874: 1/6 of the way to record
                 // 673 from what he showed).
-                if !frozen
-                    && let Some(s) = self.players[i].stand
-                    && s.run.tick < 0
-                    && let Some(h) = self.stand_first_output(i)
-                {
-                    self.shown_start.2 = Some((self.tick, i, h));
+                // Its heading match turns the facing (the third attract
+                // match's passer at update 949: 249 -> 275); the pass start
+                // reads the pelvis off the model as the last update posed it
+                // (`FUN_00154230` at `0x16010c`), before that turn.
+                if !frozen && self.players[i].stand.is_some_and(|s| s.run.tick < 0) {
+                    let pelvis = self
+                        .actor_pose(i)
+                        .map(|pose| trick::pelvis_word(&pose) as i16);
+                    let posed = timing::facing_word(self.players[i].heading);
+                    if let Some(h) = self.stand_first_output(i) {
+                        let turned = timing::facing_word(self.players[i].heading) - posed;
+                        self.shown_start.2 = Some((self.tick, i, h, pelvis, posed, turned));
+                    }
                 }
                 let trick = self
                     .shown_start
@@ -2688,8 +2698,35 @@ impl World {
     /// starting over it ([`ShownStart`]).
     pub(crate) fn stand_begun_now(&self, i: usize) -> Option<pose::Held> {
         match self.shown_start.2 {
-            Some((tick, k, h)) if tick == self.tick && k == i => Some(h),
+            Some((tick, k, h, ..)) if tick == self.tick && k == i => Some(h),
             _ => None,
+        }
+    }
+
+    /// The pelvis's word as the model was last posed, for a stand begun
+    /// this update that a pass starts over ([`ShownStart`]).
+    pub(crate) fn stand_begun_pelvis(&self, i: usize) -> Option<i16> {
+        match self.shown_start.2 {
+            Some((tick, k, _, p, ..)) if tick == self.tick && k == i => p,
+            _ => None,
+        }
+    }
+
+    /// The facing word the model was last posed at, for a stand begun
+    /// this update that a pass starts over ([`ShownStart`]).
+    pub(crate) fn stand_begun_facing(&self, i: usize) -> Option<i32> {
+        match self.shown_start.2 {
+            Some((tick, k, _, _, w, _)) if tick == self.tick && k == i => Some(w),
+            _ => None,
+        }
+    }
+
+    /// The units the heading match of a stand begun this update turned
+    /// `i`'s facing ([`ShownStart`]); 0 without one.
+    pub(crate) fn stand_begun_turn(&self, i: usize) -> i32 {
+        match self.shown_start.2 {
+            Some((tick, k, .., t)) if tick == self.tick && k == i => t,
+            _ => 0,
         }
     }
 

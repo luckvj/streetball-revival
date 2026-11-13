@@ -5,7 +5,7 @@ its version's part.
 
 ## Unreleased
 
-(Nothing yet.)
+- A ball handler who stops and passes in the same moment now turns, plants and passes as on the PS2: the stance his stop begins matches his facing to its first frame before the pass takes over (he turned a little less), the pass measures his planted foot and his body's facing from the pose he really showed, and the ball rises out of its bounce into his hands over the pass's blend instead of jumping straight there. A dribbler's ball eases into a change of stride from where it was, as on the PS2 (it skipped to the new stride's hand on the first frame of the change).
 
 ## v0.1.8-beta
 

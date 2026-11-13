@@ -881,16 +881,64 @@ impl World {
         p.position[1] += at[1] - (a[2] + b[2]) * 0.5;
     }
 
+    /// `FUN_00196698(channel, 1)` at a stand's blend start (`91`'s
+    /// 0x800000): the facing put the incoming clip's root on the pelvis
+    /// he showed (`shown`), and the held clip turned back as far, so the
+    /// world pose holds.
+    fn stand_heading_match(
+        &mut self,
+        i: usize,
+        s: &mut Standing,
+        matched: Option<(u16, u8)>,
+        before: crate::trick::Shown,
+        shown: Option<&Pose>,
+    ) {
+        let poses = self.poses.arc();
+        if let Some((record, start)) = matched
+            && let (Some(p), Some(shown)) = (poses.as_deref(), shown)
+            && let Some(record) = if record == crate::trick::CURRENT {
+                s.run.record.or(before.record)
+            } else {
+                Some(record)
+            }
+        {
+            let start = if start == crate::trick::FOOT_SYNC {
+                s.run.foot
+            } else {
+                start
+            };
+            let body = self.players[i].body();
+            if let Some(new) = crate::trick::matched_word(p, shown, record, f32::from(start), body)
+            {
+                let p = &mut self.players[i];
+                let word = timing::facing_word(p.heading);
+                // The shown pose already turns by the word halved
+                // ([`crate::pose::actor_turn`]): an odd word shows a unit short.
+                let matched = crate::trick::heading_match(word, new);
+                if matched != word {
+                    p.heading = crate::restart::heading_radians(matched);
+                    s.held = s.held.map(|h| h.turned(word - matched));
+                }
+            }
+        }
+    }
+
     /// What `i`'s stand, begun this update, shows after its first step,
     /// in local terms (its script runs at once as it starts, its first
-    /// blend's step posed from what the channel showed), without the step's
-    /// other effects: a pass started over it in the same update takes the
-    /// channel before the motion step holds any of its points or turns. The
-    /// step's rolls of the libc generator are drawn.
+    /// blend's step posed from what the channel showed), with its blend's
+    /// heading match but without the step's other effects: a pass started
+    /// over it in the same update takes the channel before the motion step
+    /// holds any of its points or turns. The step's rolls of the libc
+    /// generator are drawn.
     pub(crate) fn stand_first_output(&mut self, i: usize) -> Option<Held> {
         let mut s = self.players[i].stand?;
         let poses = self.poses.arc()?;
         let shown_local = s.local(&poses);
+        let prev = {
+            let (body, place) = (self.players[i].body(), self.place(i));
+            s.pose(&poses, body, place)
+        };
+        let before = s.run.shown();
         let steps = s.steps();
         let height = self.players[i].height;
         let libc = &mut self.libc;
@@ -901,6 +949,10 @@ impl World {
         if ran.blended && shown_local.is_some() {
             s.held = shown_local;
         }
+        // Its blend's heading match runs in the script's start too (the
+        // third attract match's passer at update 949: facing 249 -> 275
+        // before the pass row's start, `FUN_00196698` from `0x1984c8`).
+        self.stand_heading_match(i, &mut s, ran.matched, before, prev.as_ref());
         s.local(&poses)
     }
 
@@ -950,35 +1002,8 @@ impl World {
         // `FUN_00196698(channel, 1)` at the blend's start: the facing put
         // the incoming clip's root on the pelvis he showed; the planted
         // foot below swings him round it.
-        if let Some((record, start)) = ran.matched
-            && live
-            && let (Some(p), Some(shown)) = (poses.as_deref(), prev.as_ref())
-            && let Some(record) = if record == crate::trick::CURRENT {
-                s.run.record.or(before.record)
-            } else {
-                Some(record)
-            }
-        {
-            let start = if start == crate::trick::FOOT_SYNC {
-                s.run.foot
-            } else {
-                start
-            };
-            let body = self.players[i].body();
-            if let Some(new) = crate::trick::matched_word(p, shown, record, f32::from(start), body)
-            {
-                let p = &mut self.players[i];
-                let word = timing::facing_word(p.heading);
-                // The shown pose already turns by the word halved
-                // ([`crate::pose::actor_turn`]): an odd word shows a unit short.
-                let matched = crate::trick::heading_match(word, new);
-                if matched != word {
-                    p.heading = crate::restart::heading_radians(matched);
-                    // The held clip turns back as far, so the world pose
-                    // holds.
-                    s.held = s.held.map(|h| h.turned(word - matched));
-                }
-            }
+        if live {
+            self.stand_heading_match(i, &mut s, ran.matched, before, prev.as_ref());
         }
         if let Some(args) = ran.toward_ball {
             let (p, b) = (&self.players[i], self.ball.position);
