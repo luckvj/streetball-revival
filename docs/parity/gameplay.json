@@ -4507,7 +4507,7 @@
           "path": "crates/street-sim/src/ai/capture.rs",
           "locator": "step_game; computer_behaviours_by_phase_against_the_captured_original",
           "note": "The comparison with the replays.",
-          "sha256": "92a9a34d4cb8a8c9e62036532402296d3dde43cd284c9af485ab19f71de4db97"
+          "sha256": "15783fcb1c7d7b9a6e747506d629aea578788c699b583978d94543b931a4bdf3"
         },
         {
           "path": "$EVIDENCE/street-native-ai-attract-1.jsonl",
@@ -4517,7 +4517,7 @@
         }
       ],
       "tolerance": "The snap at the same update; restarts with it 80..93.",
-      "limitations": "How many restarts have one is each game's replay draws (the rewrite's games 0..27%, the original's 18..29%). Last re-pinned 2026-11-10 after the inbound windup (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "How many restarts have one is each game's replay draws (the rewrite's games 0..27%, the original's 18..29%). Last re-pinned 2026-11-13 after the swipe's held pose (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "The replay rolls side by side on a replayed match."
     },
     {
