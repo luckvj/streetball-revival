@@ -2882,6 +2882,28 @@ impl World {
         } else {
             script
         };
+        // `0x167480..0x1674d0`: the band comes from the flags of the
+        // first record in the table holding the row the channel plays
+        // (`FUN_00168e38`), not the record playing: row 957 is BPJOG's
+        // (0x201) before the run's record 49 (0x1001), so a runner on it
+        // has the default band (the third attract match's receiver at
+        // update 1080, his run at 59 a jog).
+        let row_flags = self.gait.as_ref().and_then(|config| {
+            let c = &self.players[i].gait_channel;
+            let row = if c.record.is_some() {
+                c.record_row()
+            } else {
+                c.row
+            };
+            config
+                .records
+                .iter()
+                .find(|r| r.rows.contains(&row))
+                .map(|r| r.flags)
+        });
+        if let Some(flags) = row_flags {
+            self.players[i].gait_channel.family = flags & 0x1c00;
+        }
         let p = &self.players[i];
         let channel = &p.gait_channel;
         let intensity = input.strength().clamp(0, 64) as u32;
