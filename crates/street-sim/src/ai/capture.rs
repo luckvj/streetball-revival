@@ -4345,7 +4345,7 @@ fn the_swiping_hand_reaches_the_ball_where_the_original_strips() {
                         word: w.actors()[i]["heading"].as_i64().unwrap() as i32,
                     };
                     let moving = before.floor(i) != w.floor(i);
-                    let pose = s.pose(poses, body, place).unwrap();
+                    let pose = s.pose(poses, body, place, None).unwrap();
                     let shown = s.shown();
                     let state = shown.record.map_or(0, |r| poses.state(r, shown.frame));
                     let d = crate::swipe::distance(&pose, shown, state, body, before.ball());

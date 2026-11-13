@@ -839,12 +839,15 @@ impl DefenseCoach {
         }
         let k = skill::behind(ctx, team).clamp(0, 6) as usize;
         if self.delay == 0 {
-            // `0x1231d4`: the switches wait while a pass is in its first
-            // frames: `fps × {0.7, 0.66667, 0.63333, 0.6, 0.58333,
-            // 0.56667, 0.55}[k]`, or the receiver's distance from the rim
-            // over `skill(0.73, 0.85, 0.85, 1.06)` if less, minus the
-            // frames the pass has flown.
-            if ctx.game.ball == 4 && ctx.game.ball_age <= 4 {
+            // `0x1231b0..0x1231d8`: the switches wait while a pass is in
+            // its first frames, out of the passer's hands (ball+0xf4 none:
+            // not through his windup, the third attract match's pass of
+            // update 969 waits from its release, not from the press at
+            // 950): `fps × {0.7, 0.66667, 0.63333, 0.6, 0.58333, 0.56667,
+            // 0.55}[k]`, or the receiver's distance from the rim over
+            // `skill(0.73, 0.85, 0.85, 1.06)` if less, minus the frames the
+            // pass has flown.
+            if ctx.game.ball == 4 && ctx.w.handler().is_none() && ctx.game.ball_age <= 4 {
                 const WAIT: [i32; 7] = [42, 40, 37, 36, 35, 34, 33];
                 let most = WAIT[k];
                 let speed = skill::value(ctx, team, 0.73, 0.85, 0.85, 1.06);

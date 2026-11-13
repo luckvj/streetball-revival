@@ -2776,7 +2776,8 @@ impl World {
             ..s
         };
         let p = &self.players[i];
-        let pose = last.pose(poses, p.body(), self.place(i))?;
+        let held = self.swipe_held(i, &s);
+        let pose = last.pose(poses, p.body(), self.place(i), held.as_ref())?;
         let frame = last.frame();
         let held = poses.held(
             pose::Frame {

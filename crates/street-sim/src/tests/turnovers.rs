@@ -84,7 +84,7 @@ fn a_scripted_swipe_tries_its_hand_every_update_until_it_reaches() {
         let s = w.start_swipe(1).unwrap();
         let poses = w.poses.arc().unwrap();
         let body = w.players[1].body();
-        let pose = s.pose(&poses, body, w.place(1)).unwrap();
+        let pose = s.pose(&poses, body, w.place(1), None).unwrap();
         let shown = s.shown();
         let state = poses.state(shown.record.unwrap(), shown.frame);
         crate::swipe::distance(&pose, shown, state, body, w.ball.position)

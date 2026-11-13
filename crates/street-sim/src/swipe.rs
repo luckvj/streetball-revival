@@ -188,13 +188,34 @@ impl Swipe {
         }
     }
 
-    /// The swiper's pose on this tick.
-    pub fn pose(&self, poses: &Poses, body: Body, place: Place) -> Option<Pose> {
+    /// The swipe as its last step left it (its clock counts on after each
+    /// step: the press update shows the blend's first share).
+    pub fn shown_last(&self) -> Swipe {
+        Swipe {
+            tick: self.tick.saturating_sub(1),
+            ..*self
+        }
+    }
+
+    /// The swiper's pose on this tick, its blend from `held` (what the
+    /// channel showed at the press) when there is one.
+    pub fn pose(
+        &self,
+        poses: &Poses,
+        body: Body,
+        place: Place,
+        held: Option<&pose::Held>,
+    ) -> Option<Pose> {
         let to = Frame {
             record: self.record,
             time: self.frame(),
             looping: false,
         };
+        if let (Some(w), Some(h)) = (self.blend(), held) {
+            return poses
+                .mixed(h, to, w)
+                .map(|m| poses.place_held(&m, body, place));
+        }
         match (self.blend(), self.from) {
             (Some(w), Some((record, time))) => {
                 let from = Frame {
@@ -304,8 +325,8 @@ impl crate::World {
         // third attract match's swiper at update 1019 out of a stand's
         // blend, his pelvis lower than his gait's), else his gait's frame.
         let place = self.place(i);
-        let pose = self
-            .shown_at_start(i)
+        let shown = self.shown_at_start(i);
+        let pose = shown
             .map(|h| poses.place_held(&h, body, place))
             .or_else(|| poses.pose(from, body, place));
         let stance = POST_STANCE.contains(&from.record);
@@ -333,6 +354,21 @@ impl crate::World {
         let held = poses
             .frames(from.record)
             .map_or(from.time, |n| from.time.rem_euclid(n as f32));
+        // The blend holds what the channel showed (`FUN_001935c8` into
+        // +0xbc), a stand's blend or a stride's change and all, not the
+        // stride this update's locomotion picked (the third attract
+        // match's swiper at update 889 out of clip 3 at frame 12).
+        let p = &mut self.players[i];
+        p.channel_start = Some(crate::held::ChannelStart {
+            script: SCRIPTS[usize::from(script)].address,
+            from: Some((from.record, held)),
+            left: p.gait_channel.hand == 2,
+            side: false,
+            pelvis: None,
+            turn: 0,
+            held: shown,
+            asked: false,
+        });
         Some(Swipe {
             script,
             record: record(script, pose.as_ref(), ball, stance),
@@ -483,7 +519,8 @@ impl crate::World {
         };
         let body = self.players[i].body();
         let (place, moving) = (self.place(i), self.players[i].moving());
-        let Some(pose) = s.pose(&poses, body, place) else {
+        let held = self.swipe_held(i, &s);
+        let Some(pose) = s.pose(&poses, body, place, held.as_ref()) else {
             return false;
         };
         let shown = s.shown();

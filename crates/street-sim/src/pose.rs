@@ -1002,7 +1002,9 @@ impl crate::World {
         let body = self.players[i].body();
         let place = self.place(i);
         if let crate::Action::Stealing { swipe: Some(s), .. } = self.players[i].action {
-            return s.pose(poses, body, place);
+            // As its last step left it (the clock counts on after it).
+            let held = self.swipe_held(i, &s);
+            return s.shown_last().pose(poses, body, place, held.as_ref());
         }
         Some(poses.place_held(&self.gait_local(i)?, body, place))
     }

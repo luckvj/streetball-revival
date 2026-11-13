@@ -627,6 +627,15 @@ impl World {
         self.channel_zero(i, ahead)
     }
 
+    /// What `i`'s channel showed as swipe `s` began, its blend's held pose.
+    pub(crate) fn swipe_held(&self, i: usize, s: &crate::swipe::Swipe) -> Option<pose::Held> {
+        let address = crate::swipe::SCRIPTS[usize::from(s.script)].address;
+        self.players[i]
+            .channel_start
+            .filter(|c| c.script == address)
+            .and_then(|c| c.held)
+    }
+
     /// Channel 0's clip: his move's or reaction's script, a catch row, a
     /// stand's script or his gait.
     pub(crate) fn channel_zero(&self, i: usize, ahead: i64) -> Option<Channel> {
@@ -651,6 +660,26 @@ impl World {
             // The rebound jump's and the block jump's scripts on their own
             // clocks ([`World::rebound_channel`], [`crate::block::Jump`]).
             Action::ReboundJump { .. } => return self.rebound_channel(i),
+            // The swipe's script on its own clock ([`crate::swipe::Swipe`]),
+            // its blend from what the channel showed at the press.
+            Action::Stealing { swipe: Some(s), .. } => {
+                let held = self.swipe_held(i, s);
+                let s = s.shown_last();
+                return Some(Channel {
+                    shown: Shown {
+                        record: Some(s.record),
+                        frame: s.frame(),
+                        blend: s.blend(),
+                    },
+                    from: s.from,
+                    counter: s.blend().map(|_| (s.tick + 1, crate::swipe::BLEND)),
+                    gait: false,
+                    turn: 0,
+                    held,
+                    lower: None,
+                    upper_from: None,
+                });
+            }
             Action::Jumping { block: Some(j), .. } => {
                 return Some(Channel {
                     shown: Shown {
