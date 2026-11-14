@@ -702,12 +702,25 @@ impl Poses {
         } else {
             frame.time.clamp(0.0, (n - 1) as f32)
         };
+        // A script's frame between the last key and the clip's length has
+        // the loop queued too (a stand's `ab` past its clip's end: the
+        // third attract match's holder at update 513, clip 67 at 31.30).
+        let tail =
+            !frame.looping && 1 < n && ((n - 1) as f32) < frame.time && frame.time < n as f32;
+        let t = if tail { frame.time } else { t };
         let f0 = (t as usize).min(n - 1);
-        let f1 = if frame.looping {
+        let f1 = if frame.looping || tail {
             (f0 + 1) % n
         } else {
             (f0 + 1).min(n - 1)
         };
+        // Past a looping clip's last frame the channel has its loop queued
+        // (`+0x54` the clip again from `+0x60` 0) and slerps the last
+        // frame toward the first by the fraction, as a blend
+        // ([`channel_slerp`]; the third attract match's runner at update
+        // 417, his run's frames 18.22 and 18.68: bones within 1e-5 of the
+        // capture's, against 0.05 off on the components' straight mix).
+        let wrap = (frame.looping || tail) && f1 < f0;
         let u = t - f0 as f32;
         let rotations = std::array::from_fn(|i| {
             let source = if mirrored { MIRROR[i] } else { i };
@@ -720,6 +733,8 @@ impl Poses {
                         h.rotation(a, b, u)
                     } else if clip.raw_pose {
                         nearer_mix(a, b, u)
+                    } else if wrap {
+                        channel_slerp(a, b, u)
                     } else {
                         // Left at its length (`0x38d834..0x38d84c`); the
                         // hierarchy's plain products (`FUN_0019d4c8`) then
@@ -737,7 +752,13 @@ impl Poses {
             self.skeleton[0].translation
         } else {
             let at = |f: usize| clip.root[f.min(clip.root.len() - 1)];
-            let (a, b) = (at(f0), at(f1));
+            // The tail's root stays at the last key's (its loop's root is
+            // the next play's).
+            let (a, b) = if tail {
+                (at(f0), at(f0))
+            } else {
+                (at(f0), at(f1))
+            };
             let mut r: [f32; 3] = std::array::from_fn(|k| a[k] + (b[k] - a[k]) * u);
             if mirrored {
                 r[0] = -r[0];

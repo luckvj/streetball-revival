@@ -468,8 +468,10 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // 2037's blocked no shot once a rebound jumper's clip carried him
         // before take-off; 2039: 2038's blocked no shot once the loose
         // ball's chasers waited out a rebound born done; 2040: 2039's
-        // played no replay once a run's rate was stored as it began.)
-        2040,
+        // played no replay once a run's rate was stored as it began; 2041:
+        // 2040's blocked no shot once a clip's loop slerped its last frame
+        // into its first.)
+        2041,
         15_000,
         Conditions {
             loss: 0.04,
