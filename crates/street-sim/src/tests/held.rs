@@ -196,6 +196,7 @@ fn a_left_hander_takes_the_handed_blends_alternate() {
             gate: s.gate,
             latest: s.latest,
             stall: 0,
+            landed: 0,
         };
         assert_eq!(w.channel(0).unwrap().shown.record, Some(record));
     }

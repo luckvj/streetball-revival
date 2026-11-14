@@ -1288,6 +1288,7 @@ mod validation_tests {
                     gate: 0,
                     latest: 0,
                     stall: 0,
+                    landed: 0,
                 }
             },
             |s| s.world.ball.velocity[1] = f32::NAN,

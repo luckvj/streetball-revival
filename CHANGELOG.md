@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- After a jump shot a player plays out the end of his shot after he lands, as on the PS2: he settles through its last frames before he can run off, and without a push on the stick he plays the rest of it out (he ran off the moment he touched down). Online play needs this build on both sides (protocol 27).
 - A catcher who sets off out of his standing catch blends into his walk from the catch's own pose, as on the PS2 (he blended from the stride underneath, so his body turned ahead of his facing and his next stance and shot faced a little off).
 - When a shot goes up, the computer's defenders still guarding pick up the man in their own slot until the rebound plan takes over, as on the PS2 (they kept the matchups the defence had switched to).
 - A patient computer shooter who was on the move waits a moment before his shot, as on the PS2 (he read his new behaviour's stopped stick and shot at once); and in the attract the camera's cut to a courtside view as a jump shot leaves the hand is decided inside the update on the PS2's coin, as on the PS2.

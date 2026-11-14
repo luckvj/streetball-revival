@@ -195,6 +195,9 @@ pub enum Action {
         gate: u8,
         latest: u8,
         stall: u8,
+        /// The tick he came down at the script's landing wait (0 before):
+        /// its tail plays on from there ([`crate::held::shot_tail`]).
+        landed: u16,
     },
     /// Flying from `from` to `to` (beside the rim) to slam the ball. With
     /// `layup` set (shoot pressed again on the way up) it is laid in instead.
@@ -809,6 +812,7 @@ impl Player {
             gate: s.gate,
             latest: s.latest,
             stall: 0,
+            landed: 0,
         };
     }
 
@@ -960,6 +964,8 @@ impl Player {
                 gate,
                 latest,
                 stall,
+                script,
+                landed,
                 ..
             } => {
                 // The script's clock: the ball leaves at its callback 21
@@ -991,9 +997,21 @@ impl Player {
                     i32::from(*release),
                     i32::from(*end).max(i32::from(*release) + 1),
                 );
-                if vm >= end && (self.height <= 0.0 || vm >= end + LANDING_LIMIT) {
-                    self.action = Action::None;
-                    self.height = 0.0;
+                if *landed == 0 && vm >= end && (self.height <= 0.0 || vm >= end + LANDING_LIMIT) {
+                    *landed = (*tick).max(1);
+                }
+                // The tail past the landing wait (the jump shots'
+                // `8d ee 15 05; 8d ee 19 08; 91 00; 8c 2.0`): its waits,
+                // then the locomotion back (a pushed stick takes the
+                // channel) or the play-out to its end (the third attract
+                // match's shooter lands at update 1207 and runs off at 1221).
+                if *landed > 0 {
+                    let (waits, playout) = crate::held::shot_tail(*script);
+                    let since = *tick - *landed;
+                    if since >= waits && (input.moves() || since >= waits + playout) {
+                        self.action = Action::None;
+                        self.height = 0.0;
+                    }
                 }
                 (vm == release).then_some(Moment::Release(hoop))
             }

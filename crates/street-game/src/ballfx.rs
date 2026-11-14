@@ -597,6 +597,7 @@ mod tests {
             gate: 0,
             latest: 0,
             stall: 0,
+            landed: 0,
         };
         assert_eq!(glow(&w), Glow::Gamebreaker);
     }

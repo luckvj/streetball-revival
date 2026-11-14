@@ -141,6 +141,35 @@ pub fn other_side(p: &Player) -> bool {
     (side > 0.0 && z < 0.0) || (side < 0.0 && z > 0.0)
 }
 
+/// A shot script's tail past its landing wait (`Land`): the updates its
+/// waits take until its `91 00` gives the locomotion back, and the
+/// play-out's (`8c`) after it; none for a script without a landing wait.
+pub fn shot_tail(script: u8) -> (u16, u16) {
+    use crate::trick::Step;
+    let Some(steps) = SHOT_STEPS.get(usize::from(script)) else {
+        return (0, 0);
+    };
+    let Some(land) = steps.iter().position(|s| matches!(s, Step::Land { .. })) else {
+        return (0, 0);
+    };
+    let mut waits = 0u16;
+    let mut rest = steps[land + 1..].iter();
+    for s in rest.by_ref() {
+        match s {
+            Step::Wait { n, .. } => waits += u16::from(*n),
+            Step::Flags(0) => break,
+            _ => {}
+        }
+    }
+    let playout = rest
+        .find_map(|s| match s {
+            Step::PlayOut { n, .. } => Some(u16::from(*n)),
+            _ => None,
+        })
+        .unwrap_or(0);
+    (waits, playout)
+}
+
 /// The script, its steps and the updates it has run for a scripted move;
 /// a fadeaway's the check it jumped at from its shot.
 struct Scripted {

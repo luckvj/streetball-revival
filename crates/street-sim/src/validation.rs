@@ -1404,6 +1404,7 @@ mod tests {
                     gate: 26,
                     latest: 47,
                     stall: 0,
+                    landed: 0,
                 }
             },
             // A shot script past the table (`World::check_pump_fake` reads
@@ -1422,6 +1423,7 @@ mod tests {
                     gate: 26,
                     latest: 47,
                     stall: 0,
+                    landed: 0,
                 }
             },
             |w| {

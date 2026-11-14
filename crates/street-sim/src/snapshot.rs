@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 137;
+const VERSION: u8 = 138;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -2254,6 +2254,7 @@ fn action_out(w: &mut Writer, a: &Action) {
             gate,
             latest,
             stall,
+            landed,
         } => {
             w.u8(1);
             w.us(hoop);
@@ -2268,6 +2269,7 @@ fn action_out(w: &mut Writer, a: &Action) {
             w.u8(gate);
             w.u8(latest);
             w.u8(stall);
+            w.uv(u64::from(landed));
         }
         Action::Dunking {
             hoop,
@@ -2526,6 +2528,7 @@ fn action_in(r: &mut Reader) -> Result<Action, String> {
             gate: r.u8()?,
             latest: r.u8()?,
             stall: r.u8()?,
+            landed: r.uv()? as u16,
         },
         2 => Action::Dunking {
             hoop: r.us()?,
