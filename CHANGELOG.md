@@ -5,6 +5,8 @@ its version's part.
 
 ## Unreleased
 
+- A player who catches a pass out of a passout and passes straight on turns to the facing his catch left him, as on the PS2 (he kept turning toward where he faced before the catch, a few degrees too far).
+- A blocker leaping at a shooter aims at the PS2's point beside him, toward the rim (his take-off went a degree off, so he flew a little wide).
 - A shooter gathering on a planted foot keeps the step his shot's animation takes once its blend is done, as on the PS2 (the planted foot cancelled it, so he went up a few centimetres off and his shot left from the wrong spot).
 - A receiver running to a pass in the air strides at the pace his stick and turbo ask for now while keeping the speed the pass gave him, as on the PS2 (his legs kept the turbo pace after he let go of turbo, so he drifted off his line).
 - A defender boxing out turns to face the rim the ball is going to, as on the PS2 (he turned toward the other end of the court), and every move that turns a player to the rim measures it from the rim the side with the ball attacks, as the PS2's table does.

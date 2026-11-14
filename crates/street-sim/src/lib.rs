@@ -2182,7 +2182,15 @@ impl World {
                 .passout
                 .is_some_and(|po| po.passer == i && po.tossed && po.tail == Some(0))
                 && matches!(self.players[i].action, Action::Passing { .. });
-            let toss_shown = tossing.then(|| self.script_shown(i)).flatten();
+            let toss_shown = tossing.then(|| self.script_shown_on(i, true)).flatten();
+            // The row's tail: callback 7 before its callback 1 (`83 07;
+            // 83 01`, the passout rows' `S45612B`).
+            let toss_faces = match self.players[i].action {
+                Action::Passing { row, .. } if tossing => held::PASS_STEPS
+                    .get(usize::from(row))
+                    .is_some_and(|steps| steps.contains(&trick::Step::Call(7))),
+                _ => false,
+            };
             self.passout_tick(i);
             let called_passout = tossing && self.players[i].action == Action::None;
             // The face's count after his side's update (`0x157270`), before
@@ -2432,7 +2440,9 @@ impl World {
             // (+0xb0) the pelvis's the script left (`FUN_00154230`), which
             // the update's turn then faces (the third attract match's
             // dunker at update 1049: 352 to 394).
-            if (faced || called_block)
+            // A passout row's last wait out runs the same tail (the third
+            // attract match's passer at update 821: 794, his pelvis's).
+            if (faced || called_block || (called_passout && toss_faces))
                 && matches!(self.players[i].action, Action::None)
                 && let Some(s) = shown.as_ref()
             {
@@ -2841,11 +2851,19 @@ impl World {
     }
 
     fn script_shown(&self, i: usize) -> Option<ScriptShown> {
+        self.script_shown_on(i, false)
+    }
+
+    /// [`World::script_shown`], before this update's step has run
+    /// (`current`): the script's clock not yet moved on, the last update's
+    /// frame is the one it has reached (the third attract match's passer
+    /// out of his passout row at update 821: frame 35, not 34.67).
+    fn script_shown_on(&self, i: usize, current: bool) -> Option<ScriptShown> {
         // The channel as the last update left it (this update's steps end
         // the script): the model the matrices hold, its clip.
         let poses = self.poses.get()?;
         let m = self.move_steps(i, self.players[i].flight.landing)?;
-        let shown = m.before?;
+        let shown = if current { Some(m.after) } else { m.before }?;
         let record = shown.record?;
         let p = &self.players[i];
         let pose = trick::pose_from(

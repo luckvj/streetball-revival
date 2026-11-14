@@ -1664,7 +1664,10 @@ pub(crate) fn holder_target(
             from[1] - crate::math::cos(a) * d,
         ]
     };
-    let to_rim = contact::angle(q.position, rim);
+    // The game's rim word (`FUN_0016f260`, truncated toward zero): the
+    // third attract match's shooter at update 1171, 1016 (a rounded angle
+    // gave 1017 and the blocker's take-off a unit round).
+    let to_rim = crate::jump::rim_word(rim, q.position);
     let rim_side = toward([0.0, 0.0], to_rim, 3.0);
     if bits & 0xa088 == 0 {
         target.y = Some(if q.passing && q.height > 0.0 {
