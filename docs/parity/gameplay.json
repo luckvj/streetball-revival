@@ -3579,7 +3579,7 @@
       "match_type": "structural",
       "evidence_kind": "static",
       "tolerance": "The branches and their order as the raw executable's (0x1287e0..0x128a5c), the one draw where it draws.",
-      "limitations": "Read raw 2026-10-17 (branch drive-counter; docs/TRACE.md \"The drive, the dunk's window and the counter's blend\"): the teammates' loop leaves for the lane test as soon as one is in the front court (0x1288a8); the port had read it the other way round. The penetrations it changes are measured against the attract matches (gameplay.ai_decisions): 52.4 / 52.7 a game at the first capture's length against 50. Re-pinned 2026-10-18 after the computer's shooters, drives and trick passes pass: ai/playbook.rs's `select` builds its lists in `play_list` and `penetrate_now`'s lane test is `lane_penetrates`, the same steps; ai/tests.rs gained the busy test and lends `with_ctx` to the module; TRACE.md gained the section \"The computer's shooters, drives and trick passes\" at its end; `select`'s lists are `play_list` and `penetrate_now`'s lane test `lane_penetrates`, the same steps. Last re-pinned 2026-11-10 after the inbound defence (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Read raw 2026-10-17 (branch drive-counter; docs/TRACE.md \"The drive, the dunk's window and the counter's blend\"): the teammates' loop leaves for the lane test as soon as one is in the front court (0x1288a8); the port had read it the other way round. The penetrations it changes are measured against the attract matches (gameplay.ai_decisions): 52.4 / 52.7 a game at the first capture's length against 50. Re-pinned 2026-10-18 after the computer's shooters, drives and trick passes pass: ai/playbook.rs's `select` builds its lists in `play_list` and `penetrate_now`'s lane test is `lane_penetrates`, the same steps; ai/tests.rs gained the busy test and lends `with_ctx` to the module; TRACE.md gained the section \"The computer's shooters, drives and trick passes\" at its end; `select`'s lists are `play_list` and `penetrate_now`'s lane test `lane_penetrates`, the same steps. Last re-pinned 2026-11-13 after the matchups follow the strategy (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "None for the function; the plays' mix after it is gameplay.ai_decisions.",
       "evidence": [
         {
@@ -3592,7 +3592,7 @@
           "path": "crates/street-sim/src/ai/tests.rs",
           "locator": "the_star_penetrates_at_once_only_ahead_of_his_teammates",
           "note": "Ahead of both teammates he penetrates; with them in the front court he draws among his plays.",
-          "sha256": "496f37f4b4bee769293ff88e43065cc09a8436417c97f4ea2b7420c8a7109e22"
+          "sha256": "3b73caaa99255b92d154d4dd4f43cb2f331f410d939fb711ef469732fd1c5338"
         },
         {
           "path": "docs/TRACE.md",
@@ -4614,13 +4614,13 @@
           "path": "crates/street-sim/src/ai/mod.rs",
           "locator": "Ctx::frozen; World::ai_begin; World::ai_player",
           "note": "Forced computer control includes the six-player restart as well as the opening toss.",
-          "sha256": "bbbc4dadd31df52e7e8f46ecd1b8f3ae2c4eac5f4656ae5c45750fcc690827b1"
+          "sha256": "711c5e64f9b9e9185103e76964b589a223622d583c5cf46821603838eba4ab5b"
         },
         {
           "path": "crates/street-sim/src/ai/team.rs",
           "locator": "update (0x18a744..0x18a7d8)",
           "note": "The takeover path preserves queued walks while the forced-control latch is set.",
-          "sha256": "b0155edb6f2a4594b607aff31fcaaa78864fd5c3bcea49647718ea438e45998f"
+          "sha256": "2cb425cab5eb3da11517e66e9170615c4ce0f791150bea86eada49c4531e073e"
         },
         {
           "path": "crates/street-sim/src/school.rs",
@@ -4630,7 +4630,7 @@
         }
       ],
       "tolerance": "Same static takeover guard; production regression must leave every tested restart before the 20-second fallback.",
-      "limitations": "Bounded static control-latch port and rewrite regression, not a paired original runtime replay or proof that every possible inbound hang is fixed. Last re-pinned 2026-11-12 after the drive target (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Bounded static control-latch port and rewrite regression, not a paired original runtime replay or proof that every possible inbound hang is fixed. Last re-pinned 2026-11-13 after the matchups follow the strategy (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Retain a paired original/rewrite School replay capture with controller handoffs and all six ready flags.",
       "match_type": "structural"
     },
