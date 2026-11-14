@@ -1167,6 +1167,7 @@ pub fn step_sim(
     }
     let inputs = std::mem::take(&mut sim.inputs);
     let school_before = school::Before::new(&sim.world);
+    sim.world.attract_cuts = setup.demo;
     sim.world.step(&inputs);
     sim.inputs = inputs;
     if let Some(level2) = level2.as_mut() {

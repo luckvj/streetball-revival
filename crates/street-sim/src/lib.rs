@@ -918,6 +918,13 @@ pub struct World {
     pub crowd: crowd::Crowd,
     /// This update's draws for the camera's courtside eyes ([`camera`]).
     pub camera_draws: Vec<u32>,
+    /// The camera manager's +0x4c: the attract's cuts are on (its handlers
+    /// toss a coin for a courtside eye at a launch, [`camera`]). Not
+    /// saved: the game sets it before each update.
+    pub attract_cuts: bool,
+    /// This update's launch cut to a courtside eye (slot 11's handler,
+    /// `FUN_00302a78`), its four values in [`World::camera_draws`].
+    pub shot_cut: bool,
     /// Each actor's pose as his channel showed it when his update began
     /// (the output `FUN_001935c8` copies at a blend's start, whatever this
     /// update's locomotion has since asked for), with the tick it was
@@ -1492,6 +1499,8 @@ impl World {
             staged_start: None,
             crowd: crowd::Crowd::default(),
             camera_draws: Vec::new(),
+            attract_cuts: false,
+            shot_cut: false,
             shown_start: ShownStart::default(),
         }
     }
@@ -1602,6 +1611,7 @@ impl World {
         self.events.clear();
         self.crowd.calls.clear();
         self.camera_draws.clear();
+        self.shot_cut = false;
         // `FUN_00131560`, before the game's count moves on.
         self.combo_update();
         // The pad each side's one person plays, as the client gave it: the

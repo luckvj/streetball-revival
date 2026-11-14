@@ -1418,6 +1418,15 @@ impl World {
         // Callback 21 (`FUN_001729f8`, `0x172a44..0x172a64`): the shooter
         // may not touch the ball for `fps / 3` updates.
         self.players[shot.shooter].barred = SHOOTER_BAR;
+        // Slot 11's camera handler (`FUN_00302a78`): a launch but a dunk's
+        // or an alley-oop's (kinds 3, 4), with the attract's cuts on
+        // (manager+0x4c), tosses the C library's coin (`0x302b14`) for a
+        // courtside eye (the third attract match's jump shot at update
+        // 1179: its four values before the look's draws).
+        if self.attract_cuts && dunk.is_none() && self.libc_rand() & 1 != 0 {
+            self.camera_courtside();
+            self.shot_cut = true;
+        }
     }
 
     /// A dunk or alley-oop dunk leaves the dunker's hands through the

@@ -118,6 +118,8 @@ impl World {
             staged_start,
             crowd,
             camera_draws: _,
+            attract_cuts: _,
+            shot_cut: _,
             shown_start: _,
         } = self;
         for c in &crowd.calls {

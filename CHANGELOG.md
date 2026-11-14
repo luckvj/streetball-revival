@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A patient computer shooter who was on the move waits a moment before his shot, as on the PS2 (he read his new behaviour's stopped stick and shot at once); and in the attract the camera's cut to a courtside view as a jump shot leaves the hand is decided inside the update on the PS2's coin, as on the PS2.
 - A computer receiver running to a pass keeps the run the pass gave him, turbo and all, as on the PS2 (he slowed the moment his own play let go of turbo); once the ball is in the air his stride is chosen afresh each moment as on the PS2; and when he reaches his spot his standing catch starts at once without a new face, as on the PS2.
 - A player's choice between walking, jogging and running follows the PS2's own thresholds for the stride he is on: they come from the first stride in the game's table that plays his current animation, so a receiver running on the inbounder's carrying stride slows to a jog toward a pass, as on the PS2 (he kept running).
 - A swipe now plays as on the PS2 from its first frame: the defender blends into it from the pose he was showing (he used to blend from the stride he was about to take, his legs a step out), his body shows the swipe on the PS2's frame (it ran a frame ahead), and the stance he settles into after it blends from the swipe's last pose. The computer's defence also waits after a pass from the moment it leaves the passer's hands, as on the PS2 (it started waiting as he wound up, so a defender left his man to help a moment early).

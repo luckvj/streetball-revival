@@ -735,8 +735,12 @@ impl Shoot {
         // `FUN_0013abf8`: the stick's strength class, moving above 15. In
         // the Block lessons the wait ends at once, moving or not
         // (`0x1010e0..0x101134`).
+        // The class reads the actor's +0x90 (his stick's strength as his
+        // last update kept it), not the pad the behaviours are building
+        // (the third attract match's shooter, his feeder's run ended this
+        // frame, waits a frame at update 1145).
         let block_lesson = matches!(ctx.w.lesson, Some(9 | 11));
-        if self.patient && ((b.pad.strength > 15 && quality(ctx, i) > 5) || block_lesson) {
+        if self.patient && ((ctx.strength_class(i) > 0 && quality(ctx, i) > 5) || block_lesson) {
             self.patient = false;
             b.stop(ctx, i);
             return;

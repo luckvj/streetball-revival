@@ -3127,7 +3127,9 @@ impl CameraManager {
             .is_some_and(|p| matches!(p.action, Action::Dunking { .. }));
         if released && !dunk {
             self.replay_request = 1;
-            if tick.attract && self.coin() {
+            // The coin and the eye's four values were the update's
+            // (`World::shot_cut`, [`street_sim::World::camera_draws`]).
+            if tick.attract && world.shot_cut {
                 self.select_positioned(tick.court);
             }
         }

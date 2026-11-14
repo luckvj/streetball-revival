@@ -218,6 +218,8 @@ impl World {
             staged_start,
             crowd,
             camera_draws,
+            attract_cuts: _,
+            shot_cut: _,
             shown_start: _,
         } = self;
         w.uv(*tick);
@@ -1188,6 +1190,8 @@ impl World {
             staged_start,
             crowd,
             camera_draws,
+            attract_cuts: false,
+            shot_cut: false,
             shown_start: crate::ShownStart::default(),
         };
         world.validate()?;
