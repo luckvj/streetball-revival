@@ -461,8 +461,10 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // played no replay once a faked defender bumped with the pose he
         // held; 2032: 2031's fell short once a passout's flight was timed
         // whole; 2033: 2032's blocked no shot once a driver was read as
-        // headed for his drive's point.)
-        2033,
+        // headed for his drive's point; 2034: 2033's blocked no shot once
+        // the defenders' matchups followed the running strategy, nor
+        // 2034's or 2035's; 2036.)
+        2036,
         15_000,
         Conditions {
             loss: 0.04,
