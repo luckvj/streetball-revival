@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- Animations' root motion is decoded with the PS2's own rounding (each frame's step is added the way the PS2's vector unit adds it), and a player knocked off balance drifts with the PS2's rounding too: both had players creep a hair off the PS2's path, enough after a few hundred moments to tip a decision (a knocked player ended up a fraction of a centimetre out, and later aimed a run one notch off).
 - When the ball comes off the rim too low to rebound, the computer's players go after it as on the PS2: they wait a moment before chasing it (they ran at it at once, two moments early), and a player who stood still sets off from the way he faces, not his last run.
 - The computer reads who is nearest the ball in a scramble or rebound as the PS2 does, every moment by distance (it used the side that last held the ball), so the side away from the ball drops back to defend while the ball is loose, and those defenders keep at it until someone has the ball (they gave up at once).
 - A blocker coming down from his leap keeps the facing he landed with while he plays the landing out, as on the PS2: only a player holding the ball turns to his stick then (he turned a few degrees, so his landing step went a little sideways).

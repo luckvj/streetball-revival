@@ -2749,9 +2749,12 @@ impl World {
                 r.up = false;
             }
         }
+        // `FUN_00156f48`'s position += velocity: VU0's chopping `vadd`
+        // (`0x1573e0`; the third attract match's knocked man from update
+        // 356 drifted a unit in the last place an update).
         if !self.contact_phase {
-            p.position[0] += r.drift[0];
-            p.position[1] += r.drift[1];
+            p.position[0] = crate::math::vu_add(p.position[0], r.drift[0]);
+            p.position[1] = crate::math::vu_add(p.position[1], r.drift[1]);
         }
         // The resync (`0x19b684..0x19b704`): the model's root height as
         // the channel showed it before and now, a blend's mixed from the

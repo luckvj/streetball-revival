@@ -688,7 +688,13 @@ fn delta_floats<'a>(
         .map(|c| data.u16(map_at + 2 * c))
         .collect::<Result<Vec<_>>>()?;
 
-    // (key min, key scale, delta min, delta scale) per value.
+    // (key min, key scale, delta min, delta scale) per value, in the EE's
+    // chopped arithmetic (`0x390774..0x390888`): the scale is the range
+    // times 1/65535 (`0x37800080`); the delta's least `2·dmin/65535·range
+    // − range`, its scale `2·drange/65535·range·(1/255)` (`0x3b808081`).
+    use crate::ee::{add, mul, sub};
+    let unit = f32::from_bits(0x3780_0080);
+    let byte = f32::from_bits(0x3b80_8081);
     let mut table = Vec::with_capacity(channels * dims);
     let entry = 12 * dims;
     for c in 0..channels {
@@ -696,13 +702,13 @@ fn delta_floats<'a>(
         for k in 0..dims {
             let kmin = data.f32(e + 4 * k)?;
             let krange = data.f32(e + 4 * (dims + k))?;
-            let dmin = f32::from(data.u16(e + 8 * dims + 2 * k)?);
-            let drange = f32::from(data.u16(e + 10 * dims + 2 * k)?);
+            let dmin = mul(f32::from(data.u16(e + 8 * dims + 2 * k)?), unit);
+            let drange = mul(f32::from(data.u16(e + 10 * dims + 2 * k)?), unit);
             table.push((
                 kmin,
-                krange / 65535.0,
-                krange * (2.0 * dmin / 65535.0 - 1.0),
-                2.0 * krange * drange / 65535.0 / 255.0,
+                mul(krange, unit),
+                sub(mul(add(dmin, dmin), krange), krange),
+                mul(mul(add(drange, drange), krange), byte),
             ));
         }
     }
@@ -717,15 +723,19 @@ fn delta_floats<'a>(
     for f in 0..frames {
         let (block, within) = (f / per_block, f % per_block);
         let base = start + block * block_len;
+        // A key (`0x38fd28..0x38fd84`) on the EE's `mul.s`/`add.s`; a
+        // delta (`0x38fe24..0x38fea4`) the same, added on VU0 (`vadd`,
+        // chopped without a guard bit).
         if within == 0 {
             for (v, (cur, t)) in current.iter_mut().zip(&table).enumerate() {
-                *cur = t.0 + f32::from(data.u16(base + 2 * v)?) * t.1;
+                *cur = add(mul(f32::from(data.u16(base + 2 * v)?), t.1), t.0);
             }
         } else {
             let d = base + 2 * values + (within - 1) * values;
             let deltas = bytes::range(&data, d, values)?;
             for ((cur, t), &b) in current.iter_mut().zip(&table).zip(deltas) {
-                *cur += t.2 + f32::from(b) * t.3;
+                let step = add(mul(f32::from(b), t.3), t.2);
+                *cur = crate::ee::chop(f64::from(*cur) + f64::from(step));
             }
         }
         out.push(current.clone());

@@ -3400,7 +3400,10 @@ const RECORDED_BOUNDS: Bounds = Bounds {
 /// 1.5; passes loose at their timer 1.0 (se 0.18) against 0, 2.0. Within
 /// 4 in tricks set again by the rule on 2026-11-07, when the fall-forwards'
 /// get-up roll moved the C library's draws: 0.393 (se 0.020) against 0.227,
-/// 0.23 (the commit before, 0.383, se 0.017).
+/// 0.23 (the commit before, 0.383, se 0.017). Shots knocked loose set
+/// again by the rule on 2026-11-14, when the animations' root tracks took
+/// the original's rounding: 1.06 (se 0.23) against 0, 2.0 (the seed set
+/// +777 inside).
 const SECOND_BOUNDS: Bounds = Bounds {
     standing: 0.055,
     away: 0.09,
@@ -3412,7 +3415,7 @@ const SECOND_BOUNDS: Bounds = Bounds {
     counters: 7.0,
     shots: 5.0,
     jumps: [4.0, 2.0, 6.0],
-    loose: [1.0, 1.5, 2.0, 1.0, 0.08, 265.0],
+    loose: [1.0, 1.5, 2.0, 2.0, 0.08, 265.0],
 };
 
 /// The second capture's (no rosters: every player at 50, and the disc's
