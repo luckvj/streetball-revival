@@ -569,6 +569,18 @@ pub struct PlayerGaitChannel {
     /// blend of 6 updates), while [`PlayerGaitChannel::blend_counter`]
     /// runs ([`crate::World::actor_pose`]).
     pub blend_from: Option<(u16, f32)>,
+    /// The clip `+0x50` still names while this blend runs, when it is not
+    /// [`PlayerGaitChannel::blend_from`]'s: `+0x50` takes a blend's clip
+    /// only as the blend completes, so a record started over a blend that
+    /// never did (a stand's, or a walk's cut short) leaves the clip before
+    /// it there, which callback 52 reads (the third attract match's
+    /// defender out of his stand at update 1194, `+0x50` his walk's clip 21
+    /// under the stand's 65, starts his run at 1196 at the step's share).
+    pub base: Option<u16>,
+    /// This update's locomotion speed (actor+0x32c) when it is not the
+    /// velocity's: the clip's rate is taken from it. Only within an
+    /// update (a steered receiver's selection-only run).
+    pub rate_speed: Option<f32>,
     /// The pose a walk's blend holds in place of that clip: what a stand
     /// showed as the walk began (`FUN_001935c8`'s `+0xbc`), turned back as
     /// far as the heading match turned the facing (`FUN_00196698`).
@@ -630,6 +642,8 @@ impl Default for PlayerGaitChannel {
             hand: 2,
             trick_side: 0,
             blend_from: None,
+            base: None,
+            rate_speed: None,
             blend_held: None,
             share: None,
             rate_store: 1.0 / 6.0,
@@ -666,6 +680,7 @@ impl PlayerGaitChannel {
         };
         if wanted_row != self.row {
             self.blend_from = Some((self.row, self.phase));
+            self.base = None;
             self.blend_held = None;
             self.row = wanted_row;
             self.blend_counter = 6;
@@ -684,6 +699,7 @@ impl PlayerGaitChannel {
             _ if held => 0.590390,
             _ => 0.582450,
         };
+        let speed = self.rate_speed.unwrap_or(speed);
         self.frame_step = calculate_gait_frame_step(root_distance, speed, body_scale_x);
         if let Some(share) = self.share.take() {
             self.phase = crate::gait_select::share_start(

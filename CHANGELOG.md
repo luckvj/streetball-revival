@@ -5,6 +5,10 @@ its version's part.
 
 ## Unreleased
 
+- A shooter gathering on a planted foot keeps the step his shot's animation takes once its blend is done, as on the PS2 (the planted foot cancelled it, so he went up a few centimetres off and his shot left from the wrong spot).
+- A receiver running to a pass in the air strides at the pace his stick and turbo ask for now while keeping the speed the pass gave him, as on the PS2 (his legs kept the turbo pace after he let go of turbo, so he drifted off his line).
+- A defender boxing out turns to face the rim the ball is going to, as on the PS2 (he turned toward the other end of the court), and every move that turns a player to the rim measures it from the rim the side with the ball attacks, as the PS2's table does.
+- A player who sets off from a stance that never finished blending in starts his run at the stride's own share of the step, as on the PS2: the game still names the walk under that stance, so his run doesn't snap his facing to the stance's pose first (he turned about 30 units too far and stopped facing off).
 - After a jump shot a player plays out the end of his shot after he lands, as on the PS2: he settles through its last frames before he can run off, and without a push on the stick he plays the rest of it out (he ran off the moment he touched down). Online play needs this build on both sides (protocol 27).
 - A catcher who sets off out of his standing catch blends into his walk from the catch's own pose, as on the PS2 (he blended from the stride underneath, so his body turned ahead of his facing and his next stance and shot faced a little off).
 - When a shot goes up, the computer's defenders still guarding pick up the man in their own slot until the rebound plan takes over, as on the PS2 (they kept the matchups the defence had switched to).

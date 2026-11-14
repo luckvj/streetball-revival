@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 138;
+const VERSION: u8 = 139;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -1608,6 +1608,13 @@ fn gait_channel_out(w: &mut Writer, c: &crate::ordinary::PlayerGaitChannel) {
             w.f(time);
         }
     }
+    match c.base {
+        None => w.u8(0),
+        Some(row) => {
+            w.u8(1);
+            w.uv(u64::from(row));
+        }
+    }
     held_out(w, c.blend_held.as_ref());
     match c.share {
         None => w.u8(0),
@@ -1725,6 +1732,11 @@ fn gait_channel_in(r: &mut Reader) -> Result<crate::ordinary::PlayerGaitChannel,
         )),
         k => return Err(format!("bad gait blend flag {k}")),
     };
+    let base = match r.u8()? {
+        0 => None,
+        1 => Some(u16::try_from(r.uv()?).map_err(|_| "invalid gait base")?),
+        k => return Err(format!("bad gait base flag {k}")),
+    };
     let blend_held = held_in(r)?;
     let share = match r.u8()? {
         0 => None,
@@ -1761,6 +1773,8 @@ fn gait_channel_in(r: &mut Reader) -> Result<crate::ordinary::PlayerGaitChannel,
         hand,
         trick_side,
         blend_from,
+        base,
+        rate_speed: None,
         blend_held,
         share,
         rate_store,

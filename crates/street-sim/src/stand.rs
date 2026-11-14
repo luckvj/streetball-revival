@@ -697,7 +697,7 @@ impl World {
         let base = {
             let c = &self.players[i].gait_channel;
             (self.players[i].stand.is_none() && c.blend_counter > 0)
-                .then(|| c.blend_from.map(|f| f.0))
+                .then(|| c.base.or(c.blend_from.map(|f| f.0)))
                 .flatten()
         };
         self.players[i].stand = Some(Standing {
@@ -1018,13 +1018,11 @@ impl World {
         let mut unplant = false;
         for step in ran.ops.iter() {
             match step {
+                // Callback 4 (`FUN_00175248`): the rim word
+                // (`FUN_0016f260`) turned by its argument.
                 Step::Want(w) => {
-                    let p = &self.players[i];
-                    let rim = self.rim_spot(crate::target_hoop(p.team));
-                    let to = timing::angle_units(crate::math::atan2(
-                        p.position[0] - rim[0],
-                        p.position[1] - rim[1],
-                    ));
+                    let at = self.players[i].position;
+                    let to = self.to_rim(i, at);
                     self.players[i].wanted = crate::restart::heading_radians(to + i32::from(w));
                 }
                 Step::Plant(plant) if !plant.hands => {

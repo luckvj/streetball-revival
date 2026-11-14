@@ -536,6 +536,9 @@ fn driving(seed: u32, at: [f32; 2], run: usize) -> World {
     );
     w.phase = Phase::Live;
     w.ball.hold(0);
+    // His side has the ball (game+0x110), as in a match: the moves turn
+    // to the rim it attacks ([`World::to_rim`]).
+    w.possession = 1;
     for _ in 0..run {
         w.step(&[stick(-1.0, 0.0)]);
     }

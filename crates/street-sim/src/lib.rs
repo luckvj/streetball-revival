@@ -1929,6 +1929,8 @@ impl World {
                         }
                 });
             let steered = self.receiver_stick(i);
+            // The pad's own buttons, turbo as it is now.
+            let pad_buttons = input.buttons;
             let input = match steered {
                 // His run is the one the pass start gave him (`FUN_0016c970`
                 // ran his locomotion then): his own update runs none, so its
@@ -2053,6 +2055,18 @@ impl World {
                 // stays the pass start's (the third attract match's
                 // receiver draws it from update 1090, his speed kept).
                 self.select_gait_with(i, &input, held, stance, false, None);
+                // That run writes the speed the stick and the pad's turbo
+                // ask for (actor+0x32c), which the clip's rate (+0x68) is
+                // taken from, but not his velocity (the third attract
+                // match's receiver, turbo let go at 1088: his run's rate
+                // 0.7752 -> 0.6659 at 1090, his 0.330 an update kept).
+                let mut ran = self.players[i].clone();
+                let pad = Input {
+                    buttons: pad_buttons,
+                    ..input
+                };
+                ran.walk(&pad, 1.0, held, stance);
+                self.players[i].gait_channel.rate_speed = Some(ran.speed);
             }
             // The receiver waiting in `breathe_1` draws no stand: the pass's
             // receiver keeps the stick the pass start gave him (the pad
@@ -2513,6 +2527,7 @@ impl World {
             self.floor_contact(i);
             self.previous_inputs[i] = input;
             self.players[i].moved = None;
+            self.players[i].gait_channel.rate_speed = None;
             self.count_down_bars(i);
         }
         self.shown_start.6 = None;
@@ -3030,7 +3045,7 @@ impl World {
                     && p.gait_channel.blend_counter > 0
                     && let Some((row, _)) = p.gait_channel.blend_from =>
                 {
-                    Some(row)
+                    Some(p.gait_channel.base.unwrap_or(row))
                 }
                 None if p.gait_channel.moving => {
                     p.gait_channel.record.map(|_| p.gait_channel.record_row())
@@ -3244,6 +3259,16 @@ impl World {
             // its clip at 0 from the gait's row): the update's step counts
             // it from 6.
             if let Some((from, held, start, share)) = walk_from {
+                // `+0x50` as this blend starts ([`PlayerGaitChannel::base`]).
+                channel.base = match p.stand {
+                    _ if script.is_some() => None,
+                    Some(s) if stand_blend_from_gait(&s) => s.base.or(s.from.map(|f| f.0)),
+                    Some(_) => None,
+                    None if channel.blend_counter > 0 => {
+                        channel.base.or(channel.blend_from.map(|f| f.0))
+                    }
+                    None => None,
+                };
                 channel.row = channel.record_row();
                 channel.blend_from = Some(from);
                 channel.blend_held = Some(held);

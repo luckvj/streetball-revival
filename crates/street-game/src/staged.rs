@@ -1487,6 +1487,9 @@ mod tests {
             disc.install(&mut world).unwrap();
             world.phase = street_sim::Phase::Live;
             world.ball.hold(first);
+            // His side has the ball, as in a match: the dunker's aim
+            // turns to the rim it attacks.
+            world.possession = 1;
             world.sequence = Some(street_sim::gamebreaker::Sequence {
                 script,
                 shooter: first,

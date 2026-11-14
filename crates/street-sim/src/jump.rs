@@ -543,15 +543,18 @@ impl World {
         self.rim_spot(crate::target_hoop(self.players[i].team))[0]
     }
 
-    /// `FUN_0016f260`: the angle from `i` toward the rim his team attacks
-    /// (the game's table at +0x35c, built before the actors update, turned
-    /// half round), from where he stood: `FUN_0013fed0` fills it from the
+    /// `FUN_0016f260`: the angle from `i` toward the rim the side with the
+    /// ball attacks (the game's table at +0x35c, built before the actors
+    /// update, turned half round; `FUN_0013fed0` takes the rim from
+    /// `FUN_001404e0(game, game+0x110)`, so a defender's is the rim he
+    /// defends: the third attract match's boxer-out at update 1220 turns
+    /// to 719, toward it), from where he stood: `FUN_0013fed0` fills it from the
     /// rim toward him on the native arc tangent, truncated toward zero
     /// (`0x140224..0x140470`), and the half turn comes after (the third
     /// attract match's dunker at update 330: 353, where a rounded angle
     /// from him gave 352 and his `9e` aimed a unit round).
-    pub(crate) fn to_rim(&self, i: usize, at: [f32; 2]) -> i32 {
-        let rim = self.rim_spot(crate::target_hoop(self.players[i].team));
+    pub(crate) fn to_rim(&self, _i: usize, at: [f32; 2]) -> i32 {
+        let rim = self.rim_spot(crate::target_hoop(self.possession));
         rim_word(rim, at)
     }
 
@@ -725,6 +728,8 @@ impl World {
         }
         let stepped = !(m.script == f.script && m.updates == f.updates);
         let fresh = m.script != f.script;
+        // What the clip's root moved him this update (`0x19b67c`).
+        let mut root_moved = [0.0f32; 2];
         // The knock window's count down, then this update's `a6 1`; the
         // jump's clock.
         f.knock = f.knock.saturating_sub(1);
@@ -751,7 +756,7 @@ impl World {
             // steps, then the new span's first step under theirs.
             let before = if fresh { None } else { m.before };
             let mid = m.ran.mid.unwrap_or(m.after);
-            self.flight_root(i, &mut f, before, mid, m.from);
+            root_moved = self.flight_root(i, &mut f, before, mid, m.from);
             // The model as the update before left it, for a plant.
             let prev = m
                 .ran
@@ -788,7 +793,8 @@ impl World {
                 }
             }
             if m.ran.mid.is_some() {
-                self.flight_root(i, &mut f, Some(mid), m.after, m.from);
+                let more = self.flight_root(i, &mut f, Some(mid), m.after, m.from);
+                root_moved = [root_moved[0] + more[0], root_moved[1] + more[1]];
             }
             if m.ran.set_bits & 0x4000 != 0 {
                 f.hung = true;
@@ -877,7 +883,7 @@ impl World {
         // The model posed, the planted points held (`0x157800..0x157954`).
         if f.flags & (PLANTED | NO_GRAVITY) != 0 {
             let facing = self.players[i].heading;
-            self.hold_planted(i, &m, facing);
+            self.hold_planted(i, &m, facing, root_moved);
         }
         // A hang's move, a dive and a pass are over with their script once
         // he is down. A pass row whose `91` has given the locomotion back
@@ -1019,7 +1025,13 @@ impl World {
     /// the model is posed): his x and z moved by the planted point less
     /// the planted bones' midpoint as the channel shows them at his place,
     /// his height too for the hands (0x40000).
-    fn hold_planted(&mut self, i: usize, m: &crate::held::MoveSteps, facing: f32) {
+    fn hold_planted(
+        &mut self,
+        i: usize,
+        m: &crate::held::MoveSteps,
+        facing: f32,
+        root_moved: [f32; 2],
+    ) {
         let Some(poses) = self.poses.arc() else {
             return;
         };
@@ -1031,6 +1043,12 @@ impl World {
         // passer swings round his planted foot at 875 as he turns).
         let mut place = self.place(i);
         place.word = timing::facing_word(facing);
+        // The bones as the channel's step posed them, before the clip's
+        // root moved him (`0x19b67c`): the hold keeps the root's step (the
+        // third attract match's shooter on his planted gather from update
+        // 1153, his ankle off its point by the clip's root each update).
+        place.position[0] -= root_moved[0];
+        place.position[2] -= root_moved[1];
         let Some(pose) = crate::trick::pose_from(
             &poses,
             m.after,
@@ -1381,19 +1399,22 @@ impl World {
         before: Option<crate::trick::Shown>,
         after: crate::trick::Shown,
         from: Option<(u16, f32)>,
-    ) {
+    ) -> [f32; 2] {
         let Some(poses) = self.poses.arc() else {
-            return;
+            return [0.0; 2];
         };
         let p = &mut self.players[i];
         let body = p.body();
+        let mut moved = [0.0; 2];
         if let Some(before) = before
             && f.flags & ROOT_OFF == 0
         {
             let step = crate::trick::root_step(&poses, before, after);
             let m = crate::trick::root_motion(step, body, timing::facing_word(p.heading));
+            let was = p.position;
             p.position[0] = crate::math::ee_add(p.position[0], m[0]);
             p.position[1] = crate::math::ee_add(p.position[1], m[1]);
+            moved = [p.position[0] - was[0], p.position[1] - was[1]];
         }
         // A script's first update may show no clip yet (its pick is
         // still to come): the channel holds the clip it had, so there is
@@ -1418,6 +1439,7 @@ impl World {
                 f.flags &= !RESYNC;
             }
         }
+        moved
     }
 }
 
