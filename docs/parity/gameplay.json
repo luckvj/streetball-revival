@@ -4614,13 +4614,13 @@
           "path": "crates/street-sim/src/ai/mod.rs",
           "locator": "Ctx::frozen; World::ai_begin; World::ai_player",
           "note": "Forced computer control includes the six-player restart as well as the opening toss.",
-          "sha256": "711c5e64f9b9e9185103e76964b589a223622d583c5cf46821603838eba4ab5b"
+          "sha256": "8af9ff6fa81b6e0e9a36a708c9ac3d681168a564d6f13beb3fbcbe4a1034f56d"
         },
         {
           "path": "crates/street-sim/src/ai/team.rs",
           "locator": "update (0x18a744..0x18a7d8)",
           "note": "The takeover path preserves queued walks while the forced-control latch is set.",
-          "sha256": "2cb425cab5eb3da11517e66e9170615c4ce0f791150bea86eada49c4531e073e"
+          "sha256": "e43b986cfac23015a76e03d8d11977d880ac12d2fd462e536ca19e853cc39daa"
         },
         {
           "path": "crates/street-sim/src/school.rs",
@@ -4630,7 +4630,7 @@
         }
       ],
       "tolerance": "Same static takeover guard; production regression must leave every tested restart before the 20-second fallback.",
-      "limitations": "Bounded static control-latch port and rewrite regression, not a paired original runtime replay or proof that every possible inbound hang is fixed. Last re-pinned 2026-11-13 after the matchups follow the strategy (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Bounded static control-latch port and rewrite regression, not a paired original runtime replay or proof that every possible inbound hang is fixed. Last re-pinned 2026-11-14 after the loose ball AI (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Retain a paired original/rewrite School replay capture with controller handoffs and all six ready flags.",
       "match_type": "structural"
     },
