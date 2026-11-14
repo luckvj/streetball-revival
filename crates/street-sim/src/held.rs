@@ -163,7 +163,7 @@ pub fn shot_tail(script: u8) -> (u16, u16) {
     }
     let playout = rest
         .find_map(|s| match s {
-            Step::PlayOut { n, .. } => Some(u16::from(*n)),
+            Step::PlayOut { n, .. } => Some(*n),
             _ => None,
         })
         .unwrap_or(0);
