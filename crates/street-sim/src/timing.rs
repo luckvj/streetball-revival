@@ -660,8 +660,17 @@ fn filter_moving(w: &World, i: usize, input: &Input) -> bool {
 /// `0x1605c8`), 4 with the receiver straight ahead, 0 behind (`0x38` the
 /// rows ahead, `0x01`/`0x03`/`0x81` behind, `0x40`/`0x06` the sides). The
 /// yaw is the rendered root bone's (`FUN_00154230` at `0x16010c`, the
-/// facing word's sense; airborne, `+0xb0` itself at `0x160404`), read as
-/// the passer's facing word; the spots are [`pass_reach`]'s.
+/// model as the last update posed it; the third attract match's rebounder
+/// passing in the air at update 1307 reads 723, his facing 762, and takes
+/// `pass_air_4`). Not carried: `+0xb0` itself (`0x160404`) for a passer in
+/// the air on clip 71 or 72 (`FUN_0016eab0`) with game+0x160 at -2. The
+/// spots are [`pass_reach`]'s.
+fn filter_yaw(w: &World, i: usize) -> i32 {
+    w.actor_pose(i)
+        .map(|pose| crate::trick::pelvis_word(&pose))
+        .unwrap_or_else(|| facing_word(w.players[i].heading))
+}
+
 #[cfg(test)]
 pub(crate) fn pass_sector(
     w: &World,
@@ -672,7 +681,7 @@ pub(crate) fn pass_sector(
 ) -> u32 {
     let v = passer_velocity(w, i, filter_moving(w, i, input));
     let reach = pass_reach(w, i, to, aim, v, None);
-    sector(facing_word(w.players[i].heading), reach.from, reach.catch)
+    sector(filter_yaw(w, i), reach.from, reach.catch)
 }
 
 /// The press's flight estimate (`FUN_0015f930`, `0x15ff10..0x15ff54`): what
@@ -824,7 +833,7 @@ pub(crate) fn pass_verdicts(
     let heave_allowed = !own_half && w.shot_clock as i32 >= 9;
     let reach = pass_reach(w, i, to, aim, passer_velocity(w, i, moving), None);
     let dist = distance(reach.ahead, reach.catch);
-    let sector = sector(facing_word(p.heading), reach.from, reach.catch);
+    let sector = sector(filter_yaw(w, i), reach.from, reach.catch);
     let hand = p.gait_channel.hand;
     let rating = rating(p.ratings.handles);
     let verdict = |row: &PassRow| {

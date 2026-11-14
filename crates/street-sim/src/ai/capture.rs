@@ -4813,9 +4813,10 @@ fn putbacks_start_on_their_records_and_some_catch_the_ball() {
     // the heading taken from the whole queue, 2026-11-12, seed 16's none;
     // 17, 18 and 20 do. With a run's clip rate from the receiver's own
     // stick and turbo and the shooter's planted gather keeping its root's
-    // step, 2026-11-13, seed 17's none; 18 does.)
+    // step, 2026-11-13, seed 17's none; 18 does. With the pass filter's
+    // yaw on the shown pelvis, 2026-11-14, seed 18's none; 20 and 21 do.)
     let (mut started, mut caught) = (0, 0);
-    let mut w = demo_match(18);
+    let mut w = demo_match(20);
     w.start_opening_toss();
     for _ in 0..20_000 {
         step_computer(&mut w);
