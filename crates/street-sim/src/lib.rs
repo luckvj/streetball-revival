@@ -3163,6 +3163,17 @@ impl World {
                     let shown = s.run.shown();
                     (shown.record.map(|r| (r, shown.frame)).or(s.from), h)
                 }),
+                // A catch row's play-out on channel 0 (its clip, `+0x50`):
+                // the blend holds the pose it shows, not the gait's under it
+                // (the third attract match's catcher into his walk at update
+                // 1142 from clip 565).
+                None if let Some(c) = self.channel(i).filter(|c| !c.gait)
+                    && let Some(record) = c.shown.record =>
+                {
+                    self.shown_at_start(i)
+                        .or_else(|| self.shown_local(i))
+                        .map(|h| (Some((record, c.shown.frame)), h))
+                }
                 None => {
                     let from = (channel.row, channel.phase);
                     self.gait_local(i).map(|h| (Some(from), h))
