@@ -631,10 +631,16 @@ impl World {
         let s = SCRIPTS[usize::from(script)];
         let landed =
             (end != u16::MAX && s.jump != 0).then(|| end.saturating_sub(u16::from(s.tail)));
+        // The channel as the last step left it: the tick counts the steps
+        // run, the first the press update's (the third attract match's
+        // rebounder: frame 3 after update 1276's step, 16.43 at 1307; a
+        // clock on the tick itself ran a frame ahead, so his pass's filter
+        // read his pelvis 3 units on).
+        let t = tick.saturating_sub(1);
         Some(Clock {
             record: s.records[usize::from(branch)],
-            frame: clip_frame(&s, tick, meet, airtime, landed),
-            blend: (tick < BLEND).then(|| (from, f32::from(tick + 1) / f32::from(BLEND))),
+            frame: clip_frame(&s, t, meet, airtime, landed),
+            blend: (t < BLEND).then(|| (from, f32::from(t + 1) / f32::from(BLEND))),
         })
     }
 

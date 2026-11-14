@@ -666,6 +666,11 @@ fn filter_moving(w: &World, i: usize, input: &Input) -> bool {
 /// the air on clip 71 or 72 (`FUN_0016eab0`) with game+0x160 at -2. The
 /// spots are [`pass_reach`]'s.
 fn filter_yaw(w: &World, i: usize) -> i32 {
+    if let Some((k, word)) = w.pass_yaw
+        && k == i
+    {
+        return word;
+    }
     w.actor_pose(i)
         .map(|pose| crate::trick::pelvis_word(&pose))
         .unwrap_or_else(|| facing_word(w.players[i].heading))

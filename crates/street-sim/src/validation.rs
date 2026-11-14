@@ -121,6 +121,7 @@ impl World {
             attract_cuts: _,
             shot_cut: _,
             shown_start: _,
+            pass_yaw: _,
         } = self;
         for c in &crowd.calls {
             require(

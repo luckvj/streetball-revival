@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A rebound jumper's body shows his jump's frame on the PS2's update (it ran a frame ahead), and a jumper who passes in the air chooses his throw from the body his jump showed, as on the PS2.
 - A passer's choice of throw judges where his teammate is from the way his body faces as it is shown, as the PS2's does, rather than from his facing (they differ during turns and jumps, so he picked another pass).
 - A player who passes out of a rebound or block jump in the air flies on from his jump as on the PS2: the pass starts from the jump's own motion (he stopped dead in the air for a moment), and the choice of pass reads where his jump is carrying him.
 - As an animation comes round to its start (a run's stride, a stance's loop), the body turns from its last frame into its first the way the PS2 blends it (it mixed the two frames' raw values, so for a moment each loop a player's arms and legs sat a few centimetres off).

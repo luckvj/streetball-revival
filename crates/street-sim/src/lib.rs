@@ -930,6 +930,11 @@ pub struct World {
     /// update's locomotion has since asked for), with the tick it was
     /// taken; not saved (it is taken again each update).
     pub(crate) shown_start: ShownStart,
+    /// The pelvis word (`FUN_00154230`) of a holder whose pass press goes
+    /// in out of another move, taken on the model his move showed before
+    /// the press cleared it, for the pass filter's yaw
+    /// ([`timing::pass_verdicts`]); not saved (within the press).
+    pub(crate) pass_yaw: Option<(usize, i32)>,
     /// The combo manager (game+0xd0, [`combo::Manager`]): the match's one
     /// ring of events and the words its dispatchers keep ([`scoring`]).
     pub combo: combo::Manager,
@@ -1502,6 +1507,7 @@ impl World {
             attract_cuts: false,
             shot_cut: false,
             shown_start: ShownStart::default(),
+            pass_yaw: None,
         }
     }
 
@@ -3419,8 +3425,12 @@ impl World {
                     p.speed = math::len(d[0], d[1]) * TICK_HZ as f32;
                     p.course = math::atan2(d[0], d[1]);
                 }
+                self.pass_yaw = self
+                    .actor_pose(i)
+                    .map(|pose| (i, trick::pelvis_word(&pose)));
                 self.players[i].action = Action::None;
                 self.pass_button(i, input, aimed, start);
+                self.pass_yaw = None;
                 let went = self.windup.is_some_and(|w| w.from == i)
                     || self.ball.state != BallState::Held(i);
                 if drift.is_some() {

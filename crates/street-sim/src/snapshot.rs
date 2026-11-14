@@ -221,6 +221,7 @@ impl World {
             attract_cuts: _,
             shot_cut: _,
             shown_start: _,
+            pass_yaw: _,
         } = self;
         w.uv(*tick);
         for h in hoops {
@@ -1193,6 +1194,7 @@ impl World {
             attract_cuts: false,
             shot_cut: false,
             shown_start: crate::ShownStart::default(),
+            pass_yaw: None,
         };
         world.validate()?;
         Ok(world)
