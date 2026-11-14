@@ -2077,6 +2077,7 @@ fn with_tracked_ctx<R>(w: &World, f: impl FnOnce(&mut Ctx) -> R) -> (R, Rng) {
             inputs: &inputs,
             tick: w.tick as i64,
             matchups: [([-1; 3], [-1; 3], [-1; 3]); 2],
+            defending: [true; 2],
             save_turbo: [false; 2],
             open: [[0; 3]; 2],
             holder_of: [0, 3],

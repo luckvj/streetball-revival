@@ -923,6 +923,10 @@ pub(crate) struct Ctx<'a> {
     /// The defense strategies' matchups (man, help, second) by side and
     /// slot.
     pub matchups: [([i32; 3], [i32; 3], [i32; 3]); 2],
+    /// The side's strategy is the defense strategy, whose vtable's
+    /// matchup (+0x24, `FUN_00123d40`) reads [`Ctx::matchups`]; every
+    /// other strategy's is the base one (`FUN_0018be68`).
+    pub defending: [bool; 2],
     pub save_turbo: [bool; 2],
     /// team+0x94 and team+0xa0, by side.
     pub open: [[i32; 3]; 2],
@@ -1018,6 +1022,19 @@ impl Ctx<'_> {
     pub fn matchup(&self, i: usize, k: usize) -> Option<usize> {
         let team = self.team(i);
         let slot = self.slot(i).min(2);
+        // `FUN_0018be68`, the base strategies' (the rebound defence's at
+        // the third attract match's shot at update 1179): the man and the
+        // second are the opponent in his own slot, no help (the PS2's two
+        // defenders swap men as the strategy changes at 1180).
+        if !self.defending[team] {
+            if k == 1 {
+                return None;
+            }
+            return self
+                .squad(1 - team.min(1))
+                .into_iter()
+                .find(|&j| self.slot(j) == slot);
+        }
         let (man, help, second) = self.matchups[team];
         let v = match k {
             0 => man[slot],
@@ -1134,6 +1151,7 @@ impl Frame {
                 let d = &state.coaches[t].defense;
                 (d.man, d.help, d.second)
             }),
+            defending: [0, 1].map(|t| state.coaches[t].strategy == team::strategy::DEFENSE),
             save_turbo: [state.coaches[0].save_turbo, state.coaches[1].save_turbo],
             open: [state.coaches[0].open, state.coaches[1].open],
             holder_of: [state.coaches[0].holder, state.coaches[1].holder],
@@ -1486,6 +1504,7 @@ impl World {
                 inputs: &[],
                 tick: self.tick as i64,
                 matchups: [([-1; 3], [-1; 3], [-1; 3]); 2],
+                defending: [true; 2],
                 save_turbo: [state.coaches[0].save_turbo, state.coaches[1].save_turbo],
                 open: [state.coaches[0].open, state.coaches[1].open],
                 holder_of: [state.coaches[0].holder, state.coaches[1].holder],
@@ -1537,6 +1556,7 @@ pub(crate) fn lane_open(w: &World, i: usize) -> bool {
         inputs: &inputs,
         tick: w.tick as i64,
         matchups: [([-1; 3], [-1; 3], [-1; 3]); 2],
+        defending: [true; 2],
         save_turbo: [false; 2],
         open: [[0; 3]; 2],
         holder_of: [0, 3],
@@ -1569,6 +1589,7 @@ pub(crate) fn with_ctx<R>(w: &World, f: impl FnOnce(&mut Ctx) -> R) -> (R, Rng) 
             inputs: &inputs,
             tick: w.tick as i64,
             matchups: [([-1; 3], [-1; 3], [-1; 3]); 2],
+            defending: [true; 2],
             save_turbo: [false; 2],
             open: [[0; 3]; 2],
             holder_of: [0, 3],

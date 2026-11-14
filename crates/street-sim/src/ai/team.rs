@@ -166,6 +166,7 @@ pub(super) fn update(ctx: &mut Ctx, coaches: &mut [Coach; 2], brains: &mut [Brai
     let s = pick(ctx.game.phase, !ctx.attacking(team));
     if coach.strategy != s {
         coach.strategy = s;
+        ctx.defending[team] = s == strategy::DEFENSE;
         super::strategy::start(ctx, coach, brains, team);
     }
     if s == strategy::NONE {
