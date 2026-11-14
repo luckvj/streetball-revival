@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A rebound jumper's first moments off the floor follow his animation as the PS2's do (his legs' push lifts him a little higher as he leaves the ground).
 - A pass pressed out of a jump lines its animation up with the body the jump showed, as on the PS2 (it lined up with his stride underneath and kept his facing).
 - A rebound jumper's body shows his jump's frame on the PS2's update (it ran a frame ahead), and a jumper who passes in the air chooses his throw from the body his jump showed, as on the PS2.
 - A passer's choice of throw judges where his teammate is from the way his body faces as it is shown, as the PS2's does, rather than from his facing (they differ during turns and jumps, so he picked another pass).

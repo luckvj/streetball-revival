@@ -753,7 +753,62 @@ impl World {
                 self.rebound_aim(i);
             }
         }
+        self.rebound_resync(i);
         self.rebound_root(i);
+    }
+
+    /// The take-off's root (`FUN_0019a658`, raw `0x19b684..0x19b704`), as
+    /// the block jump's ([`crate::block`]): every rebound script sets
+    /// channel flag 0x10000 just before callback 36 (`91 02 00 01 00`), so
+    /// from the aim until a step reaches a new whole frame the channel's
+    /// steps lower the jumper by his clip's root rise, times his height
+    /// scale (the third attract match's rebounder leaves the floor at
+    /// update 1280: 0.235, not his velocity's 0.216). Without the disc's
+    /// animations, none.
+    fn rebound_resync(&mut self, i: usize) {
+        let Action::ReboundJump {
+            script,
+            tick,
+            up,
+            meet,
+            airtime,
+            branch,
+            vy,
+            ..
+        } = self.players[i].action
+        else {
+            return;
+        };
+        let s = SCRIPTS[usize::from(script)];
+        let jump = u16::from(s.jump);
+        if !up || jump == 0 || tick < jump {
+            return;
+        }
+        let frame = |t: u16| clip_frame(&s, t, meet, airtime, None);
+        if !(jump..tick).all(|t| frame(t) as i32 == frame(t - 1) as i32) {
+            return;
+        }
+        let Some(poses) = self.poses.get() else {
+            return;
+        };
+        let record = s.records[usize::from(branch)];
+        let root = |t: u16| {
+            poses
+                .root(Frame {
+                    record,
+                    time: frame(t),
+                    looping: false,
+                })
+                .map(|r| r[1])
+        };
+        let (Some(now), Some(then)) = (root(tick), root(tick - 1)) else {
+            return;
+        };
+        let p = &mut self.players[i];
+        p.height -= (now - then) * p.body().height;
+        if p.height < 0.0 && vy <= 0.0 {
+            p.height = 0.0;
+        }
     }
 
     /// The clip's root across before he leaves the floor (`FUN_0019a658`,
