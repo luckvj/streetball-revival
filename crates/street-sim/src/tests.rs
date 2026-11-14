@@ -4200,9 +4200,17 @@ fn a_dunk_goes_down_through_the_ring_the_update_after_it_is_let_go() {
             b[1] - vy * dt + 0.5 * GRAVITY * dt * dt,
             b[2] - v[2] * dt,
         ];
-        let across = ((at[0] - rim[0]).powi(2) + (at[2] - rim[2]).powi(2)).sqrt();
-        assert!(across <= 0.75 - ball::RADIUS + 1e-4, "{across}");
-        assert!((at[1] - (12.0 + ball::RADIUS)).abs() < 1e-3, "{at:?}");
+        // A miss aimed past the ring's back can meet the board in its
+        // launch update (coming back off it): no undoing that move.
+        let off_the_board = !shot.made && v[0] * (b[0] - rim[0]) < 0.0;
+        if !off_the_board {
+            let across = ((at[0] - rim[0]).powi(2) + (at[2] - rim[2]).powi(2)).sqrt();
+            assert!(
+                across <= 0.75 - ball::RADIUS + 1e-4,
+                "seed {seed}: {across}"
+            );
+            assert!((at[1] - (12.0 + ball::RADIUS)).abs() < 1e-3, "{at:?}");
+        }
         if shot.made {
             let speed = (v[0] * v[0] + vy * vy + v[2] * v[2]).sqrt() * dt;
             assert!(speed > 0.45 && speed < 0.5, "{speed}");

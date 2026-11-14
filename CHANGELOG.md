@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A ball that clips the inside of the rim settles onto it only when it moves almost along the rim, as on the PS2 (the test measured the opposite angle, so a ball bouncing off the rim's inner edge could drop in where the PS2's rattles out; shots that should miss on the PS2 went in).
 - A player who catches a pass out of a passout and passes straight on turns to the facing his catch left him, as on the PS2 (he kept turning toward where he faced before the catch, a few degrees too far).
 - A blocker leaping at a shooter aims at the PS2's point beside him, toward the rim (his take-off went a degree off, so he flew a little wide).
 - A shooter gathering on a planted foot keeps the step his shot's animation takes once its blend is done, as on the PS2 (the planted foot cancelled it, so he went up a few centimetres off and his shot left from the wrong spot).

@@ -1234,9 +1234,9 @@ impl Ball {
     /// contact faces from 0.7 to, on top, 0.7 at the back of the ring and
     /// 0.65 at its front; it settles onto the rim if it comes off slower
     /// than five gravity steps, or, inside the ring, when it moves mostly
-    /// across the ring's tangent (`asin` of its speed along the tangent no
-    /// more than `0.86393803·√(1 − n_y²)`). The game's `acos` polynomial is
-    /// replaced by `libm`'s.
+    /// across the ring's tangent (the angle between its way and the tangent,
+    /// `π/2 − asin` on the game's arcsine, no more than
+    /// `0.86393803·√(1 − n_y²)`).
     fn rim(&mut self, g: f32, hoop: [f32; 3], before: V3, again: bool) -> bool {
         let r = self.radius;
         let y = self.position[1];
@@ -1333,8 +1333,22 @@ impl Ball {
                     return true;
                 }
                 let cos = (dot(self.velocity, c) / speed).clamp(-0.9999, 0.9999);
-                let lean = std::f32::consts::FRAC_PI_2 - libm::acosf(cos);
-                if lean <= libm::sqrtf(1.0 - n[1] * n[1]) * NATIVE_RIM_ENTRY_CONE_ANGLE {
+                // `0x153078..0x1531f4`: the game's arcsine inline (its
+                // series, [`crate::math::ee_asin`]), the lean π/2 less it:
+                // the angle between the ball's way and the tangent (the
+                // third attract match's miss at update 1243 comes off the
+                // rim at 1.17 against 0.80, where π/2 less an arccosine,
+                // 0.40, had it settle and drop in).
+                let lean =
+                    crate::math::ee_add(f32::from_bits(0x3fc9_0fdb), -crate::math::ee_asin(cos));
+                let limit = crate::math::ee_mul(
+                    crate::math::ee_sqrt(crate::math::ee_add(
+                        1.0,
+                        -crate::math::ee_mul(n[1], n[1]),
+                    )),
+                    NATIVE_RIM_ENTRY_CONE_ANGLE,
+                );
+                if lean <= limit {
                     self.settle(n);
                 }
             }

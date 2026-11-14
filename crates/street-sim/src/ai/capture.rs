@@ -3371,12 +3371,15 @@ const FIRST_BOUNDS: Bounds = Bounds {
 /// 0.69 (se 0.28) against 2, 2.5. Passes knocked loose set again by the
 /// rule on 2026-11-03 with the dribblers' stops (`stand`'s coast and
 /// dribble stops, checked stop by stop on the played captures): 0.875
-/// (se 0.20) against 2, 1.75.
+/// (se 0.20) against 2, 1.75. Within 4 in tricks set again by the rule on
+/// 2026-11-14 with the rim's settle test on the game's arcsine (the
+/// passout row's callback 7 the commit before had it at 0.376): 0.377 (se
+/// 0.012) against 0.302, 0.115; the seed set +777 0.358 (se 0.008).
 const RECORDED_BOUNDS: Bounds = Bounds {
     standing: 0.045,
     away: 0.025,
     length: 2.0,
-    in_tricks: 0.075,
+    in_tricks: 0.115,
     blend: 0.13,
     within: 0.035,
     turnovers: 5.0,
