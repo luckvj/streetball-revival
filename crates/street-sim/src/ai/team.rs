@@ -235,14 +235,19 @@ pub(super) fn decide(ctx: &mut Ctx, b: &mut Brain, i: usize) {
     let team = ctx.team(i);
     let defending = !ctx.attacking(team);
     match ctx.game.phase {
+        // The rebound's goes in by `FUN_0013aaa8` (`0x17e678`), whose
+        // clear stops him (`FUN_0013ac30`): the steering's history takes
+        // his facing as it stands (the third attract match's a2 at update
+        // 1279 turns from 983, not his last stick's 1016); the other
+        // phases' push (`FUN_0013aa88`) leaves it.
         3 => {
             if ctx.game.ball == 0 {
-                b.push(Act::LooseBall(LooseBall::new(1)));
+                b.replace(ctx, i, Act::LooseBall(LooseBall::new(1)));
             } else {
                 // "prepare rebound" at the player's spot in `0x3cf620`.
                 let spot = ctx.rebound_spot(i);
                 let r = super::loose::PrepareRebound::new(ctx, spot, 2);
-                b.push(Act::PrepareRebound(r));
+                b.replace(ctx, i, Act::PrepareRebound(r));
             }
         }
         4 if defending => b.push(Act::Defense(Defense::new(ctx, i))),

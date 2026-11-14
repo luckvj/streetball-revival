@@ -431,10 +431,15 @@ words! {
 }
 
 impl Rebound {
-    /// The constructor; `Err` when the player is to chase the ball loose
-    /// instead (`0x116a50`: `FUN_0010dd68(ai, 3)` pushed, the node done).
-    /// The ball's speeds are per frame here, as the original keeps them.
-    pub fn new(ctx: &mut Ctx, i: usize) -> Result<Self, LooseBall> {
+    /// The constructor. When the ball will be below even the standing
+    /// reach + 2 the node is born done (`0x116a50`: +0x1c 1, and a "loose
+    /// ball" `FUN_0010dd68(ai, 3)` pushed on his queue, which the caller's
+    /// replace, `FUN_0013aaa8`, clears again): it never updates, leaves at
+    /// the next queue update and his empty queue picks anew (the third
+    /// attract match's three rebounders at update 1277: their sticks still
+    /// until 1279). The ball's speeds are per frame here, as the original
+    /// keeps them.
+    pub fn new(ctx: &mut Ctx, i: usize) -> Self {
         let ball = &ctx.w.ball;
         let g = crate::GRAVITY.abs() / 3600.0;
         let pos = ball.position;
@@ -456,7 +461,8 @@ impl Rebound {
         if at(t) < top {
             let t = ((low - reach) * 2.0 / g).sqrt() + 8.0;
             if at(t) < low {
-                return Err(LooseBall::new(3));
+                s.done = true;
+                return s;
             }
             time = t;
         } else {
@@ -477,7 +483,7 @@ impl Rebound {
         if dist(ctx.pos(i), s.target) <= 1.4 {
             s.level = 0;
         }
-        Ok(s)
+        s
     }
 
     /// `FUN_00116c28`.

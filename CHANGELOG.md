@@ -5,6 +5,8 @@ its version's part.
 
 ## Unreleased
 
+- When the ball comes off the rim too low to rebound, the computer's players go after it as on the PS2: they wait a moment before chasing it (they ran at it at once, two moments early), and a player who stood still sets off from the way he faces, not his last run.
+- The computer reads who is nearest the ball in a scramble or rebound as the PS2 does, every moment by distance (it used the side that last held the ball), so the side away from the ball drops back to defend while the ball is loose, and those defenders keep at it until someone has the ball (they gave up at once).
 - A blocker coming down from his leap keeps the facing he landed with while he plays the landing out, as on the PS2: only a player holding the ball turns to his stick then (he turned a few degrees, so his landing step went a little sideways).
 - A player setting off out of a move's last frames steps his new stride's first frame at the pace the PS2 does, from the stride he set off on, even when another stride takes over on the next moment (his first step reused the pace from before his move, a frame too far).
 - A player leaping for a rebound now gathers as on the PS2: his jump's animation carries him forward a step before he leaves the floor (he stood still, then took off from the wrong spot), his facing first matches the jump's first frame to the pose he showed and then turns to the ball, and a stance he was in ends at once (it moved him one more step).

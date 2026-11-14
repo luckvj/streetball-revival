@@ -466,8 +466,9 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // 2034's or 2035's; 2036; 2037: 2036's blocked no shot once a
         // blocker's landing wait ran the airtime left as it began; 2038:
         // 2037's blocked no shot once a rebound jumper's clip carried him
-        // before take-off.)
-        2038,
+        // before take-off; 2039: 2038's blocked no shot once the loose
+        // ball's chasers waited out a rebound born done.)
+        2039,
         15_000,
         Conditions {
             loss: 0.04,

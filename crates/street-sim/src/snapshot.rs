@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 140;
+const VERSION: u8 = 141;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).

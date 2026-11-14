@@ -95,6 +95,10 @@ words! {
         press: bool,
         /// `[0x12]`: frames to the next pass jump check.
         pass_timer: i32,
+        /// `[7]` (`FUN_001062b8`'s third argument, 1 only from the
+        /// scramble's tail, `0x18b1f8`): done once anyone holds the ball,
+        /// not once his side has it (`FUN_00106458`).
+        loose: bool,
         /// `[0x23]`: an inbound to press (`0x1064c0..0x106534`): a pass in
         /// the air from more than 40 out while the shot clock is on and
         /// still shows its length less one; the steal check's second reach
@@ -104,6 +108,25 @@ words! {
 }
 
 impl Defense {
+    /// The scramble's ([`Defense::loose`]).
+    pub fn loose(ctx: &Ctx, i: usize) -> Self {
+        Self {
+            loose: true,
+            ..Self::new(ctx, i)
+        }
+    }
+
+    /// `FUN_00106458`: done once his side has the ball (game+0x110 not
+    /// the other side), or for the scramble's once anyone holds it
+    /// (ball+0xf4).
+    pub fn done(&self, ctx: &Ctx, ours: bool) -> bool {
+        if self.loose {
+            ctx.w.handler().is_some()
+        } else {
+            ours
+        }
+    }
+
     /// `FUN_001062b8`: the timers start at `fps × 0.2` (steal) and
     /// `fps × 0.125` (counter); the level hold is `fps × skill(1, 0.25,
     /// 0.25, 0.15)` frames.

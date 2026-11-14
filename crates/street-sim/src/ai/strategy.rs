@@ -142,7 +142,7 @@ pub(super) fn scramble_tail(ctx: &mut Ctx, brains: &mut [Brain], team: usize, ti
                 brains[j].replace(ctx, j, Act::Outlet);
             }
         } else if brains[j].front_kind() != 10 {
-            let d = super::defence::Defense::new(ctx, j);
+            let d = super::defence::Defense::loose(ctx, j);
             brains[j].replace(ctx, j, Act::Defense(d));
         }
     }
@@ -368,10 +368,7 @@ fn jumpers(ctx: &mut Ctx, brains: &mut [Brain], team: usize) {
 }
 
 fn go_rebound(ctx: &mut Ctx, brains: &mut [Brain], j: usize) {
-    let act = match Rebound::new(ctx, j) {
-        Ok(r) => Act::Rebound(r),
-        Err(l) => Act::LooseBall(l),
-    };
+    let act = Act::Rebound(Rebound::new(ctx, j));
     if !ctx.human_player(j) {
         brains[j].replace(ctx, j, act);
     }

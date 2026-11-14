@@ -99,7 +99,8 @@ words! {
         /// The side the held phases belong to (game+0x110), -1 before
         /// anyone has had the ball.
         offence: i32,
-        /// game+0x43c: the side that last held the ball, or -1.
+        /// game+0x43c: the side of the player nearest the ball in the
+        /// scramble and the rebound, else -1 ([`nearest_team`]).
         last_team: i32,
         /// game+0x470: by player, the frames a person on the side without
         /// the ball has stood in the paint (within 10 of the rim, |z| < 7;
@@ -492,8 +493,7 @@ impl Act {
             Act::Pocket(done) | Act::Cancel(done) => *done,
             Act::Drive(a) => a.done(ctx, i),
             Act::Iso(a) => a.done(ctx, i),
-            // `FUN_00106458`: done once the player's side has the ball.
-            Act::Defense(_) => ours,
+            Act::Defense(a) => a.done(ctx, ours),
             Act::LooseBall(a) => a.done(ctx),
             Act::PrepareRebound(a) => a.done(),
             Act::FastBreak(a) => a.done(ctx, i),
@@ -1166,6 +1166,29 @@ impl Frame {
     }
 }
 
+/// game+0x43c (`FUN_0013ef10`, each update from `FUN_0013d868` at
+/// `0x13dfec`): -1, and in the scramble and the rebound (game+0xf4 2 or
+/// 3) the side of the player nearest the ball (VU0's distance between
+/// actor+0x30 and ball+0x30, the actors by side and slot, the first
+/// strictly under 200): the scramble's tail reads it (the third attract
+/// match's offence sends a1 to defence at update 1278, team 1's a3 the
+/// nearest).
+fn nearest_team(phase: i32, w: &World) -> i32 {
+    if !matches!(phase, 2 | 3) {
+        return -1;
+    }
+    let b = w.ball.position;
+    let mut best = (200.0f32, -1);
+    for p in w.players.iter().take(6) {
+        let d = [p.position[0] - b[0], p.height - b[1], p.position[1] - b[2]];
+        let d = ((d[0] * d[0] + d[1] * d[1]) + d[2] * d[2]).sqrt();
+        if d < best.0 {
+            best = (d, p.team.min(1) as i32);
+        }
+    }
+    best.1
+}
+
 /// What the AI reads of the AIGame (`FUN_0013d868`'s counters): the
 /// game's phase, the side the held phases belong to and the loose-ball
 /// count (game+0xf4, +0x110, +0x440) as the game's update left them after
@@ -1199,9 +1222,7 @@ fn track(game: &mut Game, w: &World, computer: &[bool]) {
         game.held = 0;
     }
     game.holder = holder;
-    if let Some(h) = w.handler() {
-        game.last_team = w.players[h].team.min(1) as i32;
-    }
+    game.last_team = nearest_team(game.phase, w);
     // game+0x470 (`0x13d968`): a person of the side without the ball in
     // the paint; the side with it starts over.
     if game.phase != 3 {
