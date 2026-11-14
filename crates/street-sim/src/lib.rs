@@ -2552,6 +2552,20 @@ impl World {
             self.previous_inputs[i] = input;
             self.players[i].moved = None;
             self.players[i].gait_channel.rate_speed = None;
+            // `0x167e8c` stores the rate in the update a record starts, on
+            // its root distance at that update's speed (the locomotion's
+            // +0x32c). A record started after this update's channel step
+            // stores it here: the third attract match's passer setting off
+            // at update 726 at 21.43 (1.5564, which his run's blend out of
+            // a pass steps at 828, not the 1.81 of the turbo he took at
+            // 727), the blocker out of his play-out at 1229 (1.1443).
+            let p = &mut self.players[i];
+            if p.gait_channel.store_rate {
+                let scale = p.body().height;
+                let c = &mut p.gait_channel;
+                c.rate_store = ordinary::calculate_gait_frame_step(c.root_distance, p.speed, scale);
+                c.store_rate = false;
+            }
             self.count_down_bars(i);
         }
         self.shown_start.6 = None;
@@ -3270,7 +3284,6 @@ impl World {
                     .is_some_and(|s| s.run.tick <= 0 || s.run.blend_counter().is_some())
         };
         let p = &mut self.players[i];
-        let (speed, body_scale_x) = (p.speed, p.body().height);
         let channel = &mut p.gait_channel;
         if let Some(record) = config.records.get(index) {
             // A record started anew runs its script's `9b`: only the
@@ -3283,18 +3296,6 @@ impl World {
                 if request & 0x102 != 0 {
                     p.dribble = 1;
                 }
-            }
-            // `0x167e8c` stores the rate in the update a record starts, on
-            // its root distance at that update's speed. Ours waits for the
-            // channel's next step; a record started out of a script's end
-            // has none that update, so a second record starting before
-            // one runs takes the first's store as it stood (the third
-            // attract match's blocker out of his play-out at update 1229:
-            // run 49 at 21.636, 1.1443, which the walk record's blend
-            // completing at 1236 steps).
-            if channel.store_rate {
-                channel.rate_store =
-                    ordinary::calculate_gait_frame_step(channel.root_distance, speed, body_scale_x);
             }
             channel.record = Some(index as u16);
             channel.rows = gait_select::script_rows(index, record.rows, p.left_handed);

@@ -467,8 +467,9 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // blocker's landing wait ran the airtime left as it began; 2038:
         // 2037's blocked no shot once a rebound jumper's clip carried him
         // before take-off; 2039: 2038's blocked no shot once the loose
-        // ball's chasers waited out a rebound born done.)
-        2039,
+        // ball's chasers waited out a rebound born done; 2040: 2039's
+        // played no replay once a run's rate was stored as it began.)
+        2040,
         15_000,
         Conditions {
             loss: 0.04,
@@ -497,14 +498,16 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
     // pass row ran on until the locomotion took it, seed 25's none once a
     // passout's flight was timed whole, seed 26's none once a stand
     // begun under a late pass matched its facing, seed 27's none once a
-    // blocker's landing wait ran the airtime left as it began).
+    // blocker's landing wait ran the airtime left as it began, seed 28's
+    // none once a run's rate was stored as it began; seed 29's plays no
+    // staged gamebreaker).
     let tables = disc().unwrap();
     let teams: Vec<usize> = (0..tables.tables().teams.len())
         .filter(|&t| tables.tables().teams[t].roster.len() >= 3)
         .collect();
     disc_match(
         [teams[12], teams[20]],
-        28,
+        30,
         15_000,
         Conditions {
             loss: 0.10,
