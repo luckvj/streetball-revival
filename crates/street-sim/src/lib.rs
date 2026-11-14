@@ -1874,7 +1874,7 @@ impl World {
             // Waiting in `breathe_1` since an earlier update (the update it
             // starts still runs his stand path).
             let waiting = self.spot_run.waiting == Some(i);
-            self.receiver_run(i);
+            let started_at_once = self.receiver_run(i);
             // A running catch (its row on channel 2) leaves channel 0 on his
             // run, cycling at its rate, and his velocity as it was
             // (`0x15aacc`, a2 = 2): the walk under the row's lock changes
@@ -1899,7 +1899,7 @@ impl World {
                 })
             };
             let run_kept = running(self);
-            let caught_started = self.catching_start(i);
+            let caught_started = self.catching_start(i) || started_at_once;
             let run_kept = run_kept.or_else(|| running(self));
             // A receiver on a standing catch row (0x4000) stands for it:
             // the row's script, started at the release (`FUN_001611d8`),
@@ -1920,11 +1920,25 @@ impl World {
                 });
             let steered = self.receiver_stick(i);
             let input = match steered {
-                Some(stick) => Input {
-                    stick,
-                    word: self.steer_word(i),
-                    ..input
-                },
+                // His run is the one the pass start gave him (`FUN_0016c970`
+                // ran his locomotion then): his own update runs none, so its
+                // speed, turbo and all, carries on whatever his pad's turbo
+                // does now (the third attract match's receiver lets go of
+                // turbo at update 1088 and keeps his 0.330 an update).
+                Some(stick) => {
+                    let turbo = self.players[i].gait == Gait::Turbo;
+                    let buttons = if turbo {
+                        input.buttons | button::R1
+                    } else {
+                        input.buttons & !button::TURBOS
+                    };
+                    Input {
+                        stick,
+                        word: self.steer_word(i),
+                        buttons,
+                        ..input
+                    }
+                }
                 None => input,
             };
             let standing = standing || self.receiver_holds(i) || self.caught_row_holds(i);
@@ -2022,6 +2036,13 @@ impl World {
             // `0x15b084`): no locomotion at all.
             if steered.is_none() && run_kept.is_none() {
                 self.select_gait(i, &walk, held, stance);
+            } else if steered.is_some() && run_kept.is_none() && self.ball.state == BallState::Pass
+            {
+                // Once the ball is in the air his locomotion runs its
+                // record's selection alone (its first argument 1): the run
+                // stays the pass start's (the third attract match's
+                // receiver draws it from update 1090, his speed kept).
+                self.select_gait_with(i, &input, held, stance, false, None);
             }
             // The receiver waiting in `breathe_1` draws no stand: the pass's
             // receiver keeps the stick the pass start gave him (the pad

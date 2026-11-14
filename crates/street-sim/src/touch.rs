@@ -390,7 +390,7 @@ impl World {
     /// its first step runs at once (its bits and the blend's start, which
     /// shows the clip it starts from). True when it started this update.
     pub(crate) fn catching_start(&mut self, i: usize) -> bool {
-        let Some(mut c) = self.catching_kept(i) else {
+        let Some(c) = self.catching_kept(i) else {
             return false;
         };
         if !c.parked {
@@ -408,12 +408,24 @@ impl World {
         if left > p.received_flight || p.height > 0.0 {
             return false;
         }
+        self.catching_begin(i, c, true);
+        true
+    }
+
+    /// The catch script of `i`'s row `c` starting: `parked` the parked
+    /// row's start (`0x15a974..0x15ab4c`: a running catch's locomotion,
+    /// the script, his face), else the spot run's `catch_stand_1` at once
+    /// (`0x15a950..0x15a96c`: the script alone, then `0x15ab44`'s clears,
+    /// no face: the third attract match's receiver at his spot at update
+    /// 1098).
+    pub(crate) fn catching_begin(&mut self, i: usize, mut c: Catching, parked: bool) {
         c.parked = false;
         self.players[i].received_flight = -1;
         // A running catch with `DAT_003d70b0` set (1 on the disc) runs his
         // locomotion first (`FUN_00163d40(actor, 0, 1)`, `0x15aac0`): his
         // record's selection on the run's stick, its draw before the face's.
-        if self.running_catch(i, c.floor)
+        if parked
+            && self.running_catch(i, c.floor)
             && let Some(stick) = self.steer_stick(i)
         {
             let input = crate::Input {
@@ -426,7 +438,9 @@ impl World {
         self.begin_script(i, CATCH_ROWS[usize::from(c.row)].script);
         // His face (`FUN_00159190(receiver, 1, fps × 2)`, `0x15ab24..
         // 0x15ab38`).
-        self.face(i, 2 * crate::TICK_HZ as i32);
+        if parked {
+            self.face(i, 2 * crate::TICK_HZ as i32);
+        }
         let f = self.gait_frame(i);
         c.from = Some((f.record, f.time));
         // Moving with +0x1ac: channel 0 carries his gait on and the row
@@ -437,7 +451,6 @@ impl World {
             c.lower = Some((f.record, f.time, g.frame_step));
         }
         self.catch_step(i, c);
-        true
     }
 
     /// Receiver `i`'s catch script, one update of his channel, after his

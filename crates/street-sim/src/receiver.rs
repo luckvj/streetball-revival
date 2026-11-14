@@ -367,17 +367,14 @@ impl World {
         if self.shown_record(i) == Some(STAND_RECORD) {
             return false;
         }
-        // `0x15a950..0x15a96c`: `catch_stand_1` at once (parked with his
-        // count at the flight left, so `World::catching_start` starts it
-        // this update).
+        // `0x15a950..0x15a96c`: `catch_stand_1` at once, its script alone
+        // ([`World::catching_begin`]: no face, no locomotion).
         self.start_catching(i, STAND_ROW);
-        if let Some(c) = self.catching.as_mut() {
-            c.parked = true;
-        }
-        let left = self.ball.flight_ticks() - self.ball.flown_ticks();
-        self.players[i].received_flight = left.clamp(0, i32::from(u16::MAX));
         if let Some(p) = self.ball.pass.as_mut() {
             p.catch = STAND_ROW as u8;
+        }
+        if let Some(c) = self.catching.filter(|c| c.player == i) {
+            self.catching_begin(i, c, false);
         }
         true
     }
