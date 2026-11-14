@@ -771,7 +771,7 @@
           "path": "crates/street-game/src/staged.rs",
           "locator": "tests::authoritative_staged_hands_use_each_database_players_native_body_geometry",
           "note": "attach_hands samples wide hands via joint_position_with_body_scale and writes width_deltas; hand_position applies per-player width ratio and height scale matching rendered joints within 1e-5.",
-          "sha256": "d09cd48bf87a558a06a0d43af114717742f577f227576589a0248bd5d9c2ce47"
+          "sha256": "9669b4ba3e05d1ffdbccb6a988e95e31c7bdaa2a6de2b410ceed0809a8d2689c"
         },
         {
           "path": "crates/street-render/src/player.rs",
@@ -793,7 +793,7 @@
         }
       ],
       "tolerance": "Per-axis morphed hand tracking matching rendered joints within 1e-5 court units across all database players.",
-      "limitations": "Staged hand tracking matches morphed player joint geometry for all league database players. Continuous interactive live-gameplay ball handoffs remain separate. Re-pinned 2026-10-16 after the court's frame pass: staged.rs's disc tests and fixture mirror team 0's scripts; the cited tests `authoritative_staged_hands_use_each_database_players_native_body_geometry` pass on their scenes mirrored into the original's frame. 2026-10-20 (online on the disc): attach_hands moved to street-net's disc and builds the disc's hand tracks alone (bit for bit the same); each player's model scale and width ratio, which it used to set, are the match's own values setup.rs's load_match sets (World::set_match_values). Last re-pinned 2026-11-10 after the trick press (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Staged hand tracking matches morphed player joint geometry for all league database players. Continuous interactive live-gameplay ball handoffs remain separate. Re-pinned 2026-10-16 after the court's frame pass: staged.rs's disc tests and fixture mirror team 0's scripts; the cited tests `authoritative_staged_hands_use_each_database_players_native_body_geometry` pass on their scenes mirrored into the original's frame. 2026-10-20 (online on the disc): attach_hands moved to street-net's disc and builds the disc's hand tracks alone (bit for bit the same); each player's model scale and width ratio, which it used to set, are the match's own values setup.rs's load_match sets (World::set_match_values). Last re-pinned 2026-11-13 after the +0x50 base, the offence's rim, the gather's root step and the receiver's rate (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture native live-rendered player joint positions and compare against hand_position in staged gamebreaker sequences."
     },
     {
