@@ -177,6 +177,40 @@ pub fn ee_atan(x: f32) -> f32 {
     }
 }
 
+/// The game's two-argument arctangent of `x` over `z` as `FUN_00154230`
+/// inlines it (raw `0x15432c..0x154510`): along z = 0 ±π/2 by the sign
+/// of x (0 for x = 0); else [`ee_atan`] of `x / z`, and for z < 0 π added
+/// for x > 0, taken away otherwise.
+pub fn ee_atan2(x: f32, z: f32) -> f32 {
+    let half_pi = f32::from_bits(0x3fc9_0fdb);
+    let pi = f32::from_bits(0x4049_0fdb);
+    if z == 0.0 {
+        if x == 0.0 {
+            return x;
+        }
+        return if 0.0 <= x { half_pi } else { -half_pi };
+    }
+    let a = ee_atan(ee_div(x, z));
+    if z < 0.0 {
+        if 0.0 < x {
+            ee_add(a, pi)
+        } else {
+            ee_add(a, -pi)
+        }
+    } else {
+        a
+    }
+}
+
+/// `FUN_00154230`'s facing word of an angle (raw `0x154514..0x154550`):
+/// `angle × 162.97466 + 0.5` truncated, a non-positive one taken a turn
+/// on, then half a turn on, wrapped.
+pub fn ee_word(angle: f32) -> i32 {
+    let v = ee_add(ee_mul(angle, f32::from_bits(0x4322_f983)), 0.5) as i32;
+    let v = if 0 < v { v } else { v + 0x400 };
+    (v + 0x200) & 0x3ff
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -190,6 +224,21 @@ mod tests {
                 "{a}: {ours} {exact}"
             );
         }
+    }
+
+    #[test]
+    fn the_games_two_argument_arctangent_follows_libm() {
+        for k in 0..64 {
+            let a = k as f32 * 0.1 - 3.15;
+            let (x, z) = (a.sin() * 2.0, a.cos() * 2.0);
+            let (ours, exact) = (super::ee_atan2(x, z), (x as f64).atan2(z as f64) as f32);
+            let d = (ours - exact).abs();
+            assert!(
+                d <= 2e-4 || (d - std::f32::consts::TAU).abs() <= 2e-4,
+                "{x} {z}: {ours} {exact}"
+            );
+        }
+        assert_eq!(super::ee_atan2(0.0, 0.0), 0.0);
     }
 
     #[test]

@@ -1243,9 +1243,8 @@ pub fn heading_match(word: i32, new: i32) -> i32 {
 pub fn pelvis_word(pose: &Pose) -> i32 {
     let q = pose.joints[0].rotation;
     let v = pose::rotate(q, [0.0, 1.0, 0.0]);
-    let a = (crate::math::atan2(v[0], v[2]) * 162.974_66 + 0.5) as i32;
-    let a = if a > 0 { a } else { a + 0x400 };
-    (a + 0x200) & 0x3ff
+    // The game's own arctangent and word (`0x15432c..0x154550`).
+    crate::math::ee_word(crate::math::ee_atan2(v[0], v[2]))
 }
 
 /// `FUN_00137ab0`: `b` pushed `reach` past itself along `a` to `b`.
