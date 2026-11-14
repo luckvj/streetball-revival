@@ -391,10 +391,18 @@ impl World {
                 None => c.shown.record.map(|r| (r, c.shown.frame)),
             }),
         };
-        let pelvis = self.stand_begun_pelvis(i).or_else(|| {
-            self.actor_pose(i)
-                .map(|pose| trick::pelvis_word(&pose) as i16)
-        });
+        // A pass pressed out of another move: the model that move showed
+        // (the press has cleared it; [`World::pass_yaw`]).
+        let pressed_out = self
+            .pass_yaw
+            .filter(|&(k, _)| k == i)
+            .map(|(_, w)| w as i16);
+        let pelvis = pressed_out
+            .or_else(|| self.stand_begun_pelvis(i))
+            .or_else(|| {
+                self.actor_pose(i)
+                    .map(|pose| trick::pelvis_word(&pose) as i16)
+            });
         let held = self
             .poses
             .get()
