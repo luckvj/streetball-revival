@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- A player who passes out of a rebound or block jump in the air flies on from his jump as on the PS2: the pass starts from the jump's own motion (he stopped dead in the air for a moment), and the choice of pass reads where his jump is carrying him.
 - As an animation comes round to its start (a run's stride, a stance's loop), the body turns from its last frame into its first the way the PS2 blends it (it mixed the two frames' raw values, so for a moment each loop a player's arms and legs sat a few centimetres off).
 - A player's facing is read off his body with the PS2's own arctangent, as the game does when it lines a new animation up with the pose he shows.
 - Three dribbling walks (the two-hand skip and hop and the under-the-knee) start from the frame the PS2 picks for the hand the ball is in (they always started as if it were in the left), so a dribbler setting off with the ball in his right hand no longer swings his facing round at the start.

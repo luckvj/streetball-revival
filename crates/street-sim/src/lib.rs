@@ -3401,12 +3401,36 @@ impl World {
             // ([`World::passes_out`]): the move gives way to the pass row.
             if self.ball.state == BallState::Held(i) && pass_press && self.passes_out(i) {
                 let before = self.players[i].action;
+                // A jumper's motion is his velocity (actor+0x40) as the
+                // pass filter reads it: the passer a quarter second ahead
+                // on his jump's drift (the third attract match's rebounder
+                // at update 1307: the receiver behind and to his side,
+                // `pass_air_4`).
+                let (speed, course) = (self.players[i].speed, self.players[i].course);
+                let drift = match before {
+                    Action::ReboundJump {
+                        drift, up: true, ..
+                    } => Some(drift),
+                    Action::Jumping { block: Some(j), .. } if j.up => Some(j.drift),
+                    _ => None,
+                };
+                if let Some(d) = drift {
+                    let p = &mut self.players[i];
+                    p.speed = math::len(d[0], d[1]) * TICK_HZ as f32;
+                    p.course = math::atan2(d[0], d[1]);
+                }
                 self.players[i].action = Action::None;
                 self.pass_button(i, input, aimed, start);
                 let went = self.windup.is_some_and(|w| w.from == i)
                     || self.ball.state != BallState::Held(i);
+                if drift.is_some() {
+                    let p = &mut self.players[i];
+                    (p.speed, p.course) = (speed, course);
+                }
                 if !went {
                     self.players[i].action = before;
+                } else {
+                    self.air_pass_flight(i, before);
                 }
                 return None;
             }
@@ -3595,6 +3619,40 @@ impl World {
             }
         }
         true
+    }
+
+    /// A jumper passing in the air: his jump's motion is the velocity his
+    /// pass row's script starts from (actor+0x40, and the last update's
+    /// move for its `aa`; the third attract match's rebounder passing out
+    /// at update 1307 flies on at half his jump's drift that update, not
+    /// still). The rewrite's jumps keep their motion in their own fields.
+    fn air_pass_flight(&mut self, i: usize, before: Action) {
+        let g = crate::toss::JUMP_GRAVITY;
+        let jump = match before {
+            Action::ReboundJump {
+                drift,
+                vy,
+                up: true,
+                ..
+            } => ([drift[0], vy, drift[1]], vy + 0.5 * g),
+            Action::Jumping { block: Some(j), .. } if j.up => {
+                ([j.drift[0], j.vy, j.drift[1]], j.vy + 0.5 * g)
+            }
+            _ => return,
+        };
+        let p = &mut self.players[i];
+        let Action::Passing { row, .. } = p.action else {
+            return;
+        };
+        if timing::PASS_ROWS
+            .get(usize::from(row))
+            .is_none_or(|r| r.flags & 0x400 == 0)
+        {
+            return;
+        }
+        let (v, rose) = jump;
+        p.flight = jump::Flight::new(v);
+        p.flight.moved = [v[0], rose, v[2]];
     }
 
     /// The pick press's tests (`0x15b61c..0x15b654`): in a shot, a dunk, a
