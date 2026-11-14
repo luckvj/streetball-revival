@@ -71,11 +71,11 @@
           "path": "crates/street-game/src/game.rs",
           "locator": "results: MatchOutcome",
           "note": "The charts now take the side's stats 11/12/13 from the sim (the Level 2 count used to be gamebreakers started, not scored).",
-          "sha256": "f43618d2a3b689ed5a1a29196a76fe0e18d39cfde5925466d4a6240f512abde5"
+          "sha256": "08d200a0d000e870e521308b280a43ed91072171f759982574506f8a090d7d7a"
         }
       ],
       "tolerance": "Exact discrete decisions and values; no tolerance.",
-      "limitations": "Static. The charts' inputs are the sim's stats (street_sim::stats), whose own unported listeners (assists, passout specials, picks) and the rewrite's trick-point awards bound them; no original runtime capture. 2026-10-20 (the load back): the results' end goes through the load back to the front end (presentation.ui_return_loading). 2026-10-20 (the card's messages): a won tournament's results return to its bracket, whose Cross opens Update Team (presentation.ui_card_save_points). 2026-10-20 (the idle demo's pass): the idle demo's game counts for nothing: results leaves before the outcome (presentation.ui_idle_attract). Last re-pinned 2026-11-08 after the online actor order (re-pins that leave the cited region unchanged replace this line).",
+      "limitations": "Static. The charts' inputs are the sim's stats (street_sim::stats), whose own unported listeners (assists, passout specials, picks) and the rewrite's trick-point awards bound them; no original runtime capture. 2026-10-20 (the load back): the results' end goes through the load back to the front end (presentation.ui_return_loading). 2026-10-20 (the card's messages): a won tournament's results return to its bracket, whose Cross opens Update Team (presentation.ui_card_save_points). 2026-10-20 (the idle demo's pass): the idle demo's game counts for nothing: results leaves before the outcome (presentation.ui_idle_attract). Last re-pinned 2026-11-13 after the launch's courtside coin (re-pins that leave the cited region unchanged replace this line).",
       "next_probe": "Capture the career block's +0xce4 lines and +0x30 after story games with known stats.",
       "match_type": "structural"
     },
