@@ -6962,13 +6962,26 @@ mod camera_pose_tests {
         mgr.update(&attract(&w));
         mgr.intro_cut_age = None;
         mgr.select_row();
-        // FUN_003b42a0 from state 0 draws 12345: odd, so the coin cuts.
-        mgr.coin_random = crate::progression_trace::NativeRandom::new(0);
         mgr.update(&attract(&w));
+        // The update's launch tossed the coin and it came up heads
+        // (`World::shot_cut`, slot 11's `FUN_00302a78`): the release cuts.
         w.tick += 1;
         w.ball.state = street_sim::BallState::Shot;
+        w.shot_cut = true;
         mgr.update(&attract(&w));
         assert_eq!(mgr.active_helper, CameraHelperKind::Positioned);
+        // Tails: no cut.
+        let mut tails = CameraManager::new(0);
+        w.ball.state = street_sim::BallState::Held(0);
+        w.shot_cut = false;
+        tails.update(&attract(&w));
+        tails.intro_cut_age = None;
+        tails.select_row();
+        tails.update(&attract(&w));
+        w.tick += 1;
+        w.ball.state = street_sim::BallState::Shot;
+        tails.update(&attract(&w));
+        assert_eq!(tails.active_helper, CameraHelperKind::Row);
         // The same release in an ordinary match never cuts.
         let mut normal = CameraManager::new(0);
         w.ball.state = street_sim::BallState::Held(0);
