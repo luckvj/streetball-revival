@@ -646,6 +646,37 @@ pub struct Player {
 }
 
 impl Player {
+    /// A jump shot's tail past its landing wait (the jump shots'
+    /// `8d ee 15 05; 8d ee 19 08; 91 00; 8c 2.0`): its waits, then the
+    /// locomotion back, which a pushed stick takes, else the play-out to
+    /// its end. The `91 00` and the play-out's first step run in the
+    /// channel step that ends the waits; the locomotion, earlier in his
+    /// update, reads the flags the next update (the third attract match's
+    /// shooter lands at update 1207, steps the play-out's half frame at
+    /// 1219 and runs off at 1220). Ends the shot here when it is over.
+    pub fn shot_tail_over(&mut self, input: &crate::Input) -> bool {
+        let Action::Shooting {
+            tick,
+            script,
+            landed,
+            ..
+        } = self.action
+        else {
+            return false;
+        };
+        if landed == 0 {
+            return false;
+        }
+        let (waits, playout) = crate::held::shot_tail(script);
+        let since = tick - landed;
+        if since >= waits && (input.moves() || since >= waits + playout) {
+            self.action = Action::None;
+            self.height = 0.0;
+            return true;
+        }
+        false
+    }
+
     pub fn new(team: usize, position: [f32; 2], heading: f32) -> Self {
         Self {
             team,
@@ -964,7 +995,6 @@ impl Player {
                 gate,
                 latest,
                 stall,
-                script,
                 landed,
                 ..
             } => {
@@ -1000,19 +1030,8 @@ impl Player {
                 if *landed == 0 && vm >= end && (self.height <= 0.0 || vm >= end + LANDING_LIMIT) {
                     *landed = (*tick).max(1);
                 }
-                // The tail past the landing wait (the jump shots'
-                // `8d ee 15 05; 8d ee 19 08; 91 00; 8c 2.0`): its waits,
-                // then the locomotion back (a pushed stick takes the
-                // channel) or the play-out to its end (the third attract
-                // match's shooter lands at update 1207 and runs off at 1221).
-                if *landed > 0 {
-                    let (waits, playout) = crate::held::shot_tail(*script);
-                    let since = *tick - *landed;
-                    if since >= waits && (input.moves() || since >= waits + playout) {
-                        self.action = Action::None;
-                        self.height = 0.0;
-                    }
-                }
+                // The tail past the landing wait ends in his next update's
+                // locomotion ([`Player::shot_tail_over`]).
                 (vm == release).then_some(Moment::Release(hoop))
             }
             Action::Dunking {

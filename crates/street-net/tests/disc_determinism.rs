@@ -463,8 +463,9 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // whole; 2033: 2032's blocked no shot once a driver was read as
         // headed for his drive's point; 2034: 2033's blocked no shot once
         // the defenders' matchups followed the running strategy, nor
-        // 2034's or 2035's; 2036.)
-        2036,
+        // 2034's or 2035's; 2036; 2037: 2036's blocked no shot once a
+        // blocker's landing wait ran the airtime left as it began.)
+        2037,
         15_000,
         Conditions {
             loss: 0.04,
@@ -492,14 +493,15 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
     // a passer stopped into a stand at the press, seed 24's none once a
     // pass row ran on until the locomotion took it, seed 25's none once a
     // passout's flight was timed whole, seed 26's none once a stand
-    // begun under a late pass matched its facing).
+    // begun under a late pass matched its facing, seed 27's none once a
+    // blocker's landing wait ran the airtime left as it began).
     let tables = disc().unwrap();
     let teams: Vec<usize> = (0..tables.tables().teams.len())
         .filter(|&t| tables.tables().teams[t].roster.len() >= 3)
         .collect();
     disc_match(
         [teams[12], teams[20]],
-        27,
+        28,
         15_000,
         Conditions {
             loss: 0.10,

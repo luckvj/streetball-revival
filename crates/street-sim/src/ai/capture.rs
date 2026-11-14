@@ -4460,6 +4460,7 @@ fn the_captured_block_jumps_follow_their_scripts() {
                     meet: 15,
                     airtime: 0,
                     flown: 0,
+                    landing: 0,
                     turbo: false,
                     last: [0; 2],
                 };

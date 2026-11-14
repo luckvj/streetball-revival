@@ -3653,6 +3653,7 @@ fn the_block_jumps_rise_as_callback_35_aims_them_in_play() {
                     meet: 15,
                     airtime: 0,
                     flown: 0,
+                    landing: 0,
                     turbo: false,
                     last: [0; 2],
                 };
@@ -3850,6 +3851,7 @@ fn the_block_jumps_at_a_holder_rise_as_callback_35_aims_them_in_play() {
                     meet: 15,
                     airtime: 0,
                     flown: 0,
+                    landing: 0,
                     turbo: false,
                     last: [0; 2],
                 };

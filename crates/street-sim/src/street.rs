@@ -1095,6 +1095,8 @@ impl World {
             let held = self.ball.state == BallState::Held(player);
             // His release moment is the script's shot command's.
             let _ = self.players[player].step(&crate::Input::default(), held, None);
+            // A jump shot's tail: no stick, its play-out to its end.
+            let _ = self.players[player].shot_tail_over(&crate::Input::default());
             self.flight_tick(player, at);
             if self.ball.state == BallState::Held(player) && !self.place_held(player, held_before) {
                 self.ball.carry(&self.players[player]);

@@ -337,6 +337,7 @@ fn the_block_jump_lists_and_aims_are_the_executables() {
             meet: 15,
             airtime: 0,
             flown: 0,
+            landing: 0,
             turbo: false,
             last: [0; 2],
         };

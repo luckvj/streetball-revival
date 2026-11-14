@@ -2023,6 +2023,15 @@ impl World {
             // the walk sets the speed from it.
             // A move still running finds no mode here; the locomotion its
             // callback 1 runs at its end works the mode out then.
+            // A jump shot's tail hands the locomotion back here, before it
+            // runs ([`Player::shot_tail_over`]).
+            // The record it starts blends from the shot's clip as the last
+            // update left it (`+0x50`), its heading matched on that pose.
+            let tail_shown = matches!(self.players[i].action, Action::Shooting { .. })
+                .then(|| self.script_shown_on(i, true))
+                .flatten();
+            let tail_over = self.players[i].shot_tail_over(&input);
+            let tail_shown = tail_shown.filter(|_| tail_over);
             let stance_busy = self.players[i].action != Action::None;
             let stance = self.guard_stance(i, &input, &start);
             // A holder who picked up his dribble does not move: his stick
@@ -2047,7 +2056,7 @@ impl World {
             // Channel 0 locked under a running catch's row (its flag 2,
             // `0x15b084`): no locomotion at all.
             if steered.is_none() && run_kept.is_none() {
-                self.select_gait(i, &walk, held, stance);
+                self.select_gait_with(i, &walk, held, stance, false, tail_shown);
             } else if steered.is_some() && run_kept.is_none() && self.ball.state == BallState::Pass
             {
                 // Once the ball is in the air his locomotion runs its

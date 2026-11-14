@@ -179,6 +179,7 @@ fn shot_at_hand(seed: u32, script: u8, offset: [f32; 3]) -> World {
         meet: 15,
         airtime: 40,
         flown: 4,
+        landing: 0,
         turbo: false,
         last: [0; 2],
     };

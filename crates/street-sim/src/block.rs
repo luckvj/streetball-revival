@@ -334,6 +334,9 @@ pub struct Jump {
     /// (+0x60).
     pub airtime: u16,
     pub flown: u16,
+    /// The landing wait's length, set as it starts (0 before): the
+    /// airtime left from his rise and height then (`FUN_0019bed8`).
+    pub landing: u16,
     /// The turbo block (actor+0x360): its clip catches the ball.
     pub turbo: bool,
     /// Each record's last frame (its frames less one), where the play-out
@@ -390,12 +393,13 @@ impl Jump {
         match w.span {
             Fixed(n) => u16::from(n),
             Meet(o) => (i32::from(self.meet) + i32::from(o)).max(1) as u16,
+            // `8d ee F fe` (`FUN_0019bed8(g, vy, y)` as the wait starts):
+            // the third attract match's rebounder's wait at update 412
+            // runs 14 updates (vy -0.0466 at 1.647), the blocker's at 1192
+            // 28 (0.0339 at 3.424). Before it starts, the airtime less the
+            // updates aloft stands in.
+            Landing if self.landing > 0 => self.landing,
             Landing => {
-                // The airtime (actor+0x64) less the updates aloft
-                // (+0x60, which counts the aim's own): the third attract
-                // match's rebounder's wait from his 25th update aloft runs
-                // 14 updates (38 - 24), the clip at frame 21 on the update
-                // he lands.
                 let since = start.saturating_sub(self.aim_tick()) + 1;
                 self.airtime.saturating_sub(since).max(1)
             }
@@ -937,6 +941,7 @@ impl World {
             meet: 0,
             airtime: 0,
             flown: 0,
+            landing: 0,
             turbo: script == TURBO && turbo,
             last: s.records.map(|r| {
                 poses
@@ -1020,7 +1025,32 @@ impl World {
             self.block_aim(i);
         }
         self.block_resync(i);
+        self.block_landing(i);
         self.block_root(i);
+    }
+
+    /// The landing wait's start ([`Jump::landing`]): on the update it
+    /// starts, the airtime left from his rise and his height as the update
+    /// began.
+    fn block_landing(&mut self, i: usize) {
+        let height = self.players[i].height;
+        let Action::Jumping { block: Some(j), .. } = &mut self.players[i].action else {
+            return;
+        };
+        if !j.up || j.landing > 0 {
+            return;
+        }
+        let s = j.script();
+        let mut at = j.blend_len();
+        for w in s.before.iter().chain(s.after.iter()) {
+            if w.span == Landing {
+                if j.tick == at {
+                    j.landing = u16::from(timing::airtime(j.vy, height)).max(1);
+                }
+                return;
+            }
+            at += j.span(*w, at);
+        }
     }
 
     /// The clip's root across (`FUN_0019a658`, raw `0x19b4bc..0x19b70c`):
@@ -1781,6 +1811,7 @@ mod tests {
             meet: 15,
             airtime: 60,
             flown: 0,
+            landing: 0,
             turbo: false,
             last: [0; 2],
         }

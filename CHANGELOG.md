@@ -5,6 +5,8 @@ its version's part.
 
 ## Unreleased
 
+- A shooter landing from his jump shot hands over to his walk an update later, as on the PS2: his shot's last step plays first, and his walk turns from the pose the shot left him in (he stopped dead for an update and set off facing a little off).
+- A blocker comes down from his leap on the PS2's count, the time left from his rise and height when the landing starts (he finished his landing an update early, so a man beside him got bumped too far).
 - A ball that clips the inside of the rim settles onto it only when it moves almost along the rim, as on the PS2 (the test measured the opposite angle, so a ball bouncing off the rim's inner edge could drop in where the PS2's rattles out; shots that should miss on the PS2 went in).
 - A player who catches a pass out of a passout and passes straight on turns to the facing his catch left him, as on the PS2 (he kept turning toward where he faced before the catch, a few degrees too far).
 - A blocker leaping at a shooter aims at the PS2's point beside him, toward the rim (his take-off went a degree off, so he flew a little wide).

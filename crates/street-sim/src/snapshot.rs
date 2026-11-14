@@ -130,7 +130,7 @@ use crate::{
 /// 127: the restart's hold on a recovering man's stick
 /// ([`crate::World::recover_count`]); 128: the gait channel's stored rate
 /// ([`crate::ordinary::PlayerGaitChannel::rate_store`]).
-const VERSION: u8 = 139;
+const VERSION: u8 = 140;
 
 impl World {
     /// The whole world as bytes ([`World::from_snapshot`] reads it back).
@@ -2419,6 +2419,7 @@ fn action_out(w: &mut Writer, a: &Action) {
                     w.u8(j.meet);
                     w.uv(u64::from(j.airtime));
                     w.uv(u64::from(j.flown));
+                    w.uv(u64::from(j.landing));
                     w.bool(j.turbo);
                     w.u8(j.last[0]);
                     w.u8(j.last[1]);
@@ -2638,6 +2639,7 @@ fn action_in(r: &mut Reader) -> Result<Action, String> {
                     meet: r.u8()?,
                     airtime: u16::try_from(r.uv()?).map_err(|_| "invalid block airtime")?,
                     flown: u16::try_from(r.uv()?).map_err(|_| "invalid block flight")?,
+                    landing: u16::try_from(r.uv()?).map_err(|_| "invalid block landing")?,
                     turbo: r.bool()?,
                     last: [r.u8()?, r.u8()?],
                 }),
