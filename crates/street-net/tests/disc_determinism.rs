@@ -464,8 +464,10 @@ fn two_clients_and_the_referee_agree_on_the_discs_data_through_rollbacks() {
         // headed for his drive's point; 2034: 2033's blocked no shot once
         // the defenders' matchups followed the running strategy, nor
         // 2034's or 2035's; 2036; 2037: 2036's blocked no shot once a
-        // blocker's landing wait ran the airtime left as it began.)
-        2037,
+        // blocker's landing wait ran the airtime left as it began; 2038:
+        // 2037's blocked no shot once a rebound jumper's clip carried him
+        // before take-off.)
+        2038,
         15_000,
         Conditions {
             loss: 0.04,

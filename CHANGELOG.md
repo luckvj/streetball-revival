@@ -5,6 +5,9 @@ its version's part.
 
 ## Unreleased
 
+- A blocker coming down from his leap keeps the facing he landed with while he plays the landing out, as on the PS2: only a player holding the ball turns to his stick then (he turned a few degrees, so his landing step went a little sideways).
+- A player setting off out of a move's last frames steps his new stride's first frame at the pace the PS2 does, from the stride he set off on, even when another stride takes over on the next moment (his first step reused the pace from before his move, a frame too far).
+- A player leaping for a rebound now gathers as on the PS2: his jump's animation carries him forward a step before he leaves the floor (he stood still, then took off from the wrong spot), his facing first matches the jump's first frame to the pose he showed and then turns to the ball, and a stance he was in ends at once (it moved him one more step).
 - A shooter landing from his jump shot hands over to his walk an update later, as on the PS2: his shot's last step plays first, and his walk turns from the pose the shot left him in (he stopped dead for an update and set off facing a little off).
 - A blocker comes down from his leap on the PS2's count, the time left from his rise and height when the landing starts (he finished his landing an update early, so a man beside him got bumped too far).
 - A ball that clips the inside of the rim settles onto it only when it moves almost along the rim, as on the PS2 (the test measured the opposite angle, so a ball bouncing off the rim's inner edge could drop in where the PS2's rattles out; shots that should miss on the PS2 went in).

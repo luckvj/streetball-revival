@@ -2367,14 +2367,19 @@ impl World {
             }
             self.contain(i);
             // A block jumper's play-out after his landing (`91 2`,
-            // [`block::Script::out`]): the stick moves him no more, but it
-            // still sets his wanted facing and he turns to it (the third
-            // attract match's rebounder, holding the ball, faces his walk
-            // from update 1044: 388, 402, 408).
+            // [`block::Script::out`]): the stick moves him no more, but
+            // holding the ball it still sets his wanted facing
+            // (`0x15abb4`: +0xb0 = the stick's word +0x88 while it is
+            // pushed and he holds the ball) and he turns to it (the third
+            // attract match's rebounder faces his walk from update 1044:
+            // 388, 402, 408). The defence's update runs no locomotion under
+            // `91 2` (`0x15dd84..0x15de58`, but for a post), so a blocker
+            // keeps his facing (a5 at 1221 stays 509).
             // Not on the play-out's first update: its `8c` starts in the
             // channel step after this update's locomotion (the wanted
             // facing still the jump's at 1043, the counter 1 there).
             if let Action::Jumping { block: Some(j), .. } = self.players[i].action
+                && held
                 && j.playing_out()
                 && (block::Jump {
                     tick: j.tick.wrapping_sub(1),
@@ -3265,6 +3270,7 @@ impl World {
                     .is_some_and(|s| s.run.tick <= 0 || s.run.blend_counter().is_some())
         };
         let p = &mut self.players[i];
+        let (speed, body_scale_x) = (p.speed, p.body().height);
         let channel = &mut p.gait_channel;
         if let Some(record) = config.records.get(index) {
             // A record started anew runs its script's `9b`: only the
@@ -3277,6 +3283,18 @@ impl World {
                 if request & 0x102 != 0 {
                     p.dribble = 1;
                 }
+            }
+            // `0x167e8c` stores the rate in the update a record starts, on
+            // its root distance at that update's speed. Ours waits for the
+            // channel's next step; a record started out of a script's end
+            // has none that update, so a second record starting before
+            // one runs takes the first's store as it stood (the third
+            // attract match's blocker out of his play-out at update 1229:
+            // run 49 at 21.636, 1.1443, which the walk record's blend
+            // completing at 1236 steps).
+            if channel.store_rate {
+                channel.rate_store =
+                    ordinary::calculate_gait_frame_step(channel.root_distance, speed, body_scale_x);
             }
             channel.record = Some(index as u16);
             channel.rows = gait_select::script_rows(index, record.rows, p.left_handed);
@@ -3500,6 +3518,13 @@ impl World {
             game_phase::ball::REBOUND | game_phase::ball::RIM | game_phase::ball::LOOSE
         );
         if rebound {
+            // `FUN_0019c2f8` replaces the stand's script: its step this
+            // update is the jump's (the third attract match's rebounder
+            // at update 1272 takes no stand root step).
+            let p = &mut self.players[i];
+            p.stand = None;
+            p.boxing = false;
+            p.boxed = false;
             self.start_rebound_jump(i);
         } else if self.poses.get().is_some() {
             // `FUN_0015d3a0`'s script ([`block`]); the turbo block

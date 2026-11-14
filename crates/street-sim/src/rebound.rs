@@ -380,6 +380,29 @@ impl World {
         // Callback 6 (`FUN_00174f30`): his wanted facing (+0xb0) turned to
         // the ball plus the path's turn, unless that is within 10 of it;
         // the facing then turns to it ([`World::rebound_turn`]).
+        // Every jumping script opens `91 0x820002`: its blend matches his
+        // facing to the incoming clip's root (`FUN_00196698(channel, 1)`)
+        // from the model the channel showed (the third attract match's
+        // rebounder out of his stand at update 1272: 719 matched to 694).
+        // The update's turn (`FUN_00168ea8`) ran before the script's first
+        // step, and callback 6 sets his wanted facing in it: he turns from
+        // the update after.
+        if !standing
+            && let Some(poses) = self.poses.arc()
+            && let Some(h) = self.shown_at_start(i).or_else(|| self.shown_local(i))
+        {
+            let body = self.players[i].body();
+            let placed = poses.place_held(&h, body, self.place(i));
+            let record = s.records[usize::from(branch)];
+            if let Some(new) =
+                crate::trick::matched_word(&poses, &placed, record, f32::from(s.start), body)
+            {
+                let matched = crate::trick::heading_match(word, new);
+                if matched != word {
+                    self.players[i].heading = crate::restart::heading_radians(matched);
+                }
+            }
+        }
         let mut want = word;
         if let Some(turns) = s.turn {
             let toward = self.callback_6_toward(i, &path);
@@ -724,6 +747,54 @@ impl World {
                 self.rebound_aim(i);
             }
         }
+        self.rebound_root(i);
+    }
+
+    /// The clip's root across before he leaves the floor (`FUN_0019a658`,
+    /// as the block jump's, [`crate::block`]): no rebound script's `91`
+    /// sets 0x1000, so past the blend each channel step moves him by his
+    /// clip's root change on x and z, times his height scale, turned by
+    /// his facing; on the step out of the blend, the change from its start
+    /// frame (the third attract match's rebounder at updates 1276..1279:
+    /// 0.09, 0.16, 0.20, 0.20 before callback 36 sends him up). Without
+    /// the disc's animations, none.
+    fn rebound_root(&mut self, i: usize) {
+        let Action::ReboundJump {
+            script,
+            tick,
+            up,
+            meet,
+            airtime,
+            branch,
+            end,
+            ..
+        } = self.players[i].action
+        else {
+            return;
+        };
+        let s = SCRIPTS[usize::from(script)];
+        if up || s.jump == 0 || tick < BLEND || tick >= u16::from(s.jump) || end != u16::MAX {
+            return;
+        }
+        let Some(poses) = self.poses.get() else {
+            return;
+        };
+        let record = s.records[usize::from(branch)];
+        let root = |tick: u16| {
+            poses.root(Frame {
+                record,
+                time: clip_frame(&s, tick, meet, airtime, None),
+                looping: false,
+            })
+        };
+        let (Some(now), Some(then)) = (root(tick), root(tick - 1)) else {
+            return;
+        };
+        let p = &mut self.players[i];
+        let step = [now[0] - then[0], 0.0, now[2] - then[2]];
+        let m = crate::trick::root_motion(step, p.body(), timing::facing_word(p.heading));
+        p.position[0] = crate::math::ee_add(p.position[0], m[0]);
+        p.position[1] = crate::math::ee_add(p.position[1], m[1]);
     }
 
     /// `FUN_0016ed18`: rebound jumper `i`'s hand takes the ball, after his
