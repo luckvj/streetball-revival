@@ -82,7 +82,12 @@ pub const SYNC_FROM: [u16; 158] = [
 /// How the record whose primary row is `row` starts from the row the
 /// channel plays (`playing`; `still` the record channel 0 shows when no
 /// blend runs, as callback 15 reads it); None for a row no script names.
-pub fn record_start(row: u16, playing: Option<u16>, still: Option<u16>) -> Option<RecordStart> {
+pub fn record_start(
+    row: u16,
+    playing: Option<u16>,
+    still: Option<u16>,
+    right: bool,
+) -> Option<RecordStart> {
     let script = RECORD_SCRIPTS.iter().find(|s| s.row == row)?;
     if script.share && playing.is_some_and(|r| MOVING_ROWS.contains(&r)) {
         return Some(RecordStart::Share);
@@ -90,11 +95,26 @@ pub fn record_start(row: u16, playing: Option<u16>, still: Option<u16>) -> Optio
     if SYNC_ROWS.contains(&row) && still.is_some_and(|r| SYNC_FROM.contains(&r)) {
         return Some(RecordStart::Sync);
     }
+    let frame = match RIGHT_HAND_STILL.iter().find(|&&(r, _)| r == row) {
+        Some(&(_, f)) if right => f,
+        _ => script.still,
+    };
     Some(RecordStart::Frame {
-        frame: f32::from(script.still),
+        frame: f32::from(frame),
         heading: script.heading,
     })
 }
+
+/// The records whose script picks its still start by the live hand
+/// (`84 16 -> T`, callback 22, `FUN_00174e08`: actor+0x25c 1, the right):
+/// with the right hand its blend starts at this frame, else at
+/// [`RecordScript::still`] (the third attract match's dribbler into
+/// `dribble_2hand_skip` at update 934: frame 25, `+0x60`).
+pub const RIGHT_HAND_STILL: [(u16, u8); 3] = [
+    (140, 16), // dribble_underknee
+    (120, 25), // dribble_2hand_skip
+    (125, 20), // dribble_2hand_hop
+];
 
 /// A blend's start `-19` (`0x197fd0..0x198088`): the outgoing clip looked
 /// ahead by the blend's length in updates at its rate, wrapped once past

@@ -3139,7 +3139,12 @@ impl World {
             && !(playing.is_some_and(|r| record.rows.contains(&r)) && p.stand.is_none())
             && p.action == Action::None
             && let Some(how) =
-                gait_select::record_start(record.rows[0], playing, still.map(|s| s.0))
+                gait_select::record_start(
+                    record.rows[0],
+                    playing,
+                    still.map(|s| s.0),
+                    channel.hand == 1,
+                )
             && let Some(poses) = self.poses.arc()
         {
             let row =

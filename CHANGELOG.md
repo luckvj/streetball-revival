@@ -5,6 +5,7 @@ its version's part.
 
 ## Unreleased
 
+- Three dribbling walks (the two-hand skip and hop and the under-the-knee) start from the frame the PS2 picks for the hand the ball is in (they always started as if it were in the left), so a dribbler setting off with the ball in his right hand no longer swings his facing round at the start.
 - A player setting off into a run picks up his stride's pace from the moment he sets off, as on the PS2 (when he hit turbo a moment later his legs took the turbo pace, so a blend into a run after a pass started his legs a little ahead and moved him slightly off the PS2's line).
 - Animations' root motion is decoded with the PS2's own rounding (each frame's step is added the way the PS2's vector unit adds it), and a player knocked off balance drifts with the PS2's rounding too: both had players creep a hair off the PS2's path, enough after a few hundred moments to tip a decision (a knocked player ended up a fraction of a centimetre out, and later aimed a run one notch off).
 - When the ball comes off the rim too low to rebound, the computer's players go after it as on the PS2: they wait a moment before chasing it (they ran at it at once, two moments early), and a player who stood still sets off from the way he faces, not his last run.
