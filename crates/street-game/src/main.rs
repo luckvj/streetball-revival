@@ -669,7 +669,8 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     app.add_plugins((
         DefaultPlugins
             .set(app::window_plugin("Streetball Revival".to_string()))
-            .set(render_plugin()),
+            .set(render_plugin())
+            .add_before::<bevy::render::RenderPlugin>(GlDisplayPlugin),
         StreetRenderPlugin,
     ))
     .insert_resource(ClearColor(Color::srgb(0.53, 0.70, 0.86)))
@@ -831,10 +832,60 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 /// black court for a second or two after the loading picture) until every
 /// pipeline it uses is ready. The compile now happens behind the loading
 /// picture's last frame.
+///
+/// On OpenGL (`WGPU_BACKEND=gl`) the device also reports no compute workgroup
+/// memory. bevy_pbr's EnvironmentMapGenerationPlugin then switches itself off
+/// instead of compiling its mip-generation compute shaders at startup, which
+/// older GL drivers reject (Intel HD 4000 on Mesa: "extension
+/// ARB_arrays_of_arrays unsupported in compute shader"). The game uses no
+/// generated environment maps, and Bevy's GPU preprocessing is already off
+/// on GL, so nothing it draws needs that compute.
 fn render_plugin() -> bevy::render::RenderPlugin {
+    let mut settings = bevy::render::settings::WgpuSettings::default();
+    if gl_requested() {
+        settings.constrained_limits = Some(bevy::render::settings::WgpuLimits {
+            max_compute_workgroup_storage_size: 0,
+            // No storage buffers or storage textures on GL: Bevy then uses CPU light
+            // clustering and uniform buffers, and skips SSAO, atmosphere and GPU mip
+            // compute, whose shaders naga 30 emits with "#extension
+            // ARB_arrays_of_arrays" (no GL_ prefix) and Mesa rejects.
+            max_storage_buffers_per_shader_stage: 0,
+            max_dynamic_storage_buffers_per_pipeline_layout: 0,
+            max_storage_textures_per_shader_stage: 0,
+            ..bevy::render::settings::WgpuLimits::unlimited()
+        });
+    }
     bevy::render::RenderPlugin {
+        render_creation: settings.into(),
         synchronous_pipeline_compilation: true,
         ..default()
+    }
+}
+
+/// Whether `WGPU_BACKEND` asks for OpenGL, with the names wgpu accepts.
+fn gl_requested() -> bool {
+    std::env::var("WGPU_BACKEND").is_ok_and(|list| {
+        list.split(',')
+            .any(|b| matches!(b.trim().to_ascii_lowercase().as_str(), "gl" | "gles" | "opengl"))
+    })
+}
+
+/// Gives the renderer winit's display connection (X11 or Wayland) before it
+/// starts. Without it wgpu's OpenGL backend opens EGL with no display, which
+/// can't present to a window: the GL window surface has no present modes and
+/// Bevy panics with "Fallback system failed to choose present mode". Needs
+/// the patched bevy_render in `patches/bevy_render` (`INSTANCE_DISPLAY`).
+/// Vulkan ignores the display, so this only matters on GL.
+struct GlDisplayPlugin;
+
+impl Plugin for GlDisplayPlugin {
+    fn build(&self, app: &mut App) {
+        let Some(display) = app.world().get_resource::<bevy::winit::DisplayHandleWrapper>() else {
+            return;
+        };
+        let display = display.0.clone();
+        let _ = bevy::render::renderer::INSTANCE_DISPLAY
+            .set(Box::new(move || Box::new(display.clone())));
     }
 }
 
