@@ -14,6 +14,9 @@ street-sim = { path = "../street-sim" }
 street-video = { path = "../street-video" }
 # The OS clipboard: join codes pasted in and copied out.
 bevy = { version = "0.20.0", features = ["system_clipboard"] }
+# The renderer's wgpu, the same one Bevy 0.20 uses: on OpenGL the game makes
+# the wgpu device itself (`GlRenderPlugin` in main.rs).
+wgpu = { version = "30.0.1", default-features = false }
 igd-next = { version = "0.18.0", default-features = false, features = ["io_sync"] }
 
 # PlayStation pads read from their HID reports (`sony_hid`).
