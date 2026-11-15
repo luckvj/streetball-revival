@@ -6393,6 +6393,7 @@ dependencies = [
  "street-render",
  "street-sim",
  "street-video",
+ "wgpu 30.0.1",
  "windows 0.62.2",
 ]
 
@@ -6425,6 +6426,7 @@ name = "street-render"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_render",
  "street-assets",
 ]
 
@@ -7446,6 +7448,7 @@ dependencies = [
  "smallvec",
  "thiserror 2.0.21",
  "wgpu-core-deps-apple",
+ "wgpu-core-deps-emscripten",
  "wgpu-core-deps-wasm",
  "wgpu-core-deps-windows-linux-android",
  "wgpu-hal 30.0.1",
@@ -7458,6 +7461,15 @@ name = "wgpu-core-deps-apple"
 version = "30.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "061f3d319a40d39d00b1ecc2c33b89fe21d4e6fe01859df3500a3a8ecccd6b68"
+dependencies = [
+ "wgpu-hal 30.0.1",
+]
+
+[[package]]
+name = "wgpu-core-deps-emscripten"
+version = "30.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55ccf093bd215ae9dc4f96df293e675513ac1f2569f8293a2911cc34ca3505d1"
 dependencies = [
  "wgpu-hal 30.0.1",
 ]
