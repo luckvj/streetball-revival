@@ -14,6 +14,12 @@ members = [
     "crates/street-video",
 ]
 
+# bevy_render 0.20.0 with one change: it passes the window system's display
+# to wgpu, so the OpenGL backend can present to a window on Linux (see
+# patches/bevy_render/src/renderer/mod.rs, INSTANCE_DISPLAY).
+[patch.crates-io]
+bevy_render = { path = "patches/bevy_render" }
+
 [workspace.package]
 edition = "2024"
 version = "0.1.0"
