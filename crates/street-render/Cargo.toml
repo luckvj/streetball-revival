@@ -8,3 +8,8 @@ license.workspace = true
 [dependencies]
 street-assets = { path = "../street-assets" }
 bevy = "0.20.0"
+# OpenGL / GLES fallback for GPUs without full Vulkan (e.g. Intel HD 4000 on Linux).
+# bevy 0.20 doesn't pass a GL feature through, but bevy_render has `gles`, which
+# turns on wgpu's GL backend. Cargo merges this into the bevy_render that bevy uses.
+# Pick it at launch with WGPU_BACKEND=gl; Vulkan stays the default.
+bevy_render = { version = "0.20.0", features = ["gles"] }
